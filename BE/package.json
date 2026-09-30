@@ -1,0 +1,19 @@
+{
+  "name": "idttx-44-auth-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend API for login and role-based user information",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2"
+  }
+}
