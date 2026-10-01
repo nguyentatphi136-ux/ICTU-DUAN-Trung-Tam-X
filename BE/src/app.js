@@ -1,6 +1,8 @@
 const express = require('express');
 const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
+const gradesRoutes = require('./routes/grades.routes');
+const tuitionRoutes = require('./routes/tuition.routes');
 
 const app = express();
 
@@ -8,6 +10,8 @@ app.disable('x-powered-by');
 app.use(express.json({ limit: '10kb' }));
 app.use('/api/auth', authRoutes);
 app.use('/admin', adminRoutes);
+app.use('/api/grades', gradesRoutes);
+app.use('/api/tuition', tuitionRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
