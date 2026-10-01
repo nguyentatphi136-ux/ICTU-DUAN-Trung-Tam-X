@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#015aa0" />
+    <title>Trợ giảng | EduManager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body class="app-body antialiased" data-role="ta">
+    <div class="app-shell">
+      <aside id="app-sidebar" class="app-sidebar"></aside>
+      <div class="app-backdrop" aria-hidden="true"></div>
+
+      <div class="app-main">
+        <header class="app-topbar">
+          <div class="flex items-center gap-3">
+            <button
+              id="sidebar-toggle"
+              type="button"
+              class="app-icon-btn app-sidebar-toggle"
+              aria-label="Mở menu"
+            >
+              <i data-lucide="menu" aria-hidden="true"></i>
+            </button>
+            <div>
+              <p class="app-eyebrow">Trợ giảng · Teaching Assistant</p>
+              <h1 class="app-page-title">
+                Xin chào, <span data-user="fullName"></span>
+              </h1>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="app-muted hidden sm:inline" data-today></span>
+            <button
+              id="theme-toggle"
+              type="button"
+              aria-label="Chuyển giao diện tối"
+              title="Chuyển giao diện tối"
+              class="app-icon-btn"
+            >
+              <i data-lucide="moon" class="size-[18px]" aria-hidden="true"></i>
+            </button>
+          </div>
+        </header>
+
+        <main class="app-content page-enter">
+          <section id="tong-quan" class="app-stats" aria-label="Tổng quan">
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="school" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Lớp được uỷ quyền</p>
+                <p class="app-stat-value">2</p>
+              </div>
+            </div>
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="file-clock" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Bài chờ chấm</p>
+                <p class="app-stat-value">9</p>
+              </div>
+            </div>
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="heart-handshake" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Học viên cần kèm</p>
+                <p class="app-stat-value">3</p>
+              </div>
+            </div>
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="calendar-clock" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Buổi kèm tuần này</p>
+                <p class="app-stat-value">4</p>
+              </div>
+            </div>
+          </section>
+
+          <section id="uy-quyen" class="app-card">
+            <div class="app-card-header">
+              <h2 class="app-card-title">
+                <i data-lucide="shield-check" aria-hidden="true"></i>Phạm vi uỷ
+                quyền
+              </h2>
+              <span class="app-badge">Uỷ quyền bởi GV Trần Thị Giảng</span>
+            </div>
+            <div class="grid gap-3 md:grid-cols-3">
+              <div class="app-note">
+                <i data-lucide="circle-check" aria-hidden="true"></i>
+                <p><b>Được phép:</b> điểm danh lớp IELTS-2610 và GT-2609.</p>
+              </div>
+              <div class="app-note">
+                <i data-lucide="circle-check" aria-hidden="true"></i>
+                <p><b>Được phép:</b> chấm điểm bài tập hằng ngày.</p>
+              </div>
+              <div class="app-note">
+                <i data-lucide="lock" aria-hidden="true"></i>
+                <p>
+                  <b>Không được phép:</b> sửa điểm tổng kết (chỉ giảng viên được
+                  sửa).
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <div class="grid gap-6 xl:grid-cols-2">
+            <section id="diem-danh" class="app-card">
+              <form data-attendance-form="GT-2609">
+                <div class="app-card-header">
+                  <div>
+                    <h2 class="app-card-title">
+                      <i data-lucide="clipboard-check" aria-hidden="true"></i
+                      >Điểm danh
+                    </h2>
+                    <p class="app-card-subtitle">
+                      Lớp GT-2609 · Hôm nay 18:00 · P.204
+                    </p>
+                  </div>
+                  <span class="app-badge is-info" data-attendance-count></span>
+                </div>
+                <ul class="app-list">
+                  <li class="app-list-item">
+                    <label class="flex items-center gap-3">
+                      <input type="checkbox" class="app-checkbox" checked />
+                      Đinh Văn Khang
+                    </label>
+                    <span class="app-muted">HV021</span>
+                  </li>
+                  <li class="app-list-item">
+                    <label class="flex items-center gap-3">
+                      <input type="checkbox" class="app-checkbox" checked />
+                      Mai Thu Trang
+                    </label>
+                    <span class="app-muted">HV022</span>
+                  </li>
+                  <li class="app-list-item">
+                    <label class="flex items-center gap-3">
+                      <input type="checkbox" class="app-checkbox" />
+                      Hồ Minh Tuấn
+                    </label>
+                    <span class="app-muted">HV023</span>
+                  </li>
+                  <li class="app-list-item">
+                    <label class="flex items-center gap-3">
+                      <input type="checkbox" class="app-checkbox" checked />
+                      Cao Bảo Ngọc
+                    </label>
+                    <span class="app-muted">HV024</span>
+                  </li>
+                </ul>
+                <button type="submit" class="app-btn mt-4">
+                  <i data-lucide="save" aria-hidden="true"></i>Lưu điểm danh
+                </button>
+                <p
+                  class="app-status"
+                  role="status"
+                  aria-live="polite"
+                  hidden
+                ></p>
+              </form>
+            </section>
+
+            <section id="kem-hoc" class="app-card">
+              <div class="app-card-header">
+                <h2 class="app-card-title">
+                  <i data-lucide="heart-handshake" aria-hidden="true"></i>Học
+                  viên cần kèm
+                </h2>
+              </div>
+              <ul class="app-list">
+                <li class="app-list-item">
+                  <div>
+                    <p class="app-list-title">Hồ Minh Tuấn · GT-2609</p>
+                    <p class="app-muted">
+                      Vắng 3 buổi liên tiếp, yếu phần nghe
+                    </p>
+                  </div>
+                  <span class="app-badge is-danger">Ưu tiên cao</span>
+                </li>
+                <li class="app-list-item">
+                  <div>
+                    <p class="app-list-title">Phan Quốc Huy · IELTS-2610</p>
+                    <p class="app-muted">Writing dưới 6.0 · Kèm thứ 7, 14:00</p>
+                  </div>
+                  <span class="app-badge is-warning">Đang kèm</span>
+                </li>
+                <li class="app-list-item">
+                  <div>
+                    <p class="app-list-title">Lý Thị Mai · IELTS-2610</p>
+                    <p class="app-muted">Cần luyện phát âm · Kèm CN, 09:00</p>
+                  </div>
+                  <span class="app-badge is-success">Tiến bộ tốt</span>
+                </li>
+              </ul>
+            </section>
+          </div>
+
+          <section id="cham-bai" class="app-card">
+            <form data-grade-form="Listening practice test 4">
+              <div class="app-card-header">
+                <div>
+                  <h2 class="app-card-title">
+                    <i data-lucide="pen-line" aria-hidden="true"></i>Chấm bài
+                  </h2>
+                  <p class="app-card-subtitle">
+                    Listening practice test 4 · Lớp IELTS-2610 · Thang 10
+                  </p>
+                </div>
+                <button type="submit" class="app-btn app-btn-sm">
+                  <i data-lucide="save" aria-hidden="true"></i>Lưu điểm
+                </button>
+              </div>
+              <div class="app-table-wrap">
+                <table class="app-table">
+                  <thead>
+                    <tr>
+                      <th>Học viên</th>
+                      <th>Nộp lúc</th>
+                      <th>Điểm bài</th>
+                      <th>Điểm tổng kết</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold">Nguyễn Văn Học</td>
+                      <td>06/10 20:11</td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.25"
+                          class="app-input app-input-sm"
+                          aria-label="Điểm bài Nguyễn Văn Học"
+                        />
+                      </td>
+                      <td>
+                        <span class="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value="8.2"
+                            class="app-input app-input-sm"
+                            disabled
+                            aria-label="Điểm tổng kết Nguyễn Văn Học (chỉ xem)"
+                          />
+                          <i
+                            data-lucide="lock"
+                            class="size-4 app-muted"
+                            aria-hidden="true"
+                          ></i>
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold">Phan Quốc Huy</td>
+                      <td>06/10 22:47</td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.25"
+                          class="app-input app-input-sm"
+                          aria-label="Điểm bài Phan Quốc Huy"
+                        />
+                      </td>
+                      <td>
+                        <span class="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value="6.4"
+                            class="app-input app-input-sm"
+                            disabled
+                            aria-label="Điểm tổng kết Phan Quốc Huy (chỉ xem)"
+                          />
+                          <i
+                            data-lucide="lock"
+                            class="size-4 app-muted"
+                            aria-hidden="true"
+                          ></i>
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold">Võ Thành Đạt</td>
+                      <td>07/10 07:30</td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.25"
+                          value="7"
+                          class="app-input app-input-sm"
+                          aria-label="Điểm bài Võ Thành Đạt"
+                        />
+                      </td>
+                      <td>
+                        <span class="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value="7.7"
+                            class="app-input app-input-sm"
+                            disabled
+                            aria-label="Điểm tổng kết Võ Thành Đạt (chỉ xem)"
+                          />
+                          <i
+                            data-lucide="lock"
+                            class="size-4 app-muted"
+                            aria-hidden="true"
+                          ></i>
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="app-status" role="status" aria-live="polite" hidden></p>
+            </form>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
