@@ -171,7 +171,15 @@ const authMockPlugin = () => ({
 
 
 export default defineConfig({
-  plugins: [authMockPlugin()],
+  plugins: process.env.VITE_AUTH_MOCK === "true" ? [authMockPlugin()] : [],
+  server: {
+    proxy: {
+      "/api": {
+        target: process.env.BACKEND_URL || "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
+  },
   css: {
     modules: {
       generateScopedName: (localName, filename) => {
