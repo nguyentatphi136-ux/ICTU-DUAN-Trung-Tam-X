@@ -10,6 +10,14 @@ function createUser(id, email, name, role, password) {
   };
 }
 
+function updatePassword(id, password) {
+  const user = users.find((candidate) => candidate.id === id);
+  if (!user) return null;
+
+  user.passwordHash = scryptSync(password, `idttx-44:${id}`, 64);
+  return user;
+}
+
 // Demo users are loaded from environment variables so credentials are not
 // stored in source code. Replace this in-memory list with the real user store.
 const users = [
@@ -36,4 +44,4 @@ const users = [
   ),
 ];
 
-module.exports = { users };
+module.exports = { updatePassword, users };

@@ -29,6 +29,10 @@ npm start
 
 Phản hồi thành công gồm `user.id`, `user.email`, `user.name`, `user.role` và `token`. Sai email hoặc mật khẩu luôn trả cùng thông báo `Email hoặc mật khẩu không chính xác`.
 
+## Đổi mật khẩu
+
+`POST /auth/change-password` (cũng có alias `POST /api/auth/change-password`) yêu cầu JWT trong header `Authorization: Bearer <token>` và nhận `newPassword`. Mật khẩu phải có ít nhất 8 ký tự, gồm chữ cái ASCII và chữ số. Nếu không hợp lệ, API trả HTTP `400`, mã `INVALID_NEW_PASSWORD` cùng thông báo cụ thể và không cập nhật hash.
+
 Tài khoản demo mặc định:
 
 | Vai trò | Email | Mật khẩu |
