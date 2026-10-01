@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_users_email` (`email`),
     INDEX `idx_users_phone` (`phone`),
+    INDEX `idx_users_fullname` (`full_name`),
     INDEX `idx_users_status` (`status`)
 ) ENGINE=InnoDB COMMENT='Bảng thông tin tài khoản người dùng';
 

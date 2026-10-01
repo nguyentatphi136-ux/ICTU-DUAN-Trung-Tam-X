@@ -1,7 +1,7 @@
-package vn.edu.ictu.ems.controller;
+package com.ems.controller;
 
-import vn.edu.ictu.ems.model.Grade;
-import vn.edu.ictu.ems.model.User;
+import com.ems.model.Grade;
+import com.ems.model.User;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -15,6 +15,7 @@ import java.util.List;
 
 @WebServlet(name = "GradeServlet", urlPatterns = {"/grade/list", "/grade/edit", "/grade/update"})
 public class GradeServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
 
     private static final List<Grade> gradeList = new ArrayList<>();
 

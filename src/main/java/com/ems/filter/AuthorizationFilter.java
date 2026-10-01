@@ -1,8 +1,8 @@
-package vn.edu.ictu.ems.filter;
+package com.ems.filter;
 
-import vn.edu.ictu.ems.constant.PermissionConstant;
-import vn.edu.ictu.ems.constant.RoleConstant;
-import vn.edu.ictu.ems.model.User;
+import com.ems.constant.PermissionConstant;
+import com.ems.constant.RoleConstant;
+import com.ems.model.User;
 
 import javax.servlet.*;
 import javax.servlet.annotation.WebFilter;
@@ -14,12 +14,11 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Tác vụ Jira: IDTTX-81 [BE] Xây dựng middleware kiểm tra quyền ở tầng server, mặc định từ chối
+ * Tác vụ Jira: IDTTX-81 (S1-05) - Xây dựng middleware kiểm tra quyền ở tầng server, mặc định từ chối
  * Áp dụng mô hình Java Servlet / JSP Filter
  * Đảm bảo: Giảng viên không sửa được học phí, Kế toán không sửa được điểm
- * Người thực hiện: Nguyễn Minh Ngọc (MN)
  */
-@WebFilter(filterName = "AuthorizationFilter", urlPatterns = {"/*"})
+@WebFilter(filterName = "AuthorizationFilter", urlPatterns = {"/grade/*", "/tuition/*", "/user/*"})
 public class AuthorizationFilter implements Filter {
 
     // Danh sách các đường dẫn công khai (không cần kiểm tra quyền)
@@ -37,7 +36,6 @@ public class AuthorizationFilter implements Filter {
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
-        // Khởi tạo filter
     }
 
     @Override
@@ -77,11 +75,16 @@ public class AuthorizationFilter implements Filter {
         }
 
         List<String> roles = currentUser.getRoles();
+        if (roles == null || roles.isEmpty()) {
+            if (currentUser.getPrimaryRole() != null) {
+                roles = Arrays.asList(currentUser.getPrimaryRole());
+            }
+        }
 
         // 3. KIỂM QUYỀN ĐIỂM SỐ (Grades)
         // Đặc tả: Giảng viên sửa được điểm, Kế toán TUYỆT ĐỐI KHÔNG sửa được điểm
         if (uri.startsWith("/grade/edit") || uri.startsWith("/grade/update") || uri.startsWith("/grade/delete")) {
-            boolean isAccountantOnly = roles.contains(RoleConstant.ACCOUNTANT) &&
+            boolean isAccountantOnly = roles != null && roles.contains(RoleConstant.ACCOUNTANT) &&
                     !roles.contains(RoleConstant.ADMIN) &&
                     !roles.contains(RoleConstant.INSTRUCTOR) &&
                     !roles.contains(RoleConstant.TRAINING_MANAGER);
@@ -100,10 +103,19 @@ public class AuthorizationFilter implements Filter {
             return;
         }
 
+        if (uri.startsWith("/grade/list") || uri.startsWith("/grade/view")) {
+            if (!PermissionConstant.hasPermission(roles, PermissionConstant.GRADE_VIEW)) {
+                denyAccess(req, res, "Bạn không có quyền xem thông tin điểm số.");
+                return;
+            }
+            filterChain.doFilter(servletRequest, servletResponse);
+            return;
+        }
+
         // 4. KIỂM QUYỀN HỌC PHÍ (Tuition)
         // Đặc tả: Kế toán sửa được học phí, Giảng viên TUYỆT ĐỐI KHÔNG sửa được học phí
-        if (uri.startsWith("/tuition/edit") || uri.startsWith("/tuition/update") || uri.startsWith("/tuition/collect")) {
-            boolean isInstructorOnly = (roles.contains(RoleConstant.INSTRUCTOR) || roles.contains(RoleConstant.TEACHING_ASSISTANT)) &&
+        if (uri.startsWith("/tuition/edit") || uri.startsWith("/tuition/update") || uri.startsWith("/tuition/delete")) {
+            boolean isInstructorOnly = roles != null && roles.contains(RoleConstant.INSTRUCTOR) &&
                     !roles.contains(RoleConstant.ADMIN) &&
                     !roles.contains(RoleConstant.ACCOUNTANT);
 
@@ -121,56 +133,31 @@ public class AuthorizationFilter implements Filter {
             return;
         }
 
-        // 5. KIỂM QUYỀN QUẢN TRỊ ADMIN (/admin/*)
-        if (uri.startsWith("/admin")) {
-            if (!roles.contains(RoleConstant.ADMIN)) {
-                denyAccess(req, res, "Chức năng này chỉ dành riêng cho Quản trị hệ thống (System Admin).");
-                return;
-            }
-            filterChain.doFilter(servletRequest, servletResponse);
-            return;
-        }
-
-        // 6. CÁC TRANG TRA CỨU ĐIỂM SỐ & HỌC PHÍ THÔNG THƯỜNG
-        if (uri.startsWith("/grade/view") || uri.startsWith("/grade/list")) {
-            if (!PermissionConstant.hasPermission(roles, PermissionConstant.GRADE_VIEW)) {
-                denyAccess(req, res, "Bạn không có quyền xem bảng điểm.");
-                return;
-            }
-            filterChain.doFilter(servletRequest, servletResponse);
-            return;
-        }
-
-        if (uri.startsWith("/tuition/view") || uri.startsWith("/tuition/list")) {
+        if (uri.startsWith("/tuition/list") || uri.startsWith("/tuition/view")) {
             if (!PermissionConstant.hasPermission(roles, PermissionConstant.TUITION_VIEW)) {
-                denyAccess(req, res, "Bạn không có quyền tra cứu thông tin học phí.");
+                denyAccess(req, res, "Bạn không có quyền xem thông tin học phí.");
                 return;
             }
             filterChain.doFilter(servletRequest, servletResponse);
             return;
         }
 
-        // 7. NGUYÊN TẮC MẶC ĐỊNH TỪ CHỐI (DEFAULT-DENY)
-        // Bất kỳ đường dẫn bảo vệ nào (/secure/* hoặc không thuộc danh mục cho phép) đều mặc định bị từ chối
-        if (uri.startsWith("/secure/")) {
-            denyAccess(req, res, "Truy cập bị từ chối: Chức năng được bảo vệ và mặc định từ chối ở tầng máy chủ.");
+        // 5. NGUYÊN TẮC MẶC ĐỊNH TỪ CHỐI (DEFAULT-DENY)
+        if (!PermissionConstant.hasPermission(roles, PermissionConstant.PUBLIC_VIEW)) {
+            denyAccess(req, res, "Bạn không có quyền truy cập chức năng này.");
             return;
         }
 
-        // Cho phép các trang JSP thông thường trong phiên đăng nhập
         filterChain.doFilter(servletRequest, servletResponse);
     }
 
-    private void denyAccess(HttpServletRequest req, HttpServletResponse res, String vietnameseMessage)
-            throws ServletException, IOException {
-        res.setStatus(HttpServletResponse.SC_FORBIDDEN);
-        req.setAttribute("errorCode", "403");
-        req.setAttribute("errorMessage", vietnameseMessage);
+    private void denyAccess(HttpServletRequest req, HttpServletResponse res, String message) throws ServletException, IOException {
+        res.setStatus(HttpServletResponse.SC_FORBIDDEN); // HTTP 403 Forbidden
+        req.setAttribute("forbiddenMessage", message);
         req.getRequestDispatcher("/WEB-INF/views/common/403.jsp").forward(req, res);
     }
 
     @Override
     public void destroy() {
-        // Dọn dẹp tài nguyên
     }
 }
