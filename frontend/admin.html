@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#015aa0" />
+    <title>Quản trị hệ thống | EduManager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body class="app-body antialiased" data-role="admin">
+    <div class="app-shell">
+      <aside id="app-sidebar" class="app-sidebar"></aside>
+      <div class="app-backdrop" aria-hidden="true"></div>
+
+      <div class="app-main">
+        <header class="app-topbar">
+          <div class="flex items-center gap-3">
+            <button
+              id="sidebar-toggle"
+              type="button"
+              class="app-icon-btn app-sidebar-toggle"
+              aria-label="Mở menu"
+            >
+              <i data-lucide="menu" aria-hidden="true"></i>
+            </button>
+            <div>
+              <p class="app-eyebrow">Quản trị hệ thống · Admin</p>
+              <h1 class="app-page-title">
+                Xin chào, <span data-user="fullName"></span>
+              </h1>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="app-muted hidden sm:inline" data-today></span>
+            <button
+              id="theme-toggle"
+              type="button"
+              aria-label="Chuyển giao diện tối"
+              title="Chuyển giao diện tối"
+              class="app-icon-btn"
+            >
+              <i data-lucide="moon" class="size-[18px]" aria-hidden="true"></i>
+            </button>
+          </div>
+        </header>
+
+        <main class="app-content page-enter">
+          <section id="tong-quan" class="app-stats" aria-label="Tổng quan">
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="users" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Tài khoản</p>
+                <p class="app-stat-value">7</p>
+              </div>
+            </div>
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="key-round" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Vai trò</p>
+                <p class="app-stat-value">8</p>
+              </div>
+            </div>
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="server" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Trạng thái hệ thống</p>
+                <p class="app-stat-value">Ổn định</p>
+              </div>
+            </div>
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="database-backup" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Sao lưu gần nhất</p>
+                <p class="app-stat-value">02:00</p>
+              </div>
+            </div>
+          </section>
+
+          <section id="tai-khoan" class="app-card">
+            <div class="app-card-header">
+              <div>
+                <h2 class="app-card-title">
+                  <i data-lucide="user-cog" aria-hidden="true"></i>Quản lý tài
+                  khoản
+                </h2>
+                <p class="app-card-subtitle">
+                  Tài khoản bị khoá sẽ không đăng nhập được
+                </p>
+              </div>
+            </div>
+            <div class="app-table-wrap">
+              <table id="account-table" class="app-table">
+                <thead>
+                  <tr>
+                    <th>Họ tên</th>
+                    <th>Email</th>
+                    <th>Vai trò</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="vai-tro" class="app-card">
+            <div class="app-card-header">
+              <h2 class="app-card-title">
+                <i data-lucide="key-round" aria-hidden="true"></i>Vai trò &
+                quyền hạn
+              </h2>
+            </div>
+            <div class="app-table-wrap">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>Vai trò</th>
+                    <th>Đối tượng</th>
+                    <th>Quyền chính</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="font-bold">Khách truy cập<p class="app-muted">Guest</p></td>
+                    <td>Người quan tâm khoá học, chưa có tài khoản</td>
+                    <td>Để lại thông tin đăng ký tư vấn</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold">Học viên<p class="app-muted">Student</p></td>
+                    <td>Người đang theo học một lớp</td>
+                    <td>Xem lịch học, nhận bài tập, nộp bài, xem điểm và công nợ học phí của mình</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold">Giảng viên<p class="app-muted">Instructor</p></td>
+                    <td>Người đứng lớp, phụ trách chuyên môn</td>
+                    <td>Điểm danh, giao bài, chấm điểm, theo dõi tiến độ lớp mình dạy</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold">Trợ giảng<p class="app-muted">TA</p></td>
+                    <td>Hỗ trợ giảng viên, kèm học viên yếu</td>
+                    <td>Điểm danh và chấm bài trong phạm vi giảng viên uỷ quyền; không sửa được điểm tổng kết</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold">Quản lý đào tạo<p class="app-muted">Training Manager</p></td>
+                    <td>Chủ sở hữu vận hành đào tạo</td>
+                    <td>Mở lớp, xếp lịch, phân công giảng viên, duyệt bảo lưu, giám sát chất lượng toàn khoá</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold">Tư vấn tuyển sinh<p class="app-muted">Admissions</p></td>
+                    <td>Nhân sự bán hàng đầu phễu</td>
+                    <td>Quản lý lead, chăm sóc, chuyển đổi thành học viên nhập học</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold">Kế toán<p class="app-muted">Accountant</p></td>
+                    <td>Phụ trách thu học phí</td>
+                    <td>Ghi nhận thanh toán, theo dõi công nợ, xuất báo cáo doanh thu</td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold">Quản trị hệ thống<p class="app-muted">Admin</p></td>
+                    <td>Người vận hành ứng dụng</td>
+                    <td>Quản lý tài khoản, vai trò, danh mục dùng chung, xem nhật ký hệ thống</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="danh-muc" class="app-card">
+            <div class="app-card-header">
+              <h2 class="app-card-title">
+                <i data-lucide="folder-tree" aria-hidden="true"></i>Danh mục
+                dùng chung
+              </h2>
+            </div>
+            <div class="grid gap-6 md:grid-cols-2">
+              <div>
+                <h3 class="text-sm font-extrabold">Khoá học</h3>
+                <ul id="catalog-courses" class="mt-3 flex flex-wrap gap-2">
+                  <li class="app-badge">Tiếng Anh giao tiếp</li>
+                  <li class="app-badge">IELTS 6.5+</li>
+                  <li class="app-badge">Lập trình Web Front-end</li>
+                  <li class="app-badge">Phân tích dữ liệu</li>
+                </ul>
+                <form data-catalog-form="catalog-courses" class="mt-4 flex gap-2">
+                  <input class="app-input" placeholder="Tên khoá học mới" aria-label="Tên khoá học mới" />
+                  <button type="submit" class="app-btn">
+                    <i data-lucide="plus" aria-hidden="true"></i>Thêm
+                  </button>
+                </form>
+              </div>
+              <div>
+                <h3 class="text-sm font-extrabold">Phòng học</h3>
+                <ul id="catalog-rooms" class="mt-3 flex flex-wrap gap-2">
+                  <li class="app-badge">P.102</li>
+                  <li class="app-badge">P.204</li>
+                  <li class="app-badge">P.301</li>
+                  <li class="app-badge">Online (Zoom)</li>
+                </ul>
+                <form data-catalog-form="catalog-rooms" class="mt-4 flex gap-2">
+                  <input class="app-input" placeholder="Tên phòng mới" aria-label="Tên phòng mới" />
+                  <button type="submit" class="app-btn">
+                    <i data-lucide="plus" aria-hidden="true"></i>Thêm
+                  </button>
+                </form>
+              </div>
+            </div>
+          </section>
+
+          <section id="nhat-ky" class="app-card">
+            <div class="app-card-header">
+              <div>
+                <h2 class="app-card-title">
+                  <i data-lucide="scroll-text" aria-hidden="true"></i>Nhật ký
+                  hệ thống
+                </h2>
+                <p class="app-card-subtitle">
+                  Ghi lại thao tác ở mọi trang (50 hoạt động gần nhất)
+                </p>
+              </div>
+            </div>
+            <div class="app-table-wrap">
+              <table id="audit-table" class="app-table">
+                <thead>
+                  <tr>
+                    <th>Thời gian</th>
+                    <th>Người thực hiện</th>
+                    <th>Hành động</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
