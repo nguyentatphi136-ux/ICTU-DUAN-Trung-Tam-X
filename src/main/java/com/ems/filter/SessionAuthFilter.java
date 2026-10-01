@@ -1,11 +1,15 @@
 package com.ems.filter;
 
 import com.ems.config.SessionBlacklist;
+import com.ems.dao.PermissionDAO;
 import com.ems.model.User;
+import com.ems.security.ApiResponse;
+import com.ems.security.PermissionPolicy;
 import javax.servlet.*;
 import javax.servlet.annotation.WebFilter;
 import javax.servlet.http.*;
 import java.io.IOException;
+import java.sql.SQLException;
 
 /**
  * Mục 9 & 11: Filter kiểm soát bảo mật và phiên người dùng (SessionAuthFilter)
@@ -15,9 +19,12 @@ import java.io.IOException;
 public class SessionAuthFilter implements Filter {
 
     private static final int SESSION_TIMEOUT_SECONDS = 8 * 60 * 60; // 8 giờ
+    private final PermissionDAO permissionDAO = new PermissionDAO();
+    private ServletContext servletContext;
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
+        servletContext = filterConfig.getServletContext();
     }
 
     @Override
@@ -59,6 +66,31 @@ public class SessionAuthFilter implements Filter {
         // 5. Tự động gia hạn phiên khi còn hoạt động (IDTTX-36 - Sliding Window)
         session.setMaxInactiveInterval(SESSION_TIMEOUT_SECONDS);
 
+        if (path.startsWith("/api/")) {
+            String requiredPermission = PermissionPolicy.requiredPermission(req.getMethod(), path);
+            if (requiredPermission == null) {
+                ApiResponse.error(resp, HttpServletResponse.SC_FORBIDDEN, "AUTH_FORBIDDEN",
+                        "Chức năng này chưa được cấp quyền truy cập.", "Quay lại trang trước", "/index.html");
+                return;
+            }
+            if (!"@authenticated".equals(requiredPermission)) {
+                try {
+                    if (!permissionDAO.hasPermission(currentUser.getId(), requiredPermission)) {
+                        ApiResponse.error(resp, HttpServletResponse.SC_FORBIDDEN, "AUTH_FORBIDDEN",
+                                "Bạn không có quyền thực hiện chức năng này.", "Về trang làm việc", "/index.html");
+                        return;
+                    }
+                } catch (SQLException exception) {
+                    servletContext.log("Không thể xác minh quyền hiện tại.", exception);
+                    ApiResponse.error(resp, HttpServletResponse.SC_SERVICE_UNAVAILABLE,
+                            "SYSTEM_SERVICE_UNAVAILABLE", "Dịch vụ tạm thời không khả dụng. Vui lòng thử lại sau.",
+                            "Thử lại", "/index.html");
+                    return;
+                }
+            }
+            req.setAttribute("authenticatedUserId", currentUser.getId());
+        }
+
         // Cho phép đi tiếp vào trang nghiệp vụ
         chain.doFilter(request, response);
     }
@@ -72,6 +104,10 @@ public class SessionAuthFilter implements Filter {
                 || path.equals("/forgot-password.jsp") || path.equals("/reset-password.jsp")) {
             return true;
         }
+        if ("/api/auth/login".equals(path) || "/api/auth/forgot-password".equals(path)
+                || "/api/auth/reset-password".equals(path) || "/api/health".equals(path)) {
+            return true;
+        }
         // Tài nguyên tĩnh
         return path.startsWith("/assets/") || path.startsWith("/css/") || path.startsWith("/js/")
                 || path.endsWith(".css") || path.endsWith(".js") || path.endsWith(".png")
@@ -82,10 +118,11 @@ public class SessionAuthFilter implements Filter {
         String xRequestedWith = req.getHeader("X-Requested-With");
         String accept = req.getHeader("Accept");
 
-        if ("XMLHttpRequest".equalsIgnoreCase(xRequestedWith) || (accept != null && accept.contains("application/json"))) {
-            resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED); // HTTP 401 (IDTTX-54)
-            resp.setContentType("application/json;charset=UTF-8");
-            resp.getWriter().write(String.format("{\"status\": 401, \"error\": \"%s\", \"message\": \"Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.\"}", errorReason));
+        if (req.getRequestURI().contains("/api/") || "XMLHttpRequest".equalsIgnoreCase(xRequestedWith)
+            || (accept != null && accept.contains("application/json"))) {
+            String code = "session_revoked".equals(errorReason) ? "AUTH_SESSION_REVOKED" : "AUTH_UNAUTHORIZED";
+            ApiResponse.error(resp, HttpServletResponse.SC_UNAUTHORIZED, code,
+                "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", "Đăng nhập lại", "/login.html");
         } else {
             // Mục 10: Chuyển hướng sang trang login.jsp kèm query parameter để JSTL hiển thị thông báo
             resp.sendRedirect(req.getContextPath() + "/login.jsp?error=" + errorReason);
