@@ -12,18 +12,10 @@ import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.*;
 
+import vn.edu.ictu.ems.service.UserStore;
+
 @WebServlet(name = "LoginServlet", urlPatterns = {"/login", "/logout"})
 public class LoginServlet extends HttpServlet {
-
-    private static final Map<String, User> demoUsers = new HashMap<>();
-
-    static {
-        demoUsers.put("admin@example.com", new User(1, "admin@example.com", "Quản trị viên", "active", Collections.singletonList(RoleConstant.ADMIN)));
-        demoUsers.put("instructor@example.com", new User(2, "instructor@example.com", "Giảng viên Nguyễn Văn A", "active", Collections.singletonList(RoleConstant.INSTRUCTOR)));
-        demoUsers.put("student@example.com", new User(3, "student@example.com", "Học viên Trần Thị B", "active", Collections.singletonList(RoleConstant.STUDENT)));
-        demoUsers.put("accountant@example.com", new User(4, "accountant@example.com", "Kế toán Lê Thị C", "active", Collections.singletonList(RoleConstant.ACCOUNTANT)));
-        demoUsers.put("training@example.com", new User(5, "training@example.com", "Quản lý đào tạo Hoàng D", "active", Collections.singletonList(RoleConstant.TRAINING_MANAGER)));
-    }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -45,7 +37,7 @@ public class LoginServlet extends HttpServlet {
         String email = req.getParameter("email");
         String password = req.getParameter("password");
 
-        User user = demoUsers.get(email != null ? email.trim().toLowerCase() : "");
+        User user = UserStore.findByEmail(email);
         if (user != null && password != null && !password.isEmpty()) {
             HttpSession session = req.getSession(true);
             session.setAttribute("currentUser", user);
