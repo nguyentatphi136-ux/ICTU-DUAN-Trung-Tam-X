@@ -11,6 +11,19 @@
 }
 
 :root {
+  /*
+    Bảng màu chính của giao diện:
+    - --brand-panel-bg: nền khối trái / hero section
+    - --brand-panel-text: chữ chính trên khối trái
+    - --brand-panel-muted: chữ phụ / mô tả trên khối trái
+    - --brand-panel-accent: điểm nhấn phụ như dot và viền
+  */
+  --brand-panel-bg: #015aa0;
+  --brand-panel-text: #f6f7ff;
+  --brand-panel-muted: rgba(246, 247, 255, 0.65);
+  --brand-panel-accent: rgba(243, 196, 204, 0.8);
+  --brand-panel-border: rgba(255, 255, 255, 0.15);
+
   --primary-start: #5990c0;
   --primary-end: #102a6b;
   color-scheme: light;
@@ -22,6 +35,43 @@
 
 * {
   letter-spacing: 0;
+}
+
+.brand-panel {
+  background: var(--brand-panel-bg);
+  color: var(--brand-panel-text);
+}
+
+.brand-panel .brand-text,
+.brand-panel .text-white,
+.brand-panel .text-white\/65,
+.brand-panel .text-white\/75,
+.brand-panel .text-white\/40,
+.brand-panel .text-white\/55,
+.brand-panel .text-white\/85 {
+  color: var(--brand-panel-text) !important;
+}
+
+.brand-panel .brand-muted,
+.brand-panel p,
+.brand-panel footer,
+.brand-panel .text-white\/65,
+.brand-panel .text-white\/55,
+.brand-panel .text-white\/40,
+.brand-panel .text-white\/75 {
+  color: var(--brand-panel-muted) !important;
+}
+
+.brand-panel [class*="border-white/"] {
+  border-color: var(--brand-panel-border) !important;
+}
+
+.brand-panel .bg-blush,
+.brand-panel .shadow-\[0_0_18px_rgba\(243,
+196,
+204,
+0\.8\)\] {
+  background-color: var(--brand-panel-accent) !important;
 }
 
 body {
@@ -68,6 +118,91 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (max-width: 767px) {
+  body {
+    background: #015aa0 !important;
+  }
+
+  main {
+    display: block !important;
+  }
+
+  .login-section {
+    min-height: 100svh !important;
+    background: linear-gradient(180deg, #015aa0 0%, #0b256d 100%) !important;
+    padding: 18px 14px 22px !important;
+  }
+
+  .login-section > header {
+    margin-bottom: 8px !important;
+    gap: 8px !important;
+  }
+
+  .login-section > header > p {
+    display: none !important;
+  }
+
+  .login-section > header > div {
+    width: 100% !important;
+    justify-content: flex-end !important;
+  }
+
+  .login-section > header a {
+    display: none !important;
+  }
+
+  .login-section > .flex.items-center.justify-center {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+  }
+
+  .form-enter {
+    width: 100% !important;
+  }
+
+  .login-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 26px !important;
+    padding: 22px 18px 18px !important;
+    box-shadow: 0 18px 40px rgba(4, 16, 37, 0.22) !important;
+  }
+
+  .login-card > .mb-7 {
+    margin-bottom: 20px !important;
+  }
+
+  .login-card h2 {
+    font-size: 28px !important;
+  }
+
+  .login-card form {
+    gap: 14px !important;
+  }
+
+  .login-card input:not([type="checkbox"]) {
+    height: 48px !important;
+  }
+
+  .login-card button[type="submit"] {
+    height: 48px !important;
+  }
+
+  .login-card .google-login-button {
+    min-height: 48px !important;
+  }
+
+  .login-section footer {
+    margin-top: 18px !important;
+    justify-content: center !important;
+    color: rgba(246, 247, 255, 0.7) !important;
+  }
+
+  .login-section footer a {
+    color: rgba(246, 247, 255, 0.92) !important;
   }
 }
 
@@ -229,7 +364,8 @@ body {
   color: #ffb4a5;
 }
 
-#login-form button[type="submit"] {
+#login-form button[type="submit"],
+#forgot-password-form button[type="submit"] {
   background-image: linear-gradient(115deg, #5990c0 0%, #102a6b 100%);
   background-image: linear-gradient(
     115deg,
@@ -244,7 +380,8 @@ body {
     filter 220ms ease;
 }
 
-#login-form button[type="submit"]:hover {
+#login-form button[type="submit"]:hover,
+#forgot-password-form button[type="submit"]:hover {
   filter: brightness(0.9) !important;
 }
 
@@ -342,12 +479,14 @@ body {
     0 0 18px rgba(206, 162, 115, 0.24) !important;
 }
 
-:root:not(.dark-mode) #login-form button[type="submit"]:hover {
+:root:not(.dark-mode) #login-form button[type="submit"]:hover,
+:root:not(.dark-mode) #forgot-password-form button[type="submit"]:hover {
   --primary-start: #102a6b;
   --primary-end: #5990c0;
 }
 
-.dark-mode #login-form button[type="submit"]:hover {
+.dark-mode #login-form button[type="submit"]:hover,
+.dark-mode #forgot-password-form button[type="submit"]:hover {
   --primary-start: #cea273;
   --primary-end: #102a6b;
 }
