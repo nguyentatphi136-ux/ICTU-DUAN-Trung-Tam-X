@@ -1,47 +1,32 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const { findUserByEmail, findUserById, updateUser } = require('../data/users');
+const { ROLES, ROLE_LABELS, isValidRole } = require('../constants/roles');
+const {
+  assignRole,
+  findUserByEmail,
+  findUserById,
+  hasRole,
+  revokeRole,
+  toPublicUser,
+  updateUser,
+} = require('../data/users');
+const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
-const allowedRoles = new Set(['Admin', 'Teacher', 'Student']);
 const allowedStatuses = new Set(['active', 'inactive', 'locked']);
-const editableFields = new Set(['email', 'name', 'phone', 'role', 'status']);
+const editableFields = new Set(['email', 'name', 'phone', 'status']);
 
-function requireAdmin(req, res, next) {
-  const [scheme, token] = (req.get('authorization') || '').split(' ');
-  if (scheme !== 'Bearer' || !token) {
-    return res.status(401).json({ success: false, message: 'Vui lòng đăng nhập để tiếp tục' });
-  }
+router.use(authenticate, authorize(ROLES.ADMIN));
 
-  try {
-    const claims = jwt.verify(token, process.env.JWT_SECRET || 'development-only-change-this-secret', {
-      algorithms: ['HS256'],
-    });
-    if (claims.role !== 'Admin') {
-      return res.status(403).json({ success: false, message: 'Bạn không có quyền thực hiện thao tác này' });
-    }
-    return next();
-  } catch {
-    return res.status(401).json({ success: false, message: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn' });
-  }
-}
-
-function publicUser(user) {
-  return {
-    id: user.id,
-    email: user.email,
-    name: user.name,
-    phone: user.phone,
-    role: user.role,
-    status: user.status,
-  };
-}
-
-router.put('/users/:id', requireAdmin, (req, res) => {
-  const user = findUserById(req.params.id);
-  if (!user) {
+router.param('id', (req, res, next, id) => {
+  req.targetUser = findUserById(id);
+  if (!req.targetUser) {
     return res.status(404).json({ success: false, message: 'User not found' });
   }
+  return next();
+});
+
+router.put('/users/:id', (req, res) => {
+  const user = req.targetUser;
 
   const body = req.body;
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
@@ -51,6 +36,13 @@ router.put('/users/:id', requireAdmin, (req, res) => {
   const fields = Object.keys(body);
   if (fields.length === 0) {
     return res.status(400).json({ success: false, message: 'Vui lòng cung cấp thông tin cần cập nhật' });
+  }
+
+  if (fields.includes('role') || fields.includes('roles')) {
+    return res.status(400).json({
+      success: false,
+      message: 'Vai trò được phân bổ và thu hồi qua /admin/users/:id/roles',
+    });
   }
 
   const unknownField = fields.find((field) => !editableFields.has(field));
@@ -87,16 +79,16 @@ router.put('/users/:id', requireAdmin, (req, res) => {
     changes.phone = body.phone;
   }
 
-  if (Object.hasOwn(body, 'role')) {
-    if (!allowedRoles.has(body.role)) {
-      return res.status(400).json({ success: false, message: 'Vai trò không hợp lệ' });
-    }
-    changes.role = body.role;
-  }
-
   if (Object.hasOwn(body, 'status')) {
     if (!allowedStatuses.has(body.status)) {
       return res.status(400).json({ success: false, message: 'Trạng thái không hợp lệ' });
+    }
+    if (user.id === req.user.id && body.status !== 'active') {
+      return res.status(409).json({
+        success: false,
+        code: 'CANNOT_DEACTIVATE_SELF',
+        message: 'Không thể tự khoá hoặc ngừng hoạt động tài khoản của chính mình',
+      });
     }
     changes.status = body.status;
   }
@@ -105,7 +97,81 @@ router.put('/users/:id', requireAdmin, (req, res) => {
   return res.status(200).json({
     success: true,
     message: 'User updated successfully',
-    user: publicUser(updatedUser),
+    user: toPublicUser(updatedUser),
+  });
+});
+
+router.get('/roles', (req, res) => {
+  return res.status(200).json({
+    success: true,
+    roles: Object.values(ROLES).map((role) => ({ role, label: ROLE_LABELS[role] })),
+  });
+});
+
+router.get('/users/:id/roles', (req, res) => {
+  return res.status(200).json({
+    success: true,
+    userId: req.targetUser.id,
+    roles: [...req.targetUser.roles],
+  });
+});
+
+router.post('/users/:id/roles', (req, res) => {
+  const user = req.targetUser;
+  const role = req.body?.role;
+
+  if (!isValidRole(role)) {
+    return res.status(400).json({ success: false, message: 'Vai trò không hợp lệ' });
+  }
+
+  if (hasRole(user, role)) {
+    return res.status(409).json({
+      success: false,
+      code: 'ROLE_ALREADY_ASSIGNED',
+      message: `Người dùng đã có vai trò ${ROLE_LABELS[role]}`,
+    });
+  }
+
+  assignRole(user, role);
+  return res.status(201).json({
+    success: true,
+    message: `Đã phân bổ vai trò ${ROLE_LABELS[role]}`,
+    user: toPublicUser(user),
+  });
+});
+
+// roleId là mã vai trò trong danh mục ROLES, ví dụ /admin/users/3/roles/Accountant.
+router.delete('/users/:id/roles/:roleId', (req, res) => {
+  const user = req.targetUser;
+  const role = req.params.roleId;
+
+  if (!isValidRole(role)) {
+    return res.status(400).json({ success: false, message: 'Vai trò không hợp lệ' });
+  }
+
+  if (!hasRole(user, role)) {
+    return res.status(404).json({
+      success: false,
+      code: 'ROLE_NOT_ASSIGNED',
+      message: `Người dùng không có vai trò ${ROLE_LABELS[role]}`,
+    });
+  }
+
+  // Người thao tác luôn là một Admin còn hoạt động; chặn tự thu hồi (cùng với
+  // chặn tự khoá ở PUT) đảm bảo hệ thống không bao giờ mất Admin cuối cùng.
+  if (role === ROLES.ADMIN && user.id === req.user.id) {
+    return res.status(409).json({
+      success: false,
+      code: 'CANNOT_REVOKE_OWN_ADMIN',
+      message: 'Không thể tự thu hồi vai trò quản trị của chính mình',
+    });
+  }
+
+  revokeRole(user, role);
+  return res.status(200).json({
+    success: true,
+    message: `Đã thu hồi vai trò ${ROLE_LABELS[role]}`,
+    user: toPublicUser(user),
   });
 });
 
