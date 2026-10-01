@@ -37,6 +37,56 @@ const users = [
     [ROLES.STUDENT],
     process.env.DEMO_STUDENT_PASSWORD || 'student123',
   ),
+  createUser(
+    '4',
+    process.env.DEMO_ACCOUNTANT_EMAIL || 'accountant@example.com',
+    'Accountant',
+    [ROLES.ACCOUNTANT],
+    process.env.DEMO_ACCOUNTANT_PASSWORD || 'accountant123',
+  ),
+  createUser(
+    '5',
+    process.env.DEMO_TRAINING_MANAGER_EMAIL || 'training@example.com',
+    'Training Manager',
+    [ROLES.TRAINING_MANAGER],
+    process.env.DEMO_TRAINING_MANAGER_PASSWORD || 'training123',
+  ),
+];
+
+// Mock data điểm số (Grades)
+const grades = [
+  {
+    id: '1',
+    studentId: '3',
+    classId: '101',
+    componentName: 'Chuyên cần',
+    score: 9.0,
+    notes: 'Đi học đầy đủ',
+    updatedBy: '2',
+  },
+  {
+    id: '2',
+    studentId: '3',
+    classId: '101',
+    componentName: 'Giữa kỳ',
+    score: 8.5,
+    notes: 'Làm bài tốt',
+    updatedBy: '2',
+  },
+];
+
+// Mock data học phí (Tuition Fees)
+const tuitionFees = [
+  {
+    id: '1',
+    studentId: '3',
+    courseName: 'Khóa học Fullstack Web Developer',
+    totalAmount: 15000000,
+    paidAmount: 10000000,
+    status: 'partially_paid',
+    receiptNo: 'REC-2026-001',
+    updatedBy: '4',
+  },
 ];
 
 function findUserById(id) {
@@ -81,13 +131,67 @@ function toPublicUser(user) {
   };
 }
 
+function getGradesByStudentId(studentId) {
+  return grades.filter((g) => g.studentId === String(studentId));
+}
+
+function updateGrade(studentId, componentName, score, updatedBy) {
+  let grade = grades.find((g) => g.studentId === String(studentId) && g.componentName === componentName);
+  if (grade) {
+    grade.score = Number(score);
+    grade.updatedBy = String(updatedBy);
+  } else {
+    grade = {
+      id: String(grades.length + 1),
+      studentId: String(studentId),
+      classId: '101',
+      componentName,
+      score: Number(score),
+      notes: '',
+      updatedBy: String(updatedBy),
+    };
+    grades.push(grade);
+  }
+  return grade;
+}
+
+function getTuitionByStudentId(studentId) {
+  return tuitionFees.find((t) => t.studentId === String(studentId));
+}
+
+function updateTuition(studentId, paidAmount, status, updatedBy) {
+  let tuition = tuitionFees.find((t) => t.studentId === String(studentId));
+  if (!tuition) {
+    tuition = {
+      id: String(tuitionFees.length + 1),
+      studentId: String(studentId),
+      courseName: 'Khóa học tiêu chuẩn',
+      totalAmount: 15000000,
+      paidAmount: Number(paidAmount),
+      status: status || 'partially_paid',
+      receiptNo: `REC-${Date.now()}`,
+      updatedBy: String(updatedBy),
+    };
+    tuitionFees.push(tuition);
+  } else {
+    if (paidAmount !== undefined) tuition.paidAmount = Number(paidAmount);
+    if (status !== undefined) tuition.status = status;
+    tuition.updatedBy = String(updatedBy);
+  }
+  return tuition;
+}
+
 module.exports = {
   assignRole,
   findUserByEmail,
   findUserById,
+  getGradesByStudentId,
+  getTuitionByStudentId,
   hasRole,
   revokeRole,
   toPublicUser,
+  updateGrade,
+  updateTuition,
   updateUser,
   users,
 };
