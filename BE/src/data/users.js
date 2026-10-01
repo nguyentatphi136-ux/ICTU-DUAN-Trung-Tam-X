@@ -1,13 +1,32 @@
-const { scryptSync } = require('node:crypto');
+const { randomBytes, scryptSync } = require('node:crypto');
+
+const passwordKeyLength = 64;
+
+function hashPassword(password) {
+  const salt = randomBytes(16);
+  return {
+    passwordSalt: salt.toString('hex'),
+    passwordHash: scryptSync(password, salt, passwordKeyLength),
+  };
+}
 
 function createUser(id, email, name, role, password) {
+  const passwordFields = hashPassword(password);
   return {
     id,
     email: email.trim().toLowerCase(),
     name,
     role,
-    passwordHash: scryptSync(password, `idttx-44:${id}`, 64),
+    ...passwordFields,
   };
+}
+
+function updatePassword(id, password) {
+  const user = users.find((candidate) => candidate.id === id);
+  if (!user) return null;
+
+  Object.assign(user, hashPassword(password));
+  return user;
 }
 
 // Demo users are loaded from environment variables so credentials are not
@@ -36,4 +55,4 @@ const users = [
   ),
 ];
 
-module.exports = { users };
+module.exports = { updatePassword, users };

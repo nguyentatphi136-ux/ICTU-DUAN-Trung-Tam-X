@@ -2,7 +2,7 @@ const { randomBytes, scrypt, timingSafeEqual } = require('node:crypto');
 const { promisify } = require('node:util');
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const { users } = require('../data/users');
+const { updatePassword, users } = require('../data/users');
 
 const router = express.Router();
 const scryptAsync = promisify(scrypt);
@@ -11,11 +11,46 @@ const dummySalt = randomBytes(16);
 const dummyHash = randomBytes(64);
 
 async function verifyPassword(password, user) {
-  const salt = user ? Buffer.from(`idttx-44:${user.id}`) : dummySalt;
+  const salt = user ? Buffer.from(user.passwordSalt, 'hex') : dummySalt;
   const expectedHash = user ? user.passwordHash : dummyHash;
   const actualHash = await scryptAsync(password, salt, expectedHash.length);
   return timingSafeEqual(actualHash, expectedHash);
 }
+
+function requireAuthentication(req, res, next) {
+  const [scheme, token] = (req.get('authorization') || '').split(' ');
+  if (scheme !== 'Bearer' || !token) {
+    return res.status(401).json({ success: false, message: 'Vui lòng đăng nhập để tiếp tục' });
+  }
+
+  try {
+    const claims = jwt.verify(token, process.env.JWT_SECRET || 'development-only-change-this-secret', {
+      algorithms: ['HS256'],
+    });
+    const user = users.find((candidate) => candidate.id === claims.sub);
+    if (!user) {
+      return res.status(401).json({ success: false, message: 'Tài khoản trong phiên đăng nhập không tồn tại' });
+    }
+    req.authenticatedUser = user;
+    return next();
+  } catch {
+    return res.status(401).json({ success: false, message: 'Phiên đăng nhập không hợp lệ hoặc đã hết hạn' });
+  }
+}
+
+router.post('/change-password', requireAuthentication, (req, res) => {
+  const { newPassword } = req.body || {};
+  if (typeof newPassword !== 'string' || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Mật khẩu mới là bắt buộc' });
+  }
+
+  const user = updatePassword(req.authenticatedUser.id, newPassword);
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'Không tìm thấy tài khoản' });
+  }
+
+  return res.status(200).json({ success: true, message: 'Đổi mật khẩu thành công' });
+});
 
 router.post('/login', async (req, res, next) => {
   try {

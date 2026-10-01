@@ -29,6 +29,10 @@ npm start
 
 Phản hồi thành công gồm `user.id`, `user.email`, `user.name`, `user.role` và `token`. Sai email hoặc mật khẩu luôn trả cùng thông báo `Email hoặc mật khẩu không chính xác`.
 
+## Đổi mật khẩu
+
+`POST /auth/change-password` (cũng có alias `POST /api/auth/change-password`) yêu cầu JWT trong header `Authorization: Bearer <token>` và nhận `newPassword`. Mật khẩu mới được băm bằng `scrypt` với salt ngẫu nhiên riêng; chỉ salt và hash được giữ trong user store, mật khẩu gốc không được lưu hay trả về.
+
 Tài khoản demo mặc định:
 
 | Vai trò | Email | Mật khẩu |
@@ -37,4 +41,4 @@ Tài khoản demo mặc định:
 | Teacher | `teacher@example.com` | `teacher123` |
 | Student | `student@example.com` | `student123` |
 
-Danh sách người dùng hiện được lưu trong bộ nhớ và dùng để demo. Trước khi triển khai thực tế, cần thay bằng kho người dùng thật và đặt `JWT_SECRET` mạnh trong môi trường chạy.
+Danh sách người dùng hiện được lưu trong bộ nhớ và dùng để demo; dữ liệu mất khi tiến trình khởi động lại. Trước khi triển khai thực tế, cần thay bằng kho người dùng thật, lưu cả salt/hash của mật khẩu và đặt `JWT_SECRET` mạnh trong môi trường chạy.
