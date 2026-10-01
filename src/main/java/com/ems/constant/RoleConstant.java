@@ -1,12 +1,11 @@
-package vn.edu.ictu.ems.constant;
+package com.ems.constant;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Danh mục 8 vai trò nghiệp vụ của hệ thống Quản lý Đào tạo Trung tâm (EMS)
- * Đặc tả theo User Story IDTTX-20 & Tài liệu thiết kế dự án ICTU
- * Người thực hiện: Nguyễn Minh Ngọc (MN)
+ * Đặc tả theo User Story IDTTX-20 (S1-05) & Tài liệu thiết kế dự án
  */
 public class RoleConstant {
 

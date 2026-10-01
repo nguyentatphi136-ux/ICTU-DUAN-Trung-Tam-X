@@ -1,4 +1,4 @@
-package vn.edu.ictu.ems.model;
+package com.ems.model;
 
 import java.io.Serializable;
 
