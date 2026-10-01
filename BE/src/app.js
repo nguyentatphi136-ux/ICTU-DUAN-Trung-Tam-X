@@ -1,11 +1,13 @@
 const express = require('express');
 const authRoutes = require('./routes/auth.routes');
+const adminRoutes = require('./routes/admin.routes');
 
 const app = express();
 
 app.disable('x-powered-by');
 app.use(express.json({ limit: '10kb' }));
 app.use('/api/auth', authRoutes);
+app.use('/admin', adminRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
