@@ -41,8 +41,6 @@ CREATE TABLE IF NOT EXISTS `users` (
     `locked_reason` VARCHAR(255) NULL COMMENT 'Lý do khóa tài khoản',
     `failed_login_attempts` INT NOT NULL DEFAULT 0,
     `locked_until` DATETIME NULL,
-    `failed_login_attempts` INT NOT NULL DEFAULT 0,
-    `locked_until` DATETIME NULL,
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_users_email` (`email`),
