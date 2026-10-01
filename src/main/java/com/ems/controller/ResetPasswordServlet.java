@@ -2,12 +2,17 @@ package com.ems.controller;
 
 import com.ems.dao.PasswordResetTokenDAO;
 import com.ems.model.PasswordResetToken;
+import com.ems.security.ApiResponse;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import org.mindrot.jbcrypt.BCrypt;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
 import java.io.IOException;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 /**
  * Mục 11: Controller xử lý Đặt lại mật khẩu mới
@@ -16,6 +21,8 @@ import java.io.IOException;
 @WebServlet(urlPatterns = {"/reset-password", "/auth/reset-password", "/api/auth/reset-password"})
 public class ResetPasswordServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
+    private static final Gson GSON = new Gson();
+    private static final Pattern STRONG_PASSWORD = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*(?:\\d|[^A-Za-z0-9])).{8,}$");
     private final PasswordResetTokenDAO tokenDAO = new PasswordResetTokenDAO();
 
     @Override
@@ -47,9 +54,25 @@ public class ResetPasswordServlet extends HttpServlet {
         req.setCharacterEncoding("UTF-8");
         resp.setCharacterEncoding("UTF-8");
 
-        String token = req.getParameter("token");
-        String newPassword = req.getParameter("password");
-        String confirmPassword = req.getParameter("confirmPassword");
+        String token;
+        String newPassword;
+        String confirmPassword;
+        try {
+            if (isApiRequest(req) && req.getContentType() != null
+                    && req.getContentType().contains("application/json")) {
+                JsonObject body = GSON.fromJson(req.getReader(), JsonObject.class);
+                token = value(body, "token");
+                newPassword = value(body, "password");
+                confirmPassword = value(body, "confirmPassword");
+            } else {
+                token = req.getParameter("token");
+                newPassword = req.getParameter("password");
+                confirmPassword = req.getParameter("confirmPassword");
+            }
+        } catch (RuntimeException exception) {
+            sendResponse(req, resp, false, "Dữ liệu đặt lại mật khẩu không hợp lệ.");
+            return;
+        }
 
         // 1. Kiểm tra đầu vào
         if (token == null || token.trim().isEmpty()) {
@@ -57,12 +80,12 @@ public class ResetPasswordServlet extends HttpServlet {
             return;
         }
 
-        if (newPassword == null || newPassword.length() < 8 || !newPassword.matches(".*[A-Za-z].*") || !newPassword.matches(".*[0-9].*")) {
-            sendResponse(req, resp, false, "Mật khẩu mới phải có tối thiểu 8 ký tự, bao gồm cả chữ và số.");
+        if (newPassword == null || !STRONG_PASSWORD.matcher(newPassword).matches()) {
+            sendResponse(req, resp, false, "Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số hoặc ký tự đặc biệt.");
             return;
         }
 
-        if (confirmPassword != null && !newPassword.equals(confirmPassword)) {
+        if (confirmPassword == null || !newPassword.equals(confirmPassword)) {
             sendResponse(req, resp, false, "Mật khẩu xác nhận không khớp.");
             return;
         }
@@ -98,17 +121,17 @@ public class ResetPasswordServlet extends HttpServlet {
     }
 
     private void sendResponse(HttpServletRequest req, HttpServletResponse resp, boolean success, String message) throws IOException, ServletException {
-        String accept = req.getHeader("Accept");
-        String xRequestedWith = req.getHeader("X-Requested-With");
-
-        boolean isApi = "XMLHttpRequest".equalsIgnoreCase(xRequestedWith)
-                || (accept != null && accept.contains("application/json"))
-                || req.getRequestURI().contains("/api/");
-
-        if (isApi) {
-            resp.setStatus(success ? HttpServletResponse.SC_OK : HttpServletResponse.SC_BAD_REQUEST);
-            resp.setContentType("application/json;charset=UTF-8");
-            resp.getWriter().write(String.format("{\"status\": %d, \"message\": \"%s\", \"redirectUrl\": \"/login.jsp?message=password_reset_success\"}", success ? 200 : 400, message));
+        if (isApiRequest(req)) {
+            if (success) {
+            ApiResponse.success(resp, "AUTH_PASSWORD_RESET_SUCCESS", message,
+                Map.of("redirectUrl", "/login.html?message=password_reset_success"));
+            } else {
+            String code = message.startsWith("Mật khẩu") || message.startsWith("Dữ liệu")
+                ? "REQUEST_VALIDATION_ERROR"
+                : "AUTH_RESET_TOKEN_INVALID";
+            ApiResponse.error(resp, HttpServletResponse.SC_BAD_REQUEST, code, message,
+                "Gửi lại liên kết", "/ForgotPasswordForm.html");
+            }
         } else {
             if (success) {
                 resp.sendRedirect(req.getContextPath() + "/login.jsp?message=password_reset_success");
@@ -118,5 +141,16 @@ public class ResetPasswordServlet extends HttpServlet {
                 req.getRequestDispatcher("/reset-password.jsp").forward(req, resp);
             }
         }
+    }
+
+    private boolean isApiRequest(HttpServletRequest request) {
+        String accept = request.getHeader("Accept");
+        return request.getRequestURI().contains("/api/")
+                || "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"))
+                || accept != null && accept.contains("application/json");
+    }
+
+    private String value(JsonObject body, String key) {
+        return body == null || !body.has(key) ? null : body.get(key).getAsString();
     }
 }
