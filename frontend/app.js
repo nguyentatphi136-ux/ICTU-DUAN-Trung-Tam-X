@@ -190,23 +190,19 @@ const addAuditLog = (action, actor = getCurrentUser()?.email ?? "khách") => {
   writeStore(AUDIT_KEY, logs.slice(0, 50));
 };
 
-const login = (account) => {
-  const { password, ...user } = account;
+const login = (user, redirectUrl) => {
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
   addAuditLog("Đăng nhập", user.email);
-  goToRoleHome(user.role);
+  navigateTo(redirectUrl || ROLES[user.role]?.page || "login");
 };
 
 const logout = async () => {
   addAuditLog("Đăng xuất");
   try {
-    // Gọi API POST /auth/logout (IDTTX-34, IDTTX-35, IDTTX-55)
-    await fetch("/auth/logout", {
+    await fetch("/api/auth/logout", {
       method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
+      headers: { Accept: "application/json" },
+      credentials: "same-origin",
     });
   } catch (error) {
     console.warn("Lỗi gọi API logout:", error);
@@ -284,7 +280,7 @@ const getInitials = (name) =>
 if (pageRole) {
   if (!currentUser) {
     goToLogin();
-  } else if (currentUser.role !== pageRole) {
+  } else if (currentUser.role !== pageRole && !(currentUser.roles ?? []).includes(pageRole)) {
     goToRoleHome(currentUser.role);
   }
 }
@@ -474,7 +470,7 @@ if (passwordInput && passwordError) {
   });
 }
 
-loginForm?.addEventListener("submit", (event) => {
+loginForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   hideStatus();
 
@@ -486,18 +482,21 @@ loginForm?.addEventListener("submit", (event) => {
     return;
   }
 
-  const account = findAccount(emailInput.value, passwordInput.value);
-  if (!account) {
-    showStatus("Email hoặc mật khẩu không đúng.");
-    return;
+  try {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ email: emailInput.value.trim(), password: passwordInput.value }),
+    });
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error?.message ?? "Email hoặc mật khẩu không đúng.");
+    }
+    login(result.data.user, result.data.redirectUrl);
+  } catch (error) {
+    showStatus(error.message || "Không thể kết nối máy chủ. Vui lòng thử lại sau.");
   }
-
-  if (readStore("edumanager-locked-accounts").includes(account.email)) {
-    showStatus("Tài khoản đã bị khoá. Vui lòng liên hệ quản trị viên.");
-    return;
-  }
-
-  login(account);
 });
 
 // ---------------------------------------------------------------------
