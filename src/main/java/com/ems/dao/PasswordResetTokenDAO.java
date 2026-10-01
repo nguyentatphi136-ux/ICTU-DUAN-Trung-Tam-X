@@ -5,6 +5,9 @@ import com.ems.model.PasswordResetToken;
 import com.ems.model.User;
 
 import java.sql.*;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.Date;
 
 /**
@@ -49,7 +52,7 @@ public class PasswordResetTokenDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setLong(1, userId);
-            ps.setString(2, token);
+            ps.setString(2, hashToken(token));
             ps.setTimestamp(3, expiresAt);
             return ps.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -67,7 +70,7 @@ public class PasswordResetTokenDAO {
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setString(1, token);
+            ps.setString(1, hashToken(token));
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     PasswordResetToken t = new PasswordResetToken();
@@ -92,24 +95,50 @@ public class PasswordResetTokenDAO {
      */
     public boolean resetPasswordWithTransaction(Long userId, String token, String hashedPassword) {
         String updatePassSql = "UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?";
-        String markTokenSql = "UPDATE password_reset_tokens SET used_at = NOW() WHERE token_hash = ?";
+        String findTokenSql = "SELECT id, user_id FROM password_reset_tokens "
+            + "WHERE token_hash = ? AND expires_at > NOW() AND used_at IS NULL FOR UPDATE";
+        String markTokenSql = "UPDATE password_reset_tokens SET used_at = NOW() WHERE id = ? AND used_at IS NULL";
 
         Connection conn = null;
         try {
             conn = DBConnection.getConnection();
             conn.setAutoCommit(false); // Bắt đầu Transaction
 
+            long tokenId;
+            long tokenUserId;
+            try (PreparedStatement psToken = conn.prepareStatement(findTokenSql)) {
+                psToken.setString(1, hashToken(token));
+                try (ResultSet rs = psToken.executeQuery()) {
+                    if (!rs.next()) {
+                        conn.rollback();
+                        return false;
+                    }
+                    tokenId = rs.getLong("id");
+                    tokenUserId = rs.getLong("user_id");
+                }
+            }
+            if (tokenUserId != userId) {
+                conn.rollback();
+                return false;
+            }
+
             // 1. Cập nhật mật khẩu mới
             try (PreparedStatement psUser = conn.prepareStatement(updatePassSql)) {
                 psUser.setString(1, hashedPassword);
                 psUser.setLong(2, userId);
-                psUser.executeUpdate();
+                if (psUser.executeUpdate() != 1) {
+                    conn.rollback();
+                    return false;
+                }
             }
 
             // 2. Đánh dấu token đã sử dụng (AC: chỉ dùng được 1 lần)
             try (PreparedStatement psToken = conn.prepareStatement(markTokenSql)) {
-                psToken.setString(1, token);
-                psToken.executeUpdate();
+                psToken.setLong(1, tokenId);
+                if (psToken.executeUpdate() != 1) {
+                    conn.rollback();
+                    return false;
+                }
             }
 
             conn.commit(); // Commit Transaction thành công
@@ -133,6 +162,16 @@ public class PasswordResetTokenDAO {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    private String hashToken(String token) {
+        try {
+            byte[] hash = MessageDigest.getInstance("SHA-256")
+                    .digest(token.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (Exception exception) {
+            throw new IllegalStateException("Không thể bảo vệ token khôi phục mật khẩu.", exception);
         }
     }
 }
