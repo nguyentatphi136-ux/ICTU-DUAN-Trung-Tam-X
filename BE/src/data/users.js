@@ -5,7 +5,9 @@ function createUser(id, email, name, role, password) {
     id,
     email: email.trim().toLowerCase(),
     name,
+    phone: '',
     role,
+    status: 'active',
     passwordHash: scryptSync(password, `idttx-44:${id}`, 64),
   };
 }
@@ -36,4 +38,22 @@ const users = [
   ),
 ];
 
-module.exports = { users };
+function findUserById(id) {
+  return users.find((user) => user.id === id);
+}
+
+function findUserByEmail(email, excludeId) {
+  const normalizedEmail = email.trim().toLowerCase();
+  return users.find((user) => user.email === normalizedEmail && user.id !== excludeId);
+}
+
+function updateUser(user, changes) {
+  if (changes.email !== undefined) user.email = changes.email.trim().toLowerCase();
+  if (changes.name !== undefined) user.name = changes.name.trim();
+  if (changes.phone !== undefined) user.phone = changes.phone.trim();
+  if (changes.role !== undefined) user.role = changes.role;
+  if (changes.status !== undefined) user.status = changes.status;
+  return user;
+}
+
+module.exports = { findUserByEmail, findUserById, updateUser, users };

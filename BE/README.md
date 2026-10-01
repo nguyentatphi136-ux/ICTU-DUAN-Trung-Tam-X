@@ -1,6 +1,6 @@
-# IDTTX-44 Backend
+# Backend API
 
-API đăng nhập demo bằng Node.js và Express. API xác định vai trò `Admin`, `Teacher` hoặc `Student` rồi trả thông tin người dùng cùng JWT.
+API demo bằng Node.js và Express. API đăng nhập xác định vai trò `Admin`, `Teacher` hoặc `Student`; API quản trị cho phép sửa thông tin người dùng.
 
 ## Chạy ứng dụng
 
@@ -27,7 +27,22 @@ npm start
 }
 ```
 
-Phản hồi thành công gồm `user.id`, `user.email`, `user.name`, `user.role` và `token`. Sai email hoặc mật khẩu luôn trả cùng thông báo `Email hoặc mật khẩu không chính xác`.
+Phản hồi thành công gồm `user.id`, `user.email`, `user.name`, `user.role` và `token`.
+
+## Cập nhật tài khoản người dùng
+
+`PUT /admin/users/:id` yêu cầu JWT của tài khoản `Admin` trong header `Authorization: Bearer <token>`. Gửi một hoặc nhiều trường có thể chỉnh sửa; các trường không gửi sẽ được giữ nguyên:
+
+```json
+{
+  "name": "Nguyen Van An",
+  "phone": "0912345678",
+  "role": "Teacher",
+  "status": "active"
+}
+```
+
+Vai trò hợp lệ: `Admin`, `Teacher`, `Student`. Trạng thái hợp lệ: `active`, `inactive`, `locked`. Nếu ID không tồn tại, API trả HTTP `404` với `User not found`; thành công trả HTTP `200` cùng thông tin người dùng đã cập nhật.
 
 Tài khoản demo mặc định:
 
@@ -37,4 +52,4 @@ Tài khoản demo mặc định:
 | Teacher | `teacher@example.com` | `teacher123` |
 | Student | `student@example.com` | `student123` |
 
-Danh sách người dùng hiện được lưu trong bộ nhớ và dùng để demo. Trước khi triển khai thực tế, cần thay bằng kho người dùng thật và đặt `JWT_SECRET` mạnh trong môi trường chạy.
+Danh sách người dùng hiện được lưu trong bộ nhớ và dùng để demo; dữ liệu cập nhật sẽ mất khi tiến trình khởi động lại. Trước khi triển khai thực tế, cần thay bằng kho người dùng thật và đặt `JWT_SECRET` mạnh trong môi trường chạy.
