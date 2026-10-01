@@ -1,9 +1,13 @@
 const { scryptSync } = require('node:crypto');
 
+function normalizeEmail(email) {
+  return email.trim().toLowerCase();
+}
+
 function createUser(id, email, name, role, password) {
   return {
     id,
-    email: email.trim().toLowerCase(),
+    email: normalizeEmail(email),
     name,
     role,
     passwordHash: scryptSync(password, `idttx-44:${id}`, 64),
@@ -36,4 +40,33 @@ const users = [
   ),
 ];
 
-module.exports = { users };
+function findUserByEmail(email, excludeId) {
+  const normalizedEmail = normalizeEmail(email);
+  return users.find((user) => user.email === normalizedEmail && user.id !== excludeId);
+}
+
+function findUserById(id) {
+  return users.find((user) => user.id === id);
+}
+
+function nextUserId() {
+  return String(Math.max(0, ...users.map((user) => Number(user.id) || 0)) + 1);
+}
+
+function addUser({ email, name, role, password }) {
+  const user = createUser(nextUserId(), email, name, role, password);
+  users.push(user);
+  return user;
+}
+
+function updateUser(user, changes) {
+  if (changes.email !== undefined) user.email = normalizeEmail(changes.email);
+  if (changes.name !== undefined) user.name = changes.name.trim();
+  if (changes.role !== undefined) user.role = changes.role;
+  if (changes.password !== undefined) {
+    user.passwordHash = scryptSync(changes.password, `idttx-44:${user.id}`, 64);
+  }
+  return user;
+}
+
+module.exports = { addUser, findUserByEmail, findUserById, updateUser, users };
