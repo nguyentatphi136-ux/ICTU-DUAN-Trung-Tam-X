@@ -197,11 +197,25 @@ const login = (account) => {
   goToRoleHome(user.role);
 };
 
-const logout = () => {
+const logout = async () => {
   addAuditLog("Đăng xuất");
-  sessionStorage.removeItem(SESSION_KEY);
-  goToLogin();
+  try {
+    // Gọi API POST /auth/logout (IDTTX-34, IDTTX-35, IDTTX-55)
+    await fetch("/auth/logout", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+    });
+  } catch (error) {
+    console.warn("Lỗi gọi API logout:", error);
+  } finally {
+    sessionStorage.removeItem(SESSION_KEY);
+    goToLogin();
+  }
 };
+
 
 const goToRoleHome = (role) => {
   navigateTo(ROLES[role]?.page ?? "login");
@@ -1416,3 +1430,86 @@ function renderAuditLog() {
 }
 
 renderAuditLog();
+
+// ---------------------------------------------------------------------
+// Xử lý gửi Form Quên mật khẩu (IDTTX-41 - S1-03)
+// ---------------------------------------------------------------------
+const forgotForm = document.querySelector("#forgot-password-form");
+if (forgotForm) {
+  forgotForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const emailInput = forgotForm.querySelector("#email");
+    const statusMsg = forgotForm.querySelector("#form-status");
+    const email = emailInput ? emailInput.value.trim() : "";
+
+    if (!email) {
+      if (emailInput) emailInput.focus();
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+
+      if (statusMsg) {
+        statusMsg.classList.remove("hidden", "text-berry");
+        statusMsg.classList.add("text-emerald-600");
+        statusMsg.innerHTML = `<strong>Thành công:</strong> ${data.message} ${
+          data.devResetLink
+            ? `<br><a href="${data.devResetLink}" class="underline font-bold text-wine mt-2 block">👉 Bấm vào đây để mở trang Đặt lại mật khẩu (Demo Token)</a>`
+            : ""
+        }`;
+      }
+    } catch (err) {
+      if (statusMsg) {
+        statusMsg.classList.remove("hidden");
+        statusMsg.textContent = "Không thể gửi yêu cầu lúc này. Vui lòng thử lại sau.";
+      }
+    }
+  });
+}
+
+// ---------------------------------------------------------------------
+// Xử lý gửi Form Đặt lại mật khẩu mới (IDTTX-42 - S1-03)
+// ---------------------------------------------------------------------
+const resetForm = document.querySelector("#reset-password-form");
+if (resetForm) {
+  resetForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const newPassInput = resetForm.querySelector("#new-password");
+    const confirmPassInput = resetForm.querySelector("#confirm-password");
+    const newPass = newPassInput ? newPassInput.value : "";
+    const confirmPass = confirmPassInput ? confirmPassInput.value : "";
+
+    if (!newPass || newPass.length < 8) {
+      alert("Mật khẩu mới phải có tối thiểu 8 ký tự!");
+      return;
+    }
+    if (newPass !== confirmPass) {
+      alert("Mật khẩu xác nhận không khớp!");
+      return;
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get("token") || "DEMO_TOKEN";
+
+    try {
+      const response = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ token, password: newPass }),
+      });
+      const data = await response.json();
+      alert(data.message);
+      if (data.redirectUrl) {
+        window.location.assign(data.redirectUrl);
+      }
+    } catch (err) {
+      alert("Lỗi khi kết nối tới máy chủ.");
+    }
+  });
+}
