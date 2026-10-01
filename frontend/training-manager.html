@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#015aa0" />
+    <title>Quản lý đào tạo | EduManager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body class="app-body antialiased" data-role="training-manager">
+    <div class="app-shell">
+      <aside id="app-sidebar" class="app-sidebar"></aside>
+      <div class="app-backdrop" aria-hidden="true"></div>
+
+      <div class="app-main">
+        <header class="app-topbar">
+          <div class="flex items-center gap-3">
+            <button
+              id="sidebar-toggle"
+              type="button"
+              class="app-icon-btn app-sidebar-toggle"
+              aria-label="Mở menu"
+            >
+              <i data-lucide="menu" aria-hidden="true"></i>
+            </button>
+            <div>
+              <p class="app-eyebrow">Quản lý đào tạo · Training Manager</p>
+              <h1 class="app-page-title">
+                Xin chào, <span data-user="fullName"></span>
+              </h1>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="app-muted hidden sm:inline" data-today></span>
+            <button
+              id="theme-toggle"
+              type="button"
+              aria-label="Chuyển giao diện tối"
+              title="Chuyển giao diện tối"
+              class="app-icon-btn"
+            >
+              <i data-lucide="moon" class="size-[18px]" aria-hidden="true"></i>
+            </button>
+          </div>
+        </header>
+
+        <main class="app-content page-enter">
+          <section id="tong-quan" class="app-stats" aria-label="Tổng quan">
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="school" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Lớp đang vận hành</p>
+                <p class="app-stat-value">18</p>
+              </div>
+            </div>
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="users" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Học viên đang học</p>
+                <p class="app-stat-value">246</p>
+              </div>
+            </div>
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="circle-pause" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Yêu cầu bảo lưu chờ duyệt</p>
+                <p class="app-stat-value">3</p>
+              </div>
+            </div>
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="star" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Mức hài lòng trung bình</p>
+                <p class="app-stat-value">4.6/5</p>
+              </div>
+            </div>
+          </section>
+
+          <div class="grid gap-6 xl:grid-cols-[1fr_1.6fr]">
+            <section id="mo-lop" class="app-card">
+              <div class="app-card-header">
+                <h2 class="app-card-title">
+                  <i data-lucide="folder-plus" aria-hidden="true"></i>Mở lớp mới
+                </h2>
+              </div>
+              <form id="open-class-form" class="app-form" novalidate>
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label for="class-code" class="app-label">Mã lớp</label>
+                    <input
+                      id="class-code"
+                      class="app-input"
+                      placeholder="IELTS-2611"
+                    />
+                  </div>
+                  <div>
+                    <label for="class-start" class="app-label"
+                      >Ngày khai giảng</label
+                    >
+                    <input id="class-start" type="date" class="app-input" />
+                  </div>
+                </div>
+                <div>
+                  <label for="class-course" class="app-label">Khoá học</label>
+                  <select id="class-course" class="app-select">
+                    <option>IELTS 6.5+</option>
+                    <option>Tiếng Anh giao tiếp</option>
+                    <option>Lập trình Web Front-end</option>
+                    <option>Phân tích dữ liệu</option>
+                  </select>
+                </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label for="class-schedule" class="app-label"
+                      >Lịch học</label
+                    >
+                    <select id="class-schedule" class="app-select">
+                      <option>Tối 2-4-6</option>
+                      <option>Tối 3-5-7</option>
+                      <option>Sáng thứ 7, CN</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="class-instructor" class="app-label"
+                      >Giảng viên</label
+                    >
+                    <select id="class-instructor" class="app-select">
+                      <option>Trần Thị Giảng</option>
+                      <option>Nguyễn Hoàng Nam</option>
+                      <option>Lê Phương Thảo</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="submit" class="app-btn">
+                  <i data-lucide="plus" aria-hidden="true"></i>Mở lớp
+                </button>
+                <p
+                  class="app-status"
+                  role="status"
+                  aria-live="polite"
+                  hidden
+                ></p>
+              </form>
+            </section>
+
+            <section id="phan-cong" class="app-card">
+              <div class="app-card-header">
+                <div>
+                  <h2 class="app-card-title">
+                    <i data-lucide="calendar-range" aria-hidden="true"></i>Lịch
+                    học & phân công giảng viên
+                  </h2>
+                  <p class="app-card-subtitle">
+                    Đổi giảng viên trực tiếp trong bảng
+                  </p>
+                </div>
+              </div>
+              <div class="app-table-wrap">
+                <table id="class-table" class="app-table">
+                  <thead>
+                    <tr>
+                      <th>Mã lớp</th>
+                      <th>Khoá học</th>
+                      <th>Lịch</th>
+                      <th>Giảng viên</th>
+                      <th>Khai giảng</th>
+                      <th>Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold">IELTS-2610</td>
+                      <td>IELTS 6.5+</td>
+                      <td>Tối 3-5-7</td>
+                      <td>
+                        <select
+                          class="app-select app-input-sm"
+                          data-assign-instructor="IELTS-2610"
+                          aria-label="Giảng viên lớp IELTS-2610"
+                        >
+                          <option selected>Trần Thị Giảng</option>
+                          <option>Nguyễn Hoàng Nam</option>
+                          <option>Lê Phương Thảo</option>
+                        </select>
+                      </td>
+                      <td>01/09/2026</td>
+                      <td>
+                        <span class="app-badge is-success">Đang học</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold">GT-2609</td>
+                      <td>Tiếng Anh giao tiếp</td>
+                      <td>Tối 2-4-6</td>
+                      <td>
+                        <select
+                          class="app-select app-input-sm"
+                          data-assign-instructor="GT-2609"
+                          aria-label="Giảng viên lớp GT-2609"
+                        >
+                          <option>Trần Thị Giảng</option>
+                          <option selected>Nguyễn Hoàng Nam</option>
+                          <option>Lê Phương Thảo</option>
+                        </select>
+                      </td>
+                      <td>15/09/2026</td>
+                      <td>
+                        <span class="app-badge is-success">Đang học</span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold">WEB-2610</td>
+                      <td>Lập trình Web Front-end</td>
+                      <td>Tối 2-4-6</td>
+                      <td>
+                        <select
+                          class="app-select app-input-sm"
+                          data-assign-instructor="WEB-2610"
+                          aria-label="Giảng viên lớp WEB-2610"
+                        >
+                          <option value="">-- Chưa phân công --</option>
+                          <option>Trần Thị Giảng</option>
+                          <option>Nguyễn Hoàng Nam</option>
+                          <option>Lê Phương Thảo</option>
+                        </select>
+                      </td>
+                      <td>20/10/2026</td>
+                      <td>
+                        <span class="app-badge is-info">Sắp khai giảng</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p
+                id="assign-status"
+                class="app-status"
+                role="status"
+                aria-live="polite"
+                hidden
+              ></p>
+            </section>
+          </div>
+
+          <section id="bao-luu" class="app-card">
+            <div class="app-card-header">
+              <h2 class="app-card-title">
+                <i data-lucide="circle-pause" aria-hidden="true"></i>Duyệt yêu
+                cầu bảo lưu
+              </h2>
+            </div>
+            <div class="app-table-wrap">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>Học viên</th>
+                    <th>Lớp</th>
+                    <th>Thời gian bảo lưu</th>
+                    <th>Lý do</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr data-student="Phan Quốc Huy">
+                    <td class="font-bold">Phan Quốc Huy</td>
+                    <td>IELTS-2610</td>
+                    <td>3 tháng</td>
+                    <td>Đi công tác nước ngoài</td>
+                    <td data-reserve-status>
+                      <span class="app-badge is-warning">Chờ duyệt</span>
+                    </td>
+                    <td data-reserve-buttons>
+                      <div class="flex gap-2">
+                        <button
+                          type="button"
+                          class="app-btn app-btn-sm"
+                          data-reserve-action="approve"
+                        >
+                          Duyệt
+                        </button>
+                        <button
+                          type="button"
+                          class="app-btn app-btn-outline app-btn-sm"
+                          data-reserve-action="reject"
+                        >
+                          Từ chối
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-student="Hồ Minh Tuấn">
+                    <td class="font-bold">Hồ Minh Tuấn</td>
+                    <td>GT-2609</td>
+                    <td>1 tháng</td>
+                    <td>Lý do sức khoẻ</td>
+                    <td data-reserve-status>
+                      <span class="app-badge is-warning">Chờ duyệt</span>
+                    </td>
+                    <td data-reserve-buttons>
+                      <div class="flex gap-2">
+                        <button
+                          type="button"
+                          class="app-btn app-btn-sm"
+                          data-reserve-action="approve"
+                        >
+                          Duyệt
+                        </button>
+                        <button
+                          type="button"
+                          class="app-btn app-btn-outline app-btn-sm"
+                          data-reserve-action="reject"
+                        >
+                          Từ chối
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-student="Cao Bảo Ngọc">
+                    <td class="font-bold">Cao Bảo Ngọc</td>
+                    <td>GT-2609</td>
+                    <td>2 tháng</td>
+                    <td>Trùng lịch thi học kỳ</td>
+                    <td data-reserve-status>
+                      <span class="app-badge is-warning">Chờ duyệt</span>
+                    </td>
+                    <td data-reserve-buttons>
+                      <div class="flex gap-2">
+                        <button
+                          type="button"
+                          class="app-btn app-btn-sm"
+                          data-reserve-action="approve"
+                        >
+                          Duyệt
+                        </button>
+                        <button
+                          type="button"
+                          class="app-btn app-btn-outline app-btn-sm"
+                          data-reserve-action="reject"
+                        >
+                          Từ chối
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="chat-luong" class="app-card">
+            <div class="app-card-header">
+              <h2 class="app-card-title">
+                <i data-lucide="badge-check" aria-hidden="true"></i>Giám sát
+                chất lượng toàn khoá
+              </h2>
+            </div>
+            <div class="app-table-wrap">
+              <table class="app-table">
+                <thead>
+                  <tr>
+                    <th>Khoá học</th>
+                    <th>Số lớp</th>
+                    <th>Chuyên cần</th>
+                    <th>Điểm TB</th>
+                    <th>Hài lòng</th>
+                    <th>Tỉ lệ hoàn thành</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="font-bold">IELTS 6.5+</td>
+                    <td>6</td>
+                    <td>93%</td>
+                    <td>7.6</td>
+                    <td>4.7/5</td>
+                    <td class="min-w-[160px]">
+                      <div class="app-progress">
+                        <span style="width: 88%"></span>
+                      </div>
+                      <p class="app-muted">88%</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold">Tiếng Anh giao tiếp</td>
+                    <td>5</td>
+                    <td>90%</td>
+                    <td>8.1</td>
+                    <td>4.6/5</td>
+                    <td>
+                      <div class="app-progress">
+                        <span style="width: 91%"></span>
+                      </div>
+                      <p class="app-muted">91%</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold">Lập trình Web Front-end</td>
+                    <td>4</td>
+                    <td>86%</td>
+                    <td>7.2</td>
+                    <td>4.4/5</td>
+                    <td>
+                      <div class="app-progress">
+                        <span style="width: 79%"></span>
+                      </div>
+                      <p class="app-muted">79%</p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="font-bold">Phân tích dữ liệu</td>
+                    <td>3</td>
+                    <td>94%</td>
+                    <td>7.9</td>
+                    <td>4.8/5</td>
+                    <td>
+                      <div class="app-progress">
+                        <span style="width: 93%"></span>
+                      </div>
+                      <p class="app-muted">93%</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
