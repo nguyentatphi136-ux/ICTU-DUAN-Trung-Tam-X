@@ -1,6 +1,7 @@
 package com.ems.controller;
 
 import com.ems.config.SessionBlacklist;
+import com.ems.security.ApiResponse;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.*;
@@ -10,7 +11,7 @@ import java.io.IOException;
  * Mục 11: Controller xử lý Đăng xuất
  * Đáp ứng IDTTX-34, IDTTX-35, IDTTX-55
  */
-@WebServlet(urlPatterns = {"/logout", "/auth/logout"})
+@WebServlet(urlPatterns = {"/logout", "/auth/logout", "/api/auth/logout"})
 public class LogoutServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
 
@@ -42,7 +43,10 @@ public class LogoutServlet extends HttpServlet {
         cookie.setPath(req.getContextPath().isEmpty() ? "/" : req.getContextPath());
         resp.addCookie(cookie);
 
-        // Chuyển hướng về login.jsp kèm thông báo
-        resp.sendRedirect(req.getContextPath() + "/login.jsp?message=logged_out");
+        if (req.getRequestURI().contains("/api/")) {
+            ApiResponse.success(resp, "AUTH_LOGOUT_SUCCESS", "Đăng xuất thành công.", null);
+        } else {
+            resp.sendRedirect(req.getContextPath() + "/login.jsp?message=logged_out");
+        }
     }
 }

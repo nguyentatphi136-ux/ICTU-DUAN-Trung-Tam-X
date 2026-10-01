@@ -39,6 +39,10 @@ CREATE TABLE IF NOT EXISTS `users` (
     `avatar_url` VARCHAR(255) NULL,
     `status` ENUM('ACTIVE', 'LOCKED', 'PENDING') DEFAULT 'ACTIVE' COMMENT 'Trạng thái hoạt động',
     `locked_reason` VARCHAR(255) NULL COMMENT 'Lý do khóa tài khoản',
+    `failed_login_attempts` INT NOT NULL DEFAULT 0,
+    `locked_until` DATETIME NULL,
+    `failed_login_attempts` INT NOT NULL DEFAULT 0,
+    `locked_until` DATETIME NULL,
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_users_email` (`email`),
@@ -74,6 +78,24 @@ CREATE TABLE IF NOT EXISTS `role_permissions` (
     CONSTRAINT `fk_role_permissions_role` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_role_permissions_perm` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB COMMENT='Bảng ánh xạ quyền cho từng vai trò';
+
+-- 1.5a Danh sách menu và quyền cần để hiển thị menu
+CREATE TABLE IF NOT EXISTS `menus` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `menu_code` VARCHAR(64) NOT NULL UNIQUE,
+    `title` VARCHAR(120) NOT NULL,
+    `href` VARCHAR(255) NOT NULL,
+    `icon` VARCHAR(64) NOT NULL,
+    `sort_order` INT NOT NULL DEFAULT 0
+) ENGINE=InnoDB COMMENT='Danh sách mục điều hướng hệ thống';
+
+CREATE TABLE IF NOT EXISTS `menu_permissions` (
+    `menu_id` INT NOT NULL,
+    `permission_id` INT NOT NULL,
+    PRIMARY KEY (`menu_id`, `permission_id`),
+    CONSTRAINT `fk_menu_permissions_menu` FOREIGN KEY (`menu_id`) REFERENCES `menus` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_menu_permissions_permission` FOREIGN KEY (`permission_id`) REFERENCES `permissions` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Quyền cần có để nhận một mục menu';
 
 -- 1.6 Bảng Đặt lại mật khẩu (Password Resets)
 CREATE TABLE IF NOT EXISTS `password_reset_tokens` (
@@ -748,6 +770,101 @@ INSERT INTO `user_roles` (`user_id`, `role_id`) VALUES
 (6, 7), -- Accountant
 (7, 3)  -- Admissions
 ON DUPLICATE KEY UPDATE `role_id` = VALUES(`role_id`);
+
+-- Seed permission catalog
+INSERT INTO `permissions` (`permission_code`, `permission_name`, `module`, `description`) VALUES
+('MENU_VIEW', 'Xem menu được phép', 'AUTH', 'Đọc menu theo quyền hiện tại'),
+('DASHBOARD_VIEW', 'Xem tổng quan', 'DASHBOARD', 'Mở trang tổng quan'),
+('PROFILE_VIEW', 'Xem hồ sơ cá nhân', 'PROFILE', 'Đọc hồ sơ của chính mình'),
+('USER_READ', 'Xem tài khoản', 'USER', 'Đọc danh sách tài khoản'),
+('USER_CREATE', 'Tạo tài khoản', 'USER', 'Tạo tài khoản mới'),
+('USER_ROLE_ASSIGN', 'Gán vai trò', 'USER', 'Gán và thu hồi vai trò'),
+('ROLE_PERMISSION_READ', 'Xem phân quyền', 'AUTH', 'Đọc vai trò và quyền'),
+('ROLE_PERMISSION_UPDATE', 'Cập nhật phân quyền', 'AUTH', 'Gán hoặc thu hồi quyền cho vai trò'),
+('PROGRAM_MANAGE', 'Quản lý chương trình', 'PROGRAM', 'Quản lý chương trình đào tạo'),
+('CLASS_MANAGE', 'Quản lý lớp học', 'CLASS', 'Mở lớp và phân công'),
+('LEAD_MANAGE', 'Quản lý tuyển sinh', 'ADMISSIONS', 'Quản lý khách hàng tiềm năng'),
+('ATTENDANCE_MANAGE', 'Quản lý điểm danh', 'ATTENDANCE', 'Điểm danh học viên'),
+('ASSIGNMENT_MANAGE', 'Quản lý bài tập', 'ASSIGNMENT', 'Giao và quản lý bài tập'),
+('ASSIGNMENT_READ', 'Xem bài tập', 'ASSIGNMENT', 'Xem và nộp bài tập'),
+('GRADE_MANAGE', 'Quản lý điểm', 'GRADE', 'Chấm và quản lý điểm'),
+('GRADE_READ', 'Xem điểm', 'GRADE', 'Tra cứu điểm cá nhân'),
+('FINANCE_MANAGE', 'Quản lý học phí', 'FINANCE', 'Ghi nhận thanh toán và công nợ'),
+('FINANCE_READ', 'Xem học phí', 'FINANCE', 'Tra cứu học phí cá nhân'),
+('REPORT_VIEW', 'Xem báo cáo', 'REPORT', 'Đọc báo cáo vận hành'),
+('SCHEDULE_READ', 'Xem thời khóa biểu', 'SCHEDULE', 'Tra cứu lịch học'),
+('CONSULTATION_CREATE', 'Gửi yêu cầu tư vấn', 'PUBLIC', 'Đăng ký tư vấn công khai')
+ON DUPLICATE KEY UPDATE `permission_name` = VALUES(`permission_name`);
+
+-- ADMIN nhận toàn bộ quyền. Mỗi role nghiệp vụ chỉ nhận đúng tập quyền của mình.
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `roles` r CROSS JOIN `permissions` p WHERE r.role_code = 'ADMIN'
+ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
+
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_MANAGE','CLASS_MANAGE','SCHEDULE_READ','REPORT_VIEW')
+WHERE r.role_code = 'TRAINING_MANAGER'
+ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','LEAD_MANAGE')
+WHERE r.role_code = 'ADMISSIONS'
+ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','SCHEDULE_READ','ATTENDANCE_MANAGE','ASSIGNMENT_MANAGE','GRADE_MANAGE')
+WHERE r.role_code = 'INSTRUCTOR'
+ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','SCHEDULE_READ','ATTENDANCE_MANAGE','ASSIGNMENT_MANAGE')
+WHERE r.role_code = 'TA'
+ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','SCHEDULE_READ','ASSIGNMENT_READ','GRADE_READ','FINANCE_READ')
+WHERE r.role_code = 'STUDENT'
+ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','FINANCE_MANAGE','REPORT_VIEW')
+WHERE r.role_code = 'ACCOUNTANT'
+ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code = 'CONSULTATION_CREATE'
+WHERE r.role_code = 'GUEST'
+ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
+
+INSERT INTO `menus` (`menu_code`, `title`, `href`, `icon`, `sort_order`) VALUES
+('DASHBOARD', 'Tổng quan', '/dashboard.html#tong-quan', 'layout-dashboard', 1),
+('SCHEDULE', 'Lịch học', '/student.html#lich-hoc', 'calendar-days', 10),
+('ASSIGNMENTS', 'Bài tập', '/student.html#bai-tap', 'notebook-pen', 20),
+('GRADES', 'Bảng điểm', '/student.html#bang-diem', 'award', 30),
+('ATTENDANCE', 'Điểm danh', '/instructor.html#diem-danh', 'clipboard-check', 40),
+('CLASSES', 'Lớp học', '/training-manager.html#mo-lop', 'calendar-range', 50),
+('LEADS', 'Tuyển sinh', '/admissions.html#lead', 'users', 60),
+('FINANCE', 'Học phí', '/accountant.html#thanh-toan', 'wallet', 70),
+('USERS', 'Tài khoản', '/admin.html#tai-khoan', 'user-cog', 80),
+('ROLES', 'Vai trò và quyền', '/admin.html#vai-tro', 'key-round', 90),
+('PROFILE', 'Hồ sơ cá nhân', '/dashboard.html#ho-so', 'user-round', 100)
+ON DUPLICATE KEY UPDATE `title` = VALUES(`title`), `href` = VALUES(`href`);
+
+INSERT INTO `menu_permissions` (`menu_id`, `permission_id`)
+SELECT m.id, p.id FROM `menus` m JOIN `permissions` p ON p.permission_code = CASE m.menu_code
+    WHEN 'DASHBOARD' THEN 'DASHBOARD_VIEW'
+    WHEN 'SCHEDULE' THEN 'SCHEDULE_READ'
+    WHEN 'ASSIGNMENTS' THEN 'ASSIGNMENT_READ'
+    WHEN 'GRADES' THEN 'GRADE_READ'
+    WHEN 'ATTENDANCE' THEN 'ATTENDANCE_MANAGE'
+    WHEN 'CLASSES' THEN 'CLASS_MANAGE'
+    WHEN 'LEADS' THEN 'LEAD_MANAGE'
+    WHEN 'FINANCE' THEN 'FINANCE_READ'
+    WHEN 'USERS' THEN 'USER_READ'
+    WHEN 'ROLES' THEN 'ROLE_PERMISSION_READ'
+    WHEN 'PROFILE' THEN 'PROFILE_VIEW'
+END
+ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 
 -- Seed hồ sơ Học viên
 INSERT INTO `students` (`id`, `user_id`, `student_code`, `entry_level`, `enrollment_status`) VALUES
