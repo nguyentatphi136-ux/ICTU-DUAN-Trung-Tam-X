@@ -2,7 +2,9 @@ const { randomBytes, scrypt, timingSafeEqual } = require('node:crypto');
 const { promisify } = require('node:util');
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const { users } = require('../data/users');
+const jwtConfig = require('../config/jwt');
+const { toPublicUser, users } = require('../data/users');
+const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
 const scryptAsync = promisify(scrypt);
@@ -39,15 +41,13 @@ router.post('/login', async (req, res, next) => {
       });
     }
 
-    const token = jwt.sign(
-      { role: user.role },
-      process.env.JWT_SECRET || 'development-only-change-this-secret',
-      {
-        subject: user.id,
-        expiresIn: process.env.JWT_EXPIRES_IN || '1h',
-        algorithm: 'HS256',
-      },
-    );
+    // roles trong token chỉ để client hiển thị; quyền truy cập luôn được
+    // kiểm tra lại từ kho người dùng bởi middleware authenticate/authorize.
+    const token = jwt.sign({ roles: user.roles }, jwtConfig.secret, {
+      subject: user.id,
+      expiresIn: jwtConfig.expiresIn,
+      algorithm: jwtConfig.algorithm,
+    });
 
     return res.status(200).json({
       success: true,
@@ -56,13 +56,17 @@ router.post('/login', async (req, res, next) => {
         id: user.id,
         email: user.email,
         name: user.name,
-        role: user.role,
+        roles: user.roles,
       },
       token,
     });
   } catch (error) {
     return next(error);
   }
+});
+
+router.get('/me', authenticate, (req, res) => {
+  return res.status(200).json({ success: true, user: toPublicUser(req.user) });
 });
 
 module.exports = router;
