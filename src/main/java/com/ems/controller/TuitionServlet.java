@@ -1,7 +1,7 @@
-package vn.edu.ictu.ems.controller;
+package com.ems.controller;
 
-import vn.edu.ictu.ems.model.TuitionFee;
-import vn.edu.ictu.ems.model.User;
+import com.ems.model.TuitionFee;
+import com.ems.model.User;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -16,6 +16,7 @@ import java.util.List;
 
 @WebServlet(name = "TuitionServlet", urlPatterns = {"/tuition/list", "/tuition/edit", "/tuition/update"})
 public class TuitionServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
 
     private static final List<TuitionFee> tuitionList = new ArrayList<>();
 

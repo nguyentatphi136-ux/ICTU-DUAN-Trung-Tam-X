@@ -1,11 +1,10 @@
-package vn.edu.ictu.ems.constant;
+package com.ems.constant;
 
 import java.util.*;
 
 /**
- * Danh mục quyền hạn và ma trận phân quyền cho 8 vai trò nghiệp vụ
+ * Danh mục quyền hạn và ma trận phân quyền cho 8 vai trò nghiệp vụ (S1-05)
  * Đảm bảo: Giảng viên không sửa được học phí, Kế toán không sửa được điểm
- * Người thực hiện: Nguyễn Minh Ngọc (MN)
  */
 public class PermissionConstant {
 
