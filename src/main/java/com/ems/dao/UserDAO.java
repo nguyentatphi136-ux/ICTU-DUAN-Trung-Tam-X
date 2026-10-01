@@ -3,11 +3,14 @@ package com.ems.dao;
 import com.ems.config.DBConnection;
 import com.ems.model.User;
 import org.mindrot.jbcrypt.BCrypt;
+import com.ems.security.LoginAttemptPolicy;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,67 +19,119 @@ import java.util.List;
  * Data Access Object (DAO) xử lý truy vấn dữ liệu bảng users và roles từ MySQL
  */
 public class UserDAO {
+    private static final String DUMMY_PASSWORD_HASH = BCrypt.hashpw(
+            "constant-time-login-placeholder",
+            BCrypt.gensalt(10)
+    );
 
     /**
      * Xác thực thông tin đăng nhập bằng Email và Password
      */
-    public User authenticate(String email, String password) {
-        String sql = "SELECT u.id, u.user_code, u.email, u.password_hash, u.full_name, u.phone, u.status, r.role_code " +
-                     "FROM users u " +
-                     "LEFT JOIN user_roles ur ON u.id = ur.user_id " +
-                     "LEFT JOIN roles r ON ur.role_id = r.id " +
-                     "WHERE u.email = ? AND u.status = 'ACTIVE'";
+    public User authenticate(String email, String password) throws SQLException {
+        String normalizedEmail = email == null ? "" : email.trim().toLowerCase(java.util.Locale.ROOT);
+        if (normalizedEmail.isEmpty() || password == null || password.isEmpty()) {
+            BCrypt.checkpw(password == null ? "" : password, DUMMY_PASSWORD_HASH);
+            return null;
+        }
 
-        try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, email.trim().toLowerCase());
-
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    String storedHash = rs.getString("password_hash");
-
-                    // Kiểm tra mật khẩu (hỗ trợ cả mật khẩu hash BCrypt và mật khẩu plain text '123456' khi test)
-                    boolean passwordMatches = false;
-                    if (storedHash != null && storedHash.startsWith("$2a$")) {
-                        try {
-                            passwordMatches = BCrypt.checkpw(password, storedHash);
-                        } catch (Exception ignored) {
-                            passwordMatches = password.equals(storedHash);
+        try (Connection connection = DBConnection.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                long userId;
+                String userCode;
+                String storedEmail;
+                String passwordHash;
+                String fullName;
+                String phone;
+                String status;
+                int failures;
+                Instant lockedUntil;
+                String sql = "SELECT id, user_code, email, password_hash, full_name, phone, status, "
+                        + "failed_login_attempts, locked_until FROM users WHERE email = ? FOR UPDATE";
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    statement.setString(1, normalizedEmail);
+                    try (ResultSet result = statement.executeQuery()) {
+                        if (!result.next()) {
+                            connection.commit();
+                            BCrypt.checkpw(password, DUMMY_PASSWORD_HASH);
+                            return null;
                         }
-                    } else {
-                        passwordMatches = password.equals(storedHash);
-                    }
-
-                    if (passwordMatches) {
-                        User user = new User();
-                        user.setId(rs.getLong("id"));
-                        user.setUserCode(rs.getString("user_code"));
-                        user.setEmail(rs.getString("email"));
-                        user.setFullName(rs.getString("full_name"));
-                        user.setPhone(rs.getString("phone"));
-                        user.setStatus(rs.getString("status"));
-                        user.setPrimaryRole(rs.getString("role_code"));
-
-                        List<String> roles = new ArrayList<>();
-                        if (user.getPrimaryRole() != null) {
-                            roles.add(user.getPrimaryRole());
-                        }
-                        // Lấy tiếp các role khác nếu có
-                        while (rs.next()) {
-                            String additionalRole = rs.getString("role_code");
-                            if (additionalRole != null && !roles.contains(additionalRole)) {
-                                roles.add(additionalRole);
-                            }
-                        }
-                        user.setRoles(roles);
-                        return user;
+                        userId = result.getLong("id");
+                        userCode = result.getString("user_code");
+                        storedEmail = result.getString("email");
+                        passwordHash = result.getString("password_hash");
+                        fullName = result.getString("full_name");
+                        phone = result.getString("phone");
+                        status = result.getString("status");
+                        failures = result.getInt("failed_login_attempts");
+                        Timestamp lockTime = result.getTimestamp("locked_until");
+                        lockedUntil = lockTime == null ? null : lockTime.toInstant();
                     }
                 }
+
+                Instant now = Instant.now();
+                LoginAttemptPolicy.State lockState = new LoginAttemptPolicy.State(failures, lockedUntil);
+                if (!"ACTIVE".equals(status) || LoginAttemptPolicy.isLocked(lockState, now)) {
+                    BCrypt.checkpw(password, DUMMY_PASSWORD_HASH);
+                    connection.commit();
+                    return null;
+                }
+
+                boolean passwordMatches = isValidBcryptHash(passwordHash)
+                        && BCrypt.checkpw(password, passwordHash);
+                if (!passwordMatches) {
+                    LoginAttemptPolicy.State next = LoginAttemptPolicy.recordFailure(lockState, now);
+                    try (PreparedStatement statement = connection.prepareStatement(
+                            "UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?")) {
+                        statement.setInt(1, next.failures());
+                        statement.setTimestamp(2, next.lockedUntil() == null ? null : Timestamp.from(next.lockedUntil()));
+                        statement.setLong(3, userId);
+                        statement.executeUpdate();
+                    }
+                    connection.commit();
+                    return null;
+                }
+
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?")) {
+                    statement.setLong(1, userId);
+                    statement.executeUpdate();
+                }
+
+                List<String> roles = new ArrayList<>();
+                try (PreparedStatement statement = connection.prepareStatement(
+                        "SELECT r.role_code FROM user_roles ur JOIN roles r ON r.id = ur.role_id "
+                                + "WHERE ur.user_id = ? ORDER BY CASE r.role_code WHEN 'ADMIN' THEN 0 ELSE 1 END, r.id")) {
+                    statement.setLong(1, userId);
+                    try (ResultSet result = statement.executeQuery()) {
+                        while (result.next()) roles.add(result.getString("role_code"));
+                    }
+                }
+                if (roles.isEmpty()) {
+                    connection.commit();
+                    return null;
+                }
+
+                User user = new User();
+                user.setId(userId);
+                user.setUserCode(userCode);
+                user.setEmail(storedEmail);
+                user.setFullName(fullName);
+                user.setPhone(phone);
+                user.setStatus(status);
+                user.setRoles(roles);
+                user.setPrimaryRole(roles.get(0));
+                connection.commit();
+                return user;
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
             }
-        } catch (SQLException e) {
-            System.err.println("Lỗi xác thực người dùng trong UserDAO: " + e.getMessage());
         }
-        return null;
+    }
+
+    private boolean isValidBcryptHash(String hash) {
+        if (hash == null || !hash.matches("^\\$2[aby]\\$\\d{2}\\$.{53}$")) return false;
+        return true;
     }
 }

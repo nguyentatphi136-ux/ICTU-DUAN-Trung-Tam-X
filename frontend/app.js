@@ -258,7 +258,7 @@ const login = (account) => {
   localStorage.setItem(AUTH_TOKEN_KEY, session.token);
   localStorage.removeItem(LOGIN_FORM_KEY);
   addAuditLog("Đăng nhập", user.email);
-  goToRoleHome(user.role);
+  navigateTo(redirectUrl || ROLES[user.role]?.page || "login");
 };
 
 const logout = () => {
@@ -339,7 +339,7 @@ if (pageRole) {
   } else if (readRevokedRoles().has(currentUser.role)) {
     showToast("Vai trò của bạn đã bị thu hồi. Vui lòng liên hệ quản trị viên để được hỗ trợ.", "warning");
     goToLogin();
-  } else if (currentUser.role !== pageRole) {
+  } else if (currentUser.role !== pageRole && !(currentUser.roles ?? []).includes(pageRole)) {
     goToRoleHome(currentUser.role);
   }
 }
@@ -620,7 +620,7 @@ if (passwordInput && passwordError) {
   });
 }
 
-loginForm?.addEventListener("submit", (event) => {
+loginForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   hideStatus();
 
@@ -644,8 +644,6 @@ loginForm?.addEventListener("submit", (event) => {
     showStatus("Tài khoản đã bị khoá. Vui lòng liên hệ quản trị viên.");
     return;
   }
-
-  login(account);
 });
 
 // ---------------------------------------------------------------------
