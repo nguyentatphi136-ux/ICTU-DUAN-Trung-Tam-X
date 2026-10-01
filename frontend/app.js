@@ -152,6 +152,27 @@ const DEMO_ACCOUNTS = [
 ];
 
 const SESSION_KEY = "edumanager-session";
+const LOGIN_FORM_KEY = "edumanager-login-form";
+const AUTH_TOKEN_KEY = "edumanager-auth-token";
+const ROLE_REVOCATION_KEY = "edumanager-role-revocations";
+const SESSION_TIMEOUT_MS = 60 * 60 * 1000;
+
+const getSessionData = () => {
+  try {
+    const data = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "null");
+    if (!data) return null;
+
+    if (Number(data.expiresAt) && Date.now() > Number(data.expiresAt)) {
+      sessionStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      return null;
+    }
+
+    return data;
+  } catch {
+    return null;
+  }
+};
 
 const findAccount = (email, password) =>
   DEMO_ACCOUNTS.find(
@@ -160,12 +181,48 @@ const findAccount = (email, password) =>
       account.password === password,
   );
 
-const getCurrentUser = () => {
+const getCurrentUser = () => getSessionData();
+
+const saveLoginFormState = (email = "", password = "") => {
+  localStorage.setItem(
+    LOGIN_FORM_KEY,
+    JSON.stringify({ email: email.trim(), password: password.trim() }),
+  );
+};
+
+const restoreLoginFormState = () => {
+  const loginFormElement = document.querySelector("#login-form");
+  if (!loginFormElement) return;
+
   try {
-    return JSON.parse(sessionStorage.getItem(SESSION_KEY));
+    const saved = JSON.parse(localStorage.getItem(LOGIN_FORM_KEY) ?? "{}");
+    const emailInput = document.querySelector("#email");
+    const passwordInput = document.querySelector("#password");
+
+    if (emailInput && saved.email) emailInput.value = saved.email;
+    if (passwordInput && saved.password) passwordInput.value = saved.password;
   } catch {
-    return null;
+    localStorage.removeItem(LOGIN_FORM_KEY);
   }
+};
+
+function expireSession(message = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.") {
+  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  showToast(message, "warning");
+  setTimeout(() => goToLogin(), 450);
+}
+
+const readRevokedRoles = () => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(ROLE_REVOCATION_KEY) ?? "[]"));
+  } catch {
+    return new Set();
+  }
+};
+
+const writeRevokedRoles = (roles) => {
+  localStorage.setItem(ROLE_REVOCATION_KEY, JSON.stringify([...roles]));
 };
 
 // Dữ liệu demo lưu trong localStorage để các trang dùng chung
@@ -192,30 +249,25 @@ const addAuditLog = (action, actor = getCurrentUser()?.email ?? "khách") => {
 
 const login = (account) => {
   const { password, ...user } = account;
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
+  const session = {
+    ...user,
+    token: `demo-token-${Date.now()}`,
+    expiresAt: Date.now() + SESSION_TIMEOUT_MS,
+  };
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  localStorage.setItem(AUTH_TOKEN_KEY, session.token);
+  localStorage.removeItem(LOGIN_FORM_KEY);
   addAuditLog("Đăng nhập", user.email);
   goToRoleHome(user.role);
 };
 
-const logout = async () => {
+const logout = () => {
   addAuditLog("Đăng xuất");
-  try {
-    // Gọi API POST /auth/logout (IDTTX-34, IDTTX-35, IDTTX-55)
-    await fetch("/auth/logout", {
-      method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-    });
-  } catch (error) {
-    console.warn("Lỗi gọi API logout:", error);
-  } finally {
-    sessionStorage.removeItem(SESSION_KEY);
-    goToLogin();
-  }
+  sessionStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(AUTH_TOKEN_KEY);
+  localStorage.removeItem(LOGIN_FORM_KEY);
+  goToLogin();
 };
-
 
 const goToRoleHome = (role) => {
   navigateTo(ROLES[role]?.page ?? "login");
@@ -283,6 +335,9 @@ const getInitials = (name) =>
 
 if (pageRole) {
   if (!currentUser) {
+    expireSession();
+  } else if (readRevokedRoles().has(currentUser.role)) {
+    showToast("Vai trò của bạn đã bị thu hồi. Vui lòng liên hệ quản trị viên để được hỗ trợ.", "warning");
     goToLogin();
   } else if (currentUser.role !== pageRole) {
     goToRoleHome(currentUser.role);
@@ -360,6 +415,71 @@ if (sidebar && currentUser && ROLES[pageRole]) {
 }
 
 // Điền thông tin người dùng vào các phần tử có data-user="fullName" | "email".
+const handleForbiddenError = (message = "Bạn không có quyền truy cập chức năng này. Vui lòng kiểm tra vai trò hoặc liên hệ quản trị viên.") => {
+  showToast(message, "warning");
+  return false;
+};
+
+const addAuthHeaders = (headers = {}) => {
+  const token = localStorage.getItem(AUTH_TOKEN_KEY);
+  if (!token) return headers;
+
+  return {
+    ...headers,
+    Authorization: `Bearer ${token}`,
+  };
+};
+
+const handleSessionExpiredResponse = () => {
+  expireSession("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+  return Promise.reject(new Error("SESSION_EXPIRED"));
+};
+
+const safeFetch = async (url, options = {}) => {
+  const session = getCurrentUser();
+  if (!session) {
+    return handleSessionExpiredResponse();
+  }
+
+  const response = await fetch(url, {
+    ...options,
+    headers: addAuthHeaders(options.headers),
+  });
+
+  if (response.status === 401) {
+    return handleSessionExpiredResponse();
+  }
+
+  if (response.status === 403) {
+    handleForbiddenError();
+    return Promise.reject(new Error("FORBIDDEN"));
+  }
+
+  return response;
+};
+
+window.fetch = new Proxy(window.fetch.bind(window), {
+  apply(target, thisArg, args) {
+    const [input, init = {}] = args;
+    const session = getCurrentUser();
+
+    if (session) {
+      const headers = addAuthHeaders(init.headers ?? {});
+      args[1] = { ...init, headers };
+    }
+
+    return Reflect.apply(target, thisArg, args).then((response) => {
+      if (response.status === 401) {
+        handleSessionExpiredResponse();
+      }
+      if (response.status === 403) {
+        handleForbiddenError();
+      }
+      return response;
+    });
+  },
+});
+
 document.querySelectorAll("[data-user]").forEach((element) => {
   element.textContent = currentUser?.[element.dataset.user] ?? "";
 });
@@ -403,6 +523,28 @@ const showStatus = (message) => {
   formStatus.classList.remove("hidden");
 };
 
+function showToast(message, tone = "info") {
+  if (!message) return;
+
+  let toast = document.querySelector("#app-toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "app-toast";
+    toast.className = "app-toast";
+    toast.setAttribute("role", "status");
+    document.body.appendChild(toast);
+  }
+
+  toast.textContent = message;
+  toast.dataset.tone = tone;
+  toast.classList.add("is-visible");
+
+  window.clearTimeout(showToast.timeoutId);
+  showToast.timeoutId = window.setTimeout(() => {
+    toast.classList.remove("is-visible");
+  }, 3200);
+}
+
 const hideStatus = () => formStatus?.classList.add("hidden");
 
 const setFieldError = (input, errorElement, message) => {
@@ -432,11 +574,14 @@ const validateEmail = () => {
 if (emailInput && emailError) {
   emailInput.setAttribute("aria-describedby", "email-error");
   emailInput.addEventListener("input", () => {
+    saveLoginFormState(emailInput.value, passwordInput?.value ?? "");
     if (emailInput.value.trim() && emailInput.validity.valid) {
       setFieldError(emailInput, emailError, "");
     }
   });
 }
+
+restoreLoginFormState();
 
 // ---------------------------------------------------------------------
 // 4. Trang đăng nhập: ẩn/hiện mật khẩu, kiểm tra form
@@ -468,6 +613,7 @@ if (passwordInput && passwordToggle) {
 if (passwordInput && passwordError) {
   passwordInput.setAttribute("aria-describedby", "password-error");
   passwordInput.addEventListener("input", () => {
+    saveLoginFormState(emailInput?.value ?? "", passwordInput.value);
     if (passwordInput.value.trim()) {
       setFieldError(passwordInput, passwordError, "");
     }
@@ -485,6 +631,8 @@ loginForm?.addEventListener("submit", (event) => {
     (emailIsValid ? passwordInput : emailInput).focus();
     return;
   }
+
+  saveLoginFormState(emailInput.value, passwordInput.value);
 
   const account = findAccount(emailInput.value, passwordInput.value);
   if (!account) {
@@ -1411,6 +1559,62 @@ document.querySelectorAll("[data-catalog-form]").forEach((form) => {
   });
 });
 
+const roleTable = document.querySelector("#current-role-table");
+
+if (roleTable) {
+  const renderCurrentRoles = () => {
+    const revoked = readRevokedRoles();
+    roleTable.querySelector("tbody").innerHTML = Object.entries(ROLES)
+      .map(([key, role]) => {
+        const revokedRole = revoked.has(key);
+        const isCurrent = currentUser?.role === key;
+
+        return `
+          <tr>
+            <td class="font-bold">${escapeHtml(role.name)} <p class="app-muted">${escapeHtml(role.en)}</p></td>
+            <td>${escapeHtml(role.page)}</td>
+            <td>${revokedRole ? badge("Đã thu hồi", "is-danger") : badge("Hoạt động", "is-success")}</td>
+            <td>
+              <button
+                type="button"
+                class="app-btn app-btn-outline app-btn-sm"
+                data-role-action="${key}"
+                ${isCurrent ? 'disabled title="Vai trò đang được sử dụng ở phiên hiện tại"' : ""}
+              >
+                ${revokedRole ? "Khôi phục" : "Thu hồi"}
+              </button>
+            </td>
+          </tr>`;
+      })
+      .join("");
+  };
+
+  roleTable.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-role-action]");
+    if (!button) return;
+
+    const roleKey = button.dataset.roleAction;
+    if (roleKey === currentUser?.role) {
+      showToast("Không thể thu hồi vai trò đang được sử dụng bởi tài khoản hiện tại.", "warning");
+      return;
+    }
+
+    const revoked = readRevokedRoles();
+    if (revoked.has(roleKey)) {
+      revoked.delete(roleKey);
+      showToast(`Đã khôi phục quyền ${ROLES[roleKey]?.name ?? roleKey}.`, "success");
+    } else {
+      revoked.add(roleKey);
+      showToast(`Đã thu hồi quyền ${ROLES[roleKey]?.name ?? roleKey}. Tài khoản thuộc vai trò này sẽ nhận thông báo 403 khi truy cập.`, "warning");
+    }
+
+    writeRevokedRoles(revoked);
+    renderCurrentRoles();
+  });
+
+  renderCurrentRoles();
+}
+
 function renderAuditLog() {
   const auditTable = document.querySelector("#audit-table");
   if (!auditTable) return;
@@ -1430,86 +1634,3 @@ function renderAuditLog() {
 }
 
 renderAuditLog();
-
-// ---------------------------------------------------------------------
-// Xử lý gửi Form Quên mật khẩu (IDTTX-41 - S1-03)
-// ---------------------------------------------------------------------
-const forgotForm = document.querySelector("#forgot-password-form");
-if (forgotForm) {
-  forgotForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const emailInput = forgotForm.querySelector("#email");
-    const statusMsg = forgotForm.querySelector("#form-status");
-    const email = emailInput ? emailInput.value.trim() : "";
-
-    if (!email) {
-      if (emailInput) emailInput.focus();
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/auth/forgot-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      const data = await response.json();
-
-      if (statusMsg) {
-        statusMsg.classList.remove("hidden", "text-berry");
-        statusMsg.classList.add("text-emerald-600");
-        statusMsg.innerHTML = `<strong>Thành công:</strong> ${data.message} ${
-          data.devResetLink
-            ? `<br><a href="${data.devResetLink}" class="underline font-bold text-wine mt-2 block">👉 Bấm vào đây để mở trang Đặt lại mật khẩu (Demo Token)</a>`
-            : ""
-        }`;
-      }
-    } catch (err) {
-      if (statusMsg) {
-        statusMsg.classList.remove("hidden");
-        statusMsg.textContent = "Không thể gửi yêu cầu lúc này. Vui lòng thử lại sau.";
-      }
-    }
-  });
-}
-
-// ---------------------------------------------------------------------
-// Xử lý gửi Form Đặt lại mật khẩu mới (IDTTX-42 - S1-03)
-// ---------------------------------------------------------------------
-const resetForm = document.querySelector("#reset-password-form");
-if (resetForm) {
-  resetForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const newPassInput = resetForm.querySelector("#new-password");
-    const confirmPassInput = resetForm.querySelector("#confirm-password");
-    const newPass = newPassInput ? newPassInput.value : "";
-    const confirmPass = confirmPassInput ? confirmPassInput.value : "";
-
-    if (!newPass || newPass.length < 8) {
-      alert("Mật khẩu mới phải có tối thiểu 8 ký tự!");
-      return;
-    }
-    if (newPass !== confirmPass) {
-      alert("Mật khẩu xác nhận không khớp!");
-      return;
-    }
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get("token") || "DEMO_TOKEN";
-
-    try {
-      const response = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ token, password: newPass }),
-      });
-      const data = await response.json();
-      alert(data.message);
-      if (data.redirectUrl) {
-        window.location.assign(data.redirectUrl);
-      }
-    } catch (err) {
-      alert("Lỗi khi kết nối tới máy chủ.");
-    }
-  });
-}

@@ -1610,6 +1610,37 @@ body.reset-body {
   width: 18px;
 }
 
+.app-toast {
+  background: rgba(15, 23, 42, 0.92);
+  border-radius: 999px;
+  bottom: 24px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
+  color: #fff;
+  font-size: 13px;
+  left: 50%;
+  max-width: min(90vw, 500px);
+  opacity: 0;
+  padding: 10px 14px;
+  pointer-events: none;
+  position: fixed;
+  transform: translateX(-50%) translateY(16px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 200;
+}
+
+.app-toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.app-toast[data-tone="warning"] {
+  background: rgba(146, 64, 14, 0.96);
+}
+
+.app-toast[data-tone="success"] {
+  background: rgba(6, 95, 70, 0.96);
+}
+
 .app-status {
   color: #065f46;
   font-size: 12px;
