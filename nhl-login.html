@@ -1,0 +1,213 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng nhập</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --bg-light: #f8fafc;
+      --panel: rgba(15, 23, 42, 0.75);
+      --panel-border: rgba(148, 163, 184, 0.18);
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --danger: #dc2626;
+      --warning-bg: #fff7ed;
+      --warning-text: #9a5b00;
+      --text: #e2e8f0;
+      --muted: #cbd5e1;
+      --input-bg: rgba(15, 23, 42, 0.28);
+      --input-border: rgba(148, 163, 184, 0.35);
+      --white: #ffffff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at top left, rgba(37, 99, 235, 0.28), transparent 25%),
+        radial-gradient(circle at bottom right, rgba(59, 130, 246, 0.22), transparent 24%),
+        linear-gradient(135deg, #020817 0%, #0f172a 40%, #111827 100%);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      padding: 24px;
+    }
+
+    .login-shell {
+      width: min(100%, 420px);
+    }
+
+    .login-card {
+      background: rgba(15, 23, 42, 0.78);
+      border: 1px solid var(--panel-border);
+      border-radius: 24px;
+      box-shadow: 0 28px 70px rgba(2, 6, 23, 0.45);
+      padding: 32px 28px;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .brand-mark {
+      width: 68px;
+      height: 68px;
+      border-radius: 18px;
+      margin: 0 auto 16px;
+      display: grid;
+      place-items: center;
+      font-size: 1.8rem;
+      background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
+      box-shadow: 0 12px 30px rgba(37, 99, 235, 0.35);
+    }
+
+    .brand h2 {
+      margin: 0;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      font-size: 1.8rem;
+    }
+
+    .alert {
+      border-radius: 12px;
+      font-size: 0.92rem;
+      padding: 0.8rem 0.9rem;
+    }
+
+    .alert-warning {
+      background: var(--warning-bg);
+      border: 1px solid #fed7aa;
+      color: var(--warning-text);
+    }
+
+    .alert .btn-close {
+      filter: invert(0.2);
+    }
+
+    .form-label {
+      color: var(--muted);
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+    }
+
+    .form-control {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 12px;
+      color: var(--white);
+      padding: 0.8rem 0.9rem;
+      min-height: 48px;
+    }
+
+    .form-control::placeholder {
+      color: rgba(203, 213, 225, 0.7);
+    }
+
+    .form-control:focus {
+      background: rgba(15, 23, 42, 0.34);
+      color: var(--white);
+      border-color: rgba(96, 165, 250, 0.9);
+      box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25);
+    }
+
+    .btn-login {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      min-height: 48px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: var(--white);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 12px 22px rgba(37, 99, 235, 0.28);
+    }
+
+    .btn-login:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 28px rgba(37, 99, 235, 0.35);
+    }
+
+    .helper-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 18px;
+      gap: 12px;
+      font-size: 0.9rem;
+    }
+
+    .helper-row a {
+      color: #93c5fd;
+      text-decoration: none;
+    }
+
+    .helper-row a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-shell">
+    <div class="login-card">
+      <div class="brand">
+        <div class="brand-mark">E</div>
+        <h2>EMS</h2>
+      </div>
+
+      <div id="redirectAlert" class="alert alert-warning alert-dismissible fade show d-none" role="alert">
+        <span id="alertMessage">Phiên đăng nhập đã hết hạn!</span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+
+      <form>
+        <div class="mb-3">
+          <label for="username" class="form-label">Tên đăng nhập / Email</label>
+          <input id="username" type="text" class="form-control" placeholder="Nhập email..." />
+        </div>
+
+        <div class="mb-3">
+          <label for="password" class="form-label">Mật khẩu</label>
+          <input id="password" type="password" class="form-control" placeholder="••••••••" />
+        </div>
+
+        <button type="button" class="btn btn-login">Đăng nhập</button>
+      </form>
+
+      <div class="helper-row">
+        <a href="#">Quên mật khẩu?</a>
+        <a href="#">Liên hệ hỗ trợ</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const reason = urlParams.get('reason');
+      const alertBox = document.getElementById('redirectAlert');
+      const alertMsg = document.getElementById('alertMessage');
+
+      if (reason === 'session_expired') {
+        alertMsg.textContent = 'Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại!';
+        alertBox.classList.remove('d-none');
+      } else if (reason === 'unauthorized') {
+        alertMsg.textContent = 'Bạn chưa đăng nhập. Vui lòng đăng nhập để tiếp tục!';
+        alertBox.classList.remove('d-none');
+      } else if (reason === 'account_locked') {
+        alertMsg.textContent = 'Tài khoản của bạn hiện đã bị khóa!';
+        alertBox.classList.remove('d-none');
+      }
+    });
+  </script>
+</body>
+</html>

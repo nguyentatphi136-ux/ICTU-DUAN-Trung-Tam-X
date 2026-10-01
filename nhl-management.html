@@ -1,0 +1,492 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quản lý người dùng</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-soft: #eff6ff;
+      --success: #198754;
+      --danger: #dc3545;
+      --warning-bg: #fff7ed;
+      --text: #1f2937;
+      --line: #e5e7eb;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #f3f7ff 0%, #eef2f7 100%);
+      color: var(--text);
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .container {
+      padding-top: 32px;
+      padding-bottom: 32px;
+    }
+
+    .panel {
+      background: #fff;
+      border: 1px solid rgba(37, 99, 235, 0.08);
+      border-radius: 20px;
+      box-shadow: 0 14px 38px rgba(15, 23, 42, 0.08);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);
+      color: white;
+      padding: 20px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .panel-header h3 {
+      margin: 0;
+      font-weight: 700;
+      font-size: 1.4rem;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      border-radius: 10px;
+      font-weight: 600;
+      padding: 0.7rem 1.2rem;
+    }
+
+    .btn-primary:hover {
+      background: #1d4ed8;
+      border-color: #1d4ed8;
+    }
+
+    table {
+      margin-bottom: 0;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+
+    thead th {
+      background: #111827;
+      color: white;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      padding: 14px 16px;
+      border: none;
+    }
+
+    tbody td {
+      padding: 16px;
+      vertical-align: middle;
+      border-color: var(--line);
+      background: #fff;
+    }
+
+    tbody tr:hover td {
+      background: #f8fbff;
+    }
+
+    .user-name {
+      font-weight: 600;
+      color: #111827;
+    }
+
+    .badge {
+      font-size: 0.76rem;
+      font-weight: 600;
+      border-radius: 999px;
+      padding: 0.5rem 0.7rem;
+    }
+
+    .badge-role-student {
+      background: #e5e7eb;
+      color: #374151;
+    }
+
+    .badge-role-instructor {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .badge-status-active {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .badge-status-inactive {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .action-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn-sm {
+      border-radius: 10px;
+      font-weight: 600;
+      padding: 0.42rem 0.8rem;
+    }
+
+    .btn-edit {
+      color: var(--primary);
+      border: 1px solid rgba(37, 99, 235, 0.35);
+      background: #fff;
+    }
+
+    .btn-edit:hover {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+    }
+
+    .btn-lock {
+      color: var(--danger);
+      border: 1px solid rgba(220, 53, 69, 0.35);
+      background: #fff;
+    }
+
+    .btn-lock:hover {
+      background: #fff1f2;
+      border-color: var(--danger);
+    }
+
+    .btn-unlock {
+      color: var(--success);
+      border: 1px solid rgba(25, 135, 84, 0.35);
+      background: #fff;
+    }
+
+    .btn-unlock:hover {
+      background: #ecfdf5;
+      border-color: var(--success);
+    }
+
+    .modal-content {
+      border: none;
+      border-radius: 18px;
+      box-shadow: 0 20px 50px rgba(15, 23, 42, 0.16);
+    }
+
+    .modal-header {
+      border-bottom: 1px solid var(--line);
+      padding: 1rem 1.2rem;
+    }
+
+    .modal-title {
+      font-weight: 700;
+    }
+
+    .modal-body {
+      padding: 1.2rem 1.2rem 0.5rem;
+    }
+
+    .form-label {
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+      border-radius: 10px;
+      border: 1px solid #d1d5db;
+      padding: 0.65rem 0.8rem;
+      transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+      box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.15);
+      border-color: var(--primary);
+    }
+
+    .is-invalid {
+      border-color: #dc3545;
+      background-image: none;
+    }
+
+    .invalid-feedback {
+      display: block;
+      font-size: 0.8rem;
+      margin-top: 0.35rem;
+    }
+
+    .alert-warning {
+      background: var(--warning-bg);
+      border: 1px solid #fed7aa;
+      color: #9a5b00;
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      font-size: 0.92rem;
+    }
+
+    .alert-warning strong {
+      color: #7c2d12;
+    }
+
+    @media (max-width: 768px) {
+      .panel-header {
+        align-items: flex-start;
+      }
+
+      .panel-header h3 {
+        font-size: 1.15rem;
+      }
+
+      .action-group {
+        justify-content: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Danh sách người dùng</h3>
+        <button class="btn btn-light btn-sm" type="button" data-bs-toggle="modal" data-bs-target="#userModal" onclick="resetForm()">
+          + Thêm người dùng
+        </button>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Họ và tên</th>
+              <th>Email</th>
+              <th>Vai trò</th>
+              <th>Trạng thái</th>
+              <th class="text-center">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="userModalTitle">Thêm người dùng</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <form id="userForm" novalidate>
+            <div class="mb-3">
+              <label class="form-label" for="fullName">Họ và tên <span class="text-danger">*</span></label>
+              <input type="text" id="fullName" class="form-control" placeholder="Nhập họ và tên..." />
+              <div class="invalid-feedback">Họ và tên không được để trống!</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="email">Email <span class="text-danger">*</span></label>
+              <input type="email" id="email" class="form-control" placeholder="example@gmail.com" />
+              <div id="emailFeedback" class="invalid-feedback">Vui lòng nhập đúng định dạng email!</div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-primary" onclick="validateAndSubmitUser()">Lưu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="lockModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="lockModalTitle">Xác nhận thao tác</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p id="lockModalMessage" class="mb-3">Bạn có chắc chắn muốn thực hiện thao tác này?</p>
+
+          <div id="handoverWarning" class="alert-warning d-none" role="alert">
+            ⚠️ <strong>Cảnh báo:</strong> Giảng viên này hiện đang phụ trách 2 lớp học chưa hoàn thành. Vui lòng bàn giao lớp trước khi khóa tài khoản.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-danger" id="btnConfirmLock" onclick="confirmLockAction()">Xác nhận</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const users = [
+      { id: 1, name: 'Nguyễn Văn A', email: 'a.nguyen@gmail.com', role: 'Học viên', active: true },
+      { id: 2, name: 'Trần Thị B', email: 'b.tran@gmail.com', role: 'Giảng viên', active: true },
+      { id: 3, name: 'Lê Văn C', email: 'c.le@gmail.com', role: 'Học viên', active: false }
+    ];
+
+    let editingUserId = null;
+    let pendingLockUserId = null;
+    let pendingLockAction = true;
+
+    function renderUsers() {
+      const tbody = document.getElementById('userTableBody');
+      tbody.innerHTML = users.map(user => `
+        <tr>
+          <td class="user-name">${user.name}</td>
+          <td>${user.email}</td>
+          <td>
+            <span class="badge ${user.role === 'Giảng viên' ? 'badge-role-instructor' : 'badge-role-student'}">
+              ${user.role}
+            </span>
+          </td>
+          <td>
+            <span class="badge ${user.active ? 'badge-status-active' : 'badge-status-inactive'}">
+              ${user.active ? 'Đang hoạt động' : 'Đã khóa'}
+            </span>
+          </td>
+          <td class="text-center">
+            <div class="action-group">
+              <button class="btn btn-sm btn-edit" type="button" onclick="openEditModal(${user.id}, '${user.name}', '${user.email}')">Sửa</button>
+              ${user.active
+                ? `<button class="btn btn-sm btn-lock" type="button" onclick="openLockModal(${user.id}, '${user.name}', '${user.role}', true)">Khóa</button>`
+                : `<button class="btn btn-sm btn-unlock" type="button" onclick="openLockModal(${user.id}, '${user.name}', '${user.role}', false)">Mở khóa</button>`}
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function resetForm() {
+      editingUserId = null;
+      document.getElementById('userModalTitle').textContent = 'Thêm người dùng';
+      document.getElementById('userForm').reset();
+      clearValidation();
+    }
+
+    function openEditModal(id, name, email) {
+      editingUserId = id;
+      document.getElementById('userModalTitle').textContent = 'Chỉnh sửa người dùng';
+      document.getElementById('fullName').value = name;
+      document.getElementById('email').value = email;
+      clearValidation();
+      const modal = new bootstrap.Modal(document.getElementById('userModal'));
+      modal.show();
+    }
+
+    function clearValidation() {
+      const fullName = document.getElementById('fullName');
+      const email = document.getElementById('email');
+      fullName.classList.remove('is-invalid');
+      email.classList.remove('is-invalid');
+      document.getElementById('emailFeedback').textContent = 'Vui lòng nhập đúng định dạng email!';
+    }
+
+    function validateAndSubmitUser() {
+      const fullNameInput = document.getElementById('fullName');
+      const emailInput = document.getElementById('email');
+      const emailFeedback = document.getElementById('emailFeedback');
+      let isValid = true;
+
+      if (!fullNameInput.value.trim()) {
+        fullNameInput.classList.add('is-invalid');
+        isValid = false;
+      } else {
+        fullNameInput.classList.remove('is-invalid');
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailInput.value.trim())) {
+        emailInput.classList.add('is-invalid');
+        emailFeedback.textContent = 'Định dạng email không hợp lệ!';
+        isValid = false;
+      } else {
+        emailInput.classList.remove('is-invalid');
+      }
+
+      if (!isValid) return;
+
+      const emailValue = emailInput.value.trim().toLowerCase();
+      const existingEmails = users.map(user => user.email.toLowerCase());
+      const isDuplicate = existingEmails.includes(emailValue) && !(editingUserId && users.find(user => user.id === editingUserId)?.email.toLowerCase() === emailValue);
+
+      if (isDuplicate) {
+        emailInput.classList.add('is-invalid');
+        emailFeedback.textContent = 'Email này đã tồn tại trong hệ thống, vui lòng chọn email khác!';
+        return;
+      }
+
+      if (editingUserId !== null) {
+        const user = users.find(item => item.id === editingUserId);
+        if (user) {
+          user.name = fullNameInput.value.trim();
+          user.email = emailValue;
+        }
+      } else {
+        const nextId = users.length ? Math.max(...users.map(u => u.id)) + 1 : 1;
+        users.push({
+          id: nextId,
+          name: fullNameInput.value.trim(),
+          email: emailValue,
+          role: 'Học viên',
+          active: true
+        });
+      }
+
+      renderUsers();
+      const modal = bootstrap.Modal.getInstance(document.getElementById('userModal'));
+      modal.hide();
+      resetForm();
+    }
+
+    function openLockModal(userId, userName, role, isLocking) {
+      pendingLockUserId = userId;
+      pendingLockAction = isLocking;
+
+      const messageEl = document.getElementById('lockModalMessage');
+      const warningEl = document.getElementById('handoverWarning');
+      const confirmBtn = document.getElementById('btnConfirmLock');
+
+      if (isLocking) {
+        document.getElementById('lockModalTitle').textContent = 'Xác nhận khóa tài khoản';
+        messageEl.innerHTML = `Bạn có chắc chắn muốn <strong>khóa</strong> tài khoản <strong>${userName}</strong>?`;
+        confirmBtn.textContent = 'Xác nhận khóa';
+        confirmBtn.className = 'btn btn-danger';
+        warningEl.classList.toggle('d-none', role !== 'Giảng viên');
+      } else {
+        document.getElementById('lockModalTitle').textContent = 'Xác nhận mở khóa tài khoản';
+        messageEl.innerHTML = `Bạn có chắc chắn muốn <strong>mở khóa</strong> tài khoản <strong>${userName}</strong>?`;
+        confirmBtn.textContent = 'Xác nhận mở khóa';
+        confirmBtn.className = 'btn btn-success';
+        warningEl.classList.add('d-none');
+      }
+
+      const lockModal = new bootstrap.Modal(document.getElementById('lockModal'));
+      lockModal.show();
+    }
+
+    function confirmLockAction() {
+      const user = users.find(item => item.id === pendingLockUserId);
+      if (!user) return;
+
+      user.active = pendingLockAction;
+      renderUsers();
+
+      const modal = bootstrap.Modal.getInstance(document.getElementById('lockModal'));
+      modal.hide();
+    }
+
+    renderUsers();
+  </script>
+</body>
+</html>
