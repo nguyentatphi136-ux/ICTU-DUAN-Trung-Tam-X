@@ -33,6 +33,29 @@ public class User implements Serializable {
         this.status = "ACTIVE";
     }
 
+    public User(Long id, String fullName, String email, String status, List<String> roles) {
+        this.id = id;
+        this.fullName = fullName;
+        this.email = email;
+        this.status = status;
+        this.roles = roles;
+        if (roles != null && !roles.isEmpty()) {
+            this.primaryRole = roles.get(0);
+        }
+    }
+
+    public String getName() {
+        return fullName;
+    }
+
+    public void setName(String name) {
+        this.fullName = name;
+    }
+
+    public boolean hasRole(String role) {
+        return roles != null && roles.contains(role);
+    }
+
     public Long getId() {
         return id;
     }
