@@ -1,11 +1,9 @@
 # HỆ THỐNG QUẢN LÝ ĐÀO TẠO TRUNG TÂM (EMS) - MODULE JAVA SERVLET / JSP
 
 > **Dự án Thực tập Cơ sở CNTT - ICTU & CodeGym**  
-> **User Story:** `IDTTX-20` (Phân quyền theo vai trò cho toàn hệ thống)  
-> **Các Subtask hoàn thành:**  
-> - `IDTTX-39` [BE] Thiết kế Database (Chuẩn 3NF, schema DDL trong `database/schema.sql`)  
-> - `IDTTX-81` [BE] Xây dựng middleware kiểm tra quyền ở tầng server, mặc định từ chối  
-> **Người thực hiện:** Nguyễn Minh Ngọc (MN) - `nguyenminhngoc482006@gmail.com`  
+> **User Stories:**  
+> - `IDTTX-20`: Phân quyền theo vai trò cho toàn hệ thống (`IDTTX-39`, `IDTTX-81`) - Thực hiện: Nguyễn Minh Ngọc (MN)  
+> - `IDTTX-24`: Gán và thu hồi vai trò của một người dùng (Role-based Authorization) - Thực hiện: Nguyễn Trung Kiên (NK) - `dtc245200736@ictu.edu.vn`  
 
 ---
 
@@ -66,6 +64,21 @@ Java-JSP/
    - Thay vì hiển thị lỗi kỹ thuật (500 Internal Server Error hoặc Exception stack trace), hệ thống hiển thị trang `403.jsp` bằng tiếng Việt rõ ràng, kèm nút điều hướng quay về màn hình làm việc đúng chuyên môn.
 
 ---
+
+## 3. Đặc tả & Giải pháp Tác vụ Jira IDTTX-24 (Nguyễn Trung Kiên)
+
+**Tác vụ:** *Là Quản trị hệ thống, tôi muốn gán và thu hồi vai trò của một người dùng, để xử lý được trường hợp một người vừa là giảng viên vừa là quản lý đào tạo.*
+
+1. **Hỗ trợ đa vai trò (Multi-Role Support):**
+   - Một người dùng có thể giữ nhiều vai trò cùng lúc (ví dụ vừa có vai trò `Instructor` vừa có `TrainingManager`).
+   - Kiểm tra quyền hạn dựa trên bất kỳ vai trò hợp lệ nào mà người dùng sở hữu.
+2. **Hiệu lực ngay lập tức (Immediate Effect):**
+   - Quản trị viên gán hoặc thu hồi vai trò qua `UserRoleServlet` (`/admin/users/roles`).
+   - `AuthorizationFilter` luôn đồng bộ người dùng từ `UserStore` trên mỗi lượt truy vấn, giúp quyền hạn mới được áp dụng ngay ở thao tác tiếp theo mà **không cần đăng xuất / đăng nhập lại**.
+3. **Bảo vệ vai trò Quản trị viên (Safeguard):**
+   - Quản trị viên **tuyệt đối không thể tự thu hồi vai trò `Admin` của chính mình** (`CANNOT_REVOKE_OWN_ADMIN`) nhằm ngăn chặn việc hệ thống rơi vào trạng thái không còn ai quản trị.
+4. **Kiểm thử tự động (Unit Test):**
+   - Đã triển khai bộ test tự động `UserRoleManagementTest.java` (JUnit 5) kiểm tra toàn diện 100% các tiêu chí chấp nhận của Jira `IDTTX-24`.
 
 ## 3. Hướng dẫn chạy dự án trên IntelliJ IDEA / Eclipse
 
