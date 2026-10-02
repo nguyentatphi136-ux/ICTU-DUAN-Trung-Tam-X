@@ -2,20 +2,97 @@ const express = require('express');
 const { ROLES, ROLE_LABELS, isValidRole } = require('../constants/roles');
 const {
   assignRole,
+  createUser,
   findUserByEmail,
   findUserById,
   hasRole,
   revokeRole,
   toPublicUser,
   updateUser,
+  users,
 } = require('../data/users');
 const { authenticate, authorize } = require('../middleware/auth');
 
 const router = express.Router();
 const allowedStatuses = new Set(['active', 'inactive', 'locked']);
-const editableFields = new Set(['email', 'name', 'phone', 'status']);
+const editableFields = new Set(['email', 'name', 'phone', 'status', 'lockedReason', 'reason']);
 
 router.use(authenticate, authorize(ROLES.ADMIN));
+
+router.get('/users', (req, res) => {
+  const { q, keyword, role, status, page = 1, limit = 20 } = req.query;
+  const kw = (q || keyword || '').trim().toLowerCase();
+  const filterRole = role ? role.trim() : null;
+  const filterStatus = status ? status.trim().toLowerCase() : null;
+
+  let filtered = users;
+  if (kw) {
+    filtered = filtered.filter(
+      (u) =>
+        u.name.toLowerCase().includes(kw) ||
+        u.email.toLowerCase().includes(kw) ||
+        (u.phone && u.phone.includes(kw))
+    );
+  }
+  if (filterRole && filterRole !== 'ALL') {
+    filtered = filtered.filter((u) => u.roles.some((r) => r.toLowerCase() === filterRole.toLowerCase()));
+  }
+  if (filterStatus && filterStatus !== 'all') {
+    filtered = filtered.filter((u) => u.status === filterStatus);
+  }
+
+  const totalCount = filtered.length;
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const pageSize = Math.max(1, parseInt(limit, 10) || 20);
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
+  const offset = (pageNum - 1) * pageSize;
+  const items = filtered.slice(offset, offset + pageSize).map(toPublicUser);
+
+  return res.status(200).json({
+    success: true,
+    totalCount,
+    page: pageNum,
+    pageSize,
+    totalPages,
+    items,
+  });
+});
+
+router.post('/users', (req, res) => {
+  const body = req.body || {};
+  const email = (body.email || '').trim().toLowerCase();
+  const name = (body.name || body.fullName || '').trim();
+  const phone = (body.phone || '').trim();
+  const rawRoles = Array.isArray(body.roles) ? body.roles : (body.role ? [body.role] : [ROLES.STUDENT]);
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ success: false, message: 'Địa chỉ email không hợp lệ' });
+  }
+  if (!name) {
+    return res.status(400).json({ success: false, message: 'Vui lòng nhập họ và tên người dùng' });
+  }
+
+  if (findUserByEmail(email)) {
+    return res.status(409).json({
+      success: false,
+      code: 'EMAIL_ALREADY_EXISTS',
+      message: 'Email này đã tồn tại trong hệ thống, vui lòng chọn email khác!',
+    });
+  }
+
+  const tempPassword = body.tempPassword || body.password || 'Edu@123456';
+  const newId = String(users.length + 1);
+  const newUser = createUser(newId, email, name, rawRoles, tempPassword);
+  newUser.phone = phone;
+  users.push(newUser);
+
+  return res.status(201).json({
+    success: true,
+    message: 'Tạo tài khoản thành công. Email kích hoạt kèm mật khẩu tạm đã được gửi.',
+    user: toPublicUser(newUser),
+    tempPassword,
+  });
+});
 
 router.param('id', (req, res, next, id) => {
   req.targetUser = findUserById(id);
@@ -80,25 +157,51 @@ router.put('/users/:id', (req, res) => {
   }
 
   if (Object.hasOwn(body, 'status')) {
-    if (!allowedStatuses.has(body.status)) {
+    const rawStatus = typeof body.status === 'string' ? body.status.toLowerCase() : body.status;
+    if (!allowedStatuses.has(rawStatus)) {
       return res.status(400).json({ success: false, message: 'Trạng thái không hợp lệ' });
     }
-    if (user.id === req.user.id && body.status !== 'active') {
+    if (user.id === req.user.id && rawStatus !== 'active') {
       return res.status(409).json({
         success: false,
         code: 'CANNOT_DEACTIVATE_SELF',
         message: 'Không thể tự khoá hoặc ngừng hoạt động tài khoản của chính mình',
       });
     }
-    changes.status = body.status;
+    changes.status = rawStatus;
+    if (rawStatus === 'locked') {
+      changes.lockedReason = (body.lockedReason || body.reason || 'Khoá tài khoản bởi quản trị viên').trim();
+    } else {
+      changes.lockedReason = null;
+    }
   }
 
   const updatedUser = updateUser(user, changes);
+  const assignedClasses = user.roles.includes('Instructor') || user.roles.includes('TeachingAssistant')
+    ? [{ classCode: 'JV01', className: 'Lớp Lập trình Java K12', roleInClass: 'Giảng viên chính' }]
+    : [];
+
   return res.status(200).json({
     success: true,
-    message: 'User updated successfully',
+    message: changes.status === 'locked'
+      ? 'Khoá tài khoản thành công. Toàn bộ phiên đăng nhập đã được thu hồi.'
+      : 'User updated successfully',
     user: toPublicUser(updatedUser),
+    assignedClasses,
+    requiresHandover: assignedClasses.length > 0,
   });
+});
+
+router.put('/users/:id/status', (req, res, next) => {
+  const status = typeof req.body?.status === 'string' ? req.body.status.toLowerCase() : req.body?.status;
+  if (status === 'locked' && !req.body?.lockedReason && !req.body?.reason) {
+    return res.status(400).json({
+      success: false,
+      code: 'REASON_REQUIRED',
+      message: 'Bắt buộc phải ghi rõ lý do khi khoá tài khoản.',
+    });
+  }
+  return router.handle(Object.assign(req, { url: `/users/${req.params.id}` }), res, next);
 });
 
 router.get('/roles', (req, res) => {

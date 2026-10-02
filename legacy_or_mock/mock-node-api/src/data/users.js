@@ -103,6 +103,7 @@ function updateUser(user, changes) {
   if (changes.name !== undefined) user.name = changes.name.trim();
   if (changes.phone !== undefined) user.phone = changes.phone.trim();
   if (changes.status !== undefined) user.status = changes.status;
+  if (changes.lockedReason !== undefined) user.lockedReason = changes.lockedReason;
   return user;
 }
 
@@ -128,6 +129,7 @@ function toPublicUser(user) {
     phone: user.phone,
     roles: [...user.roles],
     status: user.status,
+    lockedReason: user.lockedReason ?? null,
   };
 }
 
@@ -183,6 +185,7 @@ function updateTuition(studentId, paidAmount, status, updatedBy) {
 
 module.exports = {
   assignRole,
+  createUser,
   findUserByEmail,
   findUserById,
   getGradesByStudentId,

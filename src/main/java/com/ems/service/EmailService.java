@@ -18,6 +18,65 @@ public class EmailService {
     private static final Logger LOGGER = Logger.getLogger(EmailService.class.getName());
 
     /**
+     * Gửi email kích hoạt tài khoản kèm mật khẩu tạm (S1-08)
+     * @param toEmail Email người nhận
+     * @param fullName Họ và tên người dùng
+     * @param tempPassword Mật khẩu tạm thời
+     * @param loginLink Đường dẫn đăng nhập
+     */
+    public static boolean sendActivationEmail(String toEmail, String fullName, String tempPassword, String loginLink) {
+        String host = setting("SMTP_HOST", "");
+        String username = setting("SMTP_USERNAME", "");
+        String password = setting("SMTP_PASSWORD", "");
+        String from = setting("SMTP_FROM", username);
+        if (host.isBlank() || from.isBlank()) {
+            LOGGER.warning("Chưa cấu hình SMTP_HOST hoặc SMTP_FROM; không gửi được email kích hoạt.");
+            return false;
+        }
+
+        try {
+            String port = setting("SMTP_PORT", "587");
+            Properties properties = new Properties();
+            properties.put("mail.smtp.host", host);
+            properties.put("mail.smtp.port", port);
+            properties.put("mail.smtp.auth", Boolean.toString(!username.isBlank()));
+            properties.put("mail.smtp.starttls.enable", "true");
+            properties.put("mail.smtp.starttls.required", "true");
+            properties.put("mail.smtp.connectiontimeout", "10000");
+            properties.put("mail.smtp.timeout", "10000");
+            properties.put("mail.smtp.writetimeout", "10000");
+
+            Authenticator authenticator = username.isBlank() ? null : new Authenticator() {
+                @Override
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(username, password);
+                }
+            };
+            MimeMessage message = new MimeMessage(Session.getInstance(properties, authenticator));
+            message.setFrom(new InternetAddress(from));
+            message.setRecipient(Message.RecipientType.TO, new InternetAddress(toEmail));
+            message.setSubject("Kích hoạt tài khoản EduManager - Thông tin đăng nhập", "UTF-8");
+            message.setText(
+                    "Xin chào " + fullName + ",\n\n"
+                            + "Tài khoản của bạn trên hệ thống Quản lý Đào tạo EduManager đã được tạo thành công.\n"
+                            + "Dưới đây là thông tin đăng nhập tạm thời:\n"
+                            + "• Tên đăng nhập / Email: " + toEmail + "\n"
+                            + "• Mật khẩu tạm thời: " + tempPassword + "\n\n"
+                            + "Vui lòng truy cập đường dẫn sau để đăng nhập và đổi mật khẩu ngay lần đầu sử dụng:\n"
+                            + loginLink + "\n\n"
+                            + "Trân trọng,\nBan Quản trị Hệ thống EduManager",
+                    "UTF-8"
+            );
+            Transport.send(message);
+            return true;
+        } catch (Exception exception) {
+            LOGGER.log(Level.WARNING, "Không gửi được email kích hoạt tài khoản: "
+                    + exception.getClass().getSimpleName());
+            return false;
+        }
+    }
+
+    /**
      * Gửi email chứa liên kết đặt lại mật khẩu
      * @param toEmail Email người nhận
      * @param resetLink Đường dẫn đặt lại mật khẩu kèm token
