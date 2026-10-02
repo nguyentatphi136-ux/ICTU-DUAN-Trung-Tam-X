@@ -68,6 +68,13 @@ public class AuthorizationFilter implements Filter {
             return;
         }
 
+        // Tác vụ Jira IDTTX-24: Đảm bảo thay đổi vai trò có hiệu lực ngay ở thao tác kế tiếp mà không cần đăng nhập lại
+        vn.edu.ictu.ems.model.User freshUser = vn.edu.ictu.ems.service.UserStore.findById(currentUser.getId());
+        if (freshUser != null) {
+            currentUser = freshUser;
+            session.setAttribute("currentUser", freshUser);
+        }
+
         // Kiểm tra trạng thái tài khoản
         if ("locked".equalsIgnoreCase(currentUser.getStatus()) || "inactive".equalsIgnoreCase(currentUser.getStatus())) {
             denyAccess(req, res, "Tài khoản của bạn đã bị khoá hoặc ngừng hoạt động.");
