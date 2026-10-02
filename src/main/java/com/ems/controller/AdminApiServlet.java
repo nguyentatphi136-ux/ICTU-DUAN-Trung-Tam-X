@@ -26,6 +26,7 @@ public class AdminApiServlet extends HttpServlet {
     private static final Gson GSON = new Gson();
     private static final Pattern ROLE_PERMISSION_PATH = Pattern.compile("^/roles/([A-Z_]+)/permissions$");
     private static final Pattern USER_ROLE_PATH = Pattern.compile("^/users/(\\d+)/roles$");
+    private static final Pattern USER_ROLE_REVOKE_PATH = Pattern.compile("^/users/(\\d+)/roles/([A-Za-z0-9_]+)$");
     private final PermissionDAO permissionDAO = new PermissionDAO();
     private final AdminDAO adminDAO = new AdminDAO();
 
@@ -103,6 +104,89 @@ public class AdminApiServlet extends HttpServlet {
         } catch (RuntimeException exception) {
             ApiResponse.error(response, 400, "REQUEST_INVALID_JSON", "Dữ liệu gửi lên không hợp lệ.",
                     "Quay lại trang quản trị", "/admin.html");
+        }
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException {
+        String path = request.getPathInfo() == null ? "" : request.getPathInfo();
+        Matcher userMatcher = USER_ROLE_PATH.matcher(path);
+        try {
+            if (userMatcher.matches()) {
+                Object actor = request.getAttribute("authenticatedUserId");
+                if (!(actor instanceof Long actorId)) {
+                    ApiResponse.error(response, 401, "AUTH_UNAUTHORIZED", "Vui lòng đăng nhập lại.",
+                            "Đăng nhập lại", "/login.html");
+                    return;
+                }
+                JsonObject body = GSON.fromJson(request.getReader(), JsonObject.class);
+                String role = body != null && body.has("role") ? body.get("role").getAsString()
+                        : (body != null && body.has("roleCode") ? body.get("roleCode").getAsString() : null);
+                if (role == null || role.trim().isEmpty()) {
+                    ApiResponse.error(response, 400, "REQUEST_VALIDATION_ERROR", "Vui lòng cung cấp vai trò cần gán.",
+                            "Kiểm tra lại lựa chọn", "/admin.html#vai-tro");
+                    return;
+                }
+                Map<String, Object> updated = adminDAO.assignRole(actorId, Long.parseLong(userMatcher.group(1)), role);
+                if (updated == null) {
+                    ApiResponse.error(response, 404, "USER_NOT_FOUND", "Không tìm thấy tài khoản.",
+                            "Quay lại quản lý tài khoản", "/admin.html#tai-khoan");
+                    return;
+                }
+                ApiResponse.success(response, "USER_ROLE_ASSIGNED", "Gán vai trò thành công.", updated);
+                return;
+            }
+            ApiResponse.error(response, 404, "API_NOT_FOUND", "Không tìm thấy chức năng.",
+                    "Quay lại trang quản trị", "/admin.html");
+        } catch (IllegalStateException exception) {
+            ApiResponse.error(response, 409, "ROLE_ALREADY_ASSIGNED", exception.getMessage(),
+                    "Kiểm tra lại lựa chọn", "/admin.html#vai-tro");
+        } catch (IllegalArgumentException exception) {
+            ApiResponse.error(response, 400, "REQUEST_VALIDATION_ERROR", exception.getMessage(),
+                    "Kiểm tra lại lựa chọn", "/admin.html#vai-tro");
+        } catch (SQLException exception) {
+            serviceUnavailable(response);
+        } catch (RuntimeException exception) {
+            ApiResponse.error(response, 400, "REQUEST_INVALID_JSON", "Dữ liệu gửi lên không hợp lệ.",
+                    "Quay lại trang quản trị", "/admin.html");
+        }
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, ServletException {
+        String path = request.getPathInfo() == null ? "" : request.getPathInfo();
+        Matcher revokeMatcher = USER_ROLE_REVOKE_PATH.matcher(path);
+        try {
+            if (revokeMatcher.matches()) {
+                Object actor = request.getAttribute("authenticatedUserId");
+                if (!(actor instanceof Long actorId)) {
+                    ApiResponse.error(response, 401, "AUTH_UNAUTHORIZED", "Vui lòng đăng nhập lại.",
+                            "Đăng nhập lại", "/login.html");
+                    return;
+                }
+                long targetId = Long.parseLong(revokeMatcher.group(1));
+                String roleCode = revokeMatcher.group(2);
+                Map<String, Object> updated = adminDAO.revokeRole(actorId, targetId, roleCode);
+                if (updated == null) {
+                    ApiResponse.error(response, 404, "USER_NOT_FOUND", "Không tìm thấy tài khoản.",
+                            "Quay lại quản lý tài khoản", "/admin.html#tai-khoan");
+                    return;
+                }
+                ApiResponse.success(response, "USER_ROLE_REVOKED", "Thu hồi vai trò thành công.", updated);
+                return;
+            }
+            ApiResponse.error(response, 404, "API_NOT_FOUND", "Không tìm thấy chức năng.",
+                    "Quay lại trang quản trị", "/admin.html");
+        } catch (IllegalStateException exception) {
+            ApiResponse.error(response, 404, "ROLE_NOT_ASSIGNED", exception.getMessage(),
+                    "Kiểm tra lại lựa chọn", "/admin.html#vai-tro");
+        } catch (IllegalArgumentException exception) {
+            ApiResponse.error(response, 409, "CANNOT_REVOKE_OWN_ADMIN", exception.getMessage(),
+                    "Kiểm tra lại lựa chọn", "/admin.html#vai-tro");
+        } catch (SQLException exception) {
+            serviceUnavailable(response);
         }
     }
 
