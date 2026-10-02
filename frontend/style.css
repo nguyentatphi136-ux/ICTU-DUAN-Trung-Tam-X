@@ -965,15 +965,15 @@ body.reset-body {
    App shell - giao diện các role (dùng chung bảng màu với trang đăng nhập)
    ===================================================================== */
 .app-body {
-  --app-bg: #ffecd1;
-  --app-card: #fff8e8;
-  --app-text: #132d55;
-  --app-muted: rgba(19, 45, 85, 0.6);
-  --app-border: rgba(19, 45, 85, 0.12);
-  --app-soft: rgba(19, 45, 85, 0.05);
-  --app-input-bg: rgba(19, 45, 85, 0.035);
-  --app-input-border: rgba(19, 45, 85, 0.22);
-  --app-accent: #015aa0;
+  --app-bg: #fbf3e2;
+  --app-card: #fffaf1;
+  --app-text: #142d52;
+  --app-muted: rgba(20, 45, 82, 0.62);
+  --app-border: rgba(20, 45, 82, 0.12);
+  --app-soft: rgba(20, 45, 82, 0.04);
+  --app-input-bg: rgba(20, 45, 82, 0.035);
+  --app-input-border: rgba(20, 45, 82, 0.19);
+  --app-accent: #174bd1;
   background: var(--app-bg);
   color: var(--app-text);
   font-family: "Plus Jakarta Sans", sans-serif;
@@ -1024,11 +1024,11 @@ body.reset-body {
 
 .app-logo {
   align-items: center;
-  background: transparent;
-  border: 1px solid transparent;
+  background: linear-gradient(145deg, #3471f5 0%, #1241c6 100%);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 12px;
-  box-shadow: none;
-  color: var(--app-text);
+  box-shadow: 0 7px 18px rgba(18, 65, 198, 0.22);
+  color: #fff;
   display: inline-flex;
   flex: none;
   height: 42px;
@@ -1234,6 +1234,27 @@ body.reset-body {
   position: sticky;
   top: 0;
   z-index: 30;
+}
+
+:root:not(.dark-mode) .app-body .app-topbar {
+  background: var(--app-card);
+  border-bottom-color: var(--app-border);
+  color: var(--app-text);
+}
+
+:root:not(.dark-mode) .app-body .app-eyebrow,
+:root:not(.dark-mode) .app-body .app-page-title {
+  color: var(--app-text);
+}
+
+:root:not(.dark-mode) .app-body .app-topbar .app-muted {
+  color: var(--app-muted);
+}
+
+:root:not(.dark-mode) .app-body .app-topbar .app-icon-btn {
+  background: var(--app-soft);
+  border-color: var(--app-border);
+  color: var(--app-text);
 }
 
 .app-eyebrow {
