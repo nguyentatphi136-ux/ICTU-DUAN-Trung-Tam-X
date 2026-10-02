@@ -41,6 +41,14 @@
           <div class="flex items-center gap-3">
             <span class="app-muted hidden sm:inline" data-today></span>
             <button
+              id="open-change-password-modal"
+              type="button"
+              class="app-btn app-btn-outline app-btn-sm"
+              title="Đổi mật khẩu"
+            >
+              <i data-lucide="key" class="size-[16px] me-1" aria-hidden="true"></i>Đổi mật khẩu
+            </button>
+            <button
               id="theme-toggle"
               type="button"
               aria-label="Chuyển giao diện tối"
@@ -325,6 +333,62 @@
             </div>
           </section>
         </main>
+      </div>
+    </div>
+
+    <!-- Modal Đổi mật khẩu (S1-04) -->
+    <div id="change-password-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden" role="dialog" aria-modal="true" aria-labelledby="change-pass-title">
+      <div class="bg-surface rounded-xl border border-border shadow-2xl w-full max-w-md p-6 relative">
+        <div class="flex items-center justify-between pb-3 border-b border-border">
+          <h3 id="change-pass-title" class="font-bold text-lg flex items-center gap-2">
+            <i data-lucide="shield-lock" class="text-primary size-5"></i> Đổi mật khẩu
+          </h3>
+          <button type="button" class="app-icon-btn" data-close-change-pass aria-label="Đóng">
+            <i data-lucide="x" class="size-5"></i>
+          </button>
+        </div>
+
+        <form id="change-password-form" class="mt-4 space-y-4">
+          <div>
+            <label for="cp-current" class="block text-sm font-semibold mb-1">Mật khẩu hiện tại <span class="text-rose-500">*</span></label>
+            <div class="relative">
+              <input type="password" id="cp-current" name="currentPassword" class="app-input w-full pe-10" required placeholder="Nhập mật khẩu hiện tại" autocomplete="current-password" />
+              <button type="button" class="toggle-pass-btn absolute right-3 top-1/2 -translate-y-1/2 text-muted" data-target="cp-current">
+                <i data-lucide="eye" class="size-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label for="cp-new" class="block text-sm font-semibold mb-1">Mật khẩu mới <span class="text-rose-500">*</span></label>
+            <div class="relative">
+              <input type="password" id="cp-new" name="newPassword" class="app-input w-full pe-10" required minlength="8" placeholder="Tối thiểu 8 ký tự (chữ + số)" autocomplete="new-password" />
+              <button type="button" class="toggle-pass-btn absolute right-3 top-1/2 -translate-y-1/2 text-muted" data-target="cp-new">
+                <i data-lucide="eye" class="size-4"></i>
+              </button>
+            </div>
+            <p class="text-xs text-muted mt-1">Tối thiểu 8 ký tự, bắt buộc có cả chữ cái và chữ số.</p>
+          </div>
+
+          <div>
+            <label for="cp-confirm" class="block text-sm font-semibold mb-1">Xác nhận mật khẩu mới <span class="text-rose-500">*</span></label>
+            <div class="relative">
+              <input type="password" id="cp-confirm" name="confirmPassword" class="app-input w-full pe-10" required placeholder="Nhập lại mật khẩu mới" autocomplete="new-password" />
+              <button type="button" class="toggle-pass-btn absolute right-3 top-1/2 -translate-y-1/2 text-muted" data-target="cp-confirm">
+                <i data-lucide="eye" class="size-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <div id="cp-alert" class="p-3 rounded-lg text-sm hidden"></div>
+
+          <div class="flex justify-end gap-2 pt-2 border-t border-border">
+            <button type="button" class="app-btn app-btn-outline" data-close-change-pass>Hủy</button>
+            <button type="submit" id="cp-submit-btn" class="app-btn app-btn-primary flex items-center gap-1.5">
+              <i data-lucide="check" class="size-4"></i> Lưu thay đổi
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 

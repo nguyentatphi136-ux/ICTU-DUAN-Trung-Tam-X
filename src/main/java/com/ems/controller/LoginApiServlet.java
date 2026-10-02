@@ -88,6 +88,7 @@ public class LoginApiServlet extends HttpServlet {
         request.changeSessionId();
         session.setAttribute("currentUser", user);
         session.setMaxInactiveInterval(8 * 60 * 60);
+        com.ems.config.SessionBlacklist.registerSession(user.getId(), session.getId());
 
         String role = roleSlug(user.getPrimaryRole());
         String redirectUrl = roleHome(role);

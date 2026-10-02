@@ -27,7 +27,9 @@ public final class PermissionPolicy {
         if ("DELETE".equals(method) && path.matches("^/api/admin/users/\\d+/roles/[A-Za-z0-9_]+$")) {
             return "USER_ROLE_ASSIGN";
         }
-        if ("POST".equals(method) && "/api/auth/logout".equals(path)) return "@authenticated";
+        if ("POST".equals(method) && ("/api/auth/logout".equals(path) || "/api/auth/change-password".equals(path))) {
+            return "@authenticated";
+        }
         return null;
     }
 
