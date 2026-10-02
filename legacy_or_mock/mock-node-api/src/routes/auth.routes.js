@@ -12,6 +12,11 @@ const invalidCredentialsMessage = 'Email hoặc mật khẩu không chính xác'
 const dummySalt = randomBytes(16);
 const dummyHash = randomBytes(64);
 
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
+const LOCKOUT_DURATION_MS = LOCKOUT_MINUTES * 60 * 1000;
+const failedLoginAttempts = new Map(); // normalizedEmail -> { count, lockedUntil }
+
 async function verifyPassword(password, user) {
   const salt = user ? Buffer.from(`idttx-44:${user.id}`) : dummySalt;
   const expectedHash = user ? user.passwordHash : dummyHash;
@@ -31,15 +36,51 @@ router.post('/login', async (req, res, next) => {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+
+    // S1-01 AC3: Khóa tạm 15 phút sau 5 lần sai liên tiếp
+    const now = Date.now();
+    const attemptRecord = failedLoginAttempts.get(normalizedEmail);
+    if (attemptRecord && attemptRecord.lockedUntil && attemptRecord.lockedUntil > now) {
+      const remainingMinutes = Math.ceil((attemptRecord.lockedUntil - now) / (60 * 1000));
+      return res.status(423).json({
+        success: false,
+        code: 'ACCOUNT_TEMPORARILY_LOCKED',
+        message: `Tài khoản tạm thời bị khóa 15 phút do nhập sai 5 lần liên tiếp. Vui lòng thử lại sau ${remainingMinutes} phút.`,
+        remainingMinutes,
+      });
+    }
+
     const user = users.find((candidate) => candidate.email === normalizedEmail);
     const passwordIsValid = await verifyPassword(password, user);
 
     if (!user || !passwordIsValid) {
-      return res.status(401).json({
-        success: false,
-        message: invalidCredentialsMessage,
-      });
+      let record = attemptRecord;
+      if (!record || (record.lockedUntil && record.lockedUntil <= now)) {
+        record = { count: 0, lockedUntil: null };
+      }
+      record.count += 1;
+      if (record.count >= MAX_FAILED_ATTEMPTS) {
+        record.lockedUntil = now + LOCKOUT_DURATION_MS;
+        failedLoginAttempts.set(normalizedEmail, record);
+        return res.status(423).json({
+          success: false,
+          code: 'ACCOUNT_TEMPORARILY_LOCKED',
+          message: 'Tài khoản đã bị tạm khóa 15 phút do nhập sai 5 lần liên tiếp. Vui lòng thử lại sau 15 phút.',
+          remainingMinutes: LOCKOUT_MINUTES,
+        });
+      } else {
+        failedLoginAttempts.set(normalizedEmail, record);
+        const remainingAttempts = MAX_FAILED_ATTEMPTS - record.count;
+        return res.status(401).json({
+          success: false,
+          message: invalidCredentialsMessage,
+          remainingAttempts,
+        });
+      }
     }
+
+    // Đăng nhập thành công -> Reset bộ đếm thất bại
+    failedLoginAttempts.delete(normalizedEmail);
 
     // roles trong token chỉ để client hiển thị; quyền truy cập luôn được
     // kiểm tra lại từ kho người dùng bởi middleware authenticate/authorize.

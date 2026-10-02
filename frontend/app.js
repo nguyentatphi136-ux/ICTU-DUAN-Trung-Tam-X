@@ -681,6 +681,109 @@ if (passwordInput && passwordError) {
   });
 }
 
+// ---------------------------------------------------------------------
+// Chính sách khóa tạm tài khoản: Khóa tạm 15 phút sau 5 lần sai liên tiếp (S1-01 AC3)
+// ---------------------------------------------------------------------
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
+const LOCKOUT_DURATION_MS = LOCKOUT_MINUTES * 60 * 1000;
+const LOGIN_ATTEMPTS_KEY = "edumanager-login-attempts";
+
+const getLoginAttemptsMap = () => {
+  try {
+    return JSON.parse(localStorage.getItem(LOGIN_ATTEMPTS_KEY) ?? "{}");
+  } catch {
+    return {};
+  }
+};
+
+const saveLoginAttemptsMap = (map) => {
+  localStorage.setItem(LOGIN_ATTEMPTS_KEY, JSON.stringify(map));
+};
+
+const normalizeLoginIdentity = (input) => {
+  const raw = (input || "").trim().toLowerCase();
+  if (!raw) return "";
+  const matched = DEMO_ACCOUNTS.find((acc) => {
+    const accEmail = acc.email.toLowerCase();
+    const aliases = (acc.aliases || []).map((a) => a.toLowerCase());
+    return accEmail === raw || aliases.includes(raw) || (raw.includes("@") && accEmail.split("@")[0] === raw.split("@")[0]);
+  });
+  return matched ? matched.email.toLowerCase() : raw;
+};
+
+const checkAccountLockout = (identity) => {
+  const norm = normalizeLoginIdentity(identity);
+  if (!norm) return { isLocked: false };
+
+  const map = getLoginAttemptsMap();
+  const record = map[norm];
+  if (!record || !record.lockedUntil) return { isLocked: false, count: record?.count || 0 };
+
+  const now = Date.now();
+  if (now < record.lockedUntil) {
+    const remainingSeconds = Math.ceil((record.lockedUntil - now) / 1000);
+    const remainingMinutes = Math.ceil(remainingSeconds / 60);
+    return {
+      isLocked: true,
+      remainingMinutes,
+      remainingSeconds,
+      lockedUntil: record.lockedUntil,
+      count: record.count,
+    };
+  }
+
+  // Đã hết 15 phút khóa tạm -> tự động mở khóa và reset số lần sai
+  delete map[norm];
+  saveLoginAttemptsMap(map);
+  return { isLocked: false, count: 0 };
+};
+
+const recordFailedLogin = (identity) => {
+  const norm = normalizeLoginIdentity(identity);
+  if (!norm) return { isLocked: false, remainingAttempts: MAX_FAILED_ATTEMPTS, count: 1 };
+
+  const map = getLoginAttemptsMap();
+  const current = map[norm] || { count: 0, lockedUntil: null };
+  const now = Date.now();
+
+  if (current.lockedUntil && now < current.lockedUntil) {
+    return checkAccountLockout(identity);
+  }
+
+  current.count = (current.count || 0) + 1;
+  if (current.count >= MAX_FAILED_ATTEMPTS) {
+    current.lockedUntil = now + LOCKOUT_DURATION_MS;
+    map[norm] = current;
+    saveLoginAttemptsMap(map);
+    return {
+      isLocked: true,
+      remainingMinutes: LOCKOUT_MINUTES,
+      remainingSeconds: LOCKOUT_MINUTES * 60,
+      lockedUntil: current.lockedUntil,
+      count: current.count,
+    };
+  } else {
+    map[norm] = current;
+    saveLoginAttemptsMap(map);
+    return {
+      isLocked: false,
+      remainingAttempts: MAX_FAILED_ATTEMPTS - current.count,
+      count: current.count,
+    };
+  }
+};
+
+const clearLoginAttempts = (identity) => {
+  const norm = normalizeLoginIdentity(identity);
+  if (!norm) return;
+  const map = getLoginAttemptsMap();
+  if (map[norm]) {
+    delete map[norm];
+    saveLoginAttemptsMap(map);
+  }
+};
+
 loginForm?.addEventListener("submit", async (event) => {
   event.preventDefault();
   hideStatus();
@@ -695,18 +798,47 @@ loginForm?.addEventListener("submit", async (event) => {
 
   saveLoginFormState(emailInput.value, passwordInput.value);
 
-  const account = findAccount(emailInput.value, passwordInput.value);
-  if (!account) {
-    showStatus("Email hoặc mật khẩu không đúng.");
+  const rawInput = emailInput.value.trim();
+
+  // 1. Kiểm tra chính sách khóa tạm 15 phút sau 5 lần sai liên tiếp (S1-01 AC3)
+  const lockoutStatus = checkAccountLockout(rawInput);
+  if (lockoutStatus.isLocked) {
+    showStatus(
+      `Tài khoản tạm thời bị khóa do nhập sai mật khẩu 5 lần liên tiếp. Vui lòng thử lại sau ${lockoutStatus.remainingMinutes} phút.`
+    );
     return;
   }
 
-  if (readStore("edumanager-locked-accounts").includes(account.email)) {
+  // 2. Kiểm tra nếu tài khoản bị Quản trị viên khóa vĩnh viễn (S1-10)
+  const account = findAccount(emailInput.value, passwordInput.value);
+  const targetEmail = account ? account.email : normalizeLoginIdentity(rawInput);
+  const lockedAccounts = readStore("edumanager-locked-accounts") || [];
+
+  if (lockedAccounts.includes(targetEmail)) {
     const reasons = readStore("edumanager-locked-reasons") || {};
-    const reason = reasons[account.email];
+    const reason = reasons[targetEmail];
     showStatus(reason ? `Tài khoản đã bị khoá. Lý do: ${reason}` : "Tài khoản đã bị khoá. Vui lòng liên hệ quản trị viên.");
     return;
   }
+
+  // 3. Nếu sai email hoặc mật khẩu
+  if (!account) {
+    const failResult = recordFailedLogin(rawInput);
+    if (failResult.isLocked) {
+      showStatus(
+        `Tài khoản đã bị tạm khóa 15 phút do nhập sai 5 lần liên tiếp. Vui lòng thử lại sau 15 phút.`
+      );
+    } else {
+      showStatus(
+        `Email hoặc mật khẩu không đúng. (Còn ${failResult.remainingAttempts} lần thử trước khi bị khóa tạm 15 phút)`
+      );
+    }
+    return;
+  }
+
+  // 4. Đăng nhập thành công -> Xóa bộ đếm sai & tiến hành phiên làm việc
+  clearLoginAttempts(rawInput);
+  clearLoginAttempts(account.email);
 
   login(account);
 });
