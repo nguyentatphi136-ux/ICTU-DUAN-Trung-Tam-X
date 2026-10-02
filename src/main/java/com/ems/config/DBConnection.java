@@ -8,10 +8,12 @@ import java.sql.SQLException;
  * Mục 12: JDBC & CRUD - Lớp tiện ích kết nối Cơ sở dữ liệu MySQL
  */
 public class DBConnection {
-    // Cấu hình kết nối MySQL XAMPP mặc định (Port 3306, user: root, pass: rỗng)
-    private static final String DB_URL = "jdbc:mysql://localhost:3306/ems_database?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8";
-    private static final String DB_USER = "root";
-    private static final String DB_PASSWORD = "";
+    private static final String DB_URL = setting(
+            "DB_URL",
+            "jdbc:mysql://localhost:3306/ems_database?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&characterEncoding=UTF-8"
+    );
+    private static final String DB_USER = setting("DB_USER", "root");
+    private static final String DB_PASSWORD = setting("DB_PASSWORD", "");
 
     static {
         try {
@@ -27,5 +29,11 @@ public class DBConnection {
      */
     public static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+    }
+
+    private static String setting(String name, String fallback) {
+        String value = System.getenv(name);
+        if (value == null || value.isBlank()) value = System.getProperty(name);
+        return value == null || value.isBlank() ? fallback : value;
     }
 }
