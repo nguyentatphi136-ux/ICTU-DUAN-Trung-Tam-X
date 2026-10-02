@@ -54,7 +54,7 @@ Hệ thống Quản lý Đào tạo Trung tâm là nền tảng quản trị s�
 | 1 | Nguyễn Tất Phi | [Mã SV] | Team Leader / Dev | Quản trị dự án, thiết kế kiến trúc hệ thống, BE Core Auth (Sprint 1) |
 | 2 | Nguyễn Minh Ngọc | [Mã SV] | Scrum Master | Điều phối Daily Scrum, Planning, gỡ blocker, hỗ trợ kiểm thử |
 | 3 | Nông Hùng Nguyên | [Mã SV] | Backend Dev | Thiết kế CSDL, API quản lý tài khoản, mã hóa mật khẩu |
-| 4 | Nguyễn Trung Kiên | [Mã SV] | Backend Dev | Xây dựng bộ lọc Authorization Filter, gán và thu hồi Role |
+| 4 | Nguyễn Trung Kiên | DTC245200736 | Backend Dev | Xây dựng bộ lọc Authorization Filter, gán và thu hồi Role (Jira: IDTTX-24) |
 | 5 | Nguyễn Văn Kỳ | [Mã SV] | Backend Dev | Xử lý Session, Forgot Password qua Email, API hồ sơ người dùng |
 | 6 | Vũ Trọng Nghĩa  | [Mã SV] | Frontend Dev | Thiết kế Layout Master, Dynamic Sidebar Menu theo Role |
 | 7 | Nguyễn Thanh Ngọc | [Mã SV] | Frontend Dev | Xây dựng giao diện Login, Forgot Password, Reset Password |
