@@ -76,6 +76,9 @@
         
         <div class="error-message">
             <c:choose>
+                <c:when test="${not empty forbiddenMessage}">
+                    <strong><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i> ${forbiddenMessage}</strong>
+                </c:when>
                 <c:when test="${not empty errorMessage}">
                     <strong><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i> ${errorMessage}</strong>
                 </c:when>
