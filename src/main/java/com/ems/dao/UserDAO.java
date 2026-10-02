@@ -130,6 +130,74 @@ public class UserDAO {
         }
     }
 
+    /**
+     * Chức năng S1-04: Đổi mật khẩu khi đang đăng nhập
+     * Ràng buộc:
+     * - Mật khẩu hiện tại phải khớp BCrypt hash
+     * - Mật khẩu mới tối thiểu 8 ký tự, có cả chữ và số
+     * - Mật khẩu xác nhận phải khớp mật khẩu mới
+     * - Mật khẩu mới không được trùng với mật khẩu cũ
+     * - Mã hóa BCrypt trước khi cập nhật
+     */
+    public boolean changePassword(long userId, String currentPassword, String newPassword, String confirmPassword)
+            throws SQLException {
+        if (currentPassword == null || currentPassword.isEmpty()) {
+            throw new IllegalArgumentException("Vui lòng nhập mật khẩu hiện tại.");
+        }
+        if (newPassword == null || newPassword.length() < 8) {
+            throw new IllegalArgumentException("Mật khẩu mới phải có tối thiểu 8 ký tự.");
+        }
+        if (!newPassword.matches(".*[a-zA-Z].*") || !newPassword.matches(".*\\d.*")) {
+            throw new IllegalArgumentException("Mật khẩu mới phải bao gồm cả chữ cái và chữ số.");
+        }
+        if (confirmPassword == null || !newPassword.equals(confirmPassword)) {
+            throw new IllegalArgumentException("Xác nhận mật khẩu mới không trùng khớp.");
+        }
+        if (currentPassword.equals(newPassword)) {
+            throw new IllegalArgumentException("Mật khẩu mới không được trùng với mật khẩu hiện tại.");
+        }
+
+        try (Connection connection = DBConnection.getConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                String storedHash = null;
+                try (PreparedStatement stmt = connection.prepareStatement(
+                        "SELECT password_hash FROM users WHERE id = ? FOR UPDATE")) {
+                    stmt.setLong(1, userId);
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        if (rs.next()) {
+                            storedHash = rs.getString("password_hash");
+                        }
+                    }
+                }
+
+                if (storedHash == null) {
+                    connection.rollback();
+                    throw new IllegalStateException("Không tìm thấy thông tin tài khoản.");
+                }
+
+                if (!isValidBcryptHash(storedHash) || !BCrypt.checkpw(currentPassword, storedHash)) {
+                    connection.rollback();
+                    throw new IllegalArgumentException("Mật khẩu hiện tại không chính xác.");
+                }
+
+                String newHash = BCrypt.hashpw(newPassword, BCrypt.gensalt(10));
+                try (PreparedStatement updateStmt = connection.prepareStatement(
+                        "UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?")) {
+                    updateStmt.setString(1, newHash);
+                    updateStmt.setLong(2, userId);
+                    updateStmt.executeUpdate();
+                }
+
+                connection.commit();
+                return true;
+            } catch (SQLException | RuntimeException e) {
+                connection.rollback();
+                throw e;
+            }
+        }
+    }
+
     private boolean isValidBcryptHash(String hash) {
         if (hash == null || !hash.matches("^\\$2[aby]\\$\\d{2}\\$.{53}$")) return false;
         return true;
