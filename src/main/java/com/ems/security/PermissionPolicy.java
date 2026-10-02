@@ -21,7 +21,10 @@ public final class PermissionPolicy {
         if ("PUT".equals(method) && path.matches("^/api/admin/roles/[A-Z_]+/permissions$")) {
             return "ROLE_PERMISSION_UPDATE";
         }
-        if ("PUT".equals(method) && path.matches("^/api/admin/users/\\d+/roles$")) {
+        if (("POST".equals(method) || "PUT".equals(method)) && path.matches("^/api/admin/users/\\d+/roles$")) {
+            return "USER_ROLE_ASSIGN";
+        }
+        if ("DELETE".equals(method) && path.matches("^/api/admin/users/\\d+/roles/[A-Za-z0-9_]+$")) {
             return "USER_ROLE_ASSIGN";
         }
         if ("POST".equals(method) && "/api/auth/logout".equals(path)) return "@authenticated";

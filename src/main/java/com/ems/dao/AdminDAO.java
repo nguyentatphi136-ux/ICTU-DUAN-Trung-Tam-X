@@ -106,6 +106,40 @@ public class AdminDAO {
         }
     }
 
+    public Map<String, Object> assignRole(long actorId, long targetId, String roleCode) throws SQLException {
+        if (roleCode == null || roleCode.trim().isEmpty()) {
+            throw new IllegalArgumentException("Mã vai trò không hợp lệ.");
+        }
+        String normalized = roleCode.trim().toUpperCase(java.util.Locale.ROOT);
+        List<String> current;
+        try (Connection connection = DBConnection.getConnection()) {
+            current = roleCodes(connection, targetId);
+        }
+        if (current.contains(normalized)) {
+            throw new IllegalStateException("Người dùng đã có vai trò này.");
+        }
+        List<String> updated = new ArrayList<>(current);
+        updated.add(normalized);
+        return replaceUserRoles(actorId, targetId, updated);
+    }
+
+    public Map<String, Object> revokeRole(long actorId, long targetId, String roleCode) throws SQLException {
+        if (roleCode == null || roleCode.trim().isEmpty()) {
+            throw new IllegalArgumentException("Mã vai trò không hợp lệ.");
+        }
+        String normalized = roleCode.trim().toUpperCase(java.util.Locale.ROOT);
+        List<String> current;
+        try (Connection connection = DBConnection.getConnection()) {
+            current = roleCodes(connection, targetId);
+        }
+        if (!current.contains(normalized)) {
+            throw new IllegalStateException("Người dùng không có vai trò này.");
+        }
+        List<String> updated = new ArrayList<>(current);
+        updated.remove(normalized);
+        return replaceUserRoles(actorId, targetId, updated);
+    }
+
     private List<String> roleCodes(Connection connection, long userId) throws SQLException {
         List<String> codes = new ArrayList<>();
         try (PreparedStatement statement = connection.prepareStatement(
