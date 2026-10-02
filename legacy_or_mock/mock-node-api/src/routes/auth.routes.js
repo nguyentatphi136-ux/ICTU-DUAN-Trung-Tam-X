@@ -65,8 +65,80 @@ router.post('/login', async (req, res, next) => {
   }
 });
 
+async function hashPassword(password, userId) {
+  const salt = Buffer.from(`idttx-44:${userId}`);
+  return await scryptAsync(password, salt, 64);
+}
+
 router.get('/me', authenticate, (req, res) => {
   return res.status(200).json({ success: true, user: toPublicUser(req.user) });
+});
+
+router.post('/change-password', authenticate, async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword, confirmPassword } = req.body || {};
+
+    if (!currentPassword) {
+      return res.status(400).json({
+        success: false,
+        code: 'VALIDATION_ERROR',
+        message: 'Vui lòng nhập mật khẩu hiện tại',
+      });
+    }
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({
+        success: false,
+        code: 'VALIDATION_ERROR',
+        message: 'Mật khẩu mới phải có tối thiểu 8 ký tự',
+      });
+    }
+
+    if (!/[a-zA-Z]/.test(newPassword) || !/[0-9]/.test(newPassword)) {
+      return res.status(400).json({
+        success: false,
+        code: 'VALIDATION_ERROR',
+        message: 'Mật khẩu mới phải bao gồm cả chữ cái và chữ số',
+      });
+    }
+
+    if (confirmPassword !== undefined && newPassword !== confirmPassword) {
+      return res.status(400).json({
+        success: false,
+        code: 'VALIDATION_ERROR',
+        message: 'Xác nhận mật khẩu mới không trùng khớp',
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return res.status(400).json({
+        success: false,
+        code: 'VALIDATION_ERROR',
+        message: 'Mật khẩu mới không được trùng với mật khẩu hiện tại',
+      });
+    }
+
+    const passwordIsValid = await verifyPassword(currentPassword, req.user);
+    if (!passwordIsValid) {
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_CURRENT_PASSWORD',
+        message: 'Mật khẩu hiện tại không chính xác',
+      });
+    }
+
+    req.user.passwordHash = await hashPassword(newPassword, req.user.id);
+    req.user.passwordChangedAt = Date.now();
+
+    return res.status(200).json({
+      success: true,
+      code: 'AUTH_CHANGE_PASSWORD_SUCCESS',
+      message: 'Đổi mật khẩu thành công. Các phiên đăng nhập trên thiết bị khác đã được thu hồi.',
+      user: toPublicUser(req.user),
+    });
+  } catch (error) {
+    return next(error);
+  }
 });
 
 module.exports = router;
