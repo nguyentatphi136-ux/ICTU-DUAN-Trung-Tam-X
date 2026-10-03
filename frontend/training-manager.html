@@ -258,6 +258,159 @@
             </section>
           </div>
 
+
+<section id="chuong-trinh-dao-tao" class="app-card">
+  <div class="app-card-header">
+    <div>
+      <h2 class="app-card-title">
+        <i data-lucide="book-open" aria-hidden="true"></i>
+
+        Quản lý chương trình đào tạo
+      </h2>
+
+      <p class="app-card-subtitle">
+        Thêm, gỡ, sắp xếp môn học và khai báo môn tiên quyết
+      </p>
+    </div>
+  </div>
+
+  <!-- Chọn chương trình đào tạo -->
+  <div class="training-program-toolbar">
+
+    <div class="training-field">
+      <label
+        for="training-program-select"
+        class="app-label"
+      >
+        Chương trình đào tạo
+      </label>
+
+      <select
+        id="training-program-select"
+        class="app-select"
+      >
+        <option value="frontend">
+          Lập trình Web Front-end
+        </option>
+
+        <option value="ielts">
+          IELTS 6.5+
+        </option>
+
+        <option value="communication">
+          Tiếng Anh giao tiếp
+        </option>
+
+        <option value="data">
+          Phân tích dữ liệu
+        </option>
+      </select>
+    </div>
+
+
+    <!-- Thêm môn -->
+    <div class="training-add-group">
+
+      <div class="training-field">
+        <label
+          for="subject-select"
+          class="app-label"
+        >
+          Môn học
+        </label>
+
+        <select
+          id="subject-select"
+          class="app-select"
+        >
+          <option value="">
+            -- Chọn môn học --
+          </option>
+        </select>
+      </div>
+
+
+      <button
+        id="btn-add-subject"
+        type="button"
+        class="app-btn"
+      >
+        <i
+          data-lucide="plus"
+          aria-hidden="true"
+        ></i>
+
+        Thêm môn học
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- Bảng môn học -->
+  <div class="app-table-wrap training-table-wrap">
+
+    <table
+      id="training-program-table"
+      class="app-table"
+    >
+
+      <thead>
+        <tr>
+          <th class="training-order-column">
+            Thứ tự
+          </th>
+
+          <th>
+            Mã môn
+          </th>
+
+          <th>
+            Tên môn học
+          </th>
+
+          <th>
+            Môn tiên quyết
+          </th>
+
+          <th class="training-action-column">
+            Thao tác
+          </th>
+        </tr>
+      </thead>
+
+
+      <tbody id="subject-list">
+
+        <!--
+          JavaScript sẽ tự sinh
+          các môn học tại đây
+        -->
+
+      </tbody>
+
+    </table>
+
+  </div>
+
+
+  <!-- Thông báo -->
+  <p
+    id="training-program-status"
+    class="app-status"
+    role="status"
+    aria-live="polite"
+    hidden
+  ></p>
+
+</section>
+
+<!-- ==========================================
+     HẾT QUẢN LÝ CHƯƠNG TRÌNH
+=========================================== -->
+
+
           <section id="bao-luu" class="app-card">
             <div class="app-card-header">
               <h2 class="app-card-title">
@@ -445,5 +598,11 @@
     </div>
 
     <script type="module" src="/app.js"></script>
+    
+    <script
+      type="module"
+      src="/src/training-manager.js"
+    ></script>
+    
   </body>
 </html>
