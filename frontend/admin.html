@@ -588,17 +588,68 @@
             </div>
           </div>
 
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label for="new-user-password" class="block text-sm font-semibold">
+                Mật khẩu khởi tạo <span class="text-rose-500">*</span>
+              </label>
+              <button type="button" id="btn-generate-password" class="text-xs text-primary font-medium hover:underline flex items-center gap-1">
+                <i data-lucide="refresh-cw" class="size-3"></i> Sinh mật khẩu ngẫu nhiên
+              </button>
+            </div>
+            <div class="relative">
+              <input
+                type="text"
+                id="new-user-password"
+                class="app-input w-full pr-10 font-mono"
+                required
+                value="Edu@2026"
+                placeholder="Nhập hoặc tạo mật khẩu"
+              />
+              <button
+                type="button"
+                id="toggle-new-user-password"
+                class="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-foreground p-1"
+                aria-label="Ẩn/Hiện mật khẩu"
+              >
+                <i data-lucide="eye" class="size-4"></i>
+              </button>
+            </div>
+            <p class="text-xs text-muted mt-1">Mật khẩu dùng để đăng nhập lần đầu và hệ thống sẽ gửi email kích hoạt.</p>
+          </div>
+
           <div class="p-3 rounded-lg bg-surface-muted/60 border border-border text-xs text-muted space-y-1">
             <div class="flex items-center gap-2 text-foreground font-medium">
               <i data-lucide="mail-check" class="size-4 text-emerald-600"></i>
-              Tự động gửi email kích hoạt kèm mật khẩu tạm
+              Tự động gửi email kích hoạt kèm hướng dẫn đăng nhập
             </div>
-            <p>Mật khẩu tạm thời sẽ được tạo ngẫu nhiên an toàn và gửi trực tiếp tới hòm thư người dùng để đổi lại ở lần đầu đăng nhập.</p>
+            <p>Hệ thống mô phỏng gửi email thông báo kích hoạt tài khoản và mật khẩu tới hòm thư người dùng.</p>
           </div>
 
           <div id="create-user-alert" class="p-3 rounded-lg text-sm hidden"></div>
 
-          <div class="flex justify-end gap-2 pt-3 border-t border-border">
+          <!-- Card thông báo tạo thành công kèm thông tin chi tiết -->
+          <div id="create-user-success-box" class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-900 hidden space-y-3">
+            <div class="flex items-center gap-2 font-bold text-emerald-700">
+              <i data-lucide="circle-check" class="size-5 text-emerald-600"></i>
+              <span>Tạo tài khoản thành công!</span>
+            </div>
+            <div class="bg-surface rounded-lg p-3 border border-emerald-500/20 text-xs space-y-1.5 font-mono text-foreground">
+              <div><span class="text-muted">Họ tên:</span> <strong id="success-user-name"></strong></div>
+              <div><span class="text-muted">Email:</span> <strong id="success-user-email"></strong></div>
+              <div><span class="text-muted">Mật khẩu:</span> <strong id="success-user-pass" class="text-rose-600 font-bold text-sm bg-rose-50 px-1.5 py-0.5 rounded"></strong></div>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-1">
+              <button type="button" id="btn-copy-new-account" class="app-btn app-btn-sm app-btn-outline flex items-center gap-1">
+                <i data-lucide="copy" class="size-3.5"></i> <span id="copy-btn-text">Sao chép thông tin</span>
+              </button>
+              <button type="button" class="app-btn app-btn-sm app-btn-primary" data-close-create-user>
+                Đóng
+              </button>
+            </div>
+          </div>
+
+          <div id="create-user-actions" class="flex justify-end gap-2 pt-3 border-t border-border">
             <button type="button" class="app-btn app-btn-outline" data-close-create-user>Hủy bỏ</button>
             <button type="submit" id="create-user-submit-btn" class="app-btn app-btn-primary flex items-center gap-1.5">
               <i data-lucide="check" class="size-4"></i> Tạo tài khoản

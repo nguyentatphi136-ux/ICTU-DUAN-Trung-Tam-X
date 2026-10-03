@@ -561,7 +561,11 @@ document.querySelectorAll("[data-home-date]").forEach((element) => {
 // ---------------------------------------------------------------------
 // 2. Tiện ích dùng chung
 // ---------------------------------------------------------------------
-lucide.createIcons();
+if (typeof lucide !== "undefined") {
+  lucide.createIcons();
+} else if (window.lucide) {
+  window.lucide.createIcons();
+}
 
 const formStatus = document.querySelector("#form-status");
 
@@ -844,6 +848,133 @@ loginForm?.addEventListener("submit", async (event) => {
 });
 
 // ---------------------------------------------------------------------
+// 4b. Modal Đăng ký / Tạo tài khoản mới trên trang đăng nhập
+// ---------------------------------------------------------------------
+const registerModal = document.querySelector("#register-modal");
+const openRegisterModalBtn = document.querySelector("#open-register-modal");
+const closeRegisterModalBtn = document.querySelector("#close-register-modal");
+const cancelRegisterBtn = document.querySelector("#cancel-register-btn");
+const registerForm = document.querySelector("#register-form");
+const regStatus = document.querySelector("#reg-status");
+
+const closeRegisterModal = () => {
+  if (registerModal) {
+    registerModal.classList.add("hidden");
+    if (registerForm) registerForm.reset();
+    if (regStatus) {
+      regStatus.classList.add("hidden");
+      regStatus.textContent = "";
+    }
+  }
+};
+
+if (openRegisterModalBtn && registerModal) {
+  openRegisterModalBtn.addEventListener("click", () => {
+    registerModal.classList.remove("hidden");
+    const nameInput = document.querySelector("#reg-name");
+    if (nameInput) nameInput.focus();
+    if (window.lucide) window.lucide.createIcons();
+  });
+}
+
+closeRegisterModalBtn?.addEventListener("click", closeRegisterModal);
+cancelRegisterBtn?.addEventListener("click", closeRegisterModal);
+registerModal?.addEventListener("click", (e) => {
+  if (e.target === registerModal) closeRegisterModal();
+});
+
+if (registerForm) {
+  registerForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = document.querySelector("#reg-name")?.value.trim();
+    const email = document.querySelector("#reg-email")?.value.trim().toLowerCase();
+    const phone = document.querySelector("#reg-phone")?.value.trim() || "";
+    const role = document.querySelector("#reg-role")?.value || "student";
+    const password = document.querySelector("#reg-password")?.value.trim();
+    const confirmPassword = document.querySelector("#reg-confirm-password")?.value.trim();
+
+    const showRegError = (msg) => {
+      if (regStatus) {
+        regStatus.textContent = msg;
+        regStatus.className = "text-xs leading-5 text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200 block";
+      }
+    };
+
+    if (!name || !email || !password || !confirmPassword) {
+      showRegError("Vui lòng điền đầy đủ các thông tin bắt buộc.");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      showRegError("Email không đúng định dạng (ví dụ: ten@domain.com).");
+      return;
+    }
+
+    // Kiểm tra trùng email với các tài khoản trong hệ thống
+    const customAccounts = readStore("edumanager-custom-accounts") || [];
+    const allEmails = [
+      ...DEMO_ACCOUNTS.map((a) => a.email.toLowerCase()),
+      ...DEMO_ACCOUNTS.flatMap((a) => (a.aliases || []).map((alias) => alias.toLowerCase())),
+      ...customAccounts.map((a) => a.email.toLowerCase()),
+    ];
+
+    if (allEmails.includes(email) || allEmails.includes(email.split("@")[0])) {
+      showRegError("Email này đã được sử dụng. Vui lòng chọn email khác hoặc đăng nhập.");
+      return;
+    }
+
+    if (password.length < 8) {
+      showRegError("Mật khẩu phải có tối thiểu 8 ký tự.");
+      return;
+    }
+
+    if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+      showRegError("Mật khẩu phải chứa ít nhất 1 chữ cái và 1 chữ số.");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      showRegError("Xác nhận mật khẩu không trùng khớp.");
+      return;
+    }
+
+    // Tạo tài khoản mới thành công
+    const newAccount = {
+      fullName: name,
+      email,
+      phone,
+      role,
+      password,
+      passwords: [password],
+      aliases: [email, email.split("@")[0]],
+      createdAt: new Date().toISOString(),
+    };
+
+    customAccounts.unshift(newAccount);
+    writeStore("edumanager-custom-accounts", customAccounts);
+
+    const customPasswords = readStore("edumanager-custom-passwords") || {};
+    customPasswords[email] = password;
+    customPasswords[email.split("@")[0]] = password;
+    writeStore("edumanager-custom-passwords", customPasswords);
+
+    addAuditLog(`Người dùng tự đăng ký tài khoản mới: ${name} (${email}) - Vai trò: ${role}`, email);
+
+    // Tự động điền vào form đăng nhập
+    if (emailInput) emailInput.value = email;
+    if (passwordInput) passwordInput.value = password;
+
+    closeRegisterModal();
+    showToast(`Đăng ký thành công tài khoản ${email}! Đang đăng nhập...`, "success");
+
+    // Đăng nhập ngay
+    setTimeout(() => {
+      login(newAccount);
+    }, 600);
+  });
+}
+
+// ---------------------------------------------------------------------
 // 5. Trang quên mật khẩu
 // ---------------------------------------------------------------------
 const forgotPasswordForm = document.querySelector("#forgot-password-form");
@@ -1095,10 +1226,12 @@ const setTheme = (isDark) => {
   themeToggle.title = isDark ? "Chuyển giao diện sáng" : "Chuyển giao diện tối";
   themeToggle.innerHTML = `<i data-lucide="${isDark ? "sun" : "moon"}" class="size-[18px]" aria-hidden="true"></i>`;
   localStorage.setItem("edumanager-theme", isDark ? "dark" : "light");
-  lucide.createIcons();
+  if (typeof lucide !== "undefined") lucide.createIcons();
 };
 
-const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const reduceMotion = typeof window.matchMedia === "function"
+  ? window.matchMedia("(prefers-reduced-motion: reduce)")
+  : { matches: false };
 
 // Hiệu ứng hình tròn: tâm là nút đổi giao diện, bán kính lan tới góc xa nhất.
 function circleRevealFrames(origin) {
@@ -1938,19 +2071,48 @@ if (accountTable) {
     if (createUserModal) {
       createUserModal.classList.add("hidden");
       if (createUserForm) createUserForm.reset();
+      const passInput = document.querySelector("#new-user-password");
+      if (passInput) passInput.value = "Edu@2026";
       const alertBox = document.querySelector("#create-user-alert");
       if (alertBox) {
         alertBox.classList.add("hidden");
         alertBox.textContent = "";
       }
+      document.querySelector("#create-user-success-box")?.classList.add("hidden");
+      document.querySelector("#create-user-actions")?.classList.remove("hidden");
     }
   };
 
+  const genPassBtn = document.querySelector("#btn-generate-password");
+  if (genPassBtn) {
+    genPassBtn.addEventListener("click", () => {
+      const passInput = document.querySelector("#new-user-password");
+      if (passInput) {
+        const randPass = "Edu@" + Math.random().toString(36).substring(2, 7) + "9";
+        passInput.value = randPass;
+        passInput.type = "text";
+        if (typeof showToast === "function") showToast(`Đã sinh mật khẩu ngẫu nhiên: ${randPass}`);
+      }
+    });
+  }
+
+  const togglePassBtn = document.querySelector("#toggle-new-user-password");
+  if (togglePassBtn) {
+    togglePassBtn.addEventListener("click", () => {
+      const passInput = document.querySelector("#new-user-password");
+      if (passInput) {
+        passInput.type = passInput.type === "password" ? "text" : "password";
+      }
+    });
+  }
+
   if (openCreateUserBtn && createUserModal) {
     openCreateUserBtn.addEventListener("click", () => {
+      closeCreateUser();
       createUserModal.classList.remove("hidden");
       const nameInput = document.querySelector("#new-user-name");
       if (nameInput) nameInput.focus();
+      if (window.lucide) window.lucide.createIcons();
     });
   }
 
@@ -1969,8 +2131,9 @@ if (accountTable) {
       e.preventDefault();
       const name = document.querySelector("#new-user-name")?.value.trim();
       const email = document.querySelector("#new-user-email")?.value.trim().toLowerCase();
-      const phone = document.querySelector("#new-user-phone")?.value.trim();
-      const role = document.querySelector("#new-user-role")?.value;
+      const phone = document.querySelector("#new-user-phone")?.value.trim() || "";
+      const role = document.querySelector("#new-user-role")?.value || "student";
+      const inputPass = document.querySelector("#new-user-password")?.value.trim();
       const alertBox = document.querySelector("#create-user-alert");
 
       const showAlert = (msg, isErr = true) => {
@@ -1988,47 +2151,92 @@ if (accountTable) {
         return;
       }
 
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        showAlert("Email không đúng định dạng (ví dụ: ten@domain.com).");
+        return;
+      }
+
       // Kiểm tra trùng email (S1-08: Email trùng bị từ chối kèm thông báo cụ thể)
       const all = getAllAccounts();
-      if (all.some((a) => a.email.toLowerCase() === email)) {
+      if (all.some((a) => a.email.toLowerCase() === email || (a.aliases || []).map((x) => x.toLowerCase()).includes(email))) {
         showAlert("Email này đã tồn tại trong hệ thống, vui lòng chọn email khác!");
         return;
       }
 
-      // Sinh mật khẩu tạm ngẫu nhiên
-      const tempPass = "Edu@" + Math.random().toString(36).substring(2, 8) + "9";
+      const finalPass = inputPass || ("Edu@" + Math.random().toString(36).substring(2, 8) + "9");
 
-      // Gửi yêu cầu API đến backend
+      if (finalPass.length < 8 || !/[a-zA-Z]/.test(finalPass) || !/[0-9]/.test(finalPass)) {
+        showAlert("Mật khẩu khởi tạo phải có tối thiểu 8 ký tự, gồm cả chữ và số.");
+        return;
+      }
+
+      // Gửi yêu cầu API đến backend (nếu có server chạy)
       try {
         await fetch("/api/admin/users", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, fullName: name, phone, role, tempPassword: tempPass }),
+          body: JSON.stringify({ email, fullName: name, phone, role, password: finalPass, tempPassword: finalPass }),
         }).catch(() => null);
       } catch (_) {}
 
       // Lưu tài khoản mới vào danh sách lưu trữ
       const customAccounts = readStore("edumanager-custom-accounts") || [];
-      customAccounts.unshift({
+      const newAcc = {
         fullName: name,
         email,
         phone,
         role,
-        password: tempPass,
+        password: finalPass,
+        passwords: [finalPass],
+        aliases: [email, email.split("@")[0]],
         createdAt: new Date().toISOString(),
-      });
+      };
+      customAccounts.unshift(newAcc);
       writeStore("edumanager-custom-accounts", customAccounts);
 
-      addAuditLog(`Tạo tài khoản mới: ${name} (${email}) - Mật khẩu tạm đã được gửi qua email`);
+      // Lưu mật khẩu vào custom passwords map để xác thực 100%
+      const customPasswords = readStore("edumanager-custom-passwords") || {};
+      customPasswords[email] = finalPass;
+      customPasswords[email.split("@")[0]] = finalPass;
+      writeStore("edumanager-custom-passwords", customPasswords);
+
+      addAuditLog(`Tạo tài khoản mới: ${name} (${email}) - Vai trò: ${role} - Mật khẩu đã được thiết lập`);
       renderAccounts();
       renderAuditLog();
-      closeCreateUser();
+
+      // Hiển thị card thành công kèm mật khẩu rõ ràng ngay trong modal
+      const successBox = document.querySelector("#create-user-success-box");
+      const actionsBox = document.querySelector("#create-user-actions");
+      if (successBox) {
+        document.querySelector("#success-user-name").textContent = name;
+        document.querySelector("#success-user-email").textContent = email;
+        document.querySelector("#success-user-pass").textContent = finalPass;
+        successBox.classList.remove("hidden");
+        if (actionsBox) actionsBox.classList.add("hidden");
+        if (alertBox) alertBox.classList.add("hidden");
+
+        const copyBtn = document.querySelector("#btn-copy-new-account");
+        if (copyBtn) {
+          copyBtn.onclick = () => {
+            const textToCopy = `Tài khoản: ${email}\nMật khẩu: ${finalPass}`;
+            if (navigator.clipboard) {
+              navigator.clipboard.writeText(textToCopy);
+            }
+            const copyText = document.querySelector("#copy-btn-text");
+            if (copyText) copyText.textContent = "Đã sao chép!";
+            setTimeout(() => {
+              if (copyText) copyText.textContent = "Sao chép thông tin";
+            }, 2500);
+          };
+        }
+      } else {
+        closeCreateUser();
+      }
 
       if (typeof showToast === "function") {
-        showToast(`Tạo tài khoản ${email} thành công! Mật khẩu tạm: ${tempPass}`, "success");
-      } else {
-        alert(`Tạo tài khoản thành công!\nMật khẩu tạm thời của ${name}: ${tempPass}\n(Email kích hoạt đã được gửi tới ${email})`);
+        showToast(`Tạo tài khoản ${email} thành công! Mật khẩu: ${finalPass}`, "success");
       }
+      if (window.lucide) window.lucide.createIcons();
     });
   }
 
