@@ -307,11 +307,13 @@
 
               <p class="mt-5 text-center text-xs text-wine/60">
                 Chưa có tài khoản?
-                <a
-                  href="mailto:admin@edumanager.vn?subject=Y%C3%AAu%20c%E1%BA%A7u%20t%E1%BA%A1o%20t%C3%A0i%20kho%E1%BA%A3n"
-                  class="font-bold text-berry underline-offset-4 hover:underline"
-                  >Tạo tài khoản</a
+                <button
+                  type="button"
+                  id="open-register-modal"
+                  class="font-bold text-berry underline-offset-4 hover:underline cursor-pointer bg-transparent border-0 p-0 text-xs"
                 >
+                  Tạo tài khoản mới
+                </button>
               </p>
 
               <div
@@ -344,6 +346,127 @@
         </footer>
       </section>
     </main>
+
+    <!-- Modal Đăng ký / Tạo tài khoản mới trực tiếp từ trang đăng nhập -->
+    <div id="register-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden" role="dialog" aria-modal="true" aria-labelledby="register-modal-title">
+      <div class="w-full max-w-md rounded-2xl border border-wine/10 bg-panel p-6 shadow-2xl sm:p-7 relative text-wine">
+        <div class="flex items-center justify-between pb-3 border-b border-wine/10">
+          <div>
+            <h3 id="register-modal-title" class="font-bold text-lg text-wine flex items-center gap-2">
+              <i data-lucide="user-plus" class="size-5 text-berry"></i> Đăng ký tài khoản mới
+            </h3>
+            <p class="text-xs text-wine/60 mt-0.5">Tạo tài khoản nhanh để trải nghiệm hệ thống</p>
+          </div>
+          <button type="button" id="close-register-modal" class="size-8 flex items-center justify-center rounded-lg hover:bg-wine/5 text-wine/60 hover:text-wine" aria-label="Đóng">
+            <i data-lucide="x" class="size-5"></i>
+          </button>
+        </div>
+
+        <form id="register-form" class="mt-4 space-y-3.5" novalidate>
+          <div>
+            <label for="reg-name" class="block text-xs font-bold text-wine/85 mb-1.5">
+              Họ và tên <span class="text-rose-500">*</span>
+            </label>
+            <input
+              type="text"
+              id="reg-name"
+              required
+              placeholder="Ví dụ: Nguyễn Văn An"
+              class="h-11 w-full rounded-lg border border-wine/15 bg-white/70 px-3.5 text-sm text-wine outline-none transition focus:border-berry focus:bg-white focus:ring-2 focus:ring-berry/10"
+            />
+          </div>
+
+          <div>
+            <label for="reg-email" class="block text-xs font-bold text-wine/85 mb-1.5">
+              Email đăng nhập <span class="text-rose-500">*</span>
+            </label>
+            <input
+              type="email"
+              id="reg-email"
+              required
+              placeholder="Ví dụ: an.nguyen@edumanager.vn"
+              class="h-11 w-full rounded-lg border border-wine/15 bg-white/70 px-3.5 text-sm text-wine outline-none transition focus:border-berry focus:bg-white focus:ring-2 focus:ring-berry/10"
+            />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="reg-phone" class="block text-xs font-bold text-wine/85 mb-1.5">
+                Số điện thoại
+              </label>
+              <input
+                type="tel"
+                id="reg-phone"
+                placeholder="0912345678"
+                class="h-11 w-full rounded-lg border border-wine/15 bg-white/70 px-3.5 text-sm text-wine outline-none transition focus:border-berry focus:bg-white focus:ring-2 focus:ring-berry/10"
+              />
+            </div>
+            <div>
+              <label for="reg-role" class="block text-xs font-bold text-wine/85 mb-1.5">
+                Vai trò <span class="text-rose-500">*</span>
+              </label>
+              <select
+                id="reg-role"
+                required
+                class="h-11 w-full rounded-lg border border-wine/15 bg-white/70 px-3 text-sm text-wine outline-none transition focus:border-berry focus:bg-white focus:ring-2 focus:ring-berry/10"
+              >
+                <option value="student">Học viên (Student)</option>
+                <option value="instructor">Giảng viên (Instructor)</option>
+                <option value="ta">Trợ giảng (TA)</option>
+                <option value="training-manager">Quản lý đào tạo</option>
+                <option value="admissions">Tư vấn tuyển sinh</option>
+                <option value="accountant">Kế toán</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label for="reg-password" class="block text-xs font-bold text-wine/85 mb-1.5">
+              Mật khẩu <span class="text-rose-500">*</span>
+            </label>
+            <input
+              type="password"
+              id="reg-password"
+              required
+              placeholder="Tối thiểu 8 ký tự, có chữ và số"
+              class="h-11 w-full rounded-lg border border-wine/15 bg-white/70 px-3.5 text-sm text-wine outline-none transition focus:border-berry focus:bg-white focus:ring-2 focus:ring-berry/10"
+            />
+          </div>
+
+          <div>
+            <label for="reg-confirm-password" class="block text-xs font-bold text-wine/85 mb-1.5">
+              Xác nhận mật khẩu <span class="text-rose-500">*</span>
+            </label>
+            <input
+              type="password"
+              id="reg-confirm-password"
+              required
+              placeholder="Nhập lại mật khẩu"
+              class="h-11 w-full rounded-lg border border-wine/15 bg-white/70 px-3.5 text-sm text-wine outline-none transition focus:border-berry focus:bg-white focus:ring-2 focus:ring-berry/10"
+            />
+          </div>
+
+          <p id="reg-status" class="hidden text-xs leading-5 text-rose-600 bg-rose-50 p-2.5 rounded-lg border border-rose-200"></p>
+
+          <div class="flex items-center justify-end gap-2.5 pt-3 border-t border-wine/10">
+            <button
+              type="button"
+              id="cancel-register-btn"
+              class="h-10 px-4 rounded-lg border border-wine/15 text-xs font-semibold text-wine/75 hover:bg-wine/5"
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              id="submit-register-btn"
+              class="h-10 px-5 rounded-lg bg-wine text-paper text-xs font-bold hover:bg-[#0E2446] shadow-sm flex items-center gap-1.5"
+            >
+              <i data-lucide="check" class="size-4"></i> Đăng ký tài khoản
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <script type="module" src="/app.js"></script>
   </body>
