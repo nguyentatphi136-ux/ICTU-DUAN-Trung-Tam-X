@@ -1,0 +1,607 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Education Management System (EMS) - Lead API",
+    "description": "API Quản lý Khách hàng tiềm năng (Leads) - Sprint 2 User Story S2-09 [IDTTX-45].\n\n### Phân quyền vai trò (Role-Based Access Control):\n- **Tư vấn tuyển sinh (Admissions):** Được phép Xem (Read), Tạo mới (Create), Cập nhật (Update). **Tuyệt đối KHÔNG có quyền Xóa (Delete)**.\n- **Quản lý đào tạo (Training Manager):** Toàn quyền Xem (Read), Tạo mới (Create), Cập nhật (Update), **Xóa (Delete)**.\n- **Quản trị hệ thống (Admin):** Toàn quyền CRUD.\n- **Các vai trò khác (Instructor, Accountant, Student, Guest):** Bị từ chối truy cập (403 Forbidden).",
+    "version": "1.0.0",
+    "contact": {
+      "name": "ICTU & CodeGym EMS Development Team",
+      "email": "ems-team@ictu.edu.vn"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080",
+      "description": "Local Tomcat Server (Root context)"
+    },
+    {
+      "url": "http://localhost:8080/ems",
+      "description": "Local Tomcat Server (Context /ems)"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Leads",
+      "description": "Quản lý phễu khách hàng tiềm năng và thông tin liên hệ"
+    }
+  ],
+  "paths": {
+    "/api/leads": {
+      "get": {
+        "tags": ["Leads"],
+        "summary": "Lấy danh sách khách hàng tiềm năng (có tìm kiếm, lọc & phân trang)",
+        "description": "Cho phép Tư vấn tuyển sinh, Quản lý đào tạo và Admin tra cứu danh sách lead theo từ khóa, trạng thái, nguồn, người phụ trách và khoảng thời gian.",
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "description": "Từ khóa tìm kiếm theo họ tên, số điện thoại hoặc email",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Lọc theo trạng thái lead (NEW, CONTACTED, CONSULTING, TRIAL, WON, LOST, ENROLLED)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["NEW", "CONTACTED", "CONSULTING", "TRIAL", "WON", "LOST", "ENROLLED", "ALL"]
+            }
+          },
+          {
+            "name": "source",
+            "in": "query",
+            "description": "Lọc theo nguồn (WEBSITE, FACEBOOK, REFERRAL, DIRECT, ADS, EVENT, OTHER)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assignedTo",
+            "in": "query",
+            "description": "ID nhân sự tư vấn phụ trách",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Ngày bắt đầu lọc (YYYY-MM-DD)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "Ngày kết thúc lọc (YYYY-MM-DD)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Số trang (bắt đầu từ 1)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Số lượng bản ghi trên một trang (tối đa 100)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lấy danh sách lead thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Leads"],
+        "summary": "Tạo mới khách hàng tiềm năng",
+        "description": "Thêm một lead mới vào hệ thống. Hệ thống tự động kiểm tra trùng lặp số điện thoại (trả về 409 Conflict nếu đã tồn tại). Hỗ trợ Admissions, TrainingManager, Admin.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateLeadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tạo lead mới thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu validation không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "409": {
+            "description": "Trùng lặp số điện thoại trong hệ thống",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicatePhoneResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalServerError"
+          }
+        }
+      }
+    },
+    "/api/leads/{id}": {
+      "get": {
+        "tags": ["Leads"],
+        "summary": "Xem thông tin chi tiết một khách hàng tiềm năng",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID của Lead cần xem",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lấy chi tiết lead thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "404": {
+            "description": "Không tìm thấy lead với ID tương ứng",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Leads"],
+        "summary": "Cập nhật thông tin khách hàng tiềm năng",
+        "description": "Cập nhật họ tên, điện thoại, email, nguồn, chương trình quan tâm, trạng thái, ghi chú. Kiểm tra trùng lặp số điện thoại nếu thay đổi số. Hỗ trợ Admissions, TrainingManager, Admin.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID của Lead cần cập nhật",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLeadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật lead thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu validation không hợp lệ",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "$ref": "#/components/responses/ForbiddenError"
+          },
+          "404": {
+            "description": "Không tìm thấy lead với ID tương ứng",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Số điện thoại cập nhật bị trùng với lead khác",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicatePhoneResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Leads"],
+        "summary": "Xóa khách hàng tiềm năng",
+        "description": "Xóa hoàn toàn lead khỏi hệ thống. **CHỈ Quản lý đào tạo (Training Manager) và Admin mới có quyền xóa. Tư vấn tuyển sinh (Admissions) sẽ bị từ chối với mã 403 Forbidden.**",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID của Lead cần xóa",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Xóa lead thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteLeadResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/UnauthorizedError"
+          },
+          "403": {
+            "description": "Bị từ chối truy cập (Ví dụ: Admissions cố tình gọi xóa)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy lead cần xóa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/leads/check-phone": {
+      "get": {
+        "tags": ["Leads"],
+        "summary": "Kiểm tra số điện thoại trùng lặp trước khi gửi form",
+        "description": "Phục vụ frontend kiểm tra realtime khi người dùng nhập số điện thoại trong biểu mẫu tạo/sửa lead.",
+        "parameters": [
+          {
+            "name": "phone",
+            "in": "query",
+            "required": true,
+            "description": "Số điện thoại cần kiểm tra",
+            "schema": {
+              "type": "string",
+              "example": "0912345678"
+            }
+          },
+          {
+            "name": "excludeId",
+            "in": "query",
+            "required": false,
+            "description": "ID của lead hiện tại đang sửa (bỏ qua khi kiểm tra trùng)",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kiểm tra số điện thoại thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhoneCheckResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequestError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Lead": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "example": 1 },
+          "fullName": { "type": "string", "example": "Trần Minh Quang" },
+          "phone": { "type": "string", "example": "0912345678" },
+          "email": { "type": "string", "example": "quang.tran@gmail.com" },
+          "source": { "type": "string", "example": "WEBSITE" },
+          "programId": { "type": "integer", "nullable": true, "example": 1 },
+          "programInterest": { "type": "string", "example": "Khóa học Lập trình Web Fullstack Java" },
+          "status": { "type": "string", "example": "NEW" },
+          "notes": { "type": "string", "example": "Quan tâm lớp học tối, cần tư vấn lộ trình" },
+          "assignedTo": { "type": "integer", "nullable": true, "example": 5 },
+          "assignedToName": { "type": "string", "example": "Nguyễn Văn Kỳ" },
+          "createdBy": { "type": "integer", "nullable": true, "example": 1 },
+          "createdByName": { "type": "string", "example": "Quản trị viên" },
+          "updatedBy": { "type": "integer", "nullable": true, "example": 1 },
+          "updatedByName": { "type": "string", "example": "Quản trị viên" },
+          "createdAt": { "type": "string", "example": "2026-10-03 20:00:00" },
+          "updatedAt": { "type": "string", "example": "2026-10-03 20:30:00" }
+        }
+      },
+      "CreateLeadRequest": {
+        "type": "object",
+        "required": ["fullName", "phone"],
+        "properties": {
+          "fullName": { "type": "string", "minLength": 2, "maxLength": 100, "example": "Nguyễn Hoàng Nam" },
+          "phone": { "type": "string", "example": "0988776655" },
+          "email": { "type": "string", "example": "nam.nguyen@example.com" },
+          "source": { "type": "string", "default": "WEBSITE", "example": "FACEBOOK" },
+          "programId": { "type": "integer", "example": 2 },
+          "programInterest": { "type": "string", "example": "Lập trình React Frontend" },
+          "status": { "type": "string", "default": "NEW", "example": "NEW" },
+          "notes": { "type": "string", "example": "Khách muốn tư vấn hình thức trả góp" },
+          "assignedTo": { "type": "integer", "example": 3 },
+          "forceDuplicate": { "type": "boolean", "default": false, "description": "Nếu true, cho phép lưu dù trùng số điện thoại" }
+        }
+      },
+      "UpdateLeadRequest": {
+        "type": "object",
+        "properties": {
+          "fullName": { "type": "string", "example": "Nguyễn Hoàng Nam" },
+          "phone": { "type": "string", "example": "0988776655" },
+          "email": { "type": "string", "example": "nam.nguyen@example.com" },
+          "source": { "type": "string", "example": "FACEBOOK" },
+          "programId": { "type": "integer", "example": 2 },
+          "programInterest": { "type": "string", "example": "Lập trình React Frontend" },
+          "status": { "type": "string", "example": "CONTACTED" },
+          "notes": { "type": "string", "example": "Đã gọi tư vấn, hẹn ngày mai liên hệ lại" },
+          "assignedTo": { "type": "integer", "example": 3 },
+          "forceDuplicate": { "type": "boolean", "default": false }
+        }
+      },
+      "LeadListResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "code": { "type": "string", "example": "LEAD_LIST_SUCCESS" },
+          "message": { "type": "string", "example": "Lấy danh sách khách hàng tiềm năng thành công." },
+          "data": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": { "$ref": "#/components/schemas/Lead" }
+              },
+              "page": { "type": "integer", "example": 1 },
+              "pageSize": { "type": "integer", "example": 10 },
+              "totalItems": { "type": "integer", "example": 45 },
+              "totalPages": { "type": "integer", "example": 5 }
+            }
+          }
+        }
+      },
+      "LeadDetailResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "code": { "type": "string", "example": "LEAD_DETAIL_SUCCESS" },
+          "message": { "type": "string", "example": "Thao tác khách hàng tiềm năng thành công." },
+          "data": { "$ref": "#/components/schemas/Lead" }
+        }
+      },
+      "DeleteLeadResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "code": { "type": "string", "example": "LEAD_DELETED" },
+          "message": { "type": "string", "example": "Xóa khách hàng tiềm năng thành công." },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "integer", "example": 5 },
+              "fullName": { "type": "string", "example": "Nguyễn Hoàng Nam" }
+            }
+          }
+        }
+      },
+      "PhoneCheckResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": true },
+          "code": { "type": "string", "example": "PHONE_CHECK_SUCCESS" },
+          "message": { "type": "string", "example": "Kiểm tra số điện thoại thành công." },
+          "data": {
+            "type": "object",
+            "properties": {
+              "phone": { "type": "string", "example": "0912345678" },
+              "isDuplicate": { "type": "boolean", "example": true },
+              "duplicateLead": { "$ref": "#/components/schemas/Lead" }
+            }
+          }
+        }
+      },
+      "DuplicatePhoneResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "DUPLICATE_PHONE" },
+              "message": { "type": "string", "example": "Số điện thoại '0912345678' đã tồn tại trong hệ thống (Lead #1 - Trần Minh Quang)." },
+              "duplicateLead": { "$ref": "#/components/schemas/Lead" },
+              "action": {
+                "type": "object",
+                "properties": {
+                  "label": { "type": "string", "example": "Xem lead trùng" },
+                  "href": { "type": "string", "example": "/admissions.html?id=1" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "string", "example": "LEAD_VALIDATION_ERROR" },
+              "message": { "type": "string", "example": "Số điện thoại không đúng định dạng di động Việt Nam hợp lệ." },
+              "action": {
+                "type": "object",
+                "properties": {
+                  "label": { "type": "string", "example": "Thử lại" },
+                  "href": { "type": "string", "example": "/admissions.html" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Chưa đăng nhập hoặc phiên làm việc đã hết hạn (401)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "ForbiddenError": {
+        "description": "Không có quyền thực hiện thao tác (403)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "BadRequestError": {
+        "description": "Yêu cầu không hợp lệ hoặc thiếu tham số bắt buộc (400)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "InternalServerError": {
+        "description": "Lỗi máy chủ hoặc lỗi cơ sở dữ liệu (500/503)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -10,7 +10,10 @@ public final class PermissionPolicy {
             Map.entry("POST /api/admin/users", "USER_CREATE"),
             Map.entry("GET /api/admin/roles", "ROLE_PERMISSION_READ"),
             Map.entry("GET /api/admin/permissions", "ROLE_PERMISSION_READ"),
-            Map.entry("GET /api/admin/menus", "ROLE_PERMISSION_READ")
+            Map.entry("GET /api/admin/menus", "ROLE_PERMISSION_READ"),
+            Map.entry("GET /api/leads", "LEAD_VIEW"),
+            Map.entry("POST /api/leads", "LEAD_CREATE"),
+            Map.entry("GET /api/leads/check-phone", "LEAD_VIEW")
     );
 
     private PermissionPolicy() {}
@@ -32,6 +35,15 @@ public final class PermissionPolicy {
         }
         if ("PUT".equals(method) && path.matches("^/api/admin/users/\\d+$")) {
             return "USER_ROLE_ASSIGN";
+        }
+        if ("GET".equals(method) && path.matches("^/api/leads/\\d+$")) {
+            return "LEAD_VIEW";
+        }
+        if ("PUT".equals(method) && path.matches("^/api/leads/\\d+$")) {
+            return "LEAD_UPDATE";
+        }
+        if ("DELETE".equals(method) && path.matches("^/api/leads/\\d+$")) {
+            return "LEAD_DELETE";
         }
         if ("POST".equals(method) && ("/api/auth/logout".equals(path) || "/api/auth/change-password".equals(path))) {
             return "@authenticated";
