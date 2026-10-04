@@ -17,21 +17,24 @@ public class DBConnection {
 
     static {
         try {
-            // Nạp Driver MySQL JDBC
             Class.forName("com.mysql.cj.jdbc.Driver");
-        } catch (ClassNotFoundException e) {
-            System.err.println("Không tìm thấy MySQL JDBC Driver: " + e.getMessage());
-        }
+        } catch (ClassNotFoundException ignored) {}
+        try {
+            Class.forName("org.h2.Driver");
+        } catch (ClassNotFoundException ignored) {}
     }
 
     /**
-     * Mở kết nối tới MySQL
+     * Mở kết nối tới MySQL / CSDL kiểm thử
      */
     public static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+        String url = setting("DB_URL", DB_URL);
+        String user = setting("DB_USER", DB_USER);
+        String pass = setting("DB_PASSWORD", DB_PASSWORD);
+        return DriverManager.getConnection(url, user, pass);
     }
 
-    private static String setting(String name, String fallback) {
+    public static String setting(String name, String fallback) {
         String value = System.getenv(name);
         if (value == null || value.isBlank()) value = System.getProperty(name);
         return value == null || value.isBlank() ? fallback : value;

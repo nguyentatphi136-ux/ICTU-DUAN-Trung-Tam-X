@@ -33,6 +33,9 @@ public final class PermissionPolicy {
         if ("PUT".equals(method) && path.matches("^/api/admin/users/\\d+$")) {
             return "USER_ROLE_ASSIGN";
         }
+        if (path.startsWith("/api/training-programs")) {
+            return "PROGRAM_MANAGE";
+        }
         if ("POST".equals(method) && ("/api/auth/logout".equals(path) || "/api/auth/change-password".equals(path))) {
             return "@authenticated";
         }
