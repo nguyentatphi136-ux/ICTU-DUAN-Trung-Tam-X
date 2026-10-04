@@ -1,0 +1,3605 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduManager CRM — Tư vấn tuyển sinh & Quản lý Lead (S2-11 Prototype)</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --primary-light: #e0f2fe;
+      --primary-dark: #075985;
+
+      --neutral-50: #f8fafc;
+      --neutral-100: #f1f5f9;
+      --neutral-200: #e2e8f0;
+      --neutral-300: #cbd5e1;
+      --neutral-400: #94a3b8;
+      --neutral-500: #64748b;
+      --neutral-600: #475569;
+      --neutral-700: #334155;
+      --neutral-800: #1e293b;
+      --neutral-900: #0f172a;
+
+      --success: #10b981;
+      --success-light: #ecfdf5;
+      --success-border: #a7f3d0;
+      --success-dark: #047857;
+
+      --warning: #f59e0b;
+      --warning-light: #fffbeb;
+      --warning-border: #fde68a;
+      --warning-dark: #b45309;
+
+      --danger: #ef4444;
+      --danger-light: #fef2f2;
+      --danger-border: #fecaca;
+      --danger-dark: #b91c1c;
+
+      --purple: #8b5cf6;
+      --purple-light: #f5f3ff;
+      --purple-border: #ddd6fe;
+      --purple-dark: #6d28d9;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 20px;
+      --radius-full: 9999px;
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #f8fafc;
+      color: var(--neutral-800);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Top Reviewer Preset Bar */
+    .reviewer-toolbar {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .reviewer-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .reviewer-btn {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .reviewer-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .reviewer-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* App Shell */
+    .app-shell {
+      display: flex;
+      flex: 1;
+      min-height: calc(100vh - 45px);
+    }
+
+    /* Sidebar */
+    .app-sidebar {
+      width: 260px;
+      background: #ffffff;
+      border-right: 1px solid var(--neutral-200);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--neutral-100);
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+    }
+
+    .brand-title {
+      font-weight: 800;
+      font-size: 17px;
+      color: var(--neutral-900);
+      letter-spacing: -0.02em;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--neutral-400);
+      font-weight: 500;
+    }
+
+    .sidebar-menu {
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .menu-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--neutral-400);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 12px 6px;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--neutral-600);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .menu-item:hover {
+      background: var(--neutral-50);
+      color: var(--neutral-900);
+    }
+
+    .menu-item.active {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      font-weight: 700;
+    }
+
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--neutral-100);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .counselor-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-full);
+      background: #e0f2fe;
+      color: #0369a1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    /* Main Area */
+    .app-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      max-height: calc(100vh - 45px);
+    }
+
+    .app-topbar {
+      height: 64px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--neutral-200);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .topbar-breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--neutral-500);
+    }
+
+    .topbar-breadcrumbs a {
+      color: var(--neutral-600);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .topbar-breadcrumbs a:hover {
+      color: var(--primary);
+    }
+
+    .topbar-breadcrumbs .current {
+      color: var(--neutral-900);
+      font-weight: 600;
+    }
+
+    /* Views */
+    .view-content {
+      padding: 28px 32px;
+      flex: 1;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .screen-view {
+      display: none;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    .screen-view.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* General Components */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      color: var(--neutral-700);
+      border-color: var(--neutral-300);
+    }
+
+    .btn-secondary:hover {
+      background: var(--neutral-50);
+      border-color: var(--neutral-400);
+      color: var(--neutral-900);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--neutral-600);
+    }
+
+    .btn-ghost:hover {
+      background: var(--neutral-100);
+      color: var(--neutral-900);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12.5px;
+      border-radius: var(--radius-sm);
+    }
+
+    .card {
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: var(--radius-full);
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .badge-primary {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border: 1px solid #bae6fd;
+    }
+
+    .badge-success {
+      background: var(--success-light);
+      color: var(--success-dark);
+      border: 1px solid var(--success-border);
+    }
+
+    .badge-warning {
+      background: var(--warning-light);
+      color: var(--warning-dark);
+      border: 1px solid var(--warning-border);
+    }
+
+    .badge-danger {
+      background: var(--danger-light);
+      color: var(--danger-dark);
+      border: 1px solid var(--danger-border);
+    }
+
+    .badge-neutral {
+      background: var(--neutral-100);
+      color: var(--neutral-700);
+      border: 1px solid var(--neutral-200);
+    }
+
+    .badge-purple {
+      background: var(--purple-light);
+      color: var(--purple-dark);
+      border: 1px solid var(--purple-border);
+    }
+
+    /* Lead Status Color Mapping */
+    .status-badge-new {
+      background: #e0f2fe;
+      color: #0369a1;
+      border: 1px solid #bae6fd;
+    }
+
+    .status-badge-contacted {
+      background: #f1f5f9;
+      color: #475569;
+      border: 1px solid #cbd5e1;
+    }
+
+    .status-badge-counseling {
+      background: #fef3c7;
+      color: #b45309;
+      border: 1px solid #fde68a;
+    }
+
+    .status-badge-registered {
+      background: #dcfce7;
+      color: #15803d;
+      border: 1px solid #a7f3d0;
+    }
+
+    .status-badge-converted {
+      background: #ede9fe;
+      color: #6d28d9;
+      border: 1px solid #ddd6fe;
+    }
+
+    .status-badge-unreachable {
+      background: #ffedd5;
+      color: #c2410c;
+      border: 1px solid #fed7aa;
+    }
+
+    .status-badge-not-interested {
+      background: #fee2e2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+    }
+
+    /* Stats Grid */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      padding: 16px 20px;
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .stat-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .stat-num {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--neutral-900);
+      line-height: 1.2;
+    }
+
+    .stat-label {
+      font-size: 12.5px;
+      color: var(--neutral-500);
+      font-weight: 500;
+    }
+
+    /* Search & Filter Toolbar */
+    .lead-toolbar {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--neutral-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .search-bar-wrap {
+      position: relative;
+      flex: 1;
+      max-width: 460px;
+    }
+
+    .search-bar-wrap i.search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--neutral-400);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 38px 10px 42px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--neutral-300);
+      font-size: 14px;
+      outline: none;
+      transition: all 0.15s ease;
+      background: #ffffff;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    .search-clear-btn {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--neutral-400);
+      cursor: pointer;
+      display: none;
+      padding: 4px;
+    }
+
+    .search-clear-btn:hover {
+      color: var(--neutral-700);
+    }
+
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-filter {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13.5px;
+      font-weight: 600;
+      background: #ffffff;
+      border: 1px solid var(--neutral-300);
+      color: var(--neutral-700);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-filter:hover,
+    .btn-filter.has-filters {
+      border-color: var(--primary);
+      color: var(--primary-dark);
+      background: var(--primary-light);
+    }
+
+    .filter-count-badge {
+      background: var(--primary);
+      color: #ffffff;
+      border-radius: var(--radius-full);
+      padding: 1px 7px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* Active Filter Chips Bar */
+    .filter-chips-row {
+      padding: 10px 20px;
+      background: var(--neutral-50);
+      border-bottom: 1px solid var(--neutral-200);
+      display: none;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 12.5px;
+    }
+
+    .filter-chip {
+      background: #ffffff;
+      border: 1px solid var(--neutral-300);
+      border-radius: var(--radius-full);
+      padding: 3px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--neutral-700);
+      font-weight: 500;
+    }
+
+    .filter-chip-remove {
+      cursor: pointer;
+      color: var(--neutral-400);
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .filter-chip-remove:hover {
+      color: var(--danger);
+    }
+
+    /* Table Styles */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    .lead-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      text-align: left;
+      font-size: 13.5px;
+    }
+
+    .lead-table th {
+      background: var(--neutral-50);
+      color: var(--neutral-600);
+      font-weight: 600;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--neutral-200);
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .lead-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--neutral-100);
+      color: var(--neutral-700);
+      background: #ffffff;
+      vertical-align: middle;
+      transition: background 0.12s ease;
+    }
+
+    .lead-table tbody tr {
+      cursor: pointer;
+    }
+
+    .lead-table tbody tr:hover td {
+      background: #f8fafc;
+    }
+
+    .lead-table tbody tr.row-selected td {
+      background: #f0f9ff;
+    }
+
+    .lead-name-cell {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .lead-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-full);
+      background: #e2e8f0;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    .lead-fullname {
+      font-weight: 700;
+      color: var(--neutral-900);
+      line-height: 1.3;
+    }
+
+    .lead-phone {
+      font-family: monospace;
+      font-size: 12.5px;
+      color: var(--neutral-500);
+      margin-top: 1px;
+    }
+
+    .highlight-match {
+      background: #fef08a;
+      color: #854d0e;
+      padding: 0 2px;
+      border-radius: 2px;
+      font-weight: 700;
+    }
+
+    .row-quick-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      opacity: 0.6;
+      transition: opacity 0.15s ease;
+    }
+
+    .lead-table tbody tr:hover .row-quick-actions {
+      opacity: 1;
+    }
+
+    /* Slide-over Filter Panel / Drawer */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(2px);
+      z-index: 1050;
+      display: none;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .drawer-overlay.active {
+      display: block;
+    }
+
+    .drawer-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 440px;
+      max-width: 90vw;
+      height: 100vh;
+      background: #ffffff;
+      box-shadow: -8px 0 24px rgba(0, 0, 0, 0.15);
+      z-index: 1060;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .drawer-overlay.active .drawer-panel {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--neutral-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .drawer-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--neutral-900);
+    }
+
+    .drawer-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+
+    .filter-group-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--neutral-800);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .filter-pills-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .filter-pill-opt {
+      padding: 6px 12px;
+      border-radius: var(--radius-md);
+      font-size: 12.5px;
+      font-weight: 500;
+      background: var(--neutral-50);
+      border: 1px solid var(--neutral-200);
+      color: var(--neutral-700);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .filter-pill-opt:hover {
+      background: var(--neutral-100);
+    }
+
+    .filter-pill-opt.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    .filter-select {
+      width: 100%;
+      padding: 9px 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--neutral-300);
+      font-size: 13.5px;
+      color: var(--neutral-800);
+      background: #ffffff;
+      outline: none;
+    }
+
+    .filter-select:focus {
+      border-color: var(--primary);
+    }
+
+    .drawer-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--neutral-200);
+      background: var(--neutral-50);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* SCREEN 03: LEAD DETAIL & TIMELINE */
+    .lead-detail-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .detail-top-nav {
+      margin-bottom: 18px;
+    }
+
+    .btn-back-link {
+      font-size: 13.5px;
+      color: var(--neutral-600);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+    }
+
+    .btn-back-link:hover {
+      background: var(--neutral-200);
+      color: var(--neutral-900);
+    }
+
+    .lead-hero-card {
+      padding: 24px 28px;
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .lead-hero-info {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .hero-avatar {
+      width: 58px;
+      height: 58px;
+      border-radius: var(--radius-full);
+      background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+      color: #0369a1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 20px;
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.15);
+    }
+
+    .hero-name {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--neutral-900);
+      letter-spacing: -0.01em;
+    }
+
+    .hero-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 4px;
+      font-size: 13.5px;
+      color: var(--neutral-500);
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Context Highlight Banner */
+    .context-banner {
+      background: #fffbeb;
+      border: 1px solid var(--warning-border);
+      border-radius: var(--radius-lg);
+      padding: 14px 18px;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      font-size: 13.5px;
+      color: #92400e;
+    }
+
+    /* Detail 2-Columns Layout */
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    @media (max-width: 1024px) {
+      .detail-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .info-group-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--neutral-400);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 12px;
+    }
+
+    .info-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      font-size: 13.5px;
+    }
+
+    .info-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .info-label {
+      font-size: 12px;
+      color: var(--neutral-500);
+    }
+
+    .info-val {
+      font-weight: 600;
+      color: var(--neutral-800);
+    }
+
+    /* Timeline Section */
+    .timeline-container {
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-xl);
+      padding: 24px 28px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .timeline-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+
+    .timeline-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--neutral-900);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Timeline Sub-filters */
+    .timeline-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--neutral-100);
+    }
+
+    .timeline-search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 240px;
+    }
+
+    .timeline-search-wrap i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--neutral-400);
+    }
+
+    .timeline-search-input {
+      width: 100%;
+      padding: 8px 12px 8px 36px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--neutral-300);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .timeline-search-input:focus {
+      border-color: var(--primary);
+    }
+
+    .filter-tab-pill {
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--neutral-100);
+      color: var(--neutral-600);
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .filter-tab-pill:hover {
+      background: var(--neutral-200);
+    }
+
+    .filter-tab-pill.active {
+      background: var(--neutral-900);
+      color: #ffffff;
+    }
+
+    /* Quick Add Interaction Form */
+    .quick-log-box {
+      background: #f8fafc;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+
+    .quick-log-options {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .log-type-btn {
+      padding: 6px 12px;
+      border-radius: var(--radius-md);
+      font-size: 12.5px;
+      font-weight: 600;
+      background: #ffffff;
+      border: 1px solid var(--neutral-300);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .log-type-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .quick-log-textarea {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--neutral-300);
+      font-size: 13.5px;
+      outline: none;
+      resize: vertical;
+      min-height: 70px;
+      margin-bottom: 10px;
+      background: #ffffff;
+    }
+
+    .quick-log-textarea:focus {
+      border-color: var(--primary);
+    }
+
+    /* Timeline Stream Items */
+    .timeline-list {
+      position: relative;
+      padding-left: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .timeline-list::before {
+      content: '';
+      position: absolute;
+      left: 12px;
+      top: 6px;
+      bottom: 12px;
+      width: 2px;
+      background: var(--neutral-200);
+    }
+
+    .timeline-card-item {
+      position: relative;
+    }
+
+    .timeline-node-icon {
+      position: absolute;
+      left: -32px;
+      top: 0;
+      width: 26px;
+      height: 26px;
+      border-radius: var(--radius-full);
+      background: #ffffff;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      z-index: 2;
+    }
+
+    .timeline-node-icon.call {
+      border-color: #0284c7;
+      color: #0284c7;
+      background: #e0f2fe;
+    }
+
+    .timeline-node-icon.msg {
+      border-color: #10b981;
+      color: #10b981;
+      background: #ecfdf5;
+    }
+
+    .timeline-node-icon.note {
+      border-color: #f59e0b;
+      color: #b45309;
+      background: #fffbeb;
+    }
+
+    .timeline-node-icon.email {
+      border-color: #8b5cf6;
+      color: #6d28d9;
+      background: #f5f3ff;
+    }
+
+    .timeline-node-icon.appointment {
+      border-color: #0d9488;
+      color: #0f766e;
+      background: #ccfbf1;
+    }
+
+    .timeline-card-content {
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      transition: all 0.2s ease;
+    }
+
+    .timeline-card-content:hover {
+      border-color: var(--neutral-300);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .timeline-card-content.highlighted-context {
+      border: 2px solid #f59e0b;
+      background: #fffdf5;
+      box-shadow: 0 4px 14px rgba(245, 158, 11, 0.12);
+    }
+
+    .timeline-meta-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .timeline-time {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--neutral-800);
+    }
+
+    .timeline-author {
+      font-size: 12px;
+      color: var(--neutral-500);
+    }
+
+    .timeline-text {
+      font-size: 13.5px;
+      color: var(--neutral-700);
+      line-height: 1.55;
+    }
+
+    .audio-recording-mock {
+      margin-top: 12px;
+      padding: 8px 14px;
+      background: #f1f5f9;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 12.5px;
+      color: var(--neutral-600);
+    }
+
+    .play-audio-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      background: #ffffff;
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      box-shadow: var(--shadow-xl);
+      border: 1px solid var(--neutral-200);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13.5px;
+      font-weight: 500;
+      animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      max-width: 440px;
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* Modal Dialog */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(2px);
+      z-index: 1500;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+
+    .modal-dialog {
+      background: #ffffff;
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 480px;
+      box-shadow: var(--shadow-xl);
+      border: 1px solid var(--neutral-200);
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--neutral-100);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-footer {
+      padding: 14px 20px;
+      background: var(--neutral-50);
+      border-top: 1px solid var(--neutral-100);
+    }
+
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    /* Skeleton Loading State */
+    .skeleton-box {
+      background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+      background-size: 200% 100%;
+      animation: skeleton-shimmer 1.5s infinite;
+      border-radius: var(--radius-sm);
+    }
+
+    @keyframes skeleton-shimmer {
+      0% {
+        background-position: 200% 0;
+      }
+
+      100% {
+        background-position: -200% 0;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- REVIEWER TOOLBAR FOR FLOW TESTING -->
+  <div class="reviewer-toolbar">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-weight: 800; color: #38bdf8; display: inline-flex; align-items: center; gap: 6px;">
+        <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i> Sprint S2-11 Lead CRM
+      </span>
+      <span style="color: #64748b; margin: 0 4px;">|</span>
+      <span style="color: #cbd5e1;">Kịch bản thử nghiệm nhanh:</span>
+    </div>
+
+    <div class="reviewer-nav">
+      <button class="reviewer-btn active" onclick="resetAllFiltersAndScreens()">1. Danh sách Lead</button>
+      <button class="reviewer-btn" onclick="openFilterDrawer()">2. Mở Bộ lọc Drawer</button>
+      <button class="reviewer-btn" onclick="applyPresetSearchName()">3. Search Tên "Minh Anh"</button>
+      <button class="reviewer-btn" onclick="applyPresetSearchPhone()">4. Search SĐT "0988"</button>
+      <button class="reviewer-btn" onclick="applyPresetLastMonthFilter()">5. Lọc "Tháng trước"</button>
+      <button class="reviewer-btn" onclick="openLeadDetail(1, true)">6. Chi tiết (Tra cứu tháng trước)</button>
+      <button class="reviewer-btn" onclick="applyTimelineSearchPreset()">7. Tìm từ khóa "học phí"</button>
+      <button class="reviewer-btn" style="color: #fca5a5;" onclick="triggerEmptyStateDemo()">8. Trạng thái rỗng</button>
+      <button class="reviewer-btn" style="color: #a7f3d0;" onclick="triggerSkeletonLoadingDemo()">9. Loading
+        Skeleton</button>
+    </div>
+  </div>
+
+  <!-- App Shell -->
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="app-sidebar">
+      <div class="sidebar-header">
+        <div class="brand-logo">
+          <i data-lucide="headset" style="width: 22px; height: 22px;"></i>
+        </div>
+        <div>
+          <div class="brand-title">EduManager CRM</div>
+          <div class="brand-sub">Trung tâm Đào tạo X</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <div class="menu-group-label">TUYỂN SINH & MARKETING</div>
+        <a class="menu-item" onclick="showToast('Chuyển tới Tổng quan Tuyển sinh', 'info')">
+          <i data-lucide="layout-dashboard" style="width: 18px; height: 18px;"></i>
+          Tổng quan
+        </a>
+        <a class="menu-item active" onclick="switchScreen(1)">
+          <i data-lucide="users" style="width: 18px; height: 18px;"></i>
+          Quản lý Lead
+        </a>
+        <a class="menu-item" onclick="showToast('Mở lịch hẹn tư vấn', 'info')">
+          <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
+          Lịch hẹn tư vấn
+        </a>
+        <a class="menu-item" onclick="showToast('Mở chiến dịch tuyển sinh', 'info')">
+          <i data-lucide="megaphone" style="width: 18px; height: 18px;"></i>
+          Chiến dịch nguồn Lead
+        </a>
+
+        <div class="menu-group-label">HỌC VỤ & ĐÀO TẠO</div>
+        <a class="menu-item" onclick="showToast('Mở danh mục môn học', 'info')">
+          <i data-lucide="book-open" style="width: 18px; height: 18px;"></i>
+          Khóa học & Lớp mở
+        </a>
+        <a class="menu-item" onclick="showToast('Mở biểu phí & chính sách', 'info')">
+          <i data-lucide="credit-card" style="width: 18px; height: 18px;"></i>
+          Biểu phí & Học bổng
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="counselor-avatar">TH</div>
+        <div style="flex: 1; overflow: hidden;">
+          <div style="font-size: 13px; font-weight: 700; color: var(--neutral-900);">Lê Thị Thu Hà</div>
+          <div style="font-size: 11px; color: var(--neutral-500);">Tư vấn viên tuyển sinh</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Container -->
+    <div class="app-main">
+
+      <!-- Topbar -->
+      <header class="app-topbar">
+        <div class="topbar-breadcrumbs">
+          <a href="#" onclick="switchScreen(1)">CRM</a>
+          <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+          <a href="#" onclick="switchScreen(1)">Tư vấn tuyển sinh</a>
+          <span id="breadcrumb-detail" style="display: none;">
+            <i data-lucide="chevron-right"
+              style="width: 14px; height: 14px; margin: 0 4px; display: inline-block; vertical-align: middle;"></i>
+            <span class="current" id="breadcrumb-lead-name">Nguyễn Minh Anh</span>
+          </span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <span class="badge badge-neutral" style="font-size: 12px; padding: 4px 10px;">
+            <i data-lucide="shield" style="width: 13px; height: 13px; color: var(--primary);"></i> Phân quyền: Tư vấn
+            tuyển sinh
+          </span>
+          <button class="btn btn-ghost btn-sm" title="Thông báo">
+            <i data-lucide="bell" style="width: 17px; height: 17px;"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- View Content -->
+      <main class="view-content">
+
+        <!-- ========================================================
+             SCREEN 01 & 02: LEAD MANAGEMENT & DATA TABLE
+             ======================================================== -->
+        <section id="screen-01" class="screen-view active">
+
+          <div
+            style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+            <div>
+              <h1 style="font-size: 24px; font-weight: 800; color: var(--neutral-900);">Quản lý Lead</h1>
+              <p style="font-size: 13.5px; color: var(--neutral-500); margin-top: 4px;">
+                Quản lý và theo dõi khách hàng tiềm năng tuyển sinh.
+              </p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-secondary" onclick="exportLeadList()">
+                <i data-lucide="download" style="width: 15px; height: 15px;"></i>
+                Xuất Excel
+              </button>
+              <button class="btn btn-primary" onclick="showToast('Mở form tạo lead thủ công', 'info')">
+                <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i>
+                + Thêm lead mới
+              </button>
+            </div>
+          </div>
+
+          <!-- KPI Stats Row -->
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-icon" style="background: #e0f2fe; color: #0284c7;">
+                <i data-lucide="users" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div>
+                <div class="stat-num" id="stat-total-count">1,248</div>
+                <div class="stat-label">Tổng khách hàng tiềm năng</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background: #fef3c7; color: #d97706;">
+                <i data-lucide="message-circle" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div>
+                <div class="stat-num">432</div>
+                <div class="stat-label">Đang trao đổi tư vấn</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background: #dcfce7; color: #16a34a;">
+                <i data-lucide="check-circle" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div>
+                <div class="stat-num">186</div>
+                <div class="stat-label">Đã nộp học phí / Đăng ký</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="background: #fee2e2; color: #dc2626;">
+                <i data-lucide="clock" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div>
+                <div class="stat-num">68</div>
+                <div class="stat-label">Cần gọi lại hôm nay</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table Container Card -->
+          <div class="card">
+
+            <!-- Toolbar: Search + Filter Trigger -->
+            <div class="lead-toolbar">
+              <div class="search-bar-wrap">
+                <i data-lucide="search" class="search-icon" style="width: 16px; height: 16px;"></i>
+                <input type="text" id="lead-search-input" class="search-input"
+                  placeholder="Tìm theo tên hoặc số điện thoại..." oninput="handleLeadSearch(this.value)">
+                <button class="search-clear-btn" id="btn-clear-search" onclick="clearSearchInput()"
+                  title="Xóa tìm kiếm">
+                  <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                </button>
+              </div>
+
+              <div class="toolbar-actions">
+                <button class="btn-filter" id="btn-open-filter" onclick="openFilterDrawer()">
+                  <i data-lucide="sliders-horizontal" style="width: 15px; height: 15px;"></i>
+                  <span>Bộ lọc</span>
+                  <span class="filter-count-badge" id="filter-badge" style="display: none;">0</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Active Filter Chips Bar (Visible when filtering) -->
+            <div class="filter-chips-row" id="active-filter-chips">
+              <span style="font-weight: 700; color: var(--neutral-500); margin-right: 4px;">Đang lọc:</span>
+              <div id="chips-container" style="display: inline-flex; gap: 6px; flex-wrap: wrap;"></div>
+              <button class="btn btn-ghost btn-sm" onclick="clearAllFilters()"
+                style="color: var(--danger); font-size: 12px; padding: 2px 8px;">
+                Xóa tất cả bộ lọc
+              </button>
+            </div>
+
+            <!-- Search Result Summary Banner -->
+            <div id="search-result-banner"
+              style="display: none; padding: 12px 20px; background: #f0f9ff; border-bottom: 1px solid #bae6fd; font-size: 13.5px; color: #0369a1; justify-content: space-between; align-items: center;">
+              <div>
+                Kết quả tìm kiếm cho <strong id="search-keyword-display">""</strong>: <strong
+                  id="search-count-display">0</strong> lead
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="clearSearchInput()" style="color: #0369a1;">Hủy tìm
+                kiếm</button>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-container">
+              <table class="lead-table" id="lead-table">
+                <thead>
+                  <tr>
+                    <th style="min-width: 220px;">Lead</th>
+                    <th>Số điện thoại</th>
+                    <th>Trạng thái</th>
+                    <th>Nguồn</th>
+                    <th>Người phụ trách</th>
+                    <th style="min-width: 260px;">Tương tác gần nhất</th>
+                    <th>Ngày tạo</th>
+                    <th style="text-align: right; width: 140px;">Hành động</th>
+                  </tr>
+                </thead>
+                <tbody id="lead-table-body">
+                  <!-- Rendered dynamically by Javascript -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination Bar -->
+            <div
+              style="padding: 14px 20px; border-top: 1px solid var(--neutral-200); display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--neutral-500); flex-wrap: wrap; gap: 12px;">
+              <span id="pagination-info-text">Hiển thị 1 - 12 / 12 lead</span>
+
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span>Hiển thị:</span>
+                  <select class="inline-input" id="page-size-select"
+                    style="padding: 4px 8px; font-size: 12.5px; width: auto;" onchange="changePageSize(this.value)">
+                    <option value="25" selected>25 / trang</option>
+                    <option value="50">50 / trang</option>
+                    <option value="100">100 / trang</option>
+                  </select>
+                </div>
+
+                <div style="display: flex; gap: 6px;" id="pagination-nav-btns">
+                  <!-- Rendered dynamically -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </section>
+
+        <!-- ========================================================
+             SCREEN 03: CHI TIẾT LEAD & LỊCH SỬ TƯƠNG TÁC
+             ======================================================== -->
+        <section id="screen-03" class="screen-view">
+          <div class="lead-detail-wrapper">
+
+            <!-- Back Navigation preserving search & filters -->
+            <div class="detail-top-nav">
+              <span class="btn-back-link" onclick="returnToLeadList()">
+                <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
+                Quay lại danh sách lead
+              </span>
+            </div>
+
+            <!-- Lead Hero Profile Card -->
+            <div class="lead-hero-card">
+              <div class="lead-hero-info">
+                <div class="hero-avatar" id="detail-avatar">MA</div>
+                <div>
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <h2 class="hero-name" id="detail-name">Nguyễn Minh Anh</h2>
+                    <span class="badge status-badge-counseling" id="detail-status-badge">
+                      <i data-lucide="message-circle" style="width: 13px; height: 13px;"></i> Đang tư vấn
+                    </span>
+                  </div>
+                  <div class="hero-meta">
+                    <span style="font-family: monospace; font-weight: 700; color: var(--neutral-800);"
+                      id="detail-phone">0988 123 456</span>
+                    <span>•</span>
+                    <span id="detail-email">minhanh.nguyen@example.com</span>
+                    <span>•</span>
+                    <span>Nguồn: <strong id="detail-source" style="color: var(--neutral-700);">Facebook
+                        Ads</strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="hero-actions">
+                <button class="btn btn-primary" onclick="simulateMakeCall()">
+                  <i data-lucide="phone-call" style="width: 16px; height: 16px;"></i>
+                  Gọi điện
+                </button>
+                <button class="btn btn-secondary" onclick="simulateSendZalo()">
+                  <i data-lucide="message-square" style="width: 16px; height: 16px;"></i>
+                  Nhắn tin
+                </button>
+                <button class="btn btn-secondary" onclick="openUpdateStatusModal()">
+                  <i data-lucide="refresh-cw" style="width: 15px; height: 15px;"></i>
+                  Cập nhật
+                </button>
+              </div>
+            </div>
+
+            <!-- Context Highlight Banner (Shown when coming from Last Month filter or keyword search) -->
+            <div class="context-banner" id="detail-context-banner" style="display: none;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <i data-lucide="calendar-check"
+                  style="width: 20px; height: 20px; color: var(--warning); flex-shrink: 0;"></i>
+                <span id="context-banner-text">
+                  💡 <strong>Ưu tiên hiển thị:</strong> Đang làm nổi bật các cuộc trao đổi thuộc <strong>Tháng trước
+                    (01/09/2026 – 30/09/2026)</strong>.
+                </span>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-secondary btn-sm" onclick="clearTimelineDateContext()"
+                  style="font-size: 11.5px; padding: 4px 8px;">Xem tất cả thời gian</button>
+                <button class="btn btn-ghost btn-sm" onclick="dismissContextBanner()"
+                  style="color: #92400e;">Đóng</button>
+              </div>
+            </div>
+
+            <!-- Two-columns layout: Left Info Card & Right Timeline -->
+            <div class="detail-grid">
+
+              <!-- Left Column: Lead Profile Details -->
+              <div class="card" style="padding: 24px;">
+                <div class="info-group-title">Thông tin học viên tiềm năng</div>
+                <div class="info-list">
+                  <div class="info-item">
+                    <span class="info-label">Họ và tên</span>
+                    <span class="info-val" id="card-lead-name">Nguyễn Minh Anh</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Số điện thoại</span>
+                    <span class="info-val" style="font-family: monospace;" id="card-lead-phone">0988 123 456</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Email liên hệ</span>
+                    <span class="info-val" id="card-lead-email">minhanh.nguyen@example.com</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Nguồn lead</span>
+                    <span class="info-val" id="card-lead-source" style="font-weight: 600;">Facebook Ads</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Trạng thái</span>
+                    <span class="info-val" id="card-lead-status" style="font-weight: 600;">Đang tư vấn</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Khu vực sinh sống</span>
+                    <span class="info-val">Cầu Giấy, Hà Nội</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Khóa học quan tâm</span>
+                    <span class="info-val" style="color: var(--primary); font-weight: 700;">Khóa K24 - Lập trình Web
+                      Fullstack</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Học phí dự kiến</span>
+                    <span class="info-val">18.500.000đ (Ưu đãi còn 15.700.000đ)</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Người phụ trách</span>
+                    <span class="info-val" id="card-lead-owner">Nguyễn Văn A (Tư vấn viên)</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Ngày tạo trên hệ thống</span>
+                    <span class="info-val" id="card-lead-created">01/09/2026 - 08:30 (Facebook Lead Form)</span>
+                  </div>
+                </div>
+
+                <div
+                  style="margin-top: 24px; padding: 14px; background: var(--neutral-50); border: 1px solid var(--neutral-200); border-radius: var(--radius-md);">
+                  <div style="font-size: 12px; font-weight: 700; color: var(--neutral-600); margin-bottom: 4px;">Ghi chú
+                    đặc biệt:</div>
+                  <div style="font-size: 13px; color: var(--neutral-700); line-height: 1.45;">
+                    Khách là sinh viên năm cuối ĐH GTVT, muốn học buổi tối để đi làm thêm ban ngày. Quan tâm gói trả góp
+                    0% qua thẻ tín dụng.
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Column: Interaction History Timeline (CORE UX) -->
+              <div class="timeline-container">
+
+                <div class="timeline-header">
+                  <div class="timeline-title" id="timeline-main-title">
+                    <i data-lucide="history" style="width: 20px; height: 20px; color: var(--primary);"></i>
+                    Lịch sử tương tác
+                  </div>
+                  <span class="badge badge-neutral" id="timeline-count-badge">5 lượt trao đổi</span>
+                </div>
+
+                <!-- Sub-filters inside Timeline -->
+                <div class="timeline-controls">
+                  <!-- Keyword Search in Timeline -->
+                  <div class="timeline-search-wrap">
+                    <i data-lucide="search" style="width: 14px; height: 14px;"></i>
+                    <input type="text" id="timeline-search-input" class="timeline-search-input"
+                      placeholder="Tìm trong lịch sử trao đổi (VD: học phí, frontend)..."
+                      oninput="handleTimelineSearch(this.value)">
+                  </div>
+
+                  <!-- Type Tabs -->
+                  <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button class="filter-tab-pill active" onclick="filterTimelineType('all', this)">Tất cả</button>
+                    <button class="filter-tab-pill" onclick="filterTimelineType('call', this)">📞 Cuộc gọi</button>
+                    <button class="filter-tab-pill" onclick="filterTimelineType('msg', this)">💬 Tin nhắn</button>
+                    <button class="filter-tab-pill" onclick="filterTimelineType('email', this)">✉️ Email</button>
+                    <button class="filter-tab-pill" onclick="filterTimelineType('note', this)">📝 Ghi chú</button>
+                    <button class="filter-tab-pill" onclick="filterTimelineType('appointment', this)">📅 Lịch
+                      hẹn</button>
+                  </div>
+
+                  <!-- Date Selector in Timeline -->
+                  <div>
+                    <select class="inline-input" id="timeline-date-filter-select"
+                      style="padding: 6px 10px; font-size: 12px;" onchange="handleTimelineDateFilter(this.value)">
+                      <option value="all">Tất cả thời gian</option>
+                      <option value="last-month">Tháng trước (01/09 - 30/09)</option>
+                      <option value="today">Hôm nay</option>
+                      <option value="7-days">7 ngày qua</option>
+                      <option value="30-days">30 ngày qua</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- Quick Log Interaction Box -->
+                <div class="quick-log-box">
+                  <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                    <span style="font-size: 12.5px; font-weight: 700; color: var(--neutral-800);">Ghi nhanh kết quả trao
+                      đổi:</span>
+                    <div class="quick-log-options">
+                      <button class="log-type-btn active" id="log-type-call" onclick="selectLogType('call')">
+                        <i data-lucide="phone" style="width: 13px; height: 13px;"></i> Cuộc gọi
+                      </button>
+                      <button class="log-type-btn" id="log-type-msg" onclick="selectLogType('msg')">
+                        <i data-lucide="message-circle" style="width: 13px; height: 13px;"></i> Zalo / SMS
+                      </button>
+                      <button class="log-type-btn" id="log-type-note" onclick="selectLogType('note')">
+                        <i data-lucide="file-text" style="width: 13px; height: 13px;"></i> Ghi chú
+                      </button>
+                      <button class="log-type-btn" id="log-type-appointment" onclick="selectLogType('appointment')">
+                        <i data-lucide="calendar" style="width: 13px; height: 13px;"></i> Lịch hẹn
+                      </button>
+                    </div>
+                  </div>
+                  <textarea id="quick-log-input" class="quick-log-textarea"
+                    placeholder="Nhập tóm tắt nội dung trao đổi vừa xong với học viên..."></textarea>
+                  <div style="display: flex; justify-content: flex-end;">
+                    <button class="btn btn-primary btn-sm" onclick="saveNewInteractionLog()">
+                      <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+                      Lưu vào lịch sử
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Timeline Stream Cards -->
+                <div class="timeline-list" id="timeline-stream-container">
+                  <!-- Rendered dynamically by Javascript -->
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================================
+       SLIDE-OVER FILTER DRAWER
+       ======================================================== -->
+  <div class="drawer-overlay" id="filter-drawer-overlay" onclick="closeFilterDrawerOnBackdrop(event)">
+    <div class="drawer-panel" onclick="event.stopPropagation()">
+      <div class="drawer-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div
+            style="width: 34px; height: 34px; border-radius: 8px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="sliders-horizontal" style="width: 18px; height: 18px;"></i>
+          </div>
+          <div>
+            <h3 class="drawer-title">Bộ lọc nâng cao</h3>
+            <p style="font-size: 12px; color: var(--neutral-500);">Kết hợp nhiều điều kiện để tìm chính xác lead.</p>
+          </div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="closeFilterDrawer()">
+          <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+        </button>
+      </div>
+
+      <div class="drawer-body">
+
+        <!-- 1. Trạng thái -->
+        <div>
+          <div class="filter-group-title">
+            <span>Trạng thái lead:</span>
+            <span style="font-size: 11.5px; font-weight: 500; color: var(--primary); cursor: pointer;"
+              onclick="selectAllStatuses()">Chọn tất cả</span>
+          </div>
+          <div class="filter-pills-wrap" id="status-pills-container">
+            <span class="filter-pill-opt" data-status="new" onclick="toggleStatusPill(this)">Lead mới</span>
+            <span class="filter-pill-opt" data-status="contacted" onclick="toggleStatusPill(this)">Đã liên hệ</span>
+            <span class="filter-pill-opt" data-status="counseling" onclick="toggleStatusPill(this)">Đang tư vấn</span>
+            <span class="filter-pill-opt" data-status="registered" onclick="toggleStatusPill(this)">Đã đăng ký</span>
+            <span class="filter-pill-opt" data-status="converted" onclick="toggleStatusPill(this)">Đã chuyển đổi</span>
+            <span class="filter-pill-opt" data-status="unreachable" onclick="toggleStatusPill(this)">Không liên lạc
+              được</span>
+            <span class="filter-pill-opt" data-status="not-interested" onclick="toggleStatusPill(this)">Không quan
+              tâm</span>
+          </div>
+        </div>
+
+        <!-- 2. Nguồn Lead -->
+        <div>
+          <div class="filter-group-title">Nguồn lead:</div>
+          <select id="filter-source-select" class="filter-select">
+            <option value="">Tất cả nguồn lead</option>
+            <option value="Facebook">Facebook Ads</option>
+            <option value="Website">Website Form</option>
+            <option value="Zalo">Zalo OA</option>
+            <option value="Hotline">Hotline trung tâm</option>
+            <option value="Sự kiện">Sự kiện Hội thảo</option>
+            <option value="Giới thiệu">Giới thiệu (Referral)</option>
+            <option value="Khác">Khác</option>
+          </select>
+        </div>
+
+        <!-- 3. Người phụ trách (Searchable Dropdown) -->
+        <div>
+          <div class="filter-group-title">Tư vấn viên phụ trách:</div>
+          <div style="position: relative; margin-bottom: 6px;">
+            <input type="text" id="owner-search-filter" class="search-input"
+              style="padding: 6px 10px 6px 30px; font-size: 12px; height: 32px;" placeholder="Tìm nhanh tư vấn viên..."
+              oninput="filterOwnerOptions(this.value)">
+            <i data-lucide="search"
+              style="width: 13px; height: 13px; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--neutral-400);"></i>
+          </div>
+          <select id="filter-owner-select" class="filter-select" size="4" style="height: auto;">
+            <option value="" selected>Tất cả tư vấn viên</option>
+            <option value="Nguyễn Văn A">Nguyễn Văn A</option>
+            <option value="Trần Thị B">Trần Thị B</option>
+            <option value="Lê Văn C">Lê Văn C</option>
+          </select>
+        </div>
+
+        <!-- 4. Khoảng thời gian (CORE REQUIREMENT) -->
+        <div>
+          <div class="filter-group-title">Khoảng thời gian tương tác:</div>
+          <div class="filter-pills-wrap" style="margin-bottom: 12px;">
+            <span class="filter-pill-opt" data-date="all" onclick="selectDatePreset('all', this)">Tất cả</span>
+            <span class="filter-pill-opt" data-date="today" onclick="selectDatePreset('today', this)">Hôm nay</span>
+            <span class="filter-pill-opt" data-date="7-days" onclick="selectDatePreset('7-days', this)">7 ngày
+              qua</span>
+            <span class="filter-pill-opt" data-date="30-days" onclick="selectDatePreset('30-days', this)">30 ngày
+              qua</span>
+            <span class="filter-pill-opt" data-date="this-month" onclick="selectDatePreset('this-month', this)">Tháng
+              này</span>
+            <span class="filter-pill-opt" data-date="last-month" onclick="selectDatePreset('last-month', this)">Tháng
+              trước (01/09 - 30/09)</span>
+          </div>
+
+          <div
+            style="background: var(--neutral-50); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--neutral-200);">
+            <div style="font-size: 11.5px; font-weight: 700; color: var(--neutral-500); margin-bottom: 6px;">Tùy chỉnh
+              khoảng ngày (Từ ngày – Đến ngày):</div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="date" id="filter-date-from" class="inline-input" style="padding: 6px 10px; font-size: 12px;"
+                onchange="handleCustomDateInput()">
+              <span style="color: var(--neutral-400);">→</span>
+              <input type="date" id="filter-date-to" class="inline-input" style="padding: 6px 10px; font-size: 12px;"
+                onchange="handleCustomDateInput()">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="drawer-footer">
+        <button class="btn btn-secondary" onclick="resetDrawerFilters()">
+          Xóa bộ lọc
+        </button>
+        <button class="btn btn-primary" onclick="applyDrawerFilters()">
+          <i data-lucide="check" style="width: 15px; height: 15px;"></i>
+          Áp dụng (<span id="drawer-preview-count">12 lead</span>)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Cập nhật Trạng thái Lead -->
+  <div class="modal-overlay" id="status-modal-overlay" onclick="closeUpdateStatusModalOnBackdrop(event)">
+    <div class="modal-dialog" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <div
+            style="width: 32px; height: 32px; border-radius: 8px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center;">
+            <i data-lucide="refresh-cw" style="width: 16px; height: 16px;"></i>
+          </div>
+          <h3 style="font-size: 16px; font-weight: 700; color: var(--neutral-900);">Cập nhật trạng thái lead</h3>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="closeUpdateStatusModal()">
+          <i data-lucide="x" style="width: 16px; height: 16px;"></i>
+        </button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+        <div>
+          <label
+            style="font-size: 12.5px; font-weight: 700; color: var(--neutral-700); margin-bottom: 6px; display: block;">Trạng
+            thái tuyển sinh mới:</label>
+          <select id="modal-status-select" class="filter-select">
+            <option value="new">Lead mới</option>
+            <option value="contacted">Đã liên hệ</option>
+            <option value="counseling">Đang tư vấn</option>
+            <option value="registered">Đã đăng ký</option>
+            <option value="converted">Đã chuyển đổi</option>
+            <option value="unreachable">Không liên lạc được</option>
+            <option value="not-interested">Không quan tâm</option>
+          </select>
+        </div>
+        <div>
+          <label
+            style="font-size: 12.5px; font-weight: 700; color: var(--neutral-700); margin-bottom: 6px; display: block;">Ghi
+            chú lý do cập nhật (sẽ ghi vào Lịch sử tương tác):</label>
+          <textarea id="modal-status-note" class="quick-log-textarea" style="min-height: 80px;"
+            placeholder="Ví dụ: Khách gọi lại xác nhận đăng ký học kỳ mới, hẹn chuyển khoản học phí..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn btn-secondary" onclick="closeUpdateStatusModal()">Hủy bỏ</button>
+        <button class="btn btn-primary" onclick="submitStatusUpdate()">
+          <i data-lucide="check" style="width: 15px; height: 15px;"></i>
+          Xác nhận cập nhật
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-box"></div>
+
+  <!-- JAVASCRIPT CRM ENGINE -->
+  <script>
+    lucide.createIcons();
+
+    // 12 Realistic Mock Leads Dataset
+    const mockLeads = [
+      {
+        id: 1,
+        name: "Nguyễn Minh Anh",
+        phone: "0988123456",
+        phoneDisplay: "0988 123 456",
+        email: "minhanh.nguyen@example.com",
+        status: "counseling",
+        statusLabel: "Đang tư vấn",
+        source: "Facebook",
+        owner: "Nguyễn Văn A",
+        course: "K24 - Fullstack Web",
+        lastInteractionDate: "15/09/2026 - 14:30",
+        lastInteractionIso: "2026-09-15T14:30:00",
+        lastInteractionSummary: "📞 Gọi điện: Khách hỏi học phí Fullstack K24 và hỗ trợ trả góp",
+        createdAt: "01/09/2026",
+        createdAtIso: "2026-09-01T08:30:00",
+        isLastMonth: true,
+        timeline: [
+          {
+            id: 101,
+            time: "15/09/2026 – 14:30",
+            author: "Nguyễn Văn A – Tư vấn viên",
+            type: "call",
+            title: "Cuộc gọi tư vấn lần 2: Giải đáp chính sách học phí",
+            duration: "Thời lượng: 4 phút 12 giây",
+            hasAudio: true,
+            isLastMonth: true,
+            content: "Khách gọi hỏi lại về mức học phí khóa K24 Fullstack Web. Tư vấn viên đã giải thích chính sách ưu đãi 15% cho sinh viên năm cuối (còn 15.700.000đ) và gói hỗ trợ trả góp 0% lãi suất. Khách báo để bàn bạc với gia đình và hẹn liên hệ lại vào đầu tháng 10."
+          },
+          {
+            id: 102,
+            time: "03/09/2026 – 10:15",
+            author: "Nguyễn Văn A – Tư vấn viên",
+            type: "msg",
+            title: "Tin nhắn Zalo: Gửi đề cương chi tiết môn học",
+            isLastMonth: true,
+            content: "Đã kết bạn Zalo và gửi file PDF lộ trình 15 buổi học Frontend HTML5, CSS3, Flexbox, ReactJS. Khách đã xem và hỏi thêm về đồ án thực chiến cuối khóa."
+          },
+          {
+            id: 105,
+            time: "25/09/2026 – 09:30",
+            author: "Nguyễn Văn A – Tư vấn viên",
+            type: "appointment",
+            title: "Lịch hẹn: Tư vấn lộ trình & xem phòng Lab tại cơ sở Cầu Giấy",
+            isLastMonth: true,
+            content: "Hẹn học viên qua văn phòng tuyển sinh tại Cầu Giấy để trải nghiệm lớp demo HTML/CSS và tư vấn trực tiếp với Giảng viên."
+          },
+          {
+            id: 103,
+            time: "01/09/2026 – 09:00",
+            author: "Nguyễn Văn A – Tư vấn viên",
+            type: "call",
+            title: "Cuộc gọi liên hệ đầu tiên (First touch)",
+            duration: "Thời lượng: 2 phút 45 giây",
+            hasAudio: true,
+            isLastMonth: true,
+            content: "Liên hệ theo số điện thoại để lại trên Facebook Ads. Khách xác nhận có nhu cầu học chuyển ngành sang Web Developer, hiện đang là sinh viên năm cuối ĐH GTVT."
+          },
+          {
+            id: 104,
+            time: "20/08/2026 – 16:20",
+            author: "Trần Thị B – Trực Hotline",
+            type: "note",
+            title: "Ghi chú từ form đăng ký hội thảo tháng 8",
+            isLastMonth: false,
+            content: "Học viên từng tham dự Webinar Giới thiệu ngành CNTT 2026, để lại nguyện vọng tìm khóa học có bảo đảm đầu ra thực tập."
+          }
+        ]
+      },
+      {
+        id: 2,
+        name: "Trần Quốc Bảo",
+        phone: "0988789012",
+        phoneDisplay: "0988 789 012",
+        email: "bao.tran@example.com",
+        status: "contacted",
+        statusLabel: "Đã liên hệ",
+        source: "Website",
+        owner: "Nguyễn Văn A",
+        course: "K24 - Fullstack Web",
+        lastInteractionDate: "12/09/2026 - 10:15",
+        lastInteractionIso: "2026-09-12T10:15:00",
+        lastInteractionSummary: "💬 Zalo: Gửi đề cương môn Lập trình Web",
+        createdAt: "05/09/2026",
+        createdAtIso: "2026-09-05T09:00:00",
+        isLastMonth: true,
+        timeline: [
+          {
+            id: 201,
+            time: "12/09/2026 – 10:15",
+            author: "Nguyễn Văn A",
+            type: "msg",
+            title: "Gửi đề cương đào tạo",
+            isLastMonth: true,
+            content: "Đã gửi qua Zalo lộ trình học tập và học phí khóa Lập trình Web. Khách đang xem."
+          }
+        ]
+      },
+      {
+        id: 3,
+        name: "Lê Hoàng Long",
+        phone: "0912345678",
+        phoneDisplay: "0912 345 678",
+        email: "long.le@example.com",
+        status: "new",
+        statusLabel: "Lead mới",
+        source: "Hotline",
+        owner: "Trần Thị B",
+        course: "Java Core Pro",
+        lastInteractionDate: "04/10/2026 - 09:20",
+        lastInteractionIso: "2026-10-04T09:20:00",
+        lastInteractionSummary: "📞 Gọi điện: Cuộc gọi đầu tiên tư vấn Java Core",
+        createdAt: "04/10/2026",
+        createdAtIso: "2026-10-04T09:00:00",
+        isLastMonth: false,
+        timeline: [
+          {
+            id: 301,
+            time: "04/10/2026 – 09:20",
+            author: "Trần Thị B",
+            type: "call",
+            title: "Cuộc gọi tiếp nhận từ Hotline",
+            duration: "Thời lượng: 3 phút 10 giây",
+            hasAudio: true,
+            isLastMonth: false,
+            content: "Khách gọi vào hotline hỏi lịch khai giảng lớp Java Core tháng 10. Hẹn gửi thông tin qua email."
+          }
+        ]
+      },
+      {
+        id: 4,
+        name: "Phạm Thu Thảo",
+        phone: "0977654321",
+        phoneDisplay: "0977 654 321",
+        email: "thao.pham@example.com",
+        status: "registered",
+        statusLabel: "Đã đăng ký",
+        source: "Facebook",
+        owner: "Nguyễn Văn A",
+        course: "Data Science Pro",
+        lastInteractionDate: "28/09/2026 - 16:45",
+        lastInteractionIso: "2026-09-28T16:45:00",
+        lastInteractionSummary: "📝 Ghi chú: Đã hoàn tất đóng cọc học phí 5 triệu",
+        createdAt: "10/08/2026",
+        createdAtIso: "2026-08-10T14:00:00",
+        isLastMonth: true,
+        timeline: [
+          {
+            id: 401,
+            time: "28/09/2026 – 16:45",
+            author: "Nguyễn Văn A",
+            type: "note",
+            title: "Xác nhận thu cọc thành công",
+            isLastMonth: true,
+            content: "Học viên đã chuyển khoản cọc 5.000.000đ giữ chỗ lớp Data Science K23. Kế toán đã xuất phiếu thu điện tử."
+          }
+        ]
+      },
+      {
+        id: 5,
+        name: "Vũ Đức Thắng",
+        phone: "0988234567",
+        phoneDisplay: "0988 234 567",
+        email: "thang.vu@example.com",
+        status: "counseling",
+        statusLabel: "Đang tư vấn",
+        source: "Zalo",
+        owner: "Lê Văn C",
+        course: "K24 - Fullstack Web",
+        lastInteractionDate: "25/09/2026 - 11:00",
+        lastInteractionIso: "2026-09-25T11:00:00",
+        lastInteractionSummary: "💬 Zalo: Hỏi lịch học buổi tối và chính sách học phí",
+        createdAt: "20/09/2026",
+        createdAtIso: "2026-09-20T10:00:00",
+        isLastMonth: true,
+        timeline: [
+          {
+            id: 501,
+            time: "25/09/2026 – 11:00",
+            author: "Lê Văn C",
+            type: "msg",
+            title: "Tư vấn lịch học và học phí",
+            isLastMonth: true,
+            content: "Khách hỏi chi tiết về học phí và lịch học tối 2-4-6. Đã giải thích gói học bổng khuyến học."
+          }
+        ]
+      },
+      {
+        id: 6,
+        name: "Đặng Thùy Dương",
+        phone: "0966888999",
+        phoneDisplay: "0966 888 999",
+        email: "duong.dang@example.com",
+        status: "unreachable",
+        statusLabel: "Không liên lạc được",
+        source: "Website",
+        owner: "Trần Thị B",
+        course: "K24 - Fullstack Web",
+        lastInteractionDate: "22/09/2026 - 15:30",
+        lastInteractionIso: "2026-09-22T15:30:00",
+        lastInteractionSummary: "📞 Gọi điện: Thuê bao không bắt máy sau 3 hồi chuông",
+        createdAt: "18/09/2026",
+        createdAtIso: "2026-09-18T11:00:00",
+        isLastMonth: true,
+        timeline: [
+          {
+            id: 601,
+            time: "22/09/2026 – 15:30",
+            author: "Trần Thị B",
+            type: "call",
+            title: "Gọi nhỡ",
+            isLastMonth: true,
+            content: "Không bắt máy. Đã gửi tin nhắn SMS hẹn gọi lại."
+          }
+        ]
+      },
+      {
+        id: 7,
+        name: "Bùi Anh Tuấn",
+        phone: "0934112233",
+        phoneDisplay: "0934 112 233",
+        email: "tuan.bui@example.com",
+        status: "not-interested",
+        statusLabel: "Không quan tâm",
+        source: "Sự kiện",
+        owner: "Lê Văn C",
+        course: "AI & Machine Learning",
+        lastInteractionDate: "16/09/2026 - 09:00",
+        lastInteractionIso: "2026-09-16T09:00:00",
+        lastInteractionSummary: "📞 Gọi điện: Khách bận đi làm thêm, hẹn đợt sau",
+        createdAt: "15/09/2026",
+        createdAtIso: "2026-09-15T08:00:00",
+        isLastMonth: true,
+        timeline: [
+          {
+            id: 701,
+            time: "16/09/2026 – 09:00",
+            author: "Lê Văn C",
+            type: "call",
+            title: "Khách từ chối tham gia đợt này",
+            isLastMonth: true,
+            content: "Khách bận đồ án tốt nghiệp, hẹn sang năm sau khi ra trường."
+          }
+        ]
+      },
+      {
+        id: 8,
+        name: "Ngô Mỹ Linh",
+        phone: "0988555444",
+        phoneDisplay: "0988 555 444",
+        email: "linh.ngo@example.com",
+        status: "converted",
+        statusLabel: "Đã chuyển đổi",
+        source: "Giới thiệu",
+        owner: "Nguyễn Văn A",
+        course: "K24 - Fullstack Web",
+        lastInteractionDate: "30/09/2026 - 17:00",
+        lastInteractionIso: "2026-09-30T17:00:00",
+        lastInteractionSummary: "🎓 Nhập học: Hoàn tất 100% học phí, xếp lớp K24",
+        createdAt: "02/09/2026",
+        createdAtIso: "2026-09-02T10:00:00",
+        isLastMonth: true,
+        timeline: [
+          {
+            id: 801,
+            time: "30/09/2026 – 17:00",
+            author: "Nguyễn Văn A",
+            type: "note",
+            title: "Học viên nhập học chính thức",
+            isLastMonth: true,
+            content: "Học viên được bạn cũ giới thiệu, đã thanh toán toàn bộ học phí và nhận tài khoản học trực tuyến."
+          }
+        ]
+      },
+      {
+        id: 9,
+        name: "Hoàng Gia Huy",
+        phone: "0909876543",
+        phoneDisplay: "0909 876 543",
+        email: "huy.hoang@example.com",
+        status: "counseling",
+        statusLabel: "Đang tư vấn",
+        source: "Facebook",
+        owner: "Trần Thị B",
+        course: "K24 - Fullstack Web",
+        lastInteractionDate: "19/09/2026 - 14:00",
+        lastInteractionIso: "2026-09-19T14:00:00",
+        lastInteractionSummary: "📞 Gọi điện: Hỏi về giảng viên dạy thực chiến và học phí",
+        createdAt: "12/09/2026",
+        createdAtIso: "2026-09-12T15:00:00",
+        isLastMonth: true,
+        timeline: [
+          {
+            id: 901,
+            time: "19/09/2026 – 14:00",
+            author: "Trần Thị B",
+            type: "call",
+            title: "Tư vấn hồ sơ giảng viên",
+            isLastMonth: true,
+            content: "Khách rất quan tâm profile giảng viên hướng dẫn. Đã giới thiệu thầy Nguyễn Văn A có 8 năm kinh nghiệm tại TechCorp."
+          }
+        ]
+      },
+      {
+        id: 10,
+        name: "Đinh Phương Mai",
+        phone: "0988999111",
+        phoneDisplay: "0988 999 111",
+        email: "mai.dinh@example.com",
+        status: "new",
+        statusLabel: "Lead mới",
+        source: "Website",
+        owner: "Nguyễn Văn A",
+        course: "Data Science Pro",
+        lastInteractionDate: "03/10/2026 - 16:00",
+        lastInteractionIso: "2026-10-03T16:00:00",
+        lastInteractionSummary: "🌐 Đăng ký form: Muốn tư vấn học phí và lộ trình",
+        createdAt: "03/10/2026",
+        createdAtIso: "2026-10-03T16:00:00",
+        isLastMonth: false,
+        timeline: [
+          {
+            id: 1001,
+            time: "03/10/2026 – 16:00",
+            author: "Hệ thống tự động",
+            type: "note",
+            title: "Lead mới từ Website",
+            isLastMonth: false,
+            content: "Khách đăng ký qua Landing Page khóa học Data Science. Đã tự động phân bổ cho tư vấn viên Nguyễn Văn A."
+          }
+        ]
+      },
+      {
+        id: 11,
+        name: "Lý Văn Phúc",
+        phone: "0945223344",
+        phoneDisplay: "0945 223 344",
+        email: "phuc.ly@example.com",
+        status: "counseling",
+        statusLabel: "Đang tư vấn",
+        source: "Hotline",
+        owner: "Lê Văn C",
+        course: "ReactJS Nâng cao",
+        lastInteractionDate: "14/09/2026 - 11:30",
+        lastInteractionIso: "2026-09-14T11:30:00",
+        lastInteractionSummary: "📞 Gọi điện: Khách quan tâm học phí ReactJS",
+        createdAt: "08/09/2026",
+        createdAtIso: "2026-09-08T10:00:00",
+        isLastMonth: true,
+        timeline: [
+          {
+            id: 1101,
+            time: "14/09/2026 – 11:30",
+            author: "Lê Văn C",
+            type: "call",
+            title: "Tư vấn khóa ReactJS chuyên sâu",
+            isLastMonth: true,
+            content: "Khách đã biết căn bản Javascript, muốn học ReactJS để nâng cao kỹ năng. Khách hỏi học phí đóng theo đợt được không."
+          }
+        ]
+      },
+      {
+        id: 12,
+        name: "Trịnh Ngọc Hân",
+        phone: "0918334455",
+        phoneDisplay: "0918 334 455",
+        email: "han.trinh@example.com",
+        status: "contacted",
+        statusLabel: "Đã liên hệ",
+        source: "Zalo",
+        owner: "Trần Thị B",
+        course: "K24 - Fullstack Web",
+        lastInteractionDate: "26/09/2026 - 10:00",
+        lastInteractionIso: "2026-09-26T10:00:00",
+        lastInteractionSummary: "💬 Zalo: Đã gửi tài liệu học thử qua Zalo",
+        createdAt: "22/09/2026",
+        createdAtIso: "2026-09-22T14:00:00",
+        isLastMonth: true,
+        timeline: [
+          {
+            id: 1201,
+            time: "26/09/2026 – 10:00",
+            author: "Trần Thị B",
+            type: "msg",
+            title: "Gửi link bài giảng mẫu",
+            isLastMonth: true,
+            content: "Đã gửi video học thử buổi 1 HTML5/CSS3. Khách khen bài giảng dễ hiểu, sẽ suy nghĩ thêm."
+          }
+        ]
+      }
+    ];
+
+    // State Variables
+    let currentSearchQuery = "";
+    let activeFilters = {
+      statuses: [],
+      source: "",
+      owner: "",
+      datePreset: "all",
+      dateFrom: "",
+      dateTo: ""
+    };
+
+    let currentPage = 1;
+    let pageSize = 25;
+
+    let selectedLeadId = 1;
+    let selectedLeadContextFromLastMonth = false;
+    let timelineSearchQuery = "";
+    let timelineTypeFilter = "all";
+    let timelineDateFilter = "all";
+    let activeQuickLogType = "call";
+
+    // Switch between Screen 1 (List) and Screen 3 (Detail)
+    function switchScreen(screenNumber) {
+      document.querySelectorAll('.screen-view').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById(`screen-0${screenNumber}`);
+      if (target) target.classList.add('active');
+
+      const crumb = document.getElementById('breadcrumb-detail');
+      if (screenNumber === 1) {
+        if (crumb) crumb.style.display = 'none';
+      } else {
+        if (crumb) crumb.style.display = 'inline';
+      }
+
+      lucide.createIcons();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Date Match Helper (Supports today, 7-days, 30-days, this-month, last-month, custom range)
+    function isDateMatch(isoDateStr, preset, from, to) {
+      if (preset === 'all' && !from && !to) return true;
+      if (!isoDateStr) return false;
+      const d = isoDateStr.slice(0, 10);
+
+      if (preset === 'today') {
+        return d === '2026-10-04';
+      }
+      if (preset === '7-days') {
+        return d >= '2026-09-27' && d <= '2026-10-04';
+      }
+      if (preset === '30-days') {
+        return d >= '2026-09-04' && d <= '2026-10-04';
+      }
+      if (preset === 'this-month') {
+        return d.startsWith('2026-10');
+      }
+      if (preset === 'last-month') {
+        return d.startsWith('2026-09');
+      }
+      if (preset === 'custom' || from || to) {
+        if (from && d < from) return false;
+        if (to && d > to) return false;
+        return true;
+      }
+      return true;
+    }
+
+    // Helper: Filter Logic
+    function getFilteredLeads() {
+      return mockLeads.filter(lead => {
+        // 1. Search Query: Name OR Phone (partial match)
+        if (currentSearchQuery.trim()) {
+          const q = currentSearchQuery.toLowerCase().trim();
+          const matchName = lead.name.toLowerCase().includes(q);
+          const matchPhone = lead.phone.includes(q) || lead.phoneDisplay.replace(/\s+/g, '').includes(q);
+          const matchSummary = lead.lastInteractionSummary.toLowerCase().includes(q);
+          if (!matchName && !matchPhone && !matchSummary) {
+            return false;
+          }
+        }
+
+        // 2. Status filter
+        if (activeFilters.statuses.length > 0) {
+          if (!activeFilters.statuses.includes(lead.status)) return false;
+        }
+
+        // 3. Source filter
+        if (activeFilters.source && activeFilters.source !== "") {
+          if (lead.source !== activeFilters.source) return false;
+        }
+
+        // 4. Owner filter
+        if (activeFilters.owner && activeFilters.owner !== "") {
+          if (lead.owner !== activeFilters.owner) return false;
+        }
+
+        // 5. Date filter: Multi-period support
+        if (!isDateMatch(lead.lastInteractionIso, activeFilters.datePreset, activeFilters.dateFrom, activeFilters.dateTo)) {
+          return false;
+        }
+
+        return true;
+      });
+    }
+
+    // Render Data Table with Pagination & States
+    function renderLeadTable(isSkeleton = false) {
+      const tbody = document.getElementById('lead-table-body');
+      tbody.innerHTML = '';
+
+      if (isSkeleton) {
+        let skeletonHtml = '';
+        for (let i = 0; i < 5; i++) {
+          skeletonHtml += `
+            <tr>
+              <td><div class="skeleton-box" style="height: 38px; width: 180px;"></div></td>
+              <td><div class="skeleton-box" style="height: 20px; width: 110px;"></div></td>
+              <td><div class="skeleton-box" style="height: 24px; width: 90px;"></div></td>
+              <td><div class="skeleton-box" style="height: 24px; width: 80px;"></div></td>
+              <td><div class="skeleton-box" style="height: 20px; width: 120px;"></div></td>
+              <td><div class="skeleton-box" style="height: 32px; width: 200px;"></div></td>
+              <td><div class="skeleton-box" style="height: 18px; width: 80px;"></div></td>
+              <td><div class="skeleton-box" style="height: 28px; width: 100px;"></div></td>
+            </tr>
+          `;
+        }
+        tbody.innerHTML = skeletonHtml;
+        return;
+      }
+
+      const filtered = getFilteredLeads();
+
+      // Update Search Summary Banner
+      const searchBanner = document.getElementById('search-result-banner');
+      const btnClearSearch = document.getElementById('btn-clear-search');
+
+      if (currentSearchQuery.trim()) {
+        searchBanner.style.display = 'flex';
+        document.getElementById('search-keyword-display').textContent = `"${currentSearchQuery}"`;
+        document.getElementById('search-count-display').textContent = filtered.length;
+        btnClearSearch.style.display = 'block';
+      } else {
+        searchBanner.style.display = 'none';
+        btnClearSearch.style.display = 'none';
+      }
+
+      // Update Active Chips Bar
+      renderActiveChips();
+
+      // Empty State 1: Hệ thống chưa có lead nào
+      if (mockLeads.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 48px 20px;">
+              <div style="width: 52px; height: 52px; border-radius: var(--radius-full); background: var(--neutral-100); color: var(--neutral-400); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;">
+                <i data-lucide="inbox" style="width: 26px; height: 26px;"></i>
+              </div>
+              <h3 style="font-size: 16px; font-weight: 800; color: var(--neutral-900); margin-bottom: 4px;">Chưa có lead</h3>
+              <p style="font-size: 13px; color: var(--neutral-500); max-width: 400px; margin: 0 auto 16px;">
+                Chưa có lead nào trong hệ thống.
+              </p>
+            </td>
+          </tr>
+        `;
+        lucide.createIcons();
+        document.getElementById('pagination-info-text').textContent = 'Hiển thị 0 lead';
+        renderPaginationControls(0);
+        return;
+      }
+
+      // Empty State 2: Không tìm thấy lead phù hợp với từ khóa/bộ lọc
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 48px 20px;">
+              <div style="width: 52px; height: 52px; border-radius: var(--radius-full); background: #fef2f2; color: #dc2626; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px;">
+                <i data-lucide="user-x" style="width: 26px; height: 26px;"></i>
+              </div>
+              <h3 style="font-size: 16px; font-weight: 800; color: var(--neutral-900); margin-bottom: 4px;">Không tìm thấy lead phù hợp</h3>
+              <p style="font-size: 13px; color: var(--neutral-500); max-width: 400px; margin: 0 auto 16px;">
+                Thử thay đổi từ khóa hoặc điều kiện lọc.
+              </p>
+              <button class="btn btn-secondary btn-sm" onclick="clearAllFilters()">
+                <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i>
+                Xóa bộ lọc
+              </button>
+            </td>
+          </tr>
+        `;
+        lucide.createIcons();
+        document.getElementById('pagination-info-text').textContent = 'Hiển thị 0 lead';
+        renderPaginationControls(0);
+        return;
+      }
+
+      // Pagination Calculation
+      const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
+      if (currentPage > totalPages) currentPage = totalPages;
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(filtered.length, startIndex + pageSize);
+      const pageItems = filtered.slice(startIndex, endIndex);
+
+      // Populate Table Rows
+      pageItems.forEach(lead => {
+        const tr = document.createElement('tr');
+        tr.onclick = (e) => {
+          if (e.target.closest('button')) return;
+          openLeadDetail(lead.id);
+        };
+
+        const initials = lead.name.split(' ').map(n => n[0]).slice(-2).join('');
+        const highlightedName = highlightText(lead.name, currentSearchQuery);
+        const highlightedPhone = highlightText(lead.phoneDisplay, currentSearchQuery);
+
+        const statusClass = getStatusBadgeClass(lead.status);
+
+        tr.innerHTML = `
+          <td>
+            <div class="lead-name-cell">
+              <div class="lead-avatar">${initials}</div>
+              <div>
+                <div class="lead-fullname">${highlightedName}</div>
+                <div class="lead-phone">${highlightedPhone}</div>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span style="font-family: monospace; font-weight: 600; color: var(--neutral-700);">${highlightedPhone}</span>
+          </td>
+          <td>
+            <span class="badge ${statusClass}">
+              ${lead.statusLabel}
+            </span>
+          </td>
+          <td>
+            <span class="badge badge-neutral">${lead.source}</span>
+          </td>
+          <td>
+            <span style="font-weight: 500; font-size: 13px;">${lead.owner}</span>
+          </td>
+          <td>
+            <div style="font-size: 12px; font-weight: 700; color: var(--neutral-800);">${lead.lastInteractionDate}</div>
+            <div style="font-size: 12px; color: var(--neutral-500); margin-top: 1px; max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+              ${highlightText(lead.lastInteractionSummary, currentSearchQuery)}
+            </div>
+          </td>
+          <td style="font-size: 12.5px; color: var(--neutral-500);">
+            ${lead.createdAt}
+          </td>
+          <td style="text-align: right;">
+            <div class="row-quick-actions">
+              <button class="btn btn-ghost btn-sm" title="Gọi điện" onclick="event.stopPropagation(); quickCall(event, '${lead.name}', '${lead.phoneDisplay}')">
+                <i data-lucide="phone" style="width: 14px; height: 14px; color: var(--primary);"></i>
+              </button>
+              <button class="btn btn-ghost btn-sm" title="Nhắn tin Zalo" onclick="event.stopPropagation(); quickMessage(event, '${lead.name}')">
+                <i data-lucide="message-circle" style="width: 14px; height: 14px; color: var(--success);"></i>
+              </button>
+              <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); openLeadDetail(${lead.id})">
+                Xem chi tiết
+              </button>
+            </div>
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('pagination-info-text').textContent =
+        `Hiển thị ${startIndex + 1}–${endIndex} / ${filtered.length} lead`;
+
+      renderPaginationControls(filtered.length);
+      lucide.createIcons();
+    }
+
+    // Dynamic Pagination Controls Renderer
+    function renderPaginationControls(totalFiltered) {
+      const container = document.getElementById('pagination-nav-btns');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
+
+      // Prev Button
+      const prevBtn = document.createElement('button');
+      prevBtn.className = 'btn btn-secondary btn-sm';
+      prevBtn.textContent = 'Trước';
+      prevBtn.disabled = (currentPage === 1);
+      prevBtn.onclick = () => {
+        if (currentPage > 1) {
+          currentPage--;
+          renderLeadTable();
+        }
+      };
+      container.appendChild(prevBtn);
+
+      // Page Number Buttons
+      for (let p = 1; p <= totalPages; p++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.className = 'btn btn-secondary btn-sm';
+        pageBtn.textContent = p;
+        if (p === currentPage) {
+          pageBtn.style.background = 'var(--neutral-900)';
+          pageBtn.style.color = '#ffffff';
+          pageBtn.style.borderColor = 'var(--neutral-900)';
+        }
+        pageBtn.onclick = () => {
+          currentPage = p;
+          renderLeadTable();
+        };
+        container.appendChild(pageBtn);
+      }
+
+      // Next Button
+      const nextBtn = document.createElement('button');
+      nextBtn.className = 'btn btn-secondary btn-sm';
+      nextBtn.textContent = 'Sau';
+      nextBtn.disabled = (currentPage >= totalPages);
+      nextBtn.onclick = () => {
+        if (currentPage < totalPages) {
+          currentPage++;
+          renderLeadTable();
+        }
+      };
+      container.appendChild(nextBtn);
+    }
+
+    function changePageSize(size) {
+      pageSize = parseInt(size, 10);
+      currentPage = 1;
+      renderLeadTable();
+      showToast(`Đã đổi mật độ hiển thị sang ${pageSize} lead/trang`, 'info');
+    }
+
+    // Text highlighter helper
+    function highlightText(text, keyword) {
+      if (!text) return "";
+      if (!keyword || !keyword.trim()) return text;
+      const clean = keyword.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`(${clean})`, 'gi');
+      return text.replace(regex, `<span class="highlight-match">$1</span>`);
+    }
+
+    // Status Badge CSS Class
+    function getStatusBadgeClass(status) {
+      const map = {
+        'new': 'status-badge-new',
+        'contacted': 'status-badge-contacted',
+        'counseling': 'status-badge-counseling',
+        'registered': 'status-badge-registered',
+        'converted': 'status-badge-converted',
+        'unreachable': 'status-badge-unreachable',
+        'not-interested': 'status-badge-not-interested'
+      };
+      return map[status] || 'badge-neutral';
+    }
+
+    // Live Search Handler
+    function handleLeadSearch(val) {
+      currentSearchQuery = val;
+      currentPage = 1;
+      renderLeadTable();
+    }
+
+    function clearSearchInput() {
+      currentSearchQuery = "";
+      document.getElementById('lead-search-input').value = "";
+      currentPage = 1;
+      renderLeadTable();
+      showToast('Đã xóa tìm kiếm', 'info');
+    }
+
+    // Active Chips Rendering
+    function renderActiveChips() {
+      const container = document.getElementById('chips-container');
+      const row = document.getElementById('active-filter-chips');
+      const badge = document.getElementById('filter-badge');
+      const btnFilter = document.getElementById('btn-open-filter');
+      container.innerHTML = '';
+
+      let count = 0;
+
+      // Status chips
+      if (activeFilters.statuses.length > 0) {
+        count += activeFilters.statuses.length;
+        activeFilters.statuses.forEach(st => {
+          const pill = document.querySelector(`.filter-pill-opt[data-status="${st}"]`);
+          const label = pill ? pill.textContent : st;
+          createChip(`Trạng thái: ${label}`, () => {
+            activeFilters.statuses = activeFilters.statuses.filter(s => s !== st);
+            syncDrawerPills();
+            currentPage = 1;
+            renderLeadTable();
+          });
+        });
+      }
+
+      // Source chip
+      if (activeFilters.source) {
+        count++;
+        createChip(`Nguồn: ${activeFilters.source}`, () => {
+          activeFilters.source = "";
+          document.getElementById('filter-source-select').value = "";
+          currentPage = 1;
+          renderLeadTable();
+        });
+      }
+
+      // Owner chip
+      if (activeFilters.owner) {
+        count++;
+        createChip(`Phụ trách: ${activeFilters.owner}`, () => {
+          activeFilters.owner = "";
+          document.getElementById('filter-owner-select').value = "";
+          currentPage = 1;
+          renderLeadTable();
+        });
+      }
+
+      // Date chip
+      if (activeFilters.datePreset && activeFilters.datePreset !== 'all') {
+        count++;
+        let label = activeFilters.datePreset;
+        if (activeFilters.datePreset === 'last-month') {
+          label = '01/09/2026 – 30/09/2026 (Tháng trước)';
+        } else if (activeFilters.datePreset === 'today') {
+          label = 'Hôm nay (04/10/2026)';
+        } else if (activeFilters.datePreset === '7-days') {
+          label = '7 ngày qua';
+        } else if (activeFilters.datePreset === '30-days') {
+          label = '30 ngày qua';
+        } else if (activeFilters.datePreset === 'this-month') {
+          label = 'Tháng này (10/2026)';
+        } else if (activeFilters.datePreset === 'custom') {
+          label = `${activeFilters.dateFrom || '...'} → ${activeFilters.dateTo || '...'}`;
+        }
+
+        createChip(`Thời gian: ${label}`, () => {
+          activeFilters.datePreset = 'all';
+          activeFilters.dateFrom = '';
+          activeFilters.dateTo = '';
+          syncDrawerDatePills();
+          document.getElementById('filter-date-from').value = '';
+          document.getElementById('filter-date-to').value = '';
+          currentPage = 1;
+          renderLeadTable();
+        });
+      }
+
+      if (count > 0) {
+        row.style.display = 'flex';
+        badge.style.display = 'inline-block';
+        badge.textContent = count;
+        btnFilter.classList.add('has-filters');
+      } else {
+        row.style.display = 'none';
+        badge.style.display = 'none';
+        btnFilter.classList.remove('has-filters');
+      }
+    }
+
+    function createChip(text, onRemove) {
+      const container = document.getElementById('chips-container');
+      const chip = document.createElement('span');
+      chip.className = 'filter-chip';
+      chip.innerHTML = `
+        <span>${text}</span>
+        <span class="filter-chip-remove" title="Xóa điều kiện này">×</span>
+      `;
+      chip.querySelector('.filter-chip-remove').onclick = onRemove;
+      container.appendChild(chip);
+    }
+
+    function clearAllFilters() {
+      activeFilters = {
+        statuses: [],
+        source: "",
+        owner: "",
+        datePreset: "all",
+        dateFrom: "",
+        dateTo: ""
+      };
+      currentSearchQuery = "";
+      currentPage = 1;
+      document.getElementById('lead-search-input').value = "";
+      syncDrawerPills();
+      syncDrawerDatePills();
+      document.getElementById('filter-source-select').value = "";
+      document.getElementById('filter-owner-select').value = "";
+      document.getElementById('filter-date-from').value = "";
+      document.getElementById('filter-date-to').value = "";
+      renderLeadTable();
+      showToast('Đã reset bộ lọc và quay về danh sách ban đầu', 'info');
+    }
+
+    // Drawer Interaction
+    function openFilterDrawer() {
+      document.getElementById('filter-drawer-overlay').classList.add('active');
+      updateDrawerPreviewCount();
+      lucide.createIcons();
+    }
+
+    function closeFilterDrawer() {
+      document.getElementById('filter-drawer-overlay').classList.remove('active');
+    }
+
+    function closeFilterDrawerOnBackdrop(e) {
+      if (e.target.id === 'filter-drawer-overlay') {
+        closeFilterDrawer();
+      }
+    }
+
+    function toggleStatusPill(el) {
+      const status = el.getAttribute('data-status');
+      if (el.classList.contains('active')) {
+        el.classList.remove('active');
+        activeFilters.statuses = activeFilters.statuses.filter(s => s !== status);
+      } else {
+        el.classList.add('active');
+        if (!activeFilters.statuses.includes(status)) {
+          activeFilters.statuses.push(status);
+        }
+      }
+      updateDrawerPreviewCount();
+    }
+
+    function selectAllStatuses() {
+      const pills = document.querySelectorAll('#status-pills-container .filter-pill-opt');
+      activeFilters.statuses = [];
+      pills.forEach(p => {
+        p.classList.add('active');
+        activeFilters.statuses.push(p.getAttribute('data-status'));
+      });
+      updateDrawerPreviewCount();
+    }
+
+    function selectDatePreset(val, el) {
+      document.querySelectorAll('[data-date]').forEach(p => p.classList.remove('active'));
+      el.classList.add('active');
+      activeFilters.datePreset = val;
+      activeFilters.dateFrom = "";
+      activeFilters.dateTo = "";
+      document.getElementById('filter-date-from').value = "";
+      document.getElementById('filter-date-to').value = "";
+      updateDrawerPreviewCount();
+    }
+
+    function handleCustomDateInput() {
+      const from = document.getElementById('filter-date-from').value;
+      const to = document.getElementById('filter-date-to').value;
+      if (from || to) {
+        document.querySelectorAll('[data-date]').forEach(p => p.classList.remove('active'));
+        activeFilters.datePreset = 'custom';
+        activeFilters.dateFrom = from;
+        activeFilters.dateTo = to;
+      }
+      updateDrawerPreviewCount();
+    }
+
+    function filterOwnerOptions(keyword) {
+      const select = document.getElementById('filter-owner-select');
+      const q = keyword.toLowerCase().trim();
+      Array.from(select.options).forEach(opt => {
+        if (!q || opt.value === "" || opt.text.toLowerCase().includes(q)) {
+          opt.style.display = "";
+        } else {
+          opt.style.display = "none";
+        }
+      });
+    }
+
+    function syncDrawerPills() {
+      document.querySelectorAll('#status-pills-container .filter-pill-opt').forEach(p => {
+        const st = p.getAttribute('data-status');
+        if (activeFilters.statuses.includes(st)) {
+          p.classList.add('active');
+        } else {
+          p.classList.remove('active');
+        }
+      });
+    }
+
+    function syncDrawerDatePills() {
+      document.querySelectorAll('[data-date]').forEach(p => {
+        if (p.getAttribute('data-date') === activeFilters.datePreset) {
+          p.classList.add('active');
+        } else {
+          p.classList.remove('active');
+        }
+      });
+    }
+
+    function updateDrawerPreviewCount() {
+      activeFilters.source = document.getElementById('filter-source-select').value;
+      activeFilters.owner = document.getElementById('filter-owner-select').value;
+      const preview = getFilteredLeads().length;
+      document.getElementById('drawer-preview-count').textContent = `${preview} lead`;
+    }
+
+    function applyDrawerFilters() {
+      activeFilters.source = document.getElementById('filter-source-select').value;
+      activeFilters.owner = document.getElementById('filter-owner-select').value;
+      closeFilterDrawer();
+      currentPage = 1;
+      renderLeadTable();
+      const count = getFilteredLeads().length;
+      showToast(`Đã áp dụng bộ lọc! Tìm thấy ${count} lead phù hợp.`, 'success');
+    }
+
+    function resetDrawerFilters() {
+      activeFilters = {
+        statuses: [],
+        source: "",
+        owner: "",
+        datePreset: "all",
+        dateFrom: "",
+        dateTo: ""
+      };
+      syncDrawerPills();
+      syncDrawerDatePills();
+      document.getElementById('filter-source-select').value = "";
+      document.getElementById('filter-owner-select').value = "";
+      document.getElementById('filter-date-from').value = "";
+      document.getElementById('filter-date-to').value = "";
+      document.getElementById('owner-search-filter').value = "";
+      filterOwnerOptions("");
+      updateDrawerPreviewCount();
+    }
+
+    // Lead Detail Screen 03 Actions
+    function openLeadDetail(leadId, forceLastMonthContext = false) {
+      selectedLeadId = leadId;
+      const lead = mockLeads.find(l => l.id === leadId);
+      if (!lead) return;
+
+      selectedLeadContextFromLastMonth = forceLastMonthContext || (activeFilters.datePreset === 'last-month');
+
+      // Populate Hero Card
+      const initials = lead.name.split(' ').map(n => n[0]).slice(-2).join('');
+      document.getElementById('detail-avatar').textContent = initials;
+      document.getElementById('detail-name').textContent = lead.name;
+      document.getElementById('breadcrumb-lead-name').textContent = lead.name;
+      document.getElementById('detail-phone').textContent = lead.phoneDisplay;
+      document.getElementById('detail-email').textContent = lead.email;
+      document.getElementById('detail-source').textContent = lead.source;
+
+      const badgeEl = document.getElementById('detail-status-badge');
+      badgeEl.className = `badge ${getStatusBadgeClass(lead.status)}`;
+      badgeEl.innerHTML = `<i data-lucide="circle-dot" style="width: 12px; height: 12px;"></i> ${lead.statusLabel}`;
+
+      // Populate Left Column (All 9 requirements)
+      document.getElementById('card-lead-name').textContent = lead.name;
+      document.getElementById('card-lead-phone').textContent = lead.phoneDisplay;
+      document.getElementById('card-lead-email').textContent = lead.email;
+      document.getElementById('card-lead-source').textContent = lead.source;
+      document.getElementById('card-lead-status').textContent = lead.statusLabel;
+      document.getElementById('card-lead-owner').textContent = `${lead.owner} (Tư vấn viên)`;
+      document.getElementById('card-lead-created').textContent = `${lead.createdAt} (Từ ${lead.source})`;
+
+      // Context Banner & Subtitle
+      const banner = document.getElementById('detail-context-banner');
+      const titleEl = document.getElementById('timeline-main-title');
+      const dateSelect = document.getElementById('timeline-date-filter-select');
+
+      if (selectedLeadContextFromLastMonth) {
+        banner.style.display = 'flex';
+        document.getElementById('context-banner-text').innerHTML =
+          `💡 <strong>Ưu tiên hiển thị:</strong> Bạn vừa lọc theo mốc <strong>Tháng trước (01/09/2026 – 30/09/2026)</strong>. Hệ thống tự động làm nổi bật các cuộc gọi và tin nhắn trong tháng trước bên dưới.`;
+        if (titleEl) {
+          titleEl.innerHTML = `<i data-lucide="history" style="width: 20px; height: 20px; color: var(--primary);"></i> Lịch sử tương tác – Tháng trước`;
+        }
+        if (dateSelect) {
+          dateSelect.value = 'last-month';
+          timelineDateFilter = 'last-month';
+        }
+      } else {
+        banner.style.display = 'none';
+        if (titleEl) {
+          titleEl.innerHTML = `<i data-lucide="history" style="width: 20px; height: 20px; color: var(--primary);"></i> Lịch sử tương tác`;
+        }
+        if (dateSelect) {
+          dateSelect.value = 'all';
+          timelineDateFilter = 'all';
+        }
+      }
+
+      // Reset Timeline Sub-filters
+      timelineSearchQuery = "";
+      document.getElementById('timeline-search-input').value = "";
+      timelineTypeFilter = "all";
+      document.querySelectorAll('.filter-tab-pill').forEach(b => b.classList.remove('active'));
+      const firstTab = document.querySelector('.filter-tab-pill');
+      if (firstTab) firstTab.classList.add('active');
+
+      renderTimeline(lead);
+      switchScreen(3);
+    }
+
+    function returnToLeadList() {
+      switchScreen(1);
+    }
+
+    function dismissContextBanner() {
+      document.getElementById('detail-context-banner').style.display = 'none';
+    }
+
+    function clearTimelineDateContext() {
+      selectedLeadContextFromLastMonth = false;
+      document.getElementById('detail-context-banner').style.display = 'none';
+      const titleEl = document.getElementById('timeline-main-title');
+      if (titleEl) {
+        titleEl.innerHTML = `<i data-lucide="history" style="width: 20px; height: 20px; color: var(--primary);"></i> Lịch sử tương tác`;
+      }
+      const dateSelect = document.getElementById('timeline-date-filter-select');
+      if (dateSelect) {
+        dateSelect.value = 'all';
+        timelineDateFilter = 'all';
+      }
+      const lead = mockLeads.find(l => l.id === selectedLeadId);
+      if (lead) renderTimeline(lead);
+      showToast('Đã chuyển sang hiển thị tất cả thời gian', 'info');
+    }
+
+    // Render Timeline in Detail View
+    function renderTimeline(lead) {
+      const container = document.getElementById('timeline-stream-container');
+      container.innerHTML = '';
+
+      // Empty State 3: Lead chưa từng có tương tác nào
+      if (!lead.timeline || lead.timeline.length === 0) {
+        container.innerHTML = `
+          <div style="padding: 40px 16px; text-align: center;">
+            <div style="width: 48px; height: 48px; border-radius: var(--radius-full); background: var(--neutral-100); color: var(--neutral-400); display: flex; align-items: center; justify-content: center; margin: 0 auto 12px;">
+              <i data-lucide="message-square-off" style="width: 24px; height: 24px;"></i>
+            </div>
+            <h4 style="font-size: 15px; font-weight: 700; color: var(--neutral-800); margin-bottom: 4px;">Chưa có lịch sử tương tác</h4>
+            <p style="font-size: 13px; color: var(--neutral-500); max-width: 320px; margin: 0 auto 16px;">
+              Lead này chưa có cuộc gọi, tin nhắn hoặc ghi chú nào.
+            </p>
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('quick-log-input').focus()">
+              <i data-lucide="plus" style="width: 14px; height: 14px;"></i>
+              Thêm tương tác đầu tiên
+            </button>
+          </div>
+        `;
+        document.getElementById('timeline-count-badge').textContent = '0 lượt trao đổi';
+        lucide.createIcons();
+        return;
+      }
+
+      let list = [...lead.timeline];
+
+      // Filter by type
+      if (timelineTypeFilter !== 'all') {
+        list = list.filter(item => item.type === timelineTypeFilter);
+      }
+
+      // Filter by keyword search in timeline
+      if (timelineSearchQuery.trim()) {
+        const q = timelineSearchQuery.toLowerCase().trim();
+        list = list.filter(item =>
+          (item.title && item.title.toLowerCase().includes(q)) ||
+          (item.content && item.content.toLowerCase().includes(q))
+        );
+      }
+
+      // Filter by date inside timeline
+      if (timelineDateFilter === 'last-month') {
+        list = list.filter(item => item.isLastMonth || (item.time && item.time.includes('/09/2026')));
+      } else if (timelineDateFilter === 'today') {
+        list = list.filter(item => item.time && item.time.includes('04/10/2026'));
+      } else if (timelineDateFilter === '7-days') {
+        list = list.filter(item => item.time && (item.time.includes('10/2026') || item.time.includes('28/09') || item.time.includes('29/09') || item.time.includes('30/09')));
+      } else if (timelineDateFilter === '30-days') {
+        list = list.filter(item => !item.time || !item.time.includes('/08/2026'));
+      }
+
+      document.getElementById('timeline-count-badge').textContent = `${list.length} lượt trao đổi`;
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div style="padding: 32px 10px; text-align: center; color: var(--neutral-400);">
+            <i data-lucide="search-x" style="width: 32px; height: 32px; margin: 0 auto 8px; display: block; color: var(--neutral-300);"></i>
+            <strong style="color: var(--neutral-700);">Không tìm thấy cuộc trao đổi phù hợp</strong>
+            <p style="font-size: 12.5px; margin-top: 4px; color: var(--neutral-500);">Thử xóa từ khóa tìm kiếm hoặc chọn lọc Tất cả.</p>
+            <button class="btn btn-ghost btn-sm" style="color: var(--primary); margin-top: 8px;" onclick="resetTimelineFilters()">Xóa bộ lọc trao đổi</button>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      list.forEach(item => {
+        const card = document.createElement('div');
+        card.className = 'timeline-card-item';
+
+        const isHighlighted = (selectedLeadContextFromLastMonth && item.isLastMonth) || (timelineSearchQuery.trim() !== "");
+        const highlightedContent = highlightText(item.content, timelineSearchQuery);
+        const highlightedTitle = highlightText(item.title, timelineSearchQuery);
+
+        let iconName = 'phone';
+        let iconTypeClass = 'call';
+        if (item.type === 'msg') { iconName = 'message-circle'; iconTypeClass = 'msg'; }
+        else if (item.type === 'note') { iconName = 'file-text'; iconTypeClass = 'note'; }
+        else if (item.type === 'email') { iconName = 'mail'; iconTypeClass = 'email'; }
+        else if (item.type === 'appointment') { iconName = 'calendar'; iconTypeClass = 'appointment'; }
+
+        card.innerHTML = `
+          <div class="timeline-node-icon ${iconTypeClass}">
+            <i data-lucide="${iconName}" style="width: 14px; height: 14px;"></i>
+          </div>
+          <div class="timeline-card-content ${isHighlighted ? 'highlighted-context' : ''}">
+            <div class="timeline-meta-bar">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="timeline-time">${item.time}</span>
+                ${item.isLastMonth ? '<span class="badge badge-warning" style="font-size: 10px; padding: 1px 6px;">Khớp bộ lọc tháng trước</span>' : ''}
+              </div>
+              <span class="timeline-author">${item.author}</span>
+            </div>
+
+            <div style="font-weight: 700; font-size: 14px; color: var(--neutral-900); margin-bottom: 6px;">
+              ${highlightedTitle}
+            </div>
+
+            <div class="timeline-text">
+              ${highlightedContent}
+            </div>
+
+            ${item.hasAudio ? `
+              <div class="audio-recording-mock">
+                <button class="play-audio-btn" onclick="simulatePlayAudio(this)">
+                  <i data-lucide="play" style="width: 12px; height: 12px;"></i>
+                </button>
+                <span>${item.duration}</span>
+                <span style="color: var(--neutral-400);">•</span>
+                <span style="color: var(--neutral-500); font-family: monospace; font-size: 11.5px;">Ghi âm cuộc gọi tự động (Cloud PBX)</span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+
+        container.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function resetTimelineFilters() {
+      timelineSearchQuery = "";
+      timelineTypeFilter = "all";
+      timelineDateFilter = "all";
+      document.getElementById('timeline-search-input').value = "";
+      document.getElementById('timeline-date-filter-select').value = "all";
+      document.querySelectorAll('.filter-tab-pill').forEach(b => b.classList.remove('active'));
+      const firstTab = document.querySelector('.filter-tab-pill');
+      if (firstTab) firstTab.classList.add('active');
+      const lead = mockLeads.find(l => l.id === selectedLeadId);
+      if (lead) renderTimeline(lead);
+      showToast('Đã xóa bộ lọc trong lịch sử trao đổi', 'info');
+    }
+
+    // Search inside timeline handler
+    function handleTimelineSearch(val) {
+      timelineSearchQuery = val;
+      const lead = mockLeads.find(l => l.id === selectedLeadId);
+      if (lead) renderTimeline(lead);
+    }
+
+    function filterTimelineType(type, btnEl) {
+      timelineTypeFilter = type;
+      document.querySelectorAll('.filter-tab-pill').forEach(b => b.classList.remove('active'));
+      btnEl.classList.add('active');
+      const lead = mockLeads.find(l => l.id === selectedLeadId);
+      if (lead) renderTimeline(lead);
+    }
+
+    function handleTimelineDateFilter(val) {
+      timelineDateFilter = val;
+      const lead = mockLeads.find(l => l.id === selectedLeadId);
+      if (lead) renderTimeline(lead);
+    }
+
+    // Quick Log Interaction inside Detail Page
+    function selectLogType(type) {
+      activeQuickLogType = type;
+      ['call', 'msg', 'note', 'appointment'].forEach(t => {
+        const btn = document.getElementById(`log-type-${t}`);
+        if (btn) btn.classList.remove('active');
+      });
+      const target = document.getElementById(`log-type-${type}`);
+      if (target) target.classList.add('active');
+    }
+
+    function saveNewInteractionLog() {
+      const textarea = document.getElementById('quick-log-input');
+      const text = textarea.value.trim();
+      if (!text) {
+        showToast('Vui lòng nhập nội dung ghi chú trao đổi', 'error');
+        textarea.focus();
+        return;
+      }
+
+      const lead = mockLeads.find(l => l.id === selectedLeadId);
+      if (!lead) return;
+
+      const now = new Date();
+      const timeStr = `${now.toLocaleDateString('vi-VN')} – ${now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+
+      const typeTitles = {
+        'call': 'Cuộc gọi tư vấn mới',
+        'msg': 'Tin nhắn trao đổi mới',
+        'note': 'Ghi chú nội bộ mới',
+        'appointment': 'Lịch hẹn tư vấn mới'
+      };
+
+      const newLog = {
+        id: Date.now(),
+        time: timeStr,
+        author: "Lê Thị Thu Hà – Tư vấn viên",
+        type: activeQuickLogType,
+        title: typeTitles[activeQuickLogType] || "Ghi chú mới",
+        isLastMonth: false,
+        content: text
+      };
+
+      lead.timeline.unshift(newLog);
+      lead.lastInteractionDate = timeStr;
+      lead.lastInteractionSummary = `${activeQuickLogType === 'call' ? '📞 Gọi điện' : activeQuickLogType === 'msg' ? '💬 Tin nhắn' : '📝 Ghi chú'}: ${text}`;
+
+      textarea.value = '';
+      renderTimeline(lead);
+      showToast('Đã lưu tương tác mới vào lịch sử khách hàng!', 'success');
+    }
+
+    // Status Update Modal Actions
+    function openUpdateStatusModal() {
+      const lead = mockLeads.find(l => l.id === selectedLeadId);
+      if (!lead) return;
+
+      const modalSelect = document.getElementById('modal-status-select');
+      if (modalSelect) modalSelect.value = lead.status;
+      document.getElementById('modal-status-note').value = "";
+      document.getElementById('status-modal-overlay').classList.add('active');
+      lucide.createIcons();
+    }
+
+    function closeUpdateStatusModal() {
+      document.getElementById('status-modal-overlay').classList.remove('active');
+    }
+
+    function closeUpdateStatusModalOnBackdrop(e) {
+      if (e.target.id === 'status-modal-overlay') {
+        closeUpdateStatusModal();
+      }
+    }
+
+    function submitStatusUpdate() {
+      const lead = mockLeads.find(l => l.id === selectedLeadId);
+      if (!lead) return;
+
+      const newStatus = document.getElementById('modal-status-select').value;
+      const noteText = document.getElementById('modal-status-note').value.trim();
+
+      const labelMap = {
+        'new': 'Lead mới',
+        'contacted': 'Đã liên hệ',
+        'counseling': 'Đang tư vấn',
+        'registered': 'Đã đăng ký',
+        'converted': 'Đã chuyển đổi',
+        'unreachable': 'Không liên lạc được',
+        'not-interested': 'Không quan tâm'
+      };
+
+      const oldStatusLabel = lead.statusLabel;
+      lead.status = newStatus;
+      lead.statusLabel = labelMap[newStatus] || newStatus;
+
+      // Add audit log to timeline
+      const now = new Date();
+      const timeStr = `${now.toLocaleDateString('vi-VN')} – ${now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
+      lead.timeline.unshift({
+        id: Date.now(),
+        time: timeStr,
+        author: "Lê Thị Thu Hà – Tư vấn viên",
+        type: "note",
+        title: `Cập nhật trạng thái: ${lead.statusLabel}`,
+        isLastMonth: false,
+        content: `Chuyển trạng thái từ "${oldStatusLabel}" sang "${lead.statusLabel}". ${noteText ? 'Ghi chú: ' + noteText : ''}`
+      });
+
+      lead.lastInteractionDate = timeStr;
+      lead.lastInteractionSummary = `✏️ Cập nhật trạng thái: ${lead.statusLabel}`;
+
+      closeUpdateStatusModal();
+      openLeadDetail(lead.id, selectedLeadContextFromLastMonth);
+      showToast(`Đã cập nhật trạng thái lead thành: ${lead.statusLabel}`, 'success');
+    }
+
+    // Interactive Action Simulators
+    function simulateMakeCall() {
+      const lead = mockLeads.find(l => l.id === selectedLeadId);
+      showToast(`Đang kết nối cuộc gọi IP Phone tới ${lead ? lead.name : 'khách hàng'} (${lead ? lead.phoneDisplay : ''})...`, 'info');
+    }
+
+    function simulateSendZalo() {
+      const lead = mockLeads.find(l => l.id === selectedLeadId);
+      showToast(`Đang mở cửa sổ chat Zalo với ${lead ? lead.name : 'học viên'}...`, 'success');
+    }
+
+    function quickCall(e, name, phone) {
+      showToast(`Đang gọi tới ${name} (${phone})...`, 'info');
+    }
+
+    function quickMessage(e, name) {
+      showToast(`Đang mở chat Zalo với ${name}...`, 'success');
+    }
+
+    function simulatePlayAudio(btn) {
+      if (btn.classList.contains('playing')) {
+        btn.classList.remove('playing');
+        btn.innerHTML = `<i data-lucide="play" style="width: 12px; height: 12px;"></i>`;
+        showToast('Đã tạm dừng file ghi âm cuộc gọi', 'info');
+      } else {
+        btn.classList.add('playing');
+        btn.innerHTML = `<i data-lucide="pause" style="width: 12px; height: 12px;"></i>`;
+        showToast('Đang phát đoạn ghi âm cuộc gọi tư vấn (Thời lượng 4m12s)...', 'info');
+      }
+      lucide.createIcons();
+    }
+
+    function exportLeadList() {
+      showToast('Đang xuất danh sách lead ra tệp Excel: Danh_sach_Lead_Tuyen_Sinh_2026.csv', 'success');
+      const csvContent = "\uFEFF" +
+        "ID,Họ và tên,Số điện thoại,Trạng thái,Nguồn lead,Người phụ trách,Tương tác gần nhất,Ngày tạo\n" +
+        mockLeads.map(l => `${l.id},"${l.name}","${l.phoneDisplay}","${l.statusLabel}","${l.source}","${l.owner}","${l.lastInteractionDate}","${l.createdAt}"`).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', 'Danh_sach_Lead_Tuyen_Sinh_2026.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+    }
+
+    // Reviewer Toolbars Flow Actions
+    function resetAllFiltersAndScreens() {
+      clearAllFilters();
+      switchScreen(1);
+    }
+
+    function applyPresetSearchName() {
+      switchScreen(1);
+      currentSearchQuery = "Minh Anh";
+      document.getElementById('lead-search-input').value = "Minh Anh";
+      currentPage = 1;
+      renderLeadTable();
+      showToast('Kịch bản 3: Đã tìm kiếm theo tên "Minh Anh"', 'info');
+    }
+
+    function applyPresetSearchPhone() {
+      switchScreen(1);
+      currentSearchQuery = "0988";
+      document.getElementById('lead-search-input').value = "0988";
+      currentPage = 1;
+      renderLeadTable();
+      showToast('Kịch bản 4: Đã tìm theo đầu số "0988" (Lọc partial match)', 'info');
+    }
+
+    function applyPresetLastMonthFilter() {
+      switchScreen(1);
+      activeFilters.datePreset = 'last-month';
+      activeFilters.statuses = ['counseling'];
+      syncDrawerPills();
+      syncDrawerDatePills();
+      currentPage = 1;
+      renderLeadTable();
+      showToast('Kịch bản 5: Đã lọc lead "Đang tư vấn" trong "Tháng trước"', 'info');
+    }
+
+    function applyTimelineSearchPreset() {
+      openLeadDetail(1, true);
+      timelineSearchQuery = "học phí";
+      document.getElementById('timeline-search-input').value = "học phí";
+      const lead = mockLeads.find(l => l.id === 1);
+      if (lead) renderTimeline(lead);
+      showToast('Kịch bản 7: Đã tìm từ khóa "học phí" trong lịch sử trao đổi', 'success');
+    }
+
+    function triggerEmptyStateDemo() {
+      switchScreen(1);
+      currentSearchQuery = "999999999";
+      document.getElementById('lead-search-input').value = "999999999";
+      currentPage = 1;
+      renderLeadTable();
+      showToast('Kịch bản 8: Mô phỏng không tìm thấy lead phù hợp', 'info');
+    }
+
+    function triggerSkeletonLoadingDemo() {
+      switchScreen(1);
+      renderLeadTable(true);
+      showToast('Kịch bản 9: Đang tải dữ liệu với Skeleton Pulse...', 'info');
+      setTimeout(() => {
+        renderLeadTable(false);
+        showToast('Đã tải xong dữ liệu danh sách lead!', 'success');
+      }, 1000);
+    }
+
+    // Toast helper
+    function showToast(message, type = 'info') {
+      const box = document.getElementById('toast-box');
+      if (!box) return;
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+
+      let icon = 'info';
+      let iconColor = 'var(--primary)';
+      if (type === 'success') { icon = 'check-circle-2'; iconColor = 'var(--success)'; }
+      else if (type === 'error') { icon = 'alert-triangle'; iconColor = 'var(--danger)'; }
+
+      toast.innerHTML = `
+        <i data-lucide="${icon}" style="width: 20px; height: 20px; color: ${iconColor}; flex-shrink: 0;"></i>
+        <span style="color: var(--neutral-800);">${message}</span>
+      `;
+      box.appendChild(toast);
+      lucide.createIcons();
+
+      setTimeout(() => {
+        toast.style.transition = 'all 0.3s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Initialize on load
+    renderLeadTable();
+  </script>
+</body>
+
+</html>
