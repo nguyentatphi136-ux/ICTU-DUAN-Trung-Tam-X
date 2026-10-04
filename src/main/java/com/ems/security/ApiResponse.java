@@ -12,7 +12,12 @@ public final class ApiResponse {
 
     public static void success(HttpServletResponse response, String code, String message, Object data)
             throws IOException {
-        response.setStatus(HttpServletResponse.SC_OK);
+        success(response, HttpServletResponse.SC_OK, code, message, data);
+    }
+
+    public static void success(HttpServletResponse response, int status, String code, String message, Object data)
+            throws IOException {
+        response.setStatus(status);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write(GSON.toJson(new Success(true, code, message, data)));
     }
