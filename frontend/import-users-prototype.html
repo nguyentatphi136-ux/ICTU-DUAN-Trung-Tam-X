@@ -1,0 +1,2578 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduManager EMS — Nhập người dùng từ Excel (S2-01 Prototype)</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-hover: #0369a1;
+      --primary-light: #e0f2fe;
+      --primary-dark: #075985;
+
+      --neutral-50: #f8fafc;
+      --neutral-100: #f1f5f9;
+      --neutral-200: #e2e8f0;
+      --neutral-300: #cbd5e1;
+      --neutral-400: #94a3b8;
+      --neutral-500: #64748b;
+      --neutral-600: #475569;
+      --neutral-700: #334155;
+      --neutral-800: #1e293b;
+      --neutral-900: #0f172a;
+
+      --success: #10b981;
+      --success-light: #ecfdf5;
+      --success-border: #a7f3d0;
+      --success-dark: #047857;
+
+      --warning: #f59e0b;
+      --warning-light: #fffbeb;
+      --warning-border: #fde68a;
+      --warning-dark: #b45309;
+
+      --danger: #ef4444;
+      --danger-light: #fef2f2;
+      --danger-border: #fecaca;
+      --danger-dark: #b91c1c;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 20px;
+      --radius-full: 9999px;
+
+      --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+      --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #f8fafc;
+      color: var(--neutral-800);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Reviewer Toolbar */
+    .reviewer-toolbar {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .reviewer-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .reviewer-btn {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+    }
+
+    .reviewer-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+    }
+
+    .reviewer-btn.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* App Shell */
+    .app-shell {
+      display: flex;
+      flex: 1;
+      min-height: calc(100vh - 45px);
+    }
+
+    /* Sidebar */
+    .app-sidebar {
+      width: 260px;
+      background: #ffffff;
+      border-right: 1px solid var(--neutral-200);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid var(--neutral-100);
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #0284c7, #0369a1);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.3);
+    }
+
+    .brand-title {
+      font-weight: 800;
+      font-size: 17px;
+      color: var(--neutral-900);
+      letter-spacing: -0.02em;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--neutral-400);
+      font-weight: 500;
+    }
+
+    .sidebar-menu {
+      padding: 16px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+    }
+
+    .menu-group-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--neutral-400);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 12px 12px 6px;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--neutral-600);
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .menu-item:hover {
+      background: var(--neutral-50);
+      color: var(--neutral-900);
+    }
+
+    .menu-item.active {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      font-weight: 600;
+    }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--neutral-100);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-full);
+      background: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--neutral-700);
+    }
+
+    .user-info {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .user-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--neutral-900);
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+
+    .user-role {
+      font-size: 11px;
+      color: var(--neutral-500);
+    }
+
+    /* Main Content Area */
+    .app-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      max-height: calc(100vh - 45px);
+    }
+
+    .app-topbar {
+      height: 64px;
+      background: #ffffff;
+      border-bottom: 1px solid var(--neutral-200);
+      padding: 0 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .topbar-breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--neutral-500);
+    }
+
+    .topbar-breadcrumbs a {
+      color: var(--neutral-600);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .topbar-breadcrumbs a:hover {
+      color: var(--primary);
+    }
+
+    .topbar-breadcrumbs .current {
+      color: var(--neutral-900);
+      font-weight: 600;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* View Container */
+    .view-content {
+      padding: 32px;
+      flex: 1;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Screen Views Wrapper */
+    .screen-view {
+      display: none;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    .screen-view.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Common Components */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+    }
+
+    .btn-primary:disabled {
+      background: var(--neutral-300);
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-secondary {
+      background: #ffffff;
+      color: var(--neutral-700);
+      border-color: var(--neutral-300);
+    }
+
+    .btn-secondary:hover {
+      background: var(--neutral-50);
+      border-color: var(--neutral-400);
+      color: var(--neutral-900);
+    }
+
+    .btn-excel {
+      background: #ffffff;
+      color: #107c41;
+      border-color: #bbf7d0;
+    }
+
+    .btn-excel:hover {
+      background: #f0fdf4;
+      border-color: #86efac;
+      color: #047857;
+      box-shadow: 0 2px 6px rgba(16, 124, 65, 0.15);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #ffffff;
+    }
+
+    .btn-danger:hover {
+      background: var(--danger-dark);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--neutral-600);
+    }
+
+    .btn-ghost:hover {
+      background: var(--neutral-100);
+      color: var(--neutral-900);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12.5px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Cards */
+    .card {
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+
+    .badge-success {
+      background: var(--success-light);
+      color: var(--success-dark);
+      border: 1px solid var(--success-border);
+    }
+
+    .badge-danger {
+      background: var(--danger-light);
+      color: var(--danger-dark);
+      border: 1px solid var(--danger-border);
+    }
+
+    .badge-warning {
+      background: var(--warning-light);
+      color: var(--warning-dark);
+      border: 1px solid var(--warning-border);
+    }
+
+    .badge-info {
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      border: 1px solid #bae6fd;
+    }
+
+    .badge-neutral {
+      background: var(--neutral-100);
+      color: var(--neutral-700);
+      border: 1px solid var(--neutral-200);
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      background: #ffffff;
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      box-shadow: var(--shadow-xl);
+      border: 1px solid var(--neutral-200);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13.5px;
+      font-weight: 500;
+      animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      max-width: 420px;
+    }
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    /* SCREEN 01 STYLES */
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .page-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--neutral-900);
+      letter-spacing: -0.02em;
+    }
+
+    .page-desc {
+      font-size: 13.5px;
+      color: var(--neutral-500);
+      margin-top: 4px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      padding: 18px 20px;
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .stat-icon-wrap {
+      width: 46px;
+      height: 46px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .stat-val {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--neutral-900);
+      line-height: 1.2;
+    }
+
+    .stat-lbl {
+      font-size: 12.5px;
+      color: var(--neutral-500);
+      font-weight: 500;
+    }
+
+    .table-toolbar {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--neutral-200);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .search-input-wrap {
+      position: relative;
+      min-width: 280px;
+    }
+
+    .search-input-wrap i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--neutral-400);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 8px 14px 8px 36px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--neutral-300);
+      font-size: 13.5px;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    .filters-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .select-filter {
+      padding: 8px 12px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--neutral-300);
+      font-size: 13px;
+      color: var(--neutral-700);
+      background: #ffffff;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      text-align: left;
+      font-size: 13.5px;
+    }
+
+    .data-table th {
+      background: var(--neutral-50);
+      color: var(--neutral-600);
+      font-weight: 600;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--neutral-200);
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .data-table td {
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--neutral-100);
+      color: var(--neutral-700);
+      background: #ffffff;
+      vertical-align: middle;
+    }
+
+    .data-table tbody tr:hover td {
+      background: #f8fafc;
+    }
+
+    .data-table tbody tr.row-error td {
+      background: #fef2f2 !important;
+    }
+
+    .data-table tbody tr.row-error:hover td {
+      background: #fee2e2 !important;
+    }
+
+    .sticky-col-first {
+      position: sticky;
+      left: 0;
+      z-index: 5;
+      background: inherit;
+    }
+
+    th.sticky-col-first {
+      z-index: 15;
+    }
+
+    .sticky-col-status {
+      position: sticky;
+      right: 0;
+      z-index: 5;
+      background: inherit;
+      box-shadow: -2px 0 5px rgba(0, 0, 0, 0.03);
+    }
+
+    th.sticky-col-status {
+      z-index: 15;
+      box-shadow: -2px 0 5px rgba(0, 0, 0, 0.03);
+    }
+
+    /* SCREEN 02: UPLOAD STYLES */
+    .upload-flow-wrapper {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    .flow-stepper-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--neutral-200);
+    }
+
+    .stepper-steps {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .step-node {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--neutral-400);
+    }
+
+    .step-node.active {
+      color: var(--primary);
+    }
+
+    .step-node.completed {
+      color: var(--success);
+    }
+
+    .step-circle {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-full);
+      border: 2px solid currentColor;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .step-node.active .step-circle {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    .step-node.completed .step-circle {
+      background: var(--success);
+      color: #ffffff;
+      border-color: var(--success);
+    }
+
+    .step-divider {
+      width: 32px;
+      height: 2px;
+      background: var(--neutral-200);
+    }
+
+    .upload-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 24px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 900px) {
+      .upload-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .dropzone-area {
+      border: 2px dashed #93c5fd;
+      background: #f0f9ff;
+      border-radius: var(--radius-xl);
+      padding: 44px 28px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 280px;
+    }
+
+    .dropzone-area:hover,
+    .dropzone-area.dragover {
+      border-color: var(--primary);
+      background: #e0f2fe;
+      transform: translateY(-2px);
+    }
+
+    .dropzone-icon {
+      width: 64px;
+      height: 64px;
+      background: #ffffff;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #107c41;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 12px rgba(16, 124, 65, 0.15);
+    }
+
+    .dropzone-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--neutral-800);
+      margin-bottom: 6px;
+    }
+
+    .dropzone-subtitle {
+      font-size: 13px;
+      color: var(--neutral-500);
+      margin-bottom: 18px;
+    }
+
+    .template-box {
+      margin-top: 18px;
+      padding: 14px 18px;
+      background: #ffffff;
+      border: 1px solid #bbf7d0;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .template-box-text {
+      font-size: 12.5px;
+      color: var(--neutral-700);
+    }
+
+    .guidelines-card {
+      padding: 24px;
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-xl);
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .guidelines-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--neutral-900);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .guideline-steps {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .guideline-step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--neutral-600);
+      line-height: 1.45;
+    }
+
+    .step-num-pill {
+      width: 20px;
+      height: 20px;
+      background: var(--neutral-100);
+      color: var(--neutral-700);
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .required-fields-box {
+      background: var(--neutral-50);
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      font-size: 12px;
+      margin-top: auto;
+    }
+
+    .flow-actions-bar {
+      padding: 18px 24px;
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-lg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* SCREEN 03 STYLES */
+    .uploading-container {
+      max-width: 680px;
+      margin: 40px auto;
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-xl);
+      padding: 36px;
+      box-shadow: var(--shadow-md);
+      text-align: center;
+    }
+
+    .uploading-file-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--neutral-50);
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin: 24px 0;
+      text-align: left;
+    }
+
+    .progress-bar-wrapper {
+      width: 100%;
+      height: 8px;
+      background: var(--neutral-200);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+      margin-top: 12px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #0284c7, #38bdf8);
+      border-radius: var(--radius-full);
+      transition: width 0.3s ease;
+      width: 68%;
+    }
+
+    /* SCREEN 04 STYLES */
+    .preview-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .preview-summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .summary-kpi-card {
+      padding: 18px 22px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--neutral-200);
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .summary-kpi-card.kpi-total {
+      border-left: 4px solid var(--primary);
+    }
+
+    .summary-kpi-card.kpi-valid {
+      border-left: 4px solid var(--success);
+      background: #f0fdf4;
+    }
+
+    .summary-kpi-card.kpi-error {
+      border-left: 4px solid var(--danger);
+      background: #fef2f2;
+    }
+
+    .alert-banner {
+      padding: 16px 20px;
+      border-radius: var(--radius-lg);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      font-size: 13.5px;
+    }
+
+    .alert-banner-warning {
+      background: #fffbeb;
+      border: 1px solid var(--warning-border);
+      color: #92400e;
+    }
+
+    .filter-tabs-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-tab-btn {
+      padding: 8px 16px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      color: var(--neutral-600);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .filter-tab-btn:hover {
+      background: var(--neutral-50);
+      color: var(--neutral-900);
+    }
+
+    .filter-tab-btn.active {
+      background: var(--neutral-900);
+      border-color: var(--neutral-900);
+      color: #ffffff;
+    }
+
+    .filter-tab-btn.tab-error.active {
+      background: var(--danger);
+      border-color: var(--danger);
+      color: #ffffff;
+    }
+
+    .error-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--danger);
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .error-tip {
+      font-size: 11.5px;
+      color: var(--neutral-500);
+      margin-top: 2px;
+    }
+
+    /* SCREEN 05 STYLES */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1050;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+
+    @keyframes modalFadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.96);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .modal-dialog {
+      background: #ffffff;
+      border-radius: var(--radius-xl);
+      max-width: 540px;
+      width: 100%;
+      box-shadow: var(--shadow-xl);
+      overflow: hidden;
+      border: 1px solid var(--neutral-200);
+    }
+
+    .modal-header {
+      padding: 24px 28px 16px;
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .modal-icon-badge {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: #fef3c7;
+      color: #b45309;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .modal-body {
+      padding: 0 28px 24px;
+      font-size: 14px;
+      color: var(--neutral-600);
+      line-height: 1.5;
+    }
+
+    .modal-breakdown-box {
+      background: var(--neutral-50);
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      margin: 16px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    .breakdown-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-footer {
+      padding: 16px 28px;
+      background: var(--neutral-50);
+      border-top: 1px solid var(--neutral-200);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+    }
+
+    /* SCREEN 06 STYLES */
+    .processing-card {
+      max-width: 620px;
+      margin: 30px auto;
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-xl);
+      padding: 40px;
+      box-shadow: var(--shadow-md);
+      text-align: center;
+    }
+
+    .stepper-timeline {
+      margin: 28px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      text-align: left;
+    }
+
+    .timeline-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 13.5px;
+      color: var(--neutral-500);
+    }
+
+    .timeline-item.done {
+      color: var(--neutral-900);
+      font-weight: 600;
+    }
+
+    .timeline-item.active {
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    .timeline-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-full);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+
+    .timeline-item.done .timeline-icon {
+      background: #dcfce7;
+      color: #15803d;
+    }
+
+    .timeline-item.active .timeline-icon {
+      background: var(--primary-light);
+      color: var(--primary);
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      50% {
+        transform: scale(1.15);
+      }
+    }
+
+    .live-stream-box {
+      background: #0f172a;
+      color: #38bdf8;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 14px;
+      border-radius: var(--radius-md);
+      text-align: left;
+      height: 80px;
+      overflow-y: hidden;
+      margin-top: 18px;
+      line-height: 1.5;
+    }
+
+    /* SCREEN 07 STYLES */
+    .result-wrapper {
+      max-width: 840px;
+      margin: 10px auto;
+    }
+
+    .result-hero-card {
+      background: #ffffff;
+      border: 1px solid var(--neutral-200);
+      border-radius: var(--radius-xl);
+      padding: 40px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+    }
+
+    .result-icon-badge {
+      width: 72px;
+      height: 72px;
+      border-radius: var(--radius-full);
+      background: #dcfce7;
+      color: #16a34a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      box-shadow: 0 4px 14px rgba(22, 163, 74, 0.2);
+    }
+
+    .result-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--neutral-900);
+      margin-bottom: 8px;
+    }
+
+    .result-subtitle {
+      font-size: 14px;
+      color: var(--neutral-500);
+      max-width: 480px;
+      margin: 0 auto 28px;
+    }
+
+    .result-stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+
+    .result-stat-box {
+      padding: 16px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--neutral-200);
+      background: var(--neutral-50);
+    }
+
+    .result-stat-box.success {
+      background: #f0fdf4;
+      border-color: #bbf7d0;
+    }
+
+    .result-stat-box.skipped {
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+
+    .skipped-errors-callout {
+      background: #fffbeb;
+      border: 1px solid var(--warning-border);
+      border-radius: var(--radius-lg);
+      padding: 22px 26px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- REVIEWER TOOLBAR -->
+  <div class="reviewer-toolbar">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="font-weight: 800; color: #38bdf8; display: inline-flex; align-items: center; gap: 6px;">
+        <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i> Sprint S2-01 Prototype
+      </span>
+      <span style="color: #64748b; margin: 0 4px;">|</span>
+      <span style="color: #cbd5e1;">Chuyển nhanh trạng thái màn hình:</span>
+    </div>
+
+    <div class="reviewer-nav">
+      <button class="reviewer-btn active" onclick="switchScreen(1)">1. QL Người dùng</button>
+      <button class="reviewer-btn" onclick="switchScreen(2)">2. Tải lên Excel</button>
+      <button class="reviewer-btn" onclick="switchScreen(3)">3. Đang Upload</button>
+      <button class="reviewer-btn" onclick="switchScreen(4)">4. Xem trước & Lỗi</button>
+      <button class="reviewer-btn" onclick="switchScreen(5)">5. Xác nhận Modal</button>
+      <button class="reviewer-btn" onclick="switchScreen(6)">6. Đang xử lý</button>
+      <button class="reviewer-btn" onclick="switchScreen(7)">7. Kết quả</button>
+      <span style="color: #475569; margin: 0 2px;">•</span>
+      <button class="reviewer-btn" style="color: #fca5a5; border-color: rgba(239, 68, 68, 0.4);"
+        onclick="simulateFileError()">⚠️ Lỗi tệp >10MB</button>
+    </div>
+  </div>
+
+  <!-- App Shell -->
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <aside class="app-sidebar">
+      <div class="sidebar-header">
+        <div class="brand-logo">
+          <i data-lucide="graduation-cap" style="width: 20px; height: 20px;"></i>
+        </div>
+        <div>
+          <div class="brand-title">EduManager</div>
+          <div class="brand-sub">Trung tâm Đào tạo X</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <div class="menu-group-label">HỆ THỐNG</div>
+        <a class="menu-item">
+          <i data-lucide="layout-dashboard" style="width: 18px; height: 18px;"></i>
+          Tổng quan
+        </a>
+        <a class="menu-item active" onclick="switchScreen(1)">
+          <i data-lucide="users" style="width: 18px; height: 18px;"></i>
+          Quản lý người dùng
+        </a>
+        <a class="menu-item">
+          <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
+          Phân quyền vai trò
+        </a>
+        <a class="menu-item">
+          <i data-lucide="history" style="width: 18px; height: 18px;"></i>
+          Nhật ký hệ thống (Audit)
+        </a>
+
+        <div class="menu-group-label">ĐÀO TẠO & HỌC VỤ</div>
+        <a class="menu-item">
+          <i data-lucide="book-open" style="width: 18px; height: 18px;"></i>
+          Chương trình & Môn
+        </a>
+        <a class="menu-item">
+          <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
+          Lớp học & Lịch dạy
+        </a>
+        <a class="menu-item">
+          <i data-lucide="user-check" style="width: 18px; height: 18px;"></i>
+          Điểm danh chuyên cần
+        </a>
+        <a class="menu-item">
+          <i data-lucide="file-text" style="width: 18px; height: 18px;"></i>
+          Bài tập & Chấm điểm
+        </a>
+
+        <div class="menu-group-label">TÀI CHÍNH</div>
+        <a class="menu-item">
+          <i data-lucide="credit-card" style="width: 18px; height: 18px;"></i>
+          Biểu phí & Công nợ
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-avatar">AD</div>
+        <div class="user-info">
+          <div class="user-name">Nguyễn Tất Phi</div>
+          <div class="user-role">Quản trị hệ thống (Admin)</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Container -->
+    <div class="app-main">
+
+      <!-- Topbar -->
+      <header class="app-topbar">
+        <div class="topbar-breadcrumbs">
+          <a href="#" onclick="switchScreen(1)">Hệ thống</a>
+          <i data-lucide="chevron-right" style="width: 14px; height: 14px;"></i>
+          <a href="#" onclick="switchScreen(1)">Quản lý người dùng</a>
+          <span id="breadcrumb-sub" style="display: none;">
+            <i data-lucide="chevron-right"
+              style="width: 14px; height: 14px; margin: 0 4px; display: inline-block; vertical-align: middle;"></i>
+            <span class="current" id="breadcrumb-current-text">Nhập từ Excel</span>
+          </span>
+        </div>
+
+        <div class="topbar-actions">
+          <span class="badge badge-neutral" style="font-size: 12px; padding: 4px 10px;">
+            <i data-lucide="shield" style="width: 13px; height: 13px; color: var(--primary);"></i> Role: System Admin
+          </span>
+          <div style="width: 1px; height: 24px; background: var(--neutral-200);"></div>
+          <button class="btn btn-ghost btn-sm" title="Thông báo">
+            <i data-lucide="bell" style="width: 17px; height: 17px;"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- View Content -->
+      <main class="view-content">
+
+        <!-- SCREEN 01: USER MANAGEMENT -->
+        <section id="screen-01" class="screen-view active">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Quản lý người dùng</h1>
+              <p class="page-desc">Danh sách tài khoản nhân sự, giảng viên và học viên trên toàn hệ thống.</p>
+            </div>
+            <div class="header-actions">
+              <!-- CTA Nhập từ Excel (Secondary but distinct) -->
+              <button class="btn btn-excel" onclick="switchScreen(2)" id="btn-open-import">
+                <i data-lucide="file-spreadsheet" style="width: 16px; height: 16px;"></i>
+                Nhập từ Excel
+              </button>
+
+              <!-- Primary CTA -->
+              <button class="btn btn-primary" onclick="alert('Mở modal thêm người dùng đơn lẻ')">
+                <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i>
+                + Thêm người dùng
+              </button>
+            </div>
+          </div>
+
+          <!-- Stats Cards -->
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-icon-wrap" style="background: #e0f2fe; color: #0284c7;">
+                <i data-lucide="users" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div>
+                <div class="stat-val" id="total-users-counter">1,248</div>
+                <div class="stat-lbl">Tổng tài khoản</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon-wrap" style="background: #dcfce7; color: #16a34a;">
+                <i data-lucide="user-check" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div>
+                <div class="stat-val">1,190</div>
+                <div class="stat-lbl">Đang hoạt động</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon-wrap" style="background: #fee2e2; color: #dc2626;">
+                <i data-lucide="user-x" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div>
+                <div class="stat-val">58</div>
+                <div class="stat-lbl">Tài khoản bị khóa</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon-wrap" style="background: #fef3c7; color: #d97706;">
+                <i data-lucide="graduation-cap" style="width: 22px; height: 22px;"></i>
+              </div>
+              <div>
+                <div class="stat-val">892</div>
+                <div class="stat-lbl">Học viên chính thức</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table Card -->
+          <div class="card">
+            <div class="table-toolbar">
+              <div class="search-input-wrap">
+                <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+                <input type="text" class="search-input" placeholder="Tìm theo tên, email, mã học viên...">
+              </div>
+              <div class="filters-group">
+                <select class="select-filter">
+                  <option value="">Tất cả vai trò</option>
+                  <option value="student">Học viên</option>
+                  <option value="instructor">Giảng viên</option>
+                  <option value="manager">Quản lý đào tạo</option>
+                  <option value="admin">Quản trị viên</option>
+                </select>
+                <select class="select-filter">
+                  <option value="">Tất cả khóa học</option>
+                  <option value="k24">Khóa K24 - Lập trình Web Fullstack</option>
+                  <option value="k23">Khóa K23 - Data Science</option>
+                  <option value="k22">Khóa K22 - Java Core Pro</option>
+                </select>
+                <select class="select-filter">
+                  <option value="">Trạng thái</option>
+                  <option value="active">Đang hoạt động</option>
+                  <option value="locked">Bị khóa</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Họ và tên</th>
+                    <th>Email / Tên đăng nhập</th>
+                    <th>Mã học viên</th>
+                    <th>Khóa học</th>
+                    <th>Vai trò</th>
+                    <th>Trạng thái</th>
+                    <th>Ngày tạo</th>
+                    <th style="text-align: right;">Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody id="user-table-body">
+                  <tr>
+                    <td>
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="user-avatar"
+                          style="width: 32px; height: 32px; font-size: 12px; background: #e0f2fe; color: #0369a1;">NA
+                        </div>
+                        <span style="font-weight: 600;">Nguyễn Văn An</span>
+                      </div>
+                    </td>
+                    <td>an.nguyen@example.com</td>
+                    <td><span style="font-family: monospace; font-weight: 600;">HV-2026-001</span></td>
+                    <td>K24 - Fullstack Web</td>
+                    <td><span class="badge badge-info">Học viên</span></td>
+                    <td><span class="badge badge-success"><span
+                          style="width: 6px; height: 6px; background: currentColor; border-radius: 50%;"></span> Hoạt
+                        động</span></td>
+                    <td>04/10/2026</td>
+                    <td style="text-align: right;">
+                      <button class="btn btn-ghost btn-sm" title="Sửa"><i data-lucide="edit-2"
+                          style="width: 15px; height: 15px;"></i></button>
+                      <button class="btn btn-ghost btn-sm" title="Khóa"><i data-lucide="lock"
+                          style="width: 15px; height: 15px;"></i></button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="user-avatar"
+                          style="width: 32px; height: 32px; font-size: 12px; background: #dcfce7; color: #15803d;">TB
+                        </div>
+                        <span style="font-weight: 600;">Trần Thị Bích</span>
+                      </div>
+                    </td>
+                    <td>bich.tran@example.com</td>
+                    <td><span style="font-family: monospace; font-weight: 600;">HV-2026-002</span></td>
+                    <td>K24 - Fullstack Web</td>
+                    <td><span class="badge badge-info">Học viên</span></td>
+                    <td><span class="badge badge-success"><span
+                          style="width: 6px; height: 6px; background: currentColor; border-radius: 50%;"></span> Hoạt
+                        động</span></td>
+                    <td>04/10/2026</td>
+                    <td style="text-align: right;">
+                      <button class="btn btn-ghost btn-sm" title="Sửa"><i data-lucide="edit-2"
+                          style="width: 15px; height: 15px;"></i></button>
+                      <button class="btn btn-ghost btn-sm" title="Khóa"><i data-lucide="lock"
+                          style="width: 15px; height: 15px;"></i></button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <div style="display: flex; align-items: center; gap: 10px;">
+                        <div class="user-avatar"
+                          style="width: 32px; height: 32px; font-size: 12px; background: #fef3c7; color: #b45309;">LC
+                        </div>
+                        <span style="font-weight: 600;">Lê Hoàng Cường</span>
+                      </div>
+                    </td>
+                    <td>cuong.le@example.com</td>
+                    <td><span style="font-family: monospace; font-weight: 600;">GV-2026-015</span></td>
+                    <td>Khoa CNTT</td>
+                    <td><span class="badge badge-warning">Giảng viên</span></td>
+                    <td><span class="badge badge-success"><span
+                          style="width: 6px; height: 6px; background: currentColor; border-radius: 50%;"></span> Hoạt
+                        động</span></td>
+                    <td>02/10/2026</td>
+                    <td style="text-align: right;">
+                      <button class="btn btn-ghost btn-sm" title="Sửa"><i data-lucide="edit-2"
+                          style="width: 15px; height: 15px;"></i></button>
+                      <button class="btn btn-ghost btn-sm" title="Khóa"><i data-lucide="lock"
+                          style="width: 15px; height: 15px;"></i></button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div
+              style="padding: 14px 20px; border-top: 1px solid var(--neutral-200); display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--neutral-500);">
+              <span>Hiển thị 1 - 3 của 1,248 tài khoản</span>
+              <div style="display: flex; gap: 6px;">
+                <button class="btn btn-secondary btn-sm" disabled>Trước</button>
+                <button class="btn btn-secondary btn-sm"
+                  style="background: var(--neutral-900); color: white; border-color: var(--neutral-900);">1</button>
+                <button class="btn btn-secondary btn-sm">2</button>
+                <button class="btn btn-secondary btn-sm">3</button>
+                <button class="btn btn-secondary btn-sm">Sau</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SCREEN 02: IMPORT USER / UPLOAD EXCEL -->
+        <section id="screen-02" class="screen-view">
+          <div class="upload-flow-wrapper">
+
+            <div class="flow-stepper-header">
+              <div>
+                <h1 class="page-title">Nhập người dùng từ Excel</h1>
+                <p class="page-desc">Thêm nhiều người dùng cùng lúc bằng cách tải lên tệp Excel theo đúng mẫu chuẩn.</p>
+              </div>
+              <div class="stepper-steps">
+                <div class="step-node active">
+                  <div class="step-circle">1</div>
+                  <span>Tải lên tệp</span>
+                </div>
+                <div class="step-divider"></div>
+                <div class="step-node">
+                  <div class="step-circle">2</div>
+                  <span>Kiểm tra dữ liệu</span>
+                </div>
+                <div class="step-divider"></div>
+                <div class="step-node">
+                  <div class="step-circle">3</div>
+                  <span>Hoàn tất</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="upload-grid">
+
+              <!-- Left Dropzone Area -->
+              <div>
+                <div class="dropzone-area" id="dropzone" onclick="triggerFileSelect()">
+                  <input type="file" id="file-input" accept=".xlsx, .xls" style="display: none;"
+                    onchange="handleFileSelected(event)">
+                  <div class="dropzone-icon">
+                    <i data-lucide="file-spreadsheet" style="width: 34px; height: 34px;"></i>
+                  </div>
+                  <div class="dropzone-title">Kéo thả tệp Excel vào đây, hoặc click để duyệt tệp</div>
+                  <div class="dropzone-subtitle">Hỗ trợ định dạng .xlsx, .xls • Dung lượng tối đa 10MB</div>
+                  <button type="button" class="btn btn-secondary">
+                    <i data-lucide="upload" style="width: 15px; height: 15px;"></i>
+                    Chọn tệp từ máy tính
+                  </button>
+                </div>
+
+                <!-- Template Download Card -->
+                <div class="template-box">
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <div
+                      style="width: 36px; height: 36px; border-radius: 8px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                      <i data-lucide="download" style="width: 18px; height: 18px;"></i>
+                    </div>
+                    <div>
+                      <div style="font-weight: 700; font-size: 13.5px; color: var(--neutral-900);">Tệp Excel mẫu chuẩn
+                        (.xlsx)</div>
+                      <div class="template-box-text">Đã bao gồm cấu trúc cột và hướng dẫn chi tiết từng trường.</div>
+                    </div>
+                  </div>
+                  <button class="btn btn-excel btn-sm" onclick="downloadSampleTemplate()">
+                    Tải tệp mẫu
+                  </button>
+                </div>
+
+                <!-- Quick Test Demo Loader -->
+                <div
+                  style="margin-top: 12px; padding: 12px 16px; background: #f8fafc; border: 1px dashed var(--neutral-300); border-radius: var(--radius-md); display: flex; align-items: center; justify-content: space-between;">
+                  <span style="font-size: 12.5px; color: var(--neutral-600);">
+                    💡 <strong>Dành cho kiểm thử:</strong> Tải sẵn dữ liệu thực tế (500 dòng gồm 472 hợp lệ, 28 lỗi).
+                  </span>
+                  <button class="btn btn-ghost btn-sm" style="color: var(--primary); font-weight: 600;"
+                    onclick="loadMockDataset()">
+                    Nạp file test ngay ➜
+                  </button>
+                </div>
+              </div>
+
+              <!-- Right Guidelines Card -->
+              <div class="guidelines-card">
+                <div class="guidelines-title">
+                  <i data-lucide="help-circle" style="width: 18px; height: 18px; color: var(--primary);"></i>
+                  Hướng dẫn nhập dữ liệu
+                </div>
+
+                <ul class="guideline-steps">
+                  <li class="guideline-step-item">
+                    <span class="step-num-pill">1</span>
+                    <span>Tải tệp mẫu Excel chuẩn do trung tâm cung cấp ở khung bên trái.</span>
+                  </li>
+                  <li class="guideline-step-item">
+                    <span class="step-num-pill">2</span>
+                    <span>Điền thông tin học viên theo đúng định dạng cột. Không thay đổi tên cột tiêu đề.</span>
+                  </li>
+                  <li class="guideline-step-item">
+                    <span class="step-num-pill">3</span>
+                    <span>Lưu file với định dạng chuẩn <code>.xlsx</code> hoặc <code>.xls</code>.</span>
+                  </li>
+                  <li class="guideline-step-item">
+                    <span class="step-num-pill">4</span>
+                    <span>Kéo thả file vào khu vực upload và nhấn <strong>Tiếp tục</strong>.</span>
+                  </li>
+                  <li class="guideline-step-item">
+                    <span class="step-num-pill">5</span>
+                    <span>Hệ thống sẽ tự động quét lỗi theo từng dòng trước khi tiến hành tạo tài khoản thật.</span>
+                  </li>
+                </ul>
+
+                <div class="required-fields-box">
+                  <div style="font-weight: 700; color: var(--neutral-800); margin-bottom: 6px;">Quy chuẩn dữ liệu bắt
+                    buộc:</div>
+                  <div style="color: var(--neutral-600); line-height: 1.5;">
+                    • <strong>Họ tên:</strong> Bắt buộc, từ 2 ký tự trở lên.<br>
+                    • <strong>Email:</strong> Đúng cú pháp, chưa tồn tại trong hệ thống.<br>
+                    • <strong>Mã học viên:</strong> Mã định danh duy nhất (VD: HV-K24-001).<br>
+                    • <strong>Khóa học:</strong> Mã khóa học phải khớp với danh mục đào tạo đang mở.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Flow Bottom Actions -->
+            <div class="flow-actions-bar">
+              <button class="btn btn-secondary" onclick="switchScreen(1)">
+                <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
+                Quay lại danh sách
+              </button>
+
+              <button class="btn btn-primary" id="btn-upload-continue" disabled onclick="startUploadSimulation()">
+                Tiếp tục
+                <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>
+              </button>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- SCREEN 03: FILE UPLOADING STATE -->
+        <section id="screen-03" class="screen-view">
+          <div class="uploading-container">
+            <div
+              style="width: 56px; height: 56px; border-radius: var(--radius-full); background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+              <i data-lucide="upload-cloud" style="width: 28px; height: 28px;"></i>
+            </div>
+
+            <h2 style="font-size: 20px; font-weight: 800; color: var(--neutral-900);">Đang tải lên và phân tích dữ
+              liệu...</h2>
+            <p style="font-size: 13.5px; color: var(--neutral-500); margin-top: 4px;">Hệ thống đang đọc cấu trúc file và
+              kiểm tra từng bản ghi.</p>
+
+            <div class="uploading-file-card">
+              <div
+                style="width: 44px; height: 44px; border-radius: 10px; background: #ffffff; border: 1px solid #bbf7d0; color: #16a34a; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <i data-lucide="file-spreadsheet" style="width: 24px; height: 24px;"></i>
+              </div>
+              <div style="flex: 1;">
+                <div
+                  style="display: flex; justify-content: space-between; font-size: 13.5px; font-weight: 700; color: var(--neutral-800);">
+                  <span id="uploading-file-name">Danh_sach_Hoc_Vien_K24_Fullstack.xlsx</span>
+                  <span id="upload-percent-text" style="color: var(--primary);">68%</span>
+                </div>
+                <div class="progress-bar-wrapper">
+                  <div class="progress-bar-fill" id="upload-progress-fill"></div>
+                </div>
+                <div
+                  style="display: flex; justify-content: space-between; font-size: 11.5px; color: var(--neutral-400); margin-top: 6px;">
+                  <span id="uploading-file-size">1.8 MB / 2.4 MB</span>
+                  <span>Tốc độ: 1.2 MB/s</span>
+                </div>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: center; gap: 12px; margin-top: 24px;">
+              <button class="btn btn-secondary btn-sm" onclick="cancelUpload()">
+                <i data-lucide="x" style="width: 14px; height: 14px;"></i>
+                Hủy tải lên
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- SCREEN 04: PREVIEW & VALIDATION -->
+        <section id="screen-04" class="screen-view">
+          <div class="page-header" style="margin-bottom: 20px;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h1 class="page-title">Kiểm tra dữ liệu trước khi nhập</h1>
+                <span class="badge badge-neutral" style="font-family: monospace;">500 dòng phân tích</span>
+              </div>
+              <p class="page-desc">Tệp: <strong>Danh_sach_Hoc_Vien_K24_Fullstack.xlsx</strong> (2.4 MB) • Đã quét toàn
+                bộ quy tắc nghiệp vụ.</p>
+            </div>
+
+            <div class="header-actions">
+              <button class="btn btn-secondary" onclick="switchScreen(2)">
+                <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
+                Chọn file khác
+              </button>
+
+              <!-- Primary Action: Import valid lines only! -->
+              <button class="btn btn-primary" onclick="openConfirmationModal()" id="btn-import-valid">
+                <i data-lucide="check-circle-2" style="width: 16px; height: 16px;"></i>
+                Nhập 472 người dùng hợp lệ
+              </button>
+            </div>
+          </div>
+
+          <!-- Summary KPI Cards -->
+          <div class="preview-summary-grid">
+            <div class="summary-kpi-card kpi-total">
+              <div>
+                <div class="stat-lbl">Tổng số dòng quét được</div>
+                <div class="stat-val">500 <span
+                    style="font-size: 13px; font-weight: 500; color: var(--neutral-400);">dòng</span></div>
+              </div>
+              <div class="stat-icon-wrap" style="background: var(--neutral-100); color: var(--neutral-600);">
+                <i data-lucide="layers" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+
+            <div class="summary-kpi-card kpi-valid">
+              <div>
+                <div style="font-size: 12.5px; color: var(--success-dark); font-weight: 600;">Hợp lệ (Sẵn sàng nhập)
+                </div>
+                <div class="stat-val" style="color: var(--success-dark);">472 <span
+                    style="font-size: 13px; font-weight: 500;">tài khoản</span></div>
+              </div>
+              <div class="stat-icon-wrap" style="background: #dcfce7; color: #16a34a;">
+                <i data-lucide="check-circle" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+
+            <div class="summary-kpi-card kpi-error">
+              <div>
+                <div style="font-size: 12.5px; color: var(--danger-dark); font-weight: 600;">Có lỗi (Sẽ tự động bỏ qua)
+                </div>
+                <div class="stat-val" style="color: var(--danger-dark);">28 <span
+                    style="font-size: 13px; font-weight: 500;">dòng</span></div>
+              </div>
+              <div class="stat-icon-wrap" style="background: #fee2e2; color: #dc2626;">
+                <i data-lucide="alert-triangle" style="width: 20px; height: 20px;"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Important Partial Import Notice Banner -->
+          <div class="alert-banner alert-banner-warning">
+            <i data-lucide="alert-circle"
+              style="width: 20px; height: 20px; color: var(--warning-dark); flex-shrink: 0; margin-top: 1px;"></i>
+            <div style="flex: 1;">
+              <strong>28 dòng có lỗi sẽ được tự động bỏ qua. 472 dòng hợp lệ có thể được nhập ngay.</strong>
+              <div style="margin-top: 3px; font-size: 13px;">
+                Bạn không cần sửa lại cả file 500 người. Hệ thống cho phép tải danh sách riêng 28 dòng lỗi để bạn xử lý
+                sau.
+              </div>
+            </div>
+            <button class="btn btn-secondary btn-sm" onclick="exportErrorListPreview()"
+              style="background: #ffffff; border-color: var(--warning-border); color: #92400e;">
+              <i data-lucide="download" style="width: 14px; height: 14px;"></i>
+              Tải danh sách 28 lỗi (.xlsx)
+            </button>
+          </div>
+
+          <!-- Preview Table Card -->
+          <div class="card">
+            <div class="table-toolbar">
+              <div class="filter-tabs-row">
+                <button class="filter-tab-btn active" id="tab-all" onclick="filterPreviewTable('all')">
+                  Tất cả <span class="badge badge-neutral">500</span>
+                </button>
+                <button class="filter-tab-btn" id="tab-valid" onclick="filterPreviewTable('valid')">
+                  <i data-lucide="check" style="width: 14px; height: 14px; color: var(--success);"></i>
+                  Hợp lệ <span class="badge badge-success">472</span>
+                </button>
+                <button class="filter-tab-btn tab-error" id="tab-error" onclick="filterPreviewTable('error')">
+                  <i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i>
+                  Có lỗi <span class="badge badge-danger">28</span>
+                </button>
+              </div>
+
+              <div style="display: flex; gap: 10px;">
+                <div class="search-input-wrap" style="min-width: 240px;">
+                  <i data-lucide="search" style="width: 15px; height: 15px;"></i>
+                  <input type="text" id="preview-search" class="search-input" placeholder="Tìm kiếm dòng, lỗi..."
+                    onkeyup="handlePreviewSearch(this.value)">
+                </div>
+              </div>
+            </div>
+
+            <div class="table-container" style="max-height: 480px; overflow-y: auto;">
+              <table class="data-table" id="preview-table">
+                <thead>
+                  <tr>
+                    <th class="sticky-col-first" style="width: 70px;">Dòng</th>
+                    <th>Họ và tên</th>
+                    <th>Email</th>
+                    <th>Mã học viên</th>
+                    <th>Khóa học</th>
+                    <th>Trạng thái</th>
+                    <th class="sticky-col-status" style="min-width: 260px;">Chi tiết lỗi & Hướng dẫn sửa</th>
+                  </tr>
+                </thead>
+                <tbody id="preview-table-body">
+                </tbody>
+              </table>
+            </div>
+
+            <div
+              style="padding: 14px 20px; border-top: 1px solid var(--neutral-200); display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--neutral-500);">
+              <span id="preview-counter-text">Hiển thị các dòng theo bộ lọc</span>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span>Trang 1 / 10</span>
+                <div style="display: flex; gap: 6px;">
+                  <button class="btn btn-secondary btn-sm" disabled>Trước</button>
+                  <button class="btn btn-secondary btn-sm">Sau</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Sticky Actions -->
+          <div class="flow-actions-bar" style="margin-top: 20px;">
+            <button class="btn btn-secondary" onclick="switchScreen(2)">
+              <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
+              Quay lại bước upload
+            </button>
+
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 13px; color: var(--neutral-500);">
+                Sẵn sàng tạo: <strong>472 tài khoản</strong> • Bỏ qua: <strong style="color: var(--danger);">28
+                  dòng</strong>
+              </span>
+              <button class="btn btn-primary" onclick="openConfirmationModal()">
+                Tiếp tục nhập 472 người dùng
+                <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- SCREEN 05: CONFIRMATION MODAL -->
+        <div id="modal-confirm" class="modal-overlay">
+          <div class="modal-dialog">
+            <div class="modal-header">
+              <div class="modal-icon-badge">
+                <i data-lucide="alert-triangle" style="width: 26px; height: 26px;"></i>
+              </div>
+              <div style="flex: 1;">
+                <h3 style="font-size: 18px; font-weight: 800; color: var(--neutral-900);">Xác nhận nhập người dùng hàng
+                  loạt</h3>
+                <p style="font-size: 13px; color: var(--neutral-500); margin-top: 2px;">Vui lòng kiểm tra kỹ số lượng
+                  tài khoản trước khi thực hiện.</p>
+              </div>
+              <button class="btn btn-ghost btn-sm" onclick="closeConfirmationModal()">
+                <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+              </button>
+            </div>
+
+            <div class="modal-body">
+              <p>Bạn sắp tạo <strong>472 tài khoản người dùng</strong> vào hệ thống. Mật khẩu tạm thời sẽ được tự động
+                tạo và gửi qua email cho học viên.</p>
+
+              <div class="modal-breakdown-box">
+                <div class="breakdown-line">
+                  <span style="color: var(--neutral-600);">Tổng số dòng trong tệp:</span>
+                  <span style="font-weight: 700;">500 dòng</span>
+                </div>
+                <div class="breakdown-line">
+                  <span style="color: var(--success-dark); font-weight: 600;">✓ Tài khoản sẽ được tạo:</span>
+                  <span style="font-weight: 800; color: var(--success-dark);">472 tài khoản</span>
+                </div>
+                <div class="breakdown-line">
+                  <span style="color: var(--danger-dark); font-weight: 600;">✕ Dòng lỗi bị bỏ qua:</span>
+                  <span style="font-weight: 800; color: var(--danger-dark);">28 dòng</span>
+                </div>
+              </div>
+
+              <label
+                style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 13px; color: var(--neutral-700); margin-top: 14px;">
+                <input type="checkbox" checked style="margin-top: 3px; accent-color: var(--primary);">
+                <span>Tự động gửi email kích hoạt kèm mật khẩu tạm thời cho các học viên hợp lệ.</span>
+              </label>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn btn-secondary" onclick="closeConfirmationModal()">
+                Hủy
+              </button>
+              <button class="btn btn-primary" onclick="startProcessingFlow()">
+                <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+                Xác nhận nhập 472 người dùng
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SCREEN 06: PROCESSING STATE -->
+        <section id="screen-06" class="screen-view">
+          <div class="processing-card">
+            <div
+              style="width: 60px; height: 60px; border-radius: var(--radius-full); background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+              <i data-lucide="refresh-cw" style="width: 28px; height: 28px;"></i>
+            </div>
+
+            <h2 style="font-size: 22px; font-weight: 800; color: var(--neutral-900);">Đang nhập người dùng...</h2>
+            <p style="font-size: 13.5px; color: var(--neutral-500); margin-top: 4px;">
+              Vui lòng không đóng cửa sổ này hoặc làm mới trang trong khi hệ thống đang xử lý.
+            </p>
+
+            <div style="margin: 24px 0 16px;">
+              <div style="font-size: 32px; font-weight: 800; color: var(--primary);" id="processing-counter">
+                356 / 472
+              </div>
+              <div style="font-size: 12.5px; color: var(--neutral-500);">Tài khoản đã được khởi tạo thành công</div>
+
+              <div class="progress-bar-wrapper" style="height: 10px; margin-top: 12px;">
+                <div class="progress-bar-fill" id="processing-bar-fill" style="width: 75%;"></div>
+              </div>
+            </div>
+
+            <div class="stepper-timeline">
+              <div class="timeline-item done">
+                <div class="timeline-icon">✓</div>
+                <span>Đọc và phân tích cấu trúc tệp Excel</span>
+              </div>
+              <div class="timeline-item done">
+                <div class="timeline-icon">✓</div>
+                <span>Kiểm tra dữ liệu và phân tách 28 dòng lỗi</span>
+              </div>
+              <div class="timeline-item active">
+                <div class="timeline-icon">●</div>
+                <span>Đang ghi dữ liệu và mã hóa mật khẩu tài khoản (<span
+                    id="step-counter-text">356/472</span>)...</span>
+              </div>
+              <div class="timeline-item">
+                <div class="timeline-icon" style="background: var(--neutral-100); color: var(--neutral-400);">○</div>
+                <span>Hoàn tất và gửi email thông báo</span>
+              </div>
+            </div>
+
+            <div class="live-stream-box" id="live-stream-log">
+              [13:30:12] Đang tạo tài khoản HV-2026-354 (nguyen.lan@example.com)... OK<br>
+              [13:30:13] Đang tạo tài khoản HV-2026-355 (hoang.long@example.com)... OK<br>
+              [13:30:14] Đang tạo tài khoản HV-2026-356 (dang.quang@example.com)... OK
+            </div>
+          </div>
+        </section>
+
+        <!-- SCREEN 07: IMPORT RESULT / SUCCESS -->
+        <section id="screen-07" class="screen-view">
+          <div class="result-wrapper">
+
+            <div class="result-hero-card">
+              <div class="result-icon-badge">
+                <i data-lucide="check" style="width: 36px; height: 36px;"></i>
+              </div>
+
+              <h1 class="result-title">Nhập người dùng hoàn tất</h1>
+              <p class="result-subtitle">
+                Đã xử lý xong tệp <strong>Danh_sach_Hoc_Vien_K24_Fullstack.xlsx</strong>. Tài khoản mới đã được đồng bộ
+                vào hệ thống.
+              </p>
+
+              <div class="result-stats-row">
+                <div class="result-stat-box">
+                  <div style="font-size: 12.5px; color: var(--neutral-500); font-weight: 500;">Tổng số dòng</div>
+                  <div style="font-size: 26px; font-weight: 800; color: var(--neutral-900); margin-top: 4px;">500</div>
+                </div>
+                <div class="result-stat-box success">
+                  <div style="font-size: 12.5px; color: var(--success-dark); font-weight: 600;">Nhập thành công</div>
+                  <div style="font-size: 26px; font-weight: 800; color: var(--success-dark); margin-top: 4px;">472</div>
+                </div>
+                <div class="result-stat-box skipped">
+                  <div style="font-size: 12.5px; color: var(--danger-dark); font-weight: 600;">Bỏ qua do lỗi</div>
+                  <div style="font-size: 26px; font-weight: 800; color: var(--danger-dark); margin-top: 4px;">28</div>
+                </div>
+              </div>
+
+              <!-- Warning Callout for 28 Skipped Rows -->
+              <div class="skipped-errors-callout">
+                <div style="display: flex; align-items: flex-start; gap: 14px; text-align: left;">
+                  <div
+                    style="width: 38px; height: 38px; border-radius: var(--radius-full); background: #fef3c7; color: #b45309; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;">
+                    <i data-lucide="alert-triangle" style="width: 20px; height: 20px;"></i>
+                  </div>
+                  <div>
+                    <div style="font-weight: 700; font-size: 15px; color: #92400e;">28 dòng chưa được nhập do lỗi dữ
+                      liệu</div>
+                    <div style="font-size: 13px; color: #78350f; margin-top: 2px; max-width: 440px;">
+                      Tải file Excel chứa riêng 28 dòng này kèm cột giải thích lỗi để bạn sửa lại và import lần 2 trong
+                      vài giây.
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <button class="btn btn-secondary btn-sm" onclick="exportErrorListFile()"
+                    style="background: #ffffff; border-color: #f59e0b; color: #b45309; font-weight: 700;">
+                    <i data-lucide="download" style="width: 15px; height: 15px;"></i>
+                    Tải danh sách 28 dòng lỗi (.xlsx)
+                  </button>
+                  <button class="btn btn-secondary btn-sm" onclick="switchScreen(2)" title="Import file vừa sửa">
+                    <i data-lucide="rotate-ccw" style="width: 14px; height: 14px;"></i>
+                    Nhập lại file đã sửa
+                  </button>
+                </div>
+              </div>
+
+              <!-- Primary Action to return to User List -->
+              <div style="display: flex; justify-content: center; gap: 14px; margin-top: 20px;">
+                <button class="btn btn-primary" style="padding: 12px 28px; font-size: 15px;"
+                  onclick="returnToUserList()">
+                  <i data-lucide="users" style="width: 18px; height: 18px;"></i>
+                  Xem danh sách người dùng
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toast-box"></div>
+
+  <!-- JAVASCRIPT FOR PROTOTYPE STATE & INTERACTION -->
+  <script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // Mock Data Store: 20 representative rows out of 500 (15 valid, 5 error)
+    const mockRows = [
+      { row: 2, name: "Nguyễn Văn An", email: "an.nguyen@example.com", code: "HV-K24-001", course: "K24 - Fullstack Web", status: "valid", error: null },
+      { row: 3, name: "Trần Thị Bích", email: "bich.tran@example.com", code: "HV-K24-002", course: "K24 - Fullstack Web", status: "valid", error: null },
+      { row: 4, name: "Lê Hoàng Cường", email: "cuong.le@example.com", code: "HV-K24-003", course: "K24 - Fullstack Web", status: "valid", error: null },
+      { row: 5, name: "Phạm Hải Đăng", email: "dang.pham@example.com", code: "HV-K24-004", course: "K24 - Fullstack Web", status: "valid", error: null },
+      { row: 6, name: "Vũ Phương Dung", email: "dung.vu@example.com", code: "HV-K24-005", course: "K24 - Fullstack Web", status: "valid", error: null },
+      { row: 7, name: "Hoàng Minh Đức", email: "duc.hoang@example.com", code: "HV-K24-006", course: "K24 - Fullstack Web", status: "valid", error: null },
+      { row: 8, name: "Đỗ Thanh Hà", email: "ha.do@example.com", code: "HV-K24-007", course: "K24 - Fullstack Web", status: "valid", error: null },
+      { row: 9, name: "Bùi Gia Huy", email: "huy.bui@example.com", code: "HV-K24-008", course: "K24 - Fullstack Web", status: "valid", error: null },
+      { row: 10, name: "Ngô Quang Hải", email: "hai.ngo@example.com", code: "HV-K24-009", course: "K24 - Fullstack Web", status: "valid", error: null },
+      { row: 11, name: "Đinh Thu Hương", email: "huong.dinh@example.com", code: "HV-K24-010", course: "K24 - Fullstack Web", status: "valid", error: null },
+
+      // Error rows with realistic scenarios
+      {
+        row: 25,
+        name: "Lê Văn Khoa",
+        email: "khoa.le_invalid-email",
+        code: "HV-K24-025",
+        course: "K24 - Fullstack Web",
+        status: "error",
+        errorType: "Email không hợp lệ",
+        errorTip: "Email thiếu ký tự '@' hoặc sai định dạng tên miền"
+      },
+      {
+        row: 31,
+        name: "Nguyễn Thị Mai",
+        email: "mai.nguyen@company.vn",
+        code: "HV-K24-031",
+        course: "K24 - Fullstack Web",
+        status: "error",
+        errorType: "Email đã tồn tại",
+        errorTip: "Email này đã được dùng cho tài khoản nhân viên khác trong hệ thống"
+      },
+      {
+        row: 42,
+        name: "Trần Tuấn Nam",
+        email: "nam.tran@example.com",
+        code: "HV-K24-001",
+        course: "K24 - Fullstack Web",
+        status: "error",
+        errorType: "Trùng mã học viên",
+        errorTip: "Mã HV-K24-001 bị trùng lặp với dòng 2 trong cùng tệp"
+      },
+      {
+        row: 58,
+        name: "",
+        email: "student58@example.com",
+        code: "HV-K24-058",
+        course: "K24 - Fullstack Web",
+        status: "error",
+        errorType: "Thiếu họ và tên",
+        errorTip: "Cột Họ và tên là bắt buộc và không được để trống"
+      },
+      {
+        row: 73,
+        name: "Phan Quốc Việt",
+        email: "viet.phan@example.com",
+        code: "HV-K24-073",
+        course: "K99 - AI Generative (Mã sai)",
+        status: "error",
+        errorType: "Khóa học không tồn tại",
+        errorTip: "Mã khóa 'K99' không có trong danh mục đào tạo của trung tâm"
+      },
+
+      // More valid rows to fill table nicely
+      { row: 12, name: "Dương Minh Khang", email: "khang.duong@example.com", code: "HV-K24-011", course: "K24 - Fullstack Web", status: "valid", error: null },
+      { row: 13, name: "Trịnh Thùy Linh", email: "linh.trinh@example.com", code: "HV-K24-012", course: "K24 - Fullstack Web", status: "valid", error: null },
+      { row: 14, name: "Nguyễn Nhật Nam", email: "nam.nhat@example.com", code: "HV-K24-013", course: "K24 - Fullstack Web", status: "valid", error: null },
+      { row: 15, name: "Phạm Hồng Phúc", email: "phuc.pham@example.com", code: "HV-K24-014", course: "K24 - Fullstack Web", status: "valid", error: null },
+      { row: 16, name: "Võ Quỳnh Nga", email: "nga.vo@example.com", code: "HV-K24-015", course: "K24 - Fullstack Web", status: "valid", error: null }
+    ];
+
+    let currentFilter = 'all';
+    let searchQuery = '';
+
+    // Switch between screens
+    function switchScreen(screenNumber) {
+      document.querySelectorAll('.screen-view').forEach(view => view.classList.remove('active'));
+      const target = document.getElementById(`screen-0${screenNumber}`);
+      if (target) {
+        target.classList.add('active');
+      }
+
+      // Update reviewer buttons
+      document.querySelectorAll('.reviewer-btn').forEach((btn, idx) => {
+        if (idx === screenNumber - 1) btn.classList.add('active');
+        else if (idx < 7) btn.classList.remove('active');
+      });
+
+      // Update Breadcrumb
+      const breadcrumbSub = document.getElementById('breadcrumb-sub');
+      const breadcrumbText = document.getElementById('breadcrumb-current-text');
+      if (screenNumber === 1) {
+        breadcrumbSub.style.display = 'none';
+      } else {
+        breadcrumbSub.style.display = 'inline';
+        const titles = {
+          2: "Nhập từ Excel",
+          3: "Đang tải lên",
+          4: "Kiểm tra dữ liệu",
+          5: "Xác nhận nhập",
+          6: "Đang xử lý",
+          7: "Kết quả nhập"
+        };
+        breadcrumbText.textContent = titles[screenNumber] || "Nhập từ Excel";
+      }
+
+      // Render table if on screen 4
+      if (screenNumber === 4) {
+        renderPreviewTable();
+      }
+
+      lucide.createIcons();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Render Preview Table
+    function renderPreviewTable() {
+      const tbody = document.getElementById('preview-table-body');
+      tbody.innerHTML = '';
+
+      const filtered = mockRows.filter(item => {
+        if (currentFilter === 'valid' && item.status !== 'valid') return false;
+        if (currentFilter === 'error' && item.status !== 'error') return false;
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const matchName = item.name.toLowerCase().includes(q);
+          const matchEmail = item.email.toLowerCase().includes(q);
+          const matchCode = item.code.toLowerCase().includes(q);
+          const matchErr = item.errorType && item.errorType.toLowerCase().includes(q);
+          return matchName || matchEmail || matchCode || matchErr;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" style="text-align: center; padding: 40px; color: var(--neutral-400);">
+              <i data-lucide="search-x" style="width: 32px; height: 32px; margin: 0 auto 8px; display: block;"></i>
+              Không tìm thấy dòng nào phù hợp với bộ lọc.
+            </td>
+          </tr>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      filtered.forEach(row => {
+        const tr = document.createElement('tr');
+        if (row.status === 'error') {
+          tr.classList.add('row-error');
+        }
+
+        tr.innerHTML = `
+          <td class="sticky-col-first" style="font-family: monospace; font-weight: 600; color: var(--neutral-500);">${row.row}</td>
+          <td>
+            <span style="font-weight: 600; color: ${row.name ? 'var(--neutral-900)' : 'var(--danger)'};">
+              ${row.name || '<em>(Để trống)</em>'}
+            </span>
+          </td>
+          <td><span style="font-family: monospace; font-size: 13px;">${row.email}</span></td>
+          <td><span style="font-family: monospace; font-weight: 600;">${row.code}</span></td>
+          <td><span class="badge badge-neutral">${row.course}</span></td>
+          <td>
+            ${row.status === 'valid'
+            ? '<span class="badge badge-success"><i data-lucide="check" style="width: 12px; height: 12px;"></i> Hợp lệ</span>'
+            : '<span class="badge badge-danger"><i data-lucide="x-circle" style="width: 12px; height: 12px;"></i> Có lỗi</span>'}
+          </td>
+          <td class="sticky-col-status">
+            ${row.status === 'valid'
+            ? '<span style="color: var(--success-dark); font-size: 12px;">✓ Sẵn sàng khởi tạo</span>'
+            : `<div>
+                   <div class="error-tag"><i data-lucide="alert-circle" style="width: 13px; height: 13px;"></i> ${row.errorType}</div>
+                   <div class="error-tip">${row.errorTip}</div>
+                 </div>`
+          }
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('preview-counter-text').textContent =
+        `Đang xem ${filtered.length} dòng mẫu đại diện (Mô phỏng từ tổng 500 dòng)`;
+
+      lucide.createIcons();
+    }
+
+    // Filter table tabs
+    function filterPreviewTable(type) {
+      currentFilter = type;
+      document.querySelectorAll('.filter-tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`tab-${type}`).classList.add('active');
+      renderPreviewTable();
+    }
+
+    // Search preview
+    function handlePreviewSearch(val) {
+      searchQuery = val;
+      renderPreviewTable();
+    }
+
+    // Dropzone interaction
+    function triggerFileSelect() {
+      document.getElementById('file-input').click();
+    }
+
+    function handleFileSelected(event) {
+      const file = event.target.files[0];
+      if (file) {
+        processUploadedFile(file.name, file.size);
+      }
+    }
+
+    function loadMockDataset() {
+      processUploadedFile("Danh_sach_Hoc_Vien_K24_Fullstack.xlsx", 2450000);
+    }
+
+    function processUploadedFile(name, size) {
+      document.getElementById('uploading-file-name').textContent = name;
+      document.getElementById('btn-upload-continue').disabled = false;
+      showToast(`Đã chọn tệp: ${name}`, 'info');
+      startUploadSimulation();
+    }
+
+    // Upload simulation
+    function startUploadSimulation() {
+      switchScreen(3);
+      let progress = 10;
+      const fill = document.getElementById('upload-progress-fill');
+      const text = document.getElementById('upload-percent-text');
+
+      const interval = setInterval(() => {
+        progress += 15;
+        if (progress > 100) progress = 100;
+        fill.style.width = progress + '%';
+        text.textContent = progress + '%';
+
+        if (progress >= 100) {
+          clearInterval(interval);
+          setTimeout(() => {
+            showToast('Phân tích tệp thành công: 500 dòng quét được', 'success');
+            switchScreen(4);
+          }, 400);
+        }
+      }, 150);
+    }
+
+    function cancelUpload() {
+      switchScreen(2);
+      showToast('Đã hủy quá trình tải lên', 'neutral');
+    }
+
+    // Confirmation Modal
+    function openConfirmationModal() {
+      document.getElementById('modal-confirm').classList.add('active');
+      lucide.createIcons();
+    }
+
+    function closeConfirmationModal() {
+      document.getElementById('modal-confirm').classList.remove('active');
+    }
+
+    // Processing Flow Simulation
+    function startProcessingFlow() {
+      closeConfirmationModal();
+      switchScreen(6);
+
+      let count = 0;
+      const target = 472;
+      const counterEl = document.getElementById('processing-counter');
+      const barFill = document.getElementById('processing-bar-fill');
+      const stepCounter = document.getElementById('step-counter-text');
+      const logBox = document.getElementById('live-stream-log');
+
+      const names = ["Văn An", "Thị Bích", "Hoàng Cường", "Hải Đăng", "Phương Dung", "Minh Đức", "Gia Huy", "Minh Khang"];
+
+      const interval = setInterval(() => {
+        count += Math.floor(Math.random() * 35) + 15;
+        if (count >= target) count = target;
+
+        const pct = Math.round((count / target) * 100);
+        counterEl.textContent = `${count} / ${target}`;
+        barFill.style.width = `${pct}%`;
+        stepCounter.textContent = `${count}/${target}`;
+
+        // Append log
+        const randomName = names[Math.floor(Math.random() * names.length)];
+        logBox.innerHTML = `[${new Date().toLocaleTimeString()}] Đã tạo tài khoản HV-2026-${count.toString().padStart(3, '0')} (${randomName})... OK<br>` + logBox.innerHTML;
+
+        if (count >= target) {
+          clearInterval(interval);
+          setTimeout(() => {
+            showToast('Đã hoàn tất nhập 472 tài khoản!', 'success');
+            switchScreen(7);
+          }, 600);
+        }
+      }, 120);
+    }
+
+    // Results Actions
+    function exportErrorListFile() {
+      showToast('Đang tải xuống tệp: Danh_sach_28_dong_loi_K24.xlsx', 'success');
+      const element = document.createElement('a');
+      element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent('Dòng,Họ tên,Email,Mã học viên,Lỗi,Hướng dẫn sửa\n25,Lê Văn Khoa,khoa.le_invalid-email,HV-K24-025,Email không hợp lệ,Cần sửa thành email có đuôi @example.com\n31,Nguyễn Thị Mai,mai.nguyen@company.vn,HV-K24-031,Email đã tồn tại,Email đã có trong DB\n42,Trần Tuấn Nam,nam.tran@example.com,HV-K24-001,Trùng mã học viên,Đổi sang mã HV chưa ai dùng\n58,,student58@example.com,HV-K24-058,Thiếu họ tên,Bổ sung họ tên học viên\n73,Phan Quốc Việt,viet.phan@example.com,HV-K24-073,Khóa học không tồn tại,Đổi sang mã khóa K24 hoặc K23'));
+      element.setAttribute('download', 'Danh_sach_28_dong_loi_K24.csv');
+      element.style.display = 'none';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+    }
+
+    function exportErrorListPreview() {
+      exportErrorListFile();
+    }
+
+    function downloadSampleTemplate() {
+      showToast('Đang tải tệp mẫu: Mau_Nhap_Nguoi_Dung_EduManager.xlsx', 'info');
+    }
+
+    function returnToUserList() {
+      const counter = document.getElementById('total-users-counter');
+      counter.textContent = '1,720';
+      counter.style.color = 'var(--success-dark)';
+
+      switchScreen(1);
+      showToast('🎉 Đã thêm 472 tài khoản mới vào danh sách người dùng!', 'success');
+    }
+
+    function simulateFileError() {
+      switchScreen(2);
+      setTimeout(() => {
+        alert("⚠️ [Mô phỏng Lỗi cấp tệp]\n\nTệp 'Danh_sach_Sinh_Vien_K24_Video.xlsx' (14.2 MB) vượt quá dung lượng tối đa cho phép là 10MB.\n\nVui lòng nén dữ liệu hoặc tách thành nhiều tệp nhỏ hơn.");
+      }, 200);
+    }
+
+    // Toast helper
+    function showToast(message, type = 'info') {
+      const box = document.getElementById('toast-box');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+
+      let icon = 'info';
+      let iconColor = 'var(--primary)';
+      if (type === 'success') { icon = 'check-circle-2'; iconColor = 'var(--success)'; }
+      else if (type === 'error') { icon = 'alert-triangle'; iconColor = 'var(--danger)'; }
+
+      toast.innerHTML = `
+        <i data-lucide="${icon}" style="width: 20px; height: 20px; color: ${iconColor}; flex-shrink: 0;"></i>
+        <span style="color: var(--neutral-800);">${message}</span>
+      `;
+      box.appendChild(toast);
+      lucide.createIcons();
+
+      setTimeout(() => {
+        toast.style.transition = 'all 0.3s ease';
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // Drag and drop event listeners
+    const dropzone = document.getElementById('dropzone');
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+      }, false);
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+      }, false);
+    });
+    dropzone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length > 0) {
+        processUploadedFile(files[0].name, files[0].size);
+      }
+    });
+
+  </script>
+</body>
+
+</html>
