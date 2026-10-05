@@ -89,9 +89,6 @@
 .lg-page .lg-demo table{margin-top:8px; border-collapse:collapse; width:100%}
 .lg-page .lg-demo td{padding:4px 8px 4px 0}
 .lg-page .lg-demo code{font-family:ui-monospace,monospace; color:var(--ink)}
-.lg-page .lg-success h2{margin-top:0}
-.lg-page .lg-success .lg-dest{margin:20px 0; padding:16px 18px; border:1px solid var(--line); border-radius:6px; font-size:15px; line-height:1.7}
-.lg-page .lg-success .lg-dest code{font-family:ui-monospace,monospace; color:var(--blue)}
 @media (max-width:900px){
 .lg-page{padding:16px}
 .lg-page .lg-card{grid-template-columns:1fr; border-radius:6px}
@@ -101,3 +98,5 @@
 .lg-page .lg-right{padding:40px 28px}
 .lg-page .lg-right h2{font-size:30px}
 }
+.lg-page .lg-alert.lg-ok{background:#ecfdf3; border:1px solid #abefc6; color:#067647}
+.lg-page .lg-alert.lg-info{background:#eff6ff; border:1px solid #b3d4fb; color:#0b4a99}
