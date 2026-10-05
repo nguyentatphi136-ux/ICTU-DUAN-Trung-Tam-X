@@ -32,6 +32,17 @@ const PATHS = {
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   refresh: '<path d="M20 11a8 8 0 10-2.300 5.700"/><path d="M20 4v7h-7"/>',
   devices: '<rect x="3" y="5" width="12" height="9" rx="1.500"/><path d="M6 18h6"/><rect x="17" y="9" width="4" height="9" rx="1"/>',
+  dots: '<circle cx="5" cy="12" r="1.200"/><circle cx="12" cy="12" r="1.200"/><circle cx="19" cy="12" r="1.200"/>',
+  down: '<path d="M6 9l6 6 6-6"/>',
+  grip: '<circle cx="9" cy="6" r="1"/><circle cx="15" cy="6" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="9" cy="18" r="1"/><circle cx="15" cy="18" r="1"/>',
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a1 1 0 011-1h9"/>',
+  trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  phone: '<path d="M5 4h4l2 5-2.500 1.500a11 11 0 005 5L15 13l5 2v4a1 1 0 01-1 1A16 16 0 014 5a1 1 0 011-1z"/>',
+  cam: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.500"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/>',
+  file: '<path d="M6 3h8l5 5v13H6z"/><path d="M14 3v5h5"/>',
+  dl: '<path d="M12 4v11M8 11l4 4 4-4M5 19h14"/>',
+  swap: '<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
 } as const;
 
 export type IconName = keyof typeof PATHS;
