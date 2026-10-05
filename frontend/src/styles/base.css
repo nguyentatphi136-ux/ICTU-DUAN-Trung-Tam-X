@@ -29,7 +29,7 @@ svg.ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-wid
 .box.warn{background:#fffaeb;border:1px solid #fedf89;color:#93370d}.box.warn b,.box.warn>svg{color:#93370d}
 .box.bad{background:#fef3f2;border:1px solid #fecdca;color:#b42318}.box.bad b,.box.bad>svg{color:#b42318}
 .box.info{background:#eff6ff;border:1px solid #b3d4fb;color:#0b4a99}.box.info b,.box.info>svg{color:#0b4a99}
-.pill{display:inline-block;padding:3px 10px;border-radius:var(--r);font-size:12px;font-weight:500;background:#f0f1f5;white-space:nowrap}
+.pill{display:inline-block;padding:3px 10px;border-radius:var(--r);font-size:12px;font-weight:500;background:#f0f1f5;color:var(--ink);white-space:nowrap}
 .pill.ok{background:#ecfdf3;color:var(--green)}.pill.wait{background:#fffaeb;color:#93370d}.pill.off{background:#fef3f2;color:#b42318}
 .demo{margin:18px auto 0;max-width:560px;width:100%;font-size:13px;color:var(--muted)}.demo summary{cursor:pointer;color:var(--blue);font-weight:500}
 .demo .btn{height:34px;font-size:13px;margin:8px 8px 0 0}

@@ -1,7 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../data/auth';
+import { ROLES } from '../../data/permissions';
 import { Icon } from '../../components/Icon';
-import { DEMO_ACCOUNTS, DEMO_PASSWORD, LOCK_SECONDS, MAX_ATTEMPTS, login, type Account } from './mockAuth';
+import { DEMO_ACCOUNTS, DEMO_PASSWORD, LOCK_SECONDS, MAX_ATTEMPTS, login } from './mockAuth';
 import './login.css';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -14,8 +16,13 @@ const FEATURES = [
 ] as const;
 
 // S1-01. Đăng nhập bằng email và mật khẩu: validate, báo sai thông tin, khoá tạm, chuyển trang theo vai trò.
+type LoginState = { from?: string; loggedOut?: boolean; expired?: boolean; email?: string } | null;
+
 export function LoginPage() {
-  const [email, setEmail] = useState('');
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
+  const state = useLocation().state as LoginState;
+  const [email, setEmail] = useState(state?.email ?? '');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -24,7 +31,6 @@ export function LoginPage() {
   const [now, setNow] = useState(Date.now());
   const [wrong, setWrong] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [account, setAccount] = useState<Account | null>(null);
 
   const lockLeft = Math.max(0, Math.ceil((lockedUntil - now) / 1000));
   const locked = lockLeft > 0;
@@ -66,7 +72,9 @@ export function LoginPage() {
     if (result) {
       setFails(0);
       setWrong(false);
-      setAccount(result); // khi có các trang thật: navigate(result.home)
+      signIn(result);
+      // S1-02: quay lại đúng trang đang làm dở trước khi phiên hết hạn, nếu không thì về trang chủ của vai trò.
+      navigate(state?.from ?? '/', { replace: true, state: state?.from ? { restored: true } : undefined });
       return;
     }
     const count = fails + 1;
@@ -79,12 +87,6 @@ export function LoginPage() {
     } else {
       setWrong(true);
     }
-  }
-
-  function logout() {
-    setAccount(null);
-    setEmail('');
-    setPassword('');
   }
 
   return (
@@ -117,30 +119,23 @@ export function LoginPage() {
         </section>
 
         <section className="lg-right">
-          {account ? (
-            <div className="lg-success">
-              <div className="lg-eyebrow">Đăng nhập thành công</div>
-              <h2>Xin chào, {account.role}</h2>
-              <div className="lg-dest">
-                Vai trò: {account.role}
-                <br />
-                Chuyển đến: {account.homeName} <code>{account.home}</code>
-              </div>
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  logout();
-                }}
-              >
-                Đăng xuất và quay lại màn hình đăng nhập
-              </a>
-            </div>
-          ) : (
-            <div>
+          <div>
               <div className="lg-eyebrow">Chào mừng quay trở lại</div>
               <h2>Đăng nhập</h2>
               <p className="lg-lead">Nhập thông tin tài khoản của bạn để truy cập hệ thống quản trị đào tạo.</p>
+
+              {state?.loggedOut && !locked && !wrong && (
+                <div className="lg-alert lg-ok" role="status">
+                  <strong>Bạn đã đăng xuất</strong>
+                  Phiên làm việc đã kết thúc trên máy chủ. Đăng nhập lại để tiếp tục.
+                </div>
+              )}
+              {state?.expired && !locked && !wrong && (
+                <div className="lg-alert lg-info" role="status">
+                  <strong>Phiên đăng nhập đã hết hạn</strong>
+                  Vui lòng đăng nhập lại. Nội dung bạn đang nhập dở đã được lưu nháp và sẽ được khôi phục sau khi đăng nhập.
+                </div>
+              )}
 
               {locked && (
                 <div className="lg-alert lg-lock" role="alert">
@@ -163,7 +158,7 @@ export function LoginPage() {
                   <input
                     id="email"
                     type="email"
-                    placeholder="name@company.com"
+                    placeholder="S25200212123@tms.vn"
                     autoComplete="username"
                     value={email}
                     disabled={locked}
@@ -243,7 +238,7 @@ export function LoginPage() {
                         <td>
                           <code>{a.email}</code>
                         </td>
-                        <td>{a.role}</td>
+                        <td>{a.roles.map((r) => ROLES[r]).join(", ")}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -252,8 +247,7 @@ export function LoginPage() {
                   Mật khẩu chung: <code>{DEMO_PASSWORD}</code>. Nhập sai {MAX_ATTEMPTS} lần liên tiếp sẽ bị khóa tạm 15 phút.
                 </p>
               </details>
-            </div>
-          )}
+          </div>
         </section>
       </main>
     </div>
