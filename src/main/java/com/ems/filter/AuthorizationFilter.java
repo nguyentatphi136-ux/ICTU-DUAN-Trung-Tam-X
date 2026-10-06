@@ -18,7 +18,7 @@ import java.util.List;
  * Áp dụng mô hình Java Servlet / JSP Filter
  * Đảm bảo: Giảng viên không sửa được học phí, Kế toán không sửa được điểm
  */
-@WebFilter(filterName = "AuthorizationFilter", urlPatterns = {"/grade/*", "/tuition/*", "/user/*"})
+@WebFilter(filterName = "AuthorizationFilter", urlPatterns = {"/grade/*", "/tuition/*", "/user/*", "/lead/*"})
 public class AuthorizationFilter implements Filter {
 
     // Danh sách các đường dẫn công khai (không cần kiểm tra quyền)
@@ -149,7 +149,41 @@ public class AuthorizationFilter implements Filter {
             return;
         }
 
-        // 5. NGUYÊN TẮC MẶC ĐỊNH TỪ CHỐI (DEFAULT-DENY)
+        // 5. KIỂM QUYỀN KHÁCH HÀNG TIỀM NĂNG (Leads - S2-09)
+        // Đặc tả S2-09:
+        // • Tạo và sửa lead: Admissions, TrainingManager, Admin
+        // • CHỈ Quản lý đào tạo (và Admin) được xoá lead. Tư vấn tuyển sinh TUYỆT ĐỐI KHÔNG được xoá!
+        if (uri.startsWith("/lead/delete")) {
+            boolean canDelete = PermissionConstant.hasPermission(roles, PermissionConstant.LEAD_DELETE);
+            if (!canDelete || (roles != null && roles.contains(RoleConstant.ADMISSIONS) && !roles.contains(RoleConstant.TRAINING_MANAGER) && !roles.contains(RoleConstant.ADMIN))) {
+                denyAccess(req, res, "Tư vấn tuyển sinh không có quyền xóa khách hàng tiềm năng. Chỉ Quản lý đào tạo hoặc Quản trị viên mới được phép xóa.");
+                return;
+            }
+            filterChain.doFilter(servletRequest, servletResponse);
+            return;
+        }
+
+        if (uri.startsWith("/lead/add") || uri.startsWith("/lead/edit") || uri.startsWith("/lead/save")) {
+            boolean canCreateOrUpdate = PermissionConstant.hasPermission(roles, PermissionConstant.LEAD_CREATE)
+                    || PermissionConstant.hasPermission(roles, PermissionConstant.LEAD_UPDATE);
+            if (!canCreateOrUpdate) {
+                denyAccess(req, res, "Bạn không có quyền thêm hoặc cập nhật thông tin khách hàng tiềm năng.");
+                return;
+            }
+            filterChain.doFilter(servletRequest, servletResponse);
+            return;
+        }
+
+        if (uri.startsWith("/lead/list") || uri.startsWith("/lead/view") || uri.equals("/lead")) {
+            if (!PermissionConstant.hasPermission(roles, PermissionConstant.LEAD_VIEW)) {
+                denyAccess(req, res, "Bạn không có quyền xem thông tin khách hàng tiềm năng.");
+                return;
+            }
+            filterChain.doFilter(servletRequest, servletResponse);
+            return;
+        }
+
+        // 6. NGUYÊN TẮC MẶC ĐỊNH TỪ CHỐI (DEFAULT-DENY)
         if (!PermissionConstant.hasPermission(roles, PermissionConstant.PUBLIC_VIEW)) {
             denyAccess(req, res, "Bạn không có quyền truy cập chức năng này.");
             return;
