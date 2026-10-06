@@ -52,14 +52,14 @@ Hệ thống Quản lý Đào tạo Trung tâm là nền tảng quản trị s�
 | STT | Họ và tên | Mã SV | Vai trò Scrum | Phân công nhiệm vụ kỹ thuật |
 |:---:|:---|:---:|:---|:---|
 | 1 | Nguyễn Tất Phi | [Mã SV] | Team Leader / Dev | Quản trị dự án, thiết kế kiến trúc hệ thống, BE Core Auth (Sprint 1) |
-| 2 | Nguyễn Minh Ngọc | [Mã SV] | Scrum Master | Điều phối Daily Scrum, Planning, gỡ blocker, hỗ trợ kiểm thử |
+| 2 | Nguyễn Minh Ngọc | [Mã SV] | Scrum Master / Backend Dev | Điều phối Scrum, thiết kế CSDL & xây dựng API phân công lead (S2-10), tìm kiếm & lọc lead đa điều kiện (S2-11) |
 | 3 | Nông Hùng Nguyên | [Mã SV] | Backend Dev | Thiết kế CSDL, API quản lý tài khoản, mã hóa mật khẩu |
 | 4 | Nguyễn Trung Kiên | [Mã SV] | Backend Dev | Xây dựng bộ lọc Authorization Filter, gán và thu hồi Role |
 | 5 | Nguyễn Văn Kỳ | [Mã SV] | Backend Dev | Xử lý Session, Forgot Password qua Email, API hồ sơ người dùng |
 | 6 | Vũ Trọng Nghĩa  | [Mã SV] | Frontend Dev | Thiết kế Layout Master, Dynamic Sidebar Menu theo Role |
 | 7 | Nguyễn Thanh Ngọc | [Mã SV] | Frontend Dev | Xây dựng giao diện Login, Forgot Password, Reset Password |
-| 8 | Nguyễn Hữu Lợi | [Mã SV] | Frontend Dev | Xây dựng trang Quản trị danh sách người dùng, Modal Thêm/Sửa |
-| 9 | Nguyễn Phạm Phương Lan | [Mã SV] | QA / Tester | Viết Test Cases cho Sprint 1 (Đăng nhập, phân quyền, CRUD user) |
+| 8 | Nguyễn Hữu Lợi | [Mã SV] | Frontend Dev | Xây dựng trang Quản trị danh sách người dùng, UI Lead CRM (S2-11) |
+| 9 | Nguyễn Phạm Phương Lan | [Mã SV] | QA / Tester | Viết Test Cases cho Sprint 1 & Sprint 2 |
 | 10 | Nguyễn Duy Kiên | [Mã SV] | QA / Tester | Thực hiện Manual Test, kiểm thử biên (Edge Cases), theo dõi Bug trên Jira |
 
 ---
@@ -101,6 +101,44 @@ git checkout develop
 
 # 4. Cấu hình kết nối cơ sở dữ liệu:
 # Mở file src/main/resources/database.properties và cập nhật DB_URL, DB_USER, DB_PASSWORD
-
 # 5. Build và chạy ứng dụng trên Tomcat server tại địa chỉ:
 # http://localhost:8080/
+```
+
+---
+
+## 7. Tiến độ Sprint 2: Quản lý Lead & Phân công Tuyển sinh (Nhánh `minhngoc2`)
+
+Nhánh **`minhngoc2`** hoàn thành 2 hạng mục Backend cốt lõi thuộc Sprint 2 cho phân hệ Tuyển sinh & Quản lý Lead (Admissions / Leads CRM):
+
+### 7.1. Story S2-10 (IDTTX-165 / Subtask IDTTX-195): Phân công lead cho tư vấn viên
+- **Nghiệp vụ đáp ứng:**
+  - Quản lý đào tạo (`TrainingManager`) hoặc Quản trị viên (`Admin`) có thể phân công một hoặc nhiều lead cùng lúc cho một tư vấn viên tuyển sinh (`Admissions`).
+  - **Phân quyền truy cập:** Tư vấn viên (`Admissions`) chỉ nhìn thấy các lead được phân công cho chính mình; không thể truy cập hoặc thao tác trên lead của tư vấn viên khác.
+  - **Lịch sử chuyển giao:** Hệ thống tự động ghi nhận nhật ký chuyển giao vào bảng `lead_assignments` và timeline của từng lead (tư vấn viên cũ, tư vấn viên mới, người phân công, lý do, thời gian).
+- **APIs triển khai:**
+  - `POST /api/leads/assign`: Phân công lead hàng loạt.
+  - `GET /api/leads/counselors`: Lấy danh sách tư vấn viên phục vụ phân công.
+  - `GET /api/leads/:id/assignments`: Xem lịch sử chuyển giao của một lead.
+
+### 7.2. Story S2-11 (IDTTX-166 / Subtask IDTTX-198): Tìm kiếm và lọc lead đa điều kiện
+- **Nghiệp vụ đáp ứng:**
+  - Tìm kiếm nhanh theo tên, số điện thoại (hỗ trợ partial match), email hoặc khóa học quan tâm.
+  - Bộ lọc đa điều kiện: Trạng thái lead (`NEW`, `CONTACTED`, `CONSULTING`, `TRIAL_SCHEDULED`, `WON`, `REJECTED`), nguồn lead (`WEBSITE`, `FACEBOOK`, `REFERRAL`, `HOTLINE`, `TIKTOK`, `EVENT`), người phụ trách (`counselorId` hoặc `unassigned`).
+  - Lọc theo khoảng thời gian: Khoảng ngày cụ thể hoặc theo mốc định sẵn (`today`, `yesterday`, `this-week`, `this-month`, `last-month` để tìm lại cuộc trao đổi từ tháng trước khi khách gọi lại).
+  - Phân trang (`page`, `limit`) và sắp xếp dữ liệu (`sortBy`, `sortOrder`).
+- **APIs triển khai:**
+  - `GET /api/leads`: Tìm kiếm và lọc danh sách lead (tự động phân quyền theo vai trò).
+  - `GET /api/leads/stats`: Thống kê số lượng lead theo phễu phục vụ hiển thị thẻ KPI / Dashboard.
+  - `GET /api/leads/:id`: Chi tiết thông tin và timeline tương tác của lead.
+  - `POST /api/leads/:id/interactions`: Ghi nhật ký cuộc gọi / ghi chú trao đổi tư vấn.
+  - `PATCH /api/leads/:id/status`: Cập nhật trạng thái xử lý lead.
+
+### 7.3. Cơ sở dữ liệu & Kiểm thử
+- **Migration SQL:** [`database/migration_s2_10_s2_11_lead_management.sql`](database/migration_s2_10_s2_11_lead_management.sql) (bảng `leads`, `lead_assignments`, `lead_interactions` đạt chuẩn 3NF và đánh index tối ưu truy vấn).
+- **Chạy kiểm thử tự động:**
+  ```bash
+  cd BE
+  npm test
+  ```
+  *Kết quả kiểm thử:* **31/31 tests PASS (100%)** bao quát toàn bộ ca kiểm thử chức năng và phân quyền bảo mật cho S2-10 và S2-11.
