@@ -5,7 +5,7 @@ import { Icon } from '../../components/Icon';
 import { Search } from '../../components/ui';
 import { CURRICULUM, PROGRAMS, SUBJECTS, type CurriculumItem } from '../../data/training';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
-import { MODULE, useCanEditTraining } from '../S2-04-chuong-trinh/ProgramListPage';
+import { MODULE, useCanEditTraining } from '../../components/TrainingTabs';
 import './curriculum.css';
 
 const subject = (code: string) => SUBJECTS.find((s) => s.code === code);
