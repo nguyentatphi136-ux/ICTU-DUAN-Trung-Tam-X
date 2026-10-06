@@ -3,7 +3,7 @@ import { Icon } from '../../components/Icon';
 import { Drawer } from '../../components/ui';
 import { LEAD_STATUSES, samePhone, SOURCES, type Lead, type LeadStatus } from '../../data/leads';
 import { PROGRAMS } from '../../data/training';
-import { PHONE_RE } from '../S1-08-tai-khoan/UserDrawer';
+import { PHONE_RE } from '../../data/validate';
 
 type Props = {
   lead: Lead | null;
