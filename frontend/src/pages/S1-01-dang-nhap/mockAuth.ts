@@ -11,18 +11,19 @@ export const MAX_ATTEMPTS = 5;
 export const LOCK_SECONDS = 15 * 60;
 
 export const DEMO_ACCOUNTS: Account[] = [
-  { email: 'hocvien@tms.vn', name: 'NGUYEN MINH ANH', roles: [0] },
-  { email: 'giangvien@tms.vn', name: 'PHAM THI HA', roles: [2] },
-  { email: 'trogiang@tms.vn', name: 'PHAM GIA HUY', roles: [1] },
-  { email: 'daotao@tms.vn', name: 'LE HOANG NAM', roles: [5, 2] },
-  { email: 'tuvan@tms.vn', name: 'TRAN THU HA', roles: [3] },
-  { email: 'ketoan@tms.vn', name: 'DO THI MAI', roles: [4] },
-  { email: 'admin@tms.vn', name: 'HOANG GIA BAO', roles: [6] },
+  { email: 'S25200212101@tms.vn', name: 'NGUYEN MINH ANH', roles: [0] },
+  { email: 'IST25200212045@tms.vn', name: 'VU DUC LONG', roles: [2] },
+  { email: 'TA25200212007@tms.vn', name: 'PHAM GIA HUY', roles: [1] },
+  { email: 'TM25200212002@tms.vn', name: 'LE HOANG NAM', roles: [5, 2] },
+  { email: 'AMS25200212012@tms.vn', name: 'TRAN THU HA', roles: [3] },
+  { email: 'ACT25200212003@tms.vn', name: 'DO THI MAI', roles: [4] },
+  { email: 'A25200212001@tms.vn', name: 'TRAN QUOC BAO', roles: [6] },
 ];
 
 /** Trả về tài khoản nếu đúng, null nếu sai. Không cho biết email có tồn tại hay không. */
 export function login(email: string, password: string): Promise<Account | null> {
-  const found = DEMO_ACCOUNTS.find((a) => a.email === email.trim().toLowerCase());
+  const normalizedEmail = email.trim().toLowerCase();
+  const found = DEMO_ACCOUNTS.find((a) => a.email.toLowerCase() === normalizedEmail);
   const ok = found && password === DEMO_PASSWORD ? found : null;
   return new Promise((resolve) => window.setTimeout(() => resolve(ok), 500));
 }
