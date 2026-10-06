@@ -103,10 +103,49 @@ Mã phản hồi:
 
 ## Tài khoản demo mặc định
 
-| Vai trò | Email | Mật khẩu |
-| --- | --- | --- |
-| Admin | `admin@example.com` | `admin123` |
-| Instructor | `instructor@example.com` | `instructor123` |
-| Student | `student@example.com` | `student123` |
+| Vai trò | Email | Mật khẩu | Ghi chú |
+| --- | --- | --- | --- |
+| Admin | `admin@example.com` | `admin123` | Quản trị hệ thống |
+| TrainingManager | `manager@example.com` | `manager123` | Quản lý đào tạo (phân công lead) |
+| Instructor | `instructor@example.com` | `instructor123` | Giảng viên |
+| Student | `student@example.com` | `student123` | Học viên |
+| Admissions | `admissions@example.com` | `admissions123` | Tư vấn viên 1 (Lê Thị Thu Hà) |
+| Admissions | `tuvan@example.com` | `tuvan123` | Tư vấn viên 2 (Hoàng Văn Tư) |
 
-Danh sách người dùng hiện được lưu trong bộ nhớ và dùng để demo; dữ liệu cập nhật sẽ mất khi tiến trình khởi động lại. Trước khi triển khai thực tế, cần thay bằng kho người dùng thật và đặt `JWT_SECRET` mạnh trong môi trường chạy.
+## API Quản lý Lead & Tuyển sinh (S2-10 & S2-11)
+
+### 1. Phân công lead cho tư vấn viên (S2-10 - IDTTX-165 / IDTTX-195)
+Yêu cầu vai trò: `TrainingManager` hoặc `Admin`.
+
+- `POST /api/leads/assign`: Phân công một hoặc nhiều lead cùng lúc cho tư vấn viên.
+  - Body mẫu:
+    ```json
+    {
+      "leadIds": ["3", "4"],
+      "counselorId": "5",
+      "note": "Giao chăm sóc khách hàng mới từ chiến dịch tuần này"
+    }
+    ```
+  - Hệ thống tự động lưu lịch sử chuyển giao vào bảng `lead_assignments` và timeline của từng lead.
+- `GET /api/leads/counselors`: Lấy danh sách các tư vấn viên (`Admissions`) có sẵn để phục vụ phân công.
+- `GET /api/leads/:id/assignments`: Xem toàn bộ lịch sử phân công và chuyển giao của một lead.
+
+### 2. Tìm kiếm và lọc lead đa điều kiện (S2-11 - IDTTX-166 / IDTTX-198)
+Yêu cầu vai trò: `TrainingManager`, `Admin`, hoặc `Admissions`.
+*Lưu ý phân quyền nghiệp vụ:* Nếu người dùng có vai trò `Admissions` (Tư vấn viên), hệ thống tự động lọc chỉ hiển thị các lead được phân công cho chính họ.
+
+- `GET /api/leads`: Tìm kiếm và lọc danh sách lead.
+  - Tham số query hỗ trợ:
+    - `search` hoặc `q`: Tìm kiếm nhanh theo tên, số điện thoại, email hoặc khoá học.
+    - `status`: Lọc theo trạng thái (`NEW`, `CONTACTED`, `CONSULTING`, `TRIAL_SCHEDULED`, `WON`, `REJECTED`, hỗ trợ cả alias tiếng Việt như `mới`, `đang tư vấn`, `đã đăng ký`).
+    - `source`: Lọc theo nguồn (`WEBSITE`, `FACEBOOK`, `REFERRAL`, `HOTLINE`, `TIKTOK`, `EVENT`).
+    - `counselorId`: Lọc theo ID tư vấn viên (`unassigned` để lọc lead chưa phân công).
+    - `createdFrom`, `createdTo`: Lọc theo khoảng ngày tạo.
+    - `datePreset`: Lọc theo mốc (`today`, `yesterday`, `this-week`, `this-month`, `last-month` để tìm lại cuộc trao đổi từ tháng trước).
+    - `page`, `limit`: Phân trang dữ liệu.
+    - `sortBy`, `sortOrder`: Sắp xếp theo trường (`createdAt`, `fullName`, `status`, `lastInteractionAt`).
+- `GET /api/leads/stats`: Thống kê tổng quan số lượng lead theo trạng thái phục vụ hiển thị dashboard / cards.
+- `GET /api/leads/:id`: Xem chi tiết thông tin và timeline của một lead.
+- `POST /api/leads/:id/interactions`: Ghi nhận cuộc gọi, ghi chú trao đổi vào timeline chăm sóc khách hàng.
+- `PATCH /api/leads/:id/status`: Cập nhật trạng thái xử lý lead.
+
