@@ -231,3 +231,39 @@ Mô hình dữ liệu được thiết kế tuân thủ nghiêm ngặt chuẩn h
 - **Ràng buộc Foreign Keys:**
   - `ON DELETE CASCADE` cho quan hệ phụ thuộc chặt chẽ (`user_roles`, `role_permissions`).
   - `ON DELETE RESTRICT` cho quan hệ lịch sử/dữ liệu nghiệp vụ (`grades.updated_by`, `tuition_fees.updated_by`) để đảm bảo tính minh bạch kiểm toán (Audit Trail), ngăn chặn việc xóa tài khoản làm hỏng dữ liệu điểm số và tài chính.
+
+---
+
+## 7. Thiết kế CSDL cho Sprint 2 (Epic EP-01)
+
+### 7.1. Chức năng S2-01: Nhập người dùng hàng loạt từ Excel (Batch User Import)
+- **Bảng `user_import_batches` (Lịch sử các đợt nhập tệp Excel/CSV):**
+  - `id` (BIGINT, PK, Auto Increment): Mã định danh đợt nhập.
+  - `batch_code` (VARCHAR(64), UNIQUE): Mã theo dõi lô, sinh tự động (VD: `IMP-20261006-001`).
+  - `actor_id` (BIGINT, FK -> users.id): Quản trị viên thực hiện thao tác nhập.
+  - `file_name` (VARCHAR(255)): Tên file Excel/CSV tải lên.
+  - `total_rows` (INT): Tổng số dòng dữ liệu đọc được từ file.
+  - `success_rows` (INT): Số dòng nhập thành công vào hệ thống.
+  - `failed_rows` (INT): Số dòng bị từ chối do dữ liệu lỗi.
+  - `summary_note` (TEXT): Ghi chú tổng kết quá trình nhập.
+  - `created_at` (DATETIME): Thời điểm thực hiện nhập dữ liệu.
+- **Bảng `user_import_errors` (Chi tiết các dòng bị bỏ qua do lỗi):**
+  - `id` (BIGINT, PK, Auto Increment).
+  - `batch_id` (BIGINT, FK -> user_import_batches.id, ON DELETE CASCADE).
+  - `row_index` (INT): Thứ tự dòng dữ liệu trong tệp gốc.
+  - `raw_data` (JSON): Nội dung bản ghi thô người dùng đã cung cấp.
+  - `error_reason` (VARCHAR(255)): Lý do từ chối (Trùng email, sai SĐT VN, thiếu họ tên,...).
+  - `created_at` (DATETIME).
+- **Quy tắc nghiệp vụ Partial Import:**
+  - Áp dụng nguyên tắc **Dòng lỗi bị bỏ qua, dòng hợp lệ vẫn được nhập**: Mỗi dòng hợp lệ được commit tạo tài khoản độc lập, dòng lỗi được ghi vào `user_import_errors` để đối soát mà không rollback toàn bộ lô.
+
+### 7.2. Chức năng S2-02: Cập nhật hồ sơ cá nhân (User Profile Management)
+- **Mở rộng các thuộc tính trong bảng `users`:**
+  - `date_of_birth` (DATE, NULL): Ngày tháng năm sinh của người dùng.
+  - `gender` (ENUM('MALE', 'FEMALE', 'OTHER')): Giới tính.
+  - `address` (VARCHAR(255), NULL): Địa chỉ liên hệ / thường trú.
+  - `phone` (VARCHAR(20), NULL): Số điện thoại di động Việt Nam.
+- **Ràng buộc an ninh & Toàn vẹn:**
+  - **Bảo vệ email & vai trò:** Người dùng tuyệt đối không được tự ý sửa `email` (tên đăng nhập) và `roles` qua API cập nhật hồ sơ cá nhân. Mọi thay đổi vai trò chỉ được cấp bởi Quản trị viên (`ADMIN`).
+  - **Định dạng số điện thoại Việt Nam:** Kiểm soát chặt chẽ ở cả Frontend và Backend bằng biểu thức chính quy: `^(0|\+84)(3|5|7|8|9)[0-9]{8}$` (10 chữ số, các đầu mạng di động Viettel, Mobifone, Vinaphone, Vietnamobile, Itelecom, Gmobile, Wintel).
+

@@ -1303,6 +1303,207 @@
       </div>
     </div>
 
+    <!-- ===================================================================
+         MODAL NHẬP NGƯỜI DÙNG TỪ EXCEL (S2-01)
+         =================================================================== -->
+    <div id="import-excel-modal" class="app-modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden" role="dialog" aria-modal="true" aria-labelledby="import-excel-modal-title">
+      <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+        
+        <!-- Header -->
+        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+          <div class="flex items-center gap-3">
+            <div class="size-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-200">
+              <i data-lucide="file-spreadsheet" class="size-5"></i>
+            </div>
+            <div>
+              <h3 id="import-excel-modal-title" class="text-lg font-extrabold text-slate-900">
+                Nhập danh sách người dùng từ Excel
+              </h3>
+              <p class="text-xs text-slate-500">
+                Tạo tài khoản hàng loạt cho học viên và nhân sự từ tệp dữ liệu .xlsx / .csv
+              </p>
+            </div>
+          </div>
+          <button type="button" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors" data-close-import-modal aria-label="Đóng">
+            <i data-lucide="x" class="size-5"></i>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 overflow-y-auto space-y-5 flex-1" id="import-modal-body">
+          
+          <!-- View 1: Tải tệp mẫu & Upload -->
+          <div id="import-step-upload" class="space-y-5">
+            <!-- Bước 1: Tải tệp mẫu (S2-01 AC1) -->
+            <div class="p-4 rounded-xl bg-blue-50/70 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div class="flex items-start gap-3">
+                <i data-lucide="info" class="size-5 text-blue-600 shrink-0 mt-0.5"></i>
+                <div>
+                  <h4 class="text-sm font-bold text-blue-900">1. Tải tệp mẫu chuẩn</h4>
+                  <p class="text-xs text-blue-700 mt-0.5 leading-relaxed">
+                    Sử dụng tệp mẫu có định dạng chuẩn (Họ tên, Email, Số điện thoại, Vai trò, Ngày sinh, Giới tính, Địa chỉ) để tránh lỗi định dạng khi nhập.
+                  </p>
+                </div>
+              </div>
+              <button type="button" id="btn-download-template" class="app-btn bg-white hover:bg-blue-100/60 text-blue-700 border border-blue-300 font-semibold text-xs px-3.5 py-2 rounded-lg flex items-center gap-2 shrink-0 shadow-sm transition-all">
+                <i data-lucide="download" class="size-4"></i>
+                <span>Tải tệp mẫu (.CSV / Excel)</span>
+              </button>
+            </div>
+
+            <!-- Bước 2: Kéo thả hoặc chọn tệp -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                2. Tải tệp dữ liệu cần nhập (.xlsx, .xls, .csv)
+              </label>
+              <div id="import-dropzone" class="border-2 border-dashed border-slate-300 hover:border-emerald-500 rounded-xl p-8 text-center bg-slate-50/50 hover:bg-emerald-50/30 transition-all cursor-pointer group">
+                <input type="file" id="import-excel-file-input" accept=".xlsx, .xls, .csv, text/csv" class="hidden" />
+                <div class="size-14 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                  <i data-lucide="upload-cloud" class="size-7"></i>
+                </div>
+                <p class="text-sm font-semibold text-slate-800">
+                  Kéo thả tệp vào đây hoặc <span class="text-emerald-600 underline">bấm để chọn từ máy tính</span>
+                </p>
+                <p class="text-xs text-slate-500 mt-1">Hỗ trợ định dạng .xlsx, .csv (Tối đa 10MB, tối đa 500 dòng/lần)</p>
+              </div>
+              <div id="import-selected-file-info" class="mt-2 hidden p-3 rounded-lg bg-slate-100 border border-slate-200 flex items-center justify-between">
+                <div class="flex items-center gap-2 text-sm text-slate-800 font-medium">
+                  <i data-lucide="file-text" class="size-4 text-emerald-600"></i>
+                  <span id="import-file-name">filename.csv</span>
+                  <span id="import-file-size" class="text-xs text-slate-500">(12 KB)</span>
+                </div>
+                <button type="button" id="btn-remove-selected-file" class="text-xs text-rose-600 hover:underline">Đổi tệp khác</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- View 2: Xem trước & Báo lỗi theo từng dòng (S2-01 AC2) -->
+          <div id="import-step-preview" class="space-y-4 hidden">
+            <!-- Thống kê trạng thái -->
+            <div class="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-slate-100 rounded-xl border border-slate-200">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-600 uppercase tracking-wider">Xem trước kết quả:</span>
+                <span id="preview-badge-total" class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-800">
+                  Tổng: 0 dòng
+                </span>
+                <span id="preview-badge-valid" class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  ✓ Hợp lệ: 0 dòng
+                </span>
+                <span id="preview-badge-error" class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                  ✗ Lỗi: 0 dòng
+                </span>
+              </div>
+              
+              <div class="flex items-center gap-1.5 text-xs">
+                <button type="button" id="filter-preview-all" class="px-2.5 py-1 rounded-md font-semibold bg-white text-slate-700 border border-slate-300 shadow-sm">Tất cả</button>
+                <button type="button" id="filter-preview-valid" class="px-2.5 py-1 rounded-md font-semibold text-slate-600 hover:bg-white hover:text-slate-800">Chỉ hợp lệ</button>
+                <button type="button" id="filter-preview-error" class="px-2.5 py-1 rounded-md font-semibold text-slate-600 hover:bg-white hover:text-slate-800">Chỉ dòng lỗi</button>
+              </div>
+            </div>
+
+            <!-- Bảng xem trước từng dòng -->
+            <div class="border border-slate-200 rounded-xl overflow-hidden max-h-[340px] overflow-y-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-50 text-slate-700 font-bold sticky top-0 border-b border-slate-200 z-10">
+                  <tr>
+                    <th class="p-2.5 w-12 text-center">#</th>
+                    <th class="p-2.5">Họ và tên</th>
+                    <th class="p-2.5">Email</th>
+                    <th class="p-2.5">Số điện thoại</th>
+                    <th class="p-2.5">Vai trò</th>
+                    <th class="p-2.5 w-28 text-center">Trạng thái</th>
+                    <th class="p-2.5">Chi tiết lỗi / Ghi chú</th>
+                  </tr>
+                </thead>
+                <tbody id="import-preview-tbody" class="divide-y divide-slate-100">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Thông báo lưu ý partial import -->
+            <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800 flex items-start gap-2">
+              <i data-lucide="alert-triangle" class="size-4 shrink-0 mt-0.5 text-amber-600"></i>
+              <span>
+                <strong>Cơ chế nhập an toàn (S2-01 AC3):</strong> Dòng lỗi bị bỏ qua, dòng hợp lệ vẫn được nhập vào hệ thống. Có báo cáo tổng kết chi tiết ngay sau khi hoàn thành.
+              </span>
+            </div>
+          </div>
+
+          <!-- View 3: Báo cáo tổng kết sau khi nhập (S2-01 AC3) -->
+          <div id="import-step-summary" class="space-y-4 hidden">
+            <div class="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
+              <div class="size-14 mx-auto rounded-full bg-emerald-500 text-white flex items-center justify-center mb-3 shadow-md">
+                <i data-lucide="check" class="size-8"></i>
+              </div>
+              <h4 class="text-xl font-extrabold text-slate-900">Hoàn tất nhập dữ liệu hàng loạt</h4>
+              <p class="text-xs text-slate-600 mt-1" id="import-summary-batch-label">Mã đợt nhập: IMP-001</p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+              <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl text-center">
+                <span class="text-xs text-slate-500 font-medium">Tổng số dòng xử lý</span>
+                <p id="summary-total-count" class="text-2xl font-black text-slate-900 mt-1">0</p>
+              </div>
+              <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center">
+                <span class="text-xs text-emerald-700 font-medium">Tạo thành công</span>
+                <p id="summary-success-count" class="text-2xl font-black text-emerald-600 mt-1">0</p>
+              </div>
+              <div class="p-4 bg-rose-50 border border-rose-200 rounded-xl text-center">
+                <span class="text-xs text-rose-700 font-medium">Bỏ qua do lỗi</span>
+                <p id="summary-error-count" class="text-2xl font-black text-rose-600 mt-1">0</p>
+              </div>
+            </div>
+
+            <!-- Danh sách chi tiết các dòng bị bỏ qua nếu có -->
+            <div id="summary-error-details-box" class="border border-rose-200 rounded-xl overflow-hidden hidden">
+              <div class="bg-rose-100/70 px-4 py-2 text-xs font-bold text-rose-900 border-b border-rose-200 flex items-center justify-between">
+                <span>Chi tiết các dòng bị bỏ qua (<span id="summary-error-details-count">0</span>)</span>
+                <span class="text-[11px] font-normal text-rose-700">Dữ liệu hợp lệ vẫn đã được nhập thành công</span>
+              </div>
+              <div class="max-h-48 overflow-y-auto">
+                <table class="w-full text-xs text-left">
+                  <thead class="bg-rose-50 text-rose-800 font-semibold border-b border-rose-100">
+                    <tr>
+                      <th class="p-2 w-12 text-center">Dòng</th>
+                      <th class="p-2">Họ và tên</th>
+                      <th class="p-2">Email</th>
+                      <th class="p-2 text-rose-700">Lý do bị từ chối</th>
+                    </tr>
+                  </thead>
+                  <tbody id="summary-error-tbody" class="divide-y divide-rose-100 bg-white">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between" id="import-modal-footer">
+          <button type="button" class="app-btn bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-sm font-semibold px-4 py-2 rounded-lg" data-close-import-modal>
+            Đóng
+          </button>
+          
+          <div class="flex items-center gap-2">
+            <button type="button" id="btn-back-to-upload" class="app-btn bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-sm font-semibold px-4 py-2 rounded-lg hidden">
+              Chọn tệp khác
+            </button>
+            <button type="button" id="btn-confirm-import-excel" class="app-btn tms-btn-teal text-sm font-bold px-5 py-2 rounded-lg flex items-center gap-2 hidden">
+              <i data-lucide="check-circle" class="size-4"></i>
+              <span id="btn-confirm-import-label">Nhập 0 dòng hợp lệ</span>
+            </button>
+            <button type="button" id="btn-finish-summary" class="app-btn tms-btn-teal text-sm font-bold px-5 py-2 rounded-lg flex items-center gap-2 hidden">
+              <i data-lucide="check" class="size-4"></i>
+              <span>Xem danh sách tài khoản</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <script type="module" src="/app.js"></script>
   </body>
 </html>

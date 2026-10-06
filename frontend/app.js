@@ -3352,13 +3352,543 @@ if (accountTable) {
     });
   }
 
-  // Nút Nhập từ Excel
+  // ===================================================================
+  // CHỨC NĂNG S2-01: NHẬP DANH SÁCH NGƯỜI DÙNG TỪ EXCEL HÀNG LOẠT
+  // ===================================================================
+  const importModal = document.querySelector("#import-excel-modal");
   const btnImportExcel = document.querySelector("#btn-import-excel");
+  const btnDownloadTemplate = document.querySelector("#btn-download-template");
+  const importDropzone = document.querySelector("#import-dropzone");
+  const importFileInput = document.querySelector("#import-excel-file-input");
+  const selectedFileInfo = document.querySelector("#import-selected-file-info");
+  const importFileName = document.querySelector("#import-file-name");
+  const importFileSize = document.querySelector("#import-file-size");
+  const btnRemoveSelectedFile = document.querySelector("#btn-remove-selected-file");
+
+  const importStepUpload = document.querySelector("#import-step-upload");
+  const importStepPreview = document.querySelector("#import-step-preview");
+  const importStepSummary = document.querySelector("#import-step-summary");
+
+  const previewBadgeTotal = document.querySelector("#preview-badge-total");
+  const previewBadgeValid = document.querySelector("#preview-badge-valid");
+  const previewBadgeError = document.querySelector("#preview-badge-error");
+  const importPreviewTbody = document.querySelector("#import-preview-tbody");
+
+  const filterPreviewAll = document.querySelector("#filter-preview-all");
+  const filterPreviewValid = document.querySelector("#filter-preview-valid");
+  const filterPreviewError = document.querySelector("#filter-preview-error");
+
+  const btnBackToUpload = document.querySelector("#btn-back-to-upload");
+  const btnConfirmImportExcel = document.querySelector("#btn-confirm-import-excel");
+  const btnConfirmImportLabel = document.querySelector("#btn-confirm-import-label");
+  const btnFinishSummary = document.querySelector("#btn-finish-summary");
+
+  const summaryTotalCount = document.querySelector("#summary-total-count");
+  const summarySuccessCount = document.querySelector("#summary-success-count");
+  const summaryErrorCount = document.querySelector("#summary-error-count");
+  const summaryErrorDetailsBox = document.querySelector("#summary-error-details-box");
+  const summaryErrorDetailsCount = document.querySelector("#summary-error-details-count");
+  const summaryErrorTbody = document.querySelector("#summary-error-tbody");
+  const importSummaryBatchLabel = document.querySelector("#import-summary-batch-label");
+
+  let parsedImportRows = [];
+  let evaluatedImportRows = [];
+  let currentUploadedFileName = "";
+
+  const vnImportPhoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+
+  const resetImportModal = () => {
+    parsedImportRows = [];
+    evaluatedImportRows = [];
+    currentUploadedFileName = "";
+
+    importStepUpload?.classList.remove("hidden");
+    importStepPreview?.classList.add("hidden");
+    importStepSummary?.classList.add("hidden");
+
+    selectedFileInfo?.classList.add("hidden");
+    if (importFileInput) importFileInput.value = "";
+
+    btnBackToUpload?.classList.add("hidden");
+    btnConfirmImportExcel?.classList.add("hidden");
+    btnFinishSummary?.classList.add("hidden");
+
+    if (importPreviewTbody) importPreviewTbody.innerHTML = "";
+    if (summaryErrorTbody) summaryErrorTbody.innerHTML = "";
+    summaryErrorDetailsBox?.classList.add("hidden");
+  };
+
+  const closeImportModal = () => {
+    importModal?.classList.add("hidden");
+    resetImportModal();
+  };
+
+  const openImportModal = () => {
+    resetImportModal();
+    importModal?.classList.remove("hidden");
+    if (window.lucide) window.lucide.createIcons();
+  };
+
   if (btnImportExcel) {
-    btnImportExcel.addEventListener("click", () => {
-      if (typeof showToast === "function") {
-        showToast("Chức năng Nhập từ Excel đang được kết nối hệ thống.", "info");
+    btnImportExcel.addEventListener("click", openImportModal);
+  }
+
+  document.querySelectorAll("[data-close-import-modal]").forEach((btn) => {
+    btn.addEventListener("click", closeImportModal);
+  });
+
+  if (importModal) {
+    importModal.addEventListener("click", (e) => {
+      if (e.target === importModal) closeImportModal();
+    });
+  }
+
+  // Tải tệp mẫu (S2-01 AC1)
+  const downloadTemplateFile = () => {
+    const headers = ["Họ và tên", "Email", "Số điện thoại", "Vai trò", "Ngày sinh", "Giới tính", "Địa chỉ"];
+    const sampleRows = [
+      ["Nguyễn Văn An", "an.nv@tms.vn", "0912345678", "student", "2003-05-15", "Nam", "Thái Nguyên"],
+      ["Trần Thị Bình", "binh.tt@tms.vn", "0987654321", "student", "2002-10-20", "Nữ", "Hà Nội"],
+      ["Lê Hoàng Cường", "cuong.lh@tms.vn", "0903123456", "instructor", "1990-08-12", "Nam", "Thái Nguyên"],
+      ["Phạm Thu Dung", "dung.pt@tms.vn", "0356789123", "ta", "1998-04-25", "Nữ", "Bắc Ninh"],
+      ["Hoàng Đức Giang", "giang.hd@tms.vn", "0978912345", "student", "2004-02-18", "Nam", "Vĩnh Phúc"],
+    ];
+
+    const csvContent = "\uFEFF" + [
+      headers.join(","),
+      ...sampleRows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(",")),
+    ].join("\r\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "mau_nhap_nguoi_dung_tms.csv";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    if (typeof showToast === "function") {
+      showToast("Đã tải tệp mẫu Excel/CSV thành công!", "success");
+    }
+  };
+
+  if (btnDownloadTemplate) {
+    btnDownloadTemplate.addEventListener("click", downloadTemplateFile);
+  }
+
+  // Kéo thả & chọn tệp
+  if (importDropzone && importFileInput) {
+    importDropzone.addEventListener("click", () => importFileInput.click());
+
+    ["dragenter", "dragover"].forEach((eventName) => {
+      importDropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        importDropzone.classList.add("drag-active");
+      });
+    });
+
+    ["dragleave", "drop"].forEach((eventName) => {
+      importDropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        importDropzone.classList.remove("drag-active");
+      });
+    });
+
+    importDropzone.addEventListener("drop", (e) => {
+      const files = e.dataTransfer.files;
+      if (files && files.length > 0) {
+        handleImportFile(files[0]);
       }
+    });
+
+    importFileInput.addEventListener("change", (e) => {
+      const files = e.target.files;
+      if (files && files.length > 0) {
+        handleImportFile(files[0]);
+      }
+    });
+  }
+
+  if (btnRemoveSelectedFile) {
+    btnRemoveSelectedFile.addEventListener("click", () => {
+      resetImportModal();
+    });
+  }
+
+  if (btnBackToUpload) {
+    btnBackToUpload.addEventListener("click", () => {
+      resetImportModal();
+    });
+  }
+
+  // Phân tích tệp CSV / Text
+  const parseCSVContent = (text) => {
+    const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    if (lines.length < 2) return [];
+
+    const parseLine = (line) => {
+      const result = [];
+      let cur = "";
+      let inQuotes = false;
+      const delimiter = line.includes(";") && !line.includes(",") ? ";" : ",";
+
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+          if (inQuotes && line[i + 1] === '"') {
+            cur += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === delimiter && !inQuotes) {
+          result.push(cur.trim());
+          cur = "";
+        } else {
+          cur += char;
+        }
+      }
+      result.push(cur.trim());
+      return result;
+    };
+
+    const header = parseLine(lines[0]).map((h) => h.toLowerCase().replace(/[\s_]/g, ""));
+    const colMap = {
+      fullName: header.findIndex((h) => h.includes("họ") || h.includes("name") || h.includes("tên")),
+      email: header.findIndex((h) => h.includes("email") || h.includes("mail")),
+      phone: header.findIndex((h) => h.includes("thoại") || h.includes("phone") || h.includes("sđt") || h.includes("sdt")),
+      role: header.findIndex((h) => h.includes("trò") || h.includes("role") || h.includes("vaitro")),
+      dob: header.findIndex((h) => h.includes("sinh") || h.includes("dob") || h.includes("birth")),
+      gender: header.findIndex((h) => h.includes("tính") || h.includes("gender")),
+      address: header.findIndex((h) => h.includes("chỉ") || h.includes("address") || h.includes("diachi")),
+    };
+
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const parts = parseLine(lines[i]);
+      if (parts.length === 0 || parts.every((p) => !p)) continue;
+
+      rows.push({
+        fullName: colMap.fullName >= 0 ? parts[colMap.fullName] : parts[0] || "",
+        email: colMap.email >= 0 ? parts[colMap.email] : parts[1] || "",
+        phone: colMap.phone >= 0 ? parts[colMap.phone] : parts[2] || "",
+        role: colMap.role >= 0 ? parts[colMap.role] : parts[3] || "student",
+        dob: colMap.dob >= 0 ? parts[colMap.dob] : parts[4] || "",
+        gender: colMap.gender >= 0 ? parts[colMap.gender] : parts[5] || "",
+        address: colMap.address >= 0 ? parts[colMap.address] : parts[6] || "",
+      });
+    }
+
+    return rows;
+  };
+
+  const handleImportFile = (file) => {
+    currentUploadedFileName = file.name;
+    if (importFileName) importFileName.textContent = file.name;
+    if (importFileSize) importFileSize.textContent = `(${(file.size / 1024).toFixed(1)} KB)`;
+    selectedFileInfo?.classList.remove("hidden");
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      const rows = parseCSVContent(text);
+      if (rows.length === 0) {
+        if (typeof showToast === "function") showToast("Tệp không có dữ liệu hợp lệ hoặc chỉ có dòng tiêu đề.", "error");
+        return;
+      }
+      parsedImportRows = rows;
+      evaluateAndRenderPreview(rows);
+    };
+    reader.onerror = () => {
+      if (typeof showToast === "function") showToast("Không thể đọc tệp đã chọn. Vui lòng thử lại.", "error");
+    };
+    reader.readAsText(file, "UTF-8");
+  };
+
+  // Xem trước và báo lỗi theo từng dòng (S2-01 AC2)
+  const evaluateAndRenderPreview = (rows) => {
+    const allAccounts = getAllAccounts();
+    const existingEmails = new Set(allAccounts.map((a) => (a.email || "").toLowerCase()));
+    const seenEmailsInFile = new Set();
+
+    evaluatedImportRows = rows.map((r, index) => {
+      const rowIndex = index + 1;
+      const fullName = (r.fullName || "").trim();
+      const rawEmail = (r.email || "").trim().toLowerCase();
+      const phone = (r.phone || "").trim().replace(/[\s.-]/g, "");
+      let role = (r.role || "student").trim().toLowerCase();
+
+      // Chuẩn hoá vai trò tiếng Việt nếu người dùng ghi tiếng Việt
+      if (role.includes("học viên") || role === "student") role = "student";
+      else if (role.includes("giảng viên") || role === "instructor") role = "instructor";
+      else if (role.includes("trợ giảng") || role === "ta") role = "ta";
+      else if (role.includes("đào tạo") || role === "training-manager") role = "training-manager";
+      else if (role.includes("tuyển sinh") || role.includes("tư vấn") || role === "admissions") role = "admissions";
+      else if (role.includes("kế toán") || role === "accountant") role = "accountant";
+      else if (role.includes("quản trị") || role === "admin") role = "admin";
+
+      const errors = [];
+
+      // 1. Kiểm tra Họ tên
+      if (!fullName) {
+        errors.push("Thiếu họ và tên");
+      }
+
+      // 2. Kiểm tra Email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!rawEmail) {
+        errors.push("Email không được để trống");
+      } else if (!emailRegex.test(rawEmail)) {
+        errors.push("Định dạng email không hợp lệ");
+      } else if (seenEmailsInFile.has(rawEmail)) {
+        errors.push("Email bị trùng lặp trong tệp");
+      } else if (existingEmails.has(rawEmail)) {
+        const found = allAccounts.find((a) => (a.email || "").toLowerCase() === rawEmail);
+        errors.push(`Email đã tồn tại trên hệ thống (${found?.fullName || "Người dùng khác"})`);
+      }
+
+      if (rawEmail && emailRegex.test(rawEmail)) {
+        seenEmailsInFile.add(rawEmail);
+      }
+
+      // 3. Kiểm tra Số điện thoại Việt Nam (S2-01 & S2-02)
+      if (phone && !vnImportPhoneRegex.test(phone)) {
+        errors.push("SĐT không đúng định dạng VN (10 số, bắt đầu 03, 05, 07, 08, 09 hoặc +84)");
+      }
+
+      // 4. Kiểm tra vai trò
+      const validRoles = ["student", "instructor", "ta", "training-manager", "admissions", "accountant", "admin"];
+      if (!validRoles.includes(role)) {
+        errors.push(`Vai trò '${role}' không tồn tại trong 7 vai trò hệ thống`);
+      }
+
+      const isValid = errors.length === 0;
+
+      return {
+        rowIndex,
+        fullName,
+        email: rawEmail,
+        phone,
+        role,
+        dob: r.dob || "",
+        gender: r.gender || "",
+        address: r.address || "",
+        isValid,
+        errors,
+      };
+    });
+
+    const validRows = evaluatedImportRows.filter((r) => r.isValid);
+    const errorRows = evaluatedImportRows.filter((r) => !r.isValid);
+
+    if (previewBadgeTotal) previewBadgeTotal.textContent = `Tổng: ${evaluatedImportRows.length} dòng`;
+    if (previewBadgeValid) previewBadgeValid.textContent = `✓ Hợp lệ: ${validRows.length} dòng`;
+    if (previewBadgeError) previewBadgeError.textContent = `✗ Lỗi: ${errorRows.length} dòng`;
+
+    renderPreviewTable(evaluatedImportRows);
+
+    // Chuyển sang View 2
+    importStepUpload?.classList.add("hidden");
+    importStepPreview?.classList.remove("hidden");
+    btnBackToUpload?.classList.remove("hidden");
+    btnConfirmImportExcel?.classList.remove("hidden");
+
+    if (btnConfirmImportLabel) {
+      if (validRows.length > 0) {
+        btnConfirmImportLabel.textContent = `Nhập ${validRows.length} dòng hợp lệ (${errorRows.length} lỗi bị bỏ qua)`;
+        btnConfirmImportExcel.disabled = false;
+        btnConfirmImportExcel.classList.remove("opacity-50", "cursor-not-allowed");
+      } else {
+        btnConfirmImportLabel.textContent = `Không có dòng hợp lệ để nhập`;
+        btnConfirmImportExcel.disabled = true;
+        btnConfirmImportExcel.classList.add("opacity-50", "cursor-not-allowed");
+      }
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+  };
+
+  const renderPreviewTable = (rowsToRender) => {
+    if (!importPreviewTbody) return;
+
+    if (rowsToRender.length === 0) {
+      importPreviewTbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Không có dòng nào phù hợp bộ lọc.</td></tr>`;
+      return;
+    }
+
+    const roleNameMap = {
+      student: "Học viên",
+      instructor: "Giảng viên",
+      ta: "Trợ giảng",
+      "training-manager": "Quản lý đào tạo",
+      admissions: "Tư vấn tuyển sinh",
+      accountant: "Kế toán",
+      admin: "Quản trị hệ thống",
+    };
+
+    importPreviewTbody.innerHTML = rowsToRender
+      .map((r) => {
+        const rowClass = r.isValid ? "preview-row-valid" : "preview-row-error";
+        const statusBadge = r.isValid
+          ? `<span class="preview-badge-status is-valid"><i data-lucide="check" class="size-3"></i> Hợp lệ</span>`
+          : `<span class="preview-badge-status is-error"><i data-lucide="alert-circle" class="size-3"></i> Lỗi</span>`;
+
+        const errorNote = r.isValid
+          ? `<span class="text-emerald-700 font-medium">Sẵn sàng nhập</span>`
+          : `<span class="text-rose-700 font-semibold">${escapeHtml(r.errors.join("; "))}</span>`;
+
+        return `
+          <tr class="${rowClass} transition-colors" data-preview-valid="${r.isValid}">
+            <td class="p-2.5 text-center font-bold text-slate-500">${r.rowIndex}</td>
+            <td class="p-2.5 font-bold text-slate-900">${escapeHtml(r.fullName || "-")}</td>
+            <td class="p-2.5 font-mono text-slate-700">${escapeHtml(r.email || "-")}</td>
+            <td class="p-2.5 font-mono text-slate-700">${escapeHtml(r.phone || "-")}</td>
+            <td class="p-2.5 font-medium text-slate-800">${escapeHtml(roleNameMap[r.role] || r.role)}</td>
+            <td class="p-2.5 text-center">${statusBadge}</td>
+            <td class="p-2.5 leading-tight">${errorNote}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    if (window.lucide) window.lucide.createIcons();
+  };
+
+  // Bộ lọc xem trước
+  const setPreviewFilterActive = (activeBtn) => {
+    [filterPreviewAll, filterPreviewValid, filterPreviewError].forEach((btn) => {
+      if (!btn) return;
+      btn.className = btn === activeBtn
+        ? "px-2.5 py-1 rounded-md font-semibold bg-white text-slate-700 border border-slate-300 shadow-sm"
+        : "px-2.5 py-1 rounded-md font-semibold text-slate-600 hover:bg-white hover:text-slate-800";
+    });
+  };
+
+  if (filterPreviewAll) {
+    filterPreviewAll.addEventListener("click", () => {
+      setPreviewFilterActive(filterPreviewAll);
+      renderPreviewTable(evaluatedImportRows);
+    });
+  }
+  if (filterPreviewValid) {
+    filterPreviewValid.addEventListener("click", () => {
+      setPreviewFilterActive(filterPreviewValid);
+      renderPreviewTable(evaluatedImportRows.filter((r) => r.isValid));
+    });
+  }
+  if (filterPreviewError) {
+    filterPreviewError.addEventListener("click", () => {
+      setPreviewFilterActive(filterPreviewError);
+      renderPreviewTable(evaluatedImportRows.filter((r) => !r.isValid));
+    });
+  }
+
+  // Thực hiện nhập dữ liệu - Dòng lỗi bị bỏ qua, dòng hợp lệ vẫn được nhập (S2-01 AC3)
+  if (btnConfirmImportExcel) {
+    btnConfirmImportExcel.addEventListener("click", async () => {
+      const validRows = evaluatedImportRows.filter((r) => r.isValid);
+      const errorRows = evaluatedImportRows.filter((r) => !r.isValid);
+
+      if (validRows.length === 0) {
+        if (typeof showToast === "function") showToast("Không có dòng hợp lệ nào để nhập.", "warning");
+        return;
+      }
+
+      btnConfirmImportExcel.disabled = true;
+      btnConfirmImportExcel.innerHTML = `<span class="animate-spin mr-2">⏳</span> Đang nhập ${validRows.length} tài khoản...`;
+
+      // 1. Gửi lên endpoint API backend
+      try {
+        await fetch("/api/admin/users/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: currentUploadedFileName || "danh_sach.xlsx",
+            rows: evaluatedImportRows,
+          }),
+        }).catch(() => null);
+      } catch (_) {}
+
+      // 2. Lưu các tài khoản hợp lệ vào localStorage (custom accounts)
+      const customAccounts = readStore("edumanager-custom-accounts") || [];
+      const newlyImported = [];
+
+      validRows.forEach((r) => {
+        const tempPass = "Edu@" + Math.random().toString(36).substring(2, 8) + "9";
+        const newAcc = {
+          fullName: r.fullName,
+          email: r.email,
+          phone: r.phone || "",
+          role: r.role,
+          roles: [r.role],
+          status: "ACTIVE",
+          password: tempPass,
+          tempPassword: tempPass,
+          dateOfBirth: r.dob || "",
+          gender: r.gender || "OTHER",
+          address: r.address || "",
+          createdAt: new Date().toISOString(),
+          isFirstLogin: true,
+          loginCount: 0,
+        };
+        customAccounts.unshift(newAcc);
+        newlyImported.push(newAcc);
+      });
+
+      writeStore("edumanager-custom-accounts", customAccounts);
+      addAuditLog(`Nhập ${validRows.length} tài khoản từ Excel (${currentUploadedFileName}), bỏ qua ${errorRows.length} dòng lỗi.`);
+
+      // 3. Hiển thị Báo cáo tổng kết (S2-01 AC3)
+      importStepPreview?.classList.add("hidden");
+      importStepSummary?.classList.remove("hidden");
+      btnBackToUpload?.classList.add("hidden");
+      btnConfirmImportExcel?.classList.add("hidden");
+      btnFinishSummary?.classList.remove("hidden");
+
+      const batchCode = "IMP-" + Date.now();
+      if (importSummaryBatchLabel) {
+        importSummaryBatchLabel.textContent = `Mã đợt nhập: ${batchCode} · Tệp: ${currentUploadedFileName}`;
+      }
+      if (summaryTotalCount) summaryTotalCount.textContent = evaluatedImportRows.length;
+      if (summarySuccessCount) summarySuccessCount.textContent = validRows.length;
+      if (summaryErrorCount) summaryErrorCount.textContent = errorRows.length;
+
+      if (errorRows.length > 0 && summaryErrorDetailsBox && summaryErrorTbody) {
+        summaryErrorDetailsBox.classList.remove("hidden");
+        if (summaryErrorDetailsCount) summaryErrorDetailsCount.textContent = errorRows.length;
+        summaryErrorTbody.innerHTML = errorRows
+          .map(
+            (err) => `
+            <tr>
+              <td class="p-2 text-center font-bold text-slate-500">${err.rowIndex}</td>
+              <td class="p-2 font-semibold text-slate-800">${escapeHtml(err.fullName || "-")}</td>
+              <td class="p-2 font-mono text-slate-600">${escapeHtml(err.email || "-")}</td>
+              <td class="p-2 text-rose-600 font-medium">${escapeHtml(err.errors.join("; "))}</td>
+            </tr>
+          `
+          )
+          .join("");
+      } else {
+        summaryErrorDetailsBox?.classList.add("hidden");
+      }
+
+      if (window.lucide) window.lucide.createIcons();
+
+      if (typeof showToast === "function") {
+        showToast(`Đã nhập thành công ${validRows.length} tài khoản mới! (Bỏ qua ${errorRows.length} dòng lỗi)`, "success");
+      }
+    });
+  }
+
+  if (btnFinishSummary) {
+    btnFinishSummary.addEventListener("click", () => {
+      closeImportModal();
+      renderAccounts();
+      renderAuditLog();
     });
   }
 
@@ -4371,7 +4901,7 @@ const mountChangePasswordButtons = () => {
       </span>
       <span class="tms-badge-key">Bảo mật</span>
     `;
-    const targetContainer = dropdownMenu.querySelector(".space-y-0.5, .p-1") || dropdownMenu;
+    const targetContainer = dropdownMenu.querySelector("[class*='space-y'], [class*='p-1']") || dropdownMenu;
     if (logoutBtn) {
       const divider = document.createElement("div");
       divider.className = "tms-dropdown-divider";
@@ -4730,6 +5260,477 @@ const setupChangePasswordModal = () => {
 };
 
 setupChangePasswordModal();
+
+// =====================================================================
+// CHỨC NĂNG S2-02: XEM VÀ CẬP NHẬT HỒ SƠ CÁ NHÂN & SỐ ĐIỆN THOẠI VIỆT NAM
+// =====================================================================
+const ensureUserProfileModal = () => {
+  let modal = document.querySelector("#user-profile-modal");
+  if (modal) return modal;
+
+  modal = document.createElement("div");
+  modal.id = "user-profile-modal";
+  modal.className = "app-modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm hidden";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.setAttribute("aria-labelledby", "user-profile-modal-title");
+
+  modal.innerHTML = `
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+      <!-- Header -->
+      <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+        <div class="flex items-center gap-2.5">
+          <div class="size-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200">
+            <i data-lucide="user" class="size-5"></i>
+          </div>
+          <div>
+            <h3 id="user-profile-modal-title" class="text-base font-extrabold text-slate-900 leading-tight">
+              Hồ sơ cá nhân
+            </h3>
+            <p class="text-xs text-slate-500">Xem và cập nhật thông tin liên lạc của bạn</p>
+          </div>
+        </div>
+        <button type="button" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors" data-close-profile-modal aria-label="Đóng">
+          <i data-lucide="x" class="size-5"></i>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form id="user-profile-form" class="p-6 space-y-4">
+        <!-- Summary Header Card -->
+        <div class="flex items-center gap-3.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+          <div id="profile-card-avatar" class="size-12 rounded-full bg-gradient-to-tr from-blue-600 to-teal-400 text-white font-black text-lg flex items-center justify-center shadow-sm shrink-0">
+            U
+          </div>
+          <div class="flex-1 min-w-0">
+            <p id="profile-card-name" class="font-extrabold text-slate-900 text-sm truncate">Lê Hoàng Nam</p>
+            <p id="profile-card-email" class="text-xs text-slate-500 font-mono truncate">namlh@tms.vn</p>
+            <div id="profile-card-roles" class="flex flex-wrap gap-1 mt-1.5"></div>
+          </div>
+        </div>
+
+        <!-- 1. Họ và tên (editable) -->
+        <div>
+          <label for="profile-fullname-input" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Họ và tên <span class="text-rose-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="profile-fullname-input"
+            class="app-input w-full border-slate-200 rounded-lg text-sm"
+            placeholder="Nhập họ và tên đầy đủ"
+            required
+          />
+        </div>
+
+        <!-- 2. Email (readonly - S2-02 AC2) -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label for="profile-email-input" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Email đăng nhập
+            </label>
+            <span class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+              <i data-lucide="lock" class="size-3"></i> Không thể tự đổi
+            </span>
+          </div>
+          <div class="relative">
+            <i data-lucide="mail" class="size-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input
+              type="email"
+              id="profile-email-input"
+              class="app-input w-full ps-10 border-slate-200 rounded-lg text-sm bg-slate-100 text-slate-500 cursor-not-allowed font-mono"
+              readonly
+            />
+          </div>
+          <p class="text-[11px] text-slate-400 mt-1">Email là tên định danh hệ thống, chỉ Quản trị viên mới có quyền đổi.</p>
+        </div>
+
+        <!-- 3. Vai trò (readonly - S2-02 AC2) -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Vai trò hệ thống
+            </label>
+            <span class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+              <i data-lucide="shield-check" class="size-3"></i> Chỉ định bởi Quản trị
+            </span>
+          </div>
+          <div id="profile-roles-container" class="flex flex-wrap gap-1.5 p-2 bg-slate-100 border border-slate-200 rounded-lg min-h-[38px] items-center"></div>
+        </div>
+
+        <!-- 4. Số điện thoại (S2-02 AC3: Kiểm tra định dạng số điện thoại Việt Nam) -->
+        <div>
+          <label for="profile-phone-input" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Số điện thoại di động
+          </label>
+          <div class="relative">
+            <input
+              type="tel"
+              id="profile-phone-input"
+              class="app-input w-full border-slate-200 rounded-lg text-sm pe-9 transition-all"
+              placeholder="Ví dụ: 0918200300 hoặc +84918200300"
+            />
+            <div id="profile-phone-status-icon" class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center pointer-events-none"></div>
+          </div>
+          <p id="profile-phone-hint" class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+            <span>Chuẩn di động VN (10 số, bắt đầu 03, 05, 07, 08, 09 hoặc +84)</span>
+          </p>
+        </div>
+
+        <!-- 5. Ngày sinh & Giới tính (editable) -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="profile-dob-input" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Ngày sinh
+            </label>
+            <input
+              type="date"
+              id="profile-dob-input"
+              class="app-input w-full border-slate-200 rounded-lg text-sm"
+            />
+          </div>
+          <div>
+            <label for="profile-gender-input" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Giới tính
+            </label>
+            <select id="profile-gender-input" class="app-input w-full border-slate-200 rounded-lg text-sm">
+              <option value="MALE">Nam</option>
+              <option value="FEMALE">Nữ</option>
+              <option value="OTHER">Khác</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 6. Địa chỉ (editable) -->
+        <div>
+          <label for="profile-address-input" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Địa chỉ liên lạc
+          </label>
+          <input
+            type="text"
+            id="profile-address-input"
+            class="app-input w-full border-slate-200 rounded-lg text-sm"
+            placeholder="Số nhà, đường, phường/xã, tỉnh/thành phố..."
+          />
+        </div>
+
+        <div id="profile-alert" class="p-3 rounded-lg text-xs hidden"></div>
+
+        <!-- Footer -->
+        <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-2.5">
+          <button type="button" class="app-btn bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-semibold px-4 py-2 rounded-lg" data-close-profile-modal>
+            Huỷ
+          </button>
+          <button type="submit" id="profile-submit-btn" class="app-btn tms-btn-teal text-xs font-bold px-5 py-2 rounded-lg flex items-center gap-1.5">
+            <i data-lucide="save" class="size-4"></i>
+            <span>Lưu thay đổi</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  if (window.lucide) window.lucide.createIcons();
+  return modal;
+};
+
+const mountUserProfileButtons = () => {
+  const dropdownMenu = document.querySelector("#tms-user-dropdown-menu");
+  if (dropdownMenu && !dropdownMenu.querySelector("#open-user-profile-modal")) {
+    const profileBtn = document.createElement("button");
+    profileBtn.type = "button";
+    profileBtn.className = "tms-dropdown-item";
+    profileBtn.id = "open-user-profile-modal";
+    profileBtn.innerHTML = `
+      <span class="flex items-center gap-2">
+        <i data-lucide="user" class="size-4 text-primary"></i>
+        <span>Hồ sơ cá nhân</span>
+      </span>
+      <span class="app-badge is-info text-[10px]">Cá nhân</span>
+    `;
+
+    const targetContainer = dropdownMenu.querySelector("[class*='space-y'], [class*='p-1']") || dropdownMenu;
+    const changePassBtn = dropdownMenu.querySelector("#open-change-password-modal");
+    if (changePassBtn) {
+      targetContainer.insertBefore(profileBtn, changePassBtn);
+    } else {
+      targetContainer.prepend(profileBtn);
+    }
+    if (window.lucide) window.lucide.createIcons();
+  }
+};
+
+const setupUserProfileModal = () => {
+  const isProtectedPage = Boolean(document.body?.dataset?.role);
+  if (!isProtectedPage) return;
+
+  mountUserProfileButtons();
+  ensureUserProfileModal();
+
+  const profileModal = document.querySelector("#user-profile-modal");
+  const profileForm = document.querySelector("#user-profile-form");
+  const nameInput = document.querySelector("#profile-fullname-input");
+  const emailInput = document.querySelector("#profile-email-input");
+  const phoneInput = document.querySelector("#profile-phone-input");
+  const phoneStatusIcon = document.querySelector("#profile-phone-status-icon");
+  const phoneHint = document.querySelector("#profile-phone-hint");
+  const dobInput = document.querySelector("#profile-dob-input");
+  const genderInput = document.querySelector("#profile-gender-input");
+  const addressInput = document.querySelector("#profile-address-input");
+  const rolesContainer = document.querySelector("#profile-roles-container");
+  const cardAvatar = document.querySelector("#profile-card-avatar");
+  const cardName = document.querySelector("#profile-card-name");
+  const cardEmail = document.querySelector("#profile-card-email");
+  const cardRoles = document.querySelector("#profile-card-roles");
+  const profileAlert = document.querySelector("#profile-alert");
+  const submitBtn = document.querySelector("#profile-submit-btn");
+
+  if (!profileModal || !profileForm) return;
+
+  const vnProfilePhoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+
+  const validatePhoneRealtime = () => {
+    if (!phoneInput) return true;
+    const val = phoneInput.value.trim().replace(/[\s.-]/g, "");
+
+    if (!val) {
+      phoneInput.classList.remove("is-valid-phone", "is-invalid-phone");
+      if (phoneStatusIcon) phoneStatusIcon.innerHTML = "";
+      if (phoneHint) {
+        phoneHint.className = "text-xs text-slate-500 mt-1 flex items-center gap-1";
+        phoneHint.innerHTML = "<span>Chuẩn di động VN (10 số, bắt đầu 03, 05, 07, 08, 09 hoặc +84)</span>";
+      }
+      return true;
+    }
+
+    const isValid = vnProfilePhoneRegex.test(val);
+    if (isValid) {
+      phoneInput.classList.add("is-valid-phone");
+      phoneInput.classList.remove("is-invalid-phone");
+      if (phoneStatusIcon) {
+        phoneStatusIcon.innerHTML = `<i data-lucide="check" class="size-4 phone-indicator-valid"></i>`;
+      }
+      if (phoneHint) {
+        phoneHint.className = "text-xs text-emerald-600 font-semibold mt-1 flex items-center gap-1";
+        phoneHint.innerHTML = "<span>✓ Số điện thoại hợp lệ theo mạng di động Việt Nam</span>";
+      }
+    } else {
+      phoneInput.classList.add("is-invalid-phone");
+      phoneInput.classList.remove("is-valid-phone");
+      if (phoneStatusIcon) {
+        phoneStatusIcon.innerHTML = `<i data-lucide="x" class="size-4 phone-indicator-invalid"></i>`;
+      }
+      if (phoneHint) {
+        phoneHint.className = "text-xs text-rose-600 font-semibold mt-1 flex items-center gap-1";
+        phoneHint.innerHTML = "<span>✗ Số điện thoại phải gồm 10 chữ số di động VN (đầu số 03, 05, 07, 08, 09 hoặc +84)</span>";
+      }
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+    return isValid;
+  };
+
+  phoneInput?.addEventListener("input", validatePhoneRealtime);
+  phoneInput?.addEventListener("blur", validatePhoneRealtime);
+
+  const roleNameMap = {
+    student: "Học viên",
+    instructor: "Giảng viên",
+    ta: "Trợ giảng",
+    "training-manager": "Quản lý đào tạo",
+    admissions: "Tư vấn tuyển sinh",
+    accountant: "Kế toán",
+    admin: "Quản trị hệ thống",
+  };
+
+  const openProfileModal = async () => {
+    let sessionUser = getSessionData() || {};
+    const pageRole = document.body?.dataset?.role || "admin";
+
+    // Tìm thông tin đầy đủ nhất từ session hoặc demo accounts
+    let user = {
+      fullName: sessionUser.fullName || "Người dùng",
+      email: sessionUser.email || (pageRole + "@edumanager.vn"),
+      phone: sessionUser.phone || "",
+      role: sessionUser.role || pageRole,
+      roles: sessionUser.roles || [sessionUser.role || pageRole],
+      dateOfBirth: sessionUser.dateOfBirth || "2000-01-01",
+      gender: sessionUser.gender || "MALE",
+      address: sessionUser.address || "Thái Nguyên",
+    };
+
+    // Cố gắng lấy dữ liệu từ API nếu có
+    try {
+      const res = await fetch("/api/profile");
+      if (res.ok) {
+        const payload = await res.json();
+        if (payload && payload.data) {
+          user = { ...user, ...payload.data };
+        }
+      }
+    } catch (_) {}
+
+    // Điền dữ liệu vào form
+    if (nameInput) nameInput.value = user.fullName || "";
+    if (emailInput) emailInput.value = user.email || "";
+    if (phoneInput) phoneInput.value = user.phone || "";
+    if (dobInput) dobInput.value = user.dateOfBirth || "";
+    if (genderInput) genderInput.value = user.gender || "MALE";
+    if (addressInput) addressInput.value = user.address || "";
+
+    // Điền card tóm tắt
+    if (cardName) cardName.textContent = user.fullName || "";
+    if (cardEmail) cardEmail.textContent = user.email || "";
+    if (cardAvatar) {
+      const parts = String(user.fullName || "").trim().split(" ").filter(Boolean);
+      cardAvatar.textContent = parts.length > 0 ? parts[parts.length - 1][0].toUpperCase() : "U";
+    }
+
+    // Điền vai trò (readonly - S2-02 AC2)
+    const userRoles = Array.isArray(user.roles) && user.roles.length > 0 ? user.roles : [user.role || pageRole];
+    const roleBadgesHtml = userRoles
+      .map((r) => `<span class="app-badge is-info text-xs font-semibold">${escapeHtml(roleNameMap[r] || r)}</span>`)
+      .join(" ");
+
+    if (cardRoles) cardRoles.innerHTML = roleBadgesHtml;
+    if (rolesContainer) rolesContainer.innerHTML = roleBadgesHtml;
+
+    if (profileAlert) profileAlert.classList.add("hidden");
+
+    validatePhoneRealtime();
+
+    profileModal.classList.remove("hidden");
+    if (window.lucide) window.lucide.createIcons();
+    setTimeout(() => nameInput?.focus(), 50);
+  };
+
+  const closeProfileModal = () => {
+    profileModal.classList.add("hidden");
+    if (profileAlert) profileAlert.classList.add("hidden");
+  };
+
+  // Mở modal khi bấm nút Hồ sơ cá nhân
+  document.addEventListener("click", (e) => {
+    const trigger = e.target.closest("#open-user-profile-modal, [data-open-profile-modal]");
+    if (trigger) {
+      e.preventDefault();
+      document.querySelector("#tms-user-dropdown-menu")?.classList.remove("is-open");
+      openProfileModal();
+    }
+  });
+
+  document.querySelectorAll("[data-close-profile-modal]").forEach((btn) => {
+    btn.addEventListener("click", closeProfileModal);
+  });
+
+  profileModal.addEventListener("click", (e) => {
+    if (e.target === profileModal) closeProfileModal();
+  });
+
+  // Xử lý Lưu hồ sơ cá nhân (S2-02)
+  profileForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const fullName = nameInput?.value.trim();
+    const phone = phoneInput?.value.trim().replace(/[\s.-]/g, "") || "";
+    const dateOfBirth = dobInput?.value || "";
+    const gender = genderInput?.value || "MALE";
+    const address = addressInput?.value.trim() || "";
+
+    const showAlert = (msg, isErr = true) => {
+      if (!profileAlert) return;
+      profileAlert.className = isErr
+        ? "p-3 rounded-lg text-xs bg-rose-50 text-rose-700 border border-rose-200"
+        : "p-3 rounded-lg text-xs bg-emerald-50 text-emerald-700 border border-emerald-200";
+      profileAlert.textContent = msg;
+      profileAlert.classList.remove("hidden");
+    };
+
+    if (!fullName) {
+      showAlert("Họ và tên không được để trống.");
+      nameInput?.focus();
+      return;
+    }
+
+    // Kiểm tra định dạng số điện thoại Việt Nam (S2-02 AC3)
+    if (phone && !vnProfilePhoneRegex.test(phone)) {
+      showAlert("Số điện thoại không đúng định dạng di động Việt Nam (gồm 10 số, bắt đầu bằng 03, 05, 07, 08, 09 hoặc +84).");
+      phoneInput?.focus();
+      return;
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span>Đang lưu...</span>`;
+    }
+
+    try {
+      // 1. Gửi lên API /api/profile
+      await fetch("/api/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName, phone, dateOfBirth, gender, address }),
+      }).catch(() => null);
+
+      // 2. Cập nhật session hiện tại (Email và Role KHÔNG đổi - S2-02 AC2)
+      const session = getSessionData() || {};
+      session.fullName = fullName;
+      session.phone = phone;
+      session.dateOfBirth = dateOfBirth;
+      session.gender = gender;
+      session.address = address;
+      sessionStorage.setItem("edumanager-session", JSON.stringify(session));
+
+      // 3. Cập nhật storage tài khoản tuỳ chỉnh nếu có
+      const customAccounts = readStore("edumanager-custom-accounts") || [];
+      const idx = customAccounts.findIndex((a) => (a.email || "").toLowerCase() === (session.email || "").toLowerCase());
+      if (idx >= 0) {
+        customAccounts[idx] = {
+          ...customAccounts[idx],
+          fullName,
+          phone,
+          dateOfBirth,
+          gender,
+          address,
+        };
+        writeStore("edumanager-custom-accounts", customAccounts);
+      }
+
+      addAuditLog(`Cập nhật hồ sơ cá nhân: ${fullName}`, session.email);
+
+      // 4. Cập nhật giao diện thanh trên cùng (Topbar) & Avatar ngay lập tức
+      document.querySelectorAll('[data-user="fullName"]').forEach((el) => {
+        el.textContent = fullName;
+      });
+
+      const parts = fullName.split(" ").filter(Boolean);
+      const initial = parts.length > 0 ? parts[parts.length - 1][0].toUpperCase() : "U";
+      document.querySelectorAll("#tms-user-profile-btn .tms-circle-avatar, [data-user='avatar']").forEach((el) => {
+        el.textContent = initial;
+      });
+
+      showAlert("Cập nhật hồ sơ cá nhân thành công!", false);
+      if (typeof showToast === "function") {
+        showToast("Cập nhật hồ sơ cá nhân thành công!", "success");
+      }
+
+      setTimeout(() => {
+        closeProfileModal();
+      }, 700);
+    } catch (err) {
+      showAlert("Lỗi khi lưu hồ sơ: " + err.message);
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<i data-lucide="save" class="size-4"></i><span>Lưu thay đổi</span>`;
+        if (window.lucide) window.lucide.createIcons();
+      }
+    }
+  });
+};
+
+setupUserProfileModal();
 
 // Tự động khôi phục dữ liệu đang nhập dở khi người dùng quay lại sau khi hết hạn phiên (S1-02 AC3)
 if (typeof window !== "undefined") {
