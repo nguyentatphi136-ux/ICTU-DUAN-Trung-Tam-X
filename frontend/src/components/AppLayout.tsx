@@ -19,7 +19,7 @@ export const moduleHref = (name: string, to?: string) => to ?? '/module/' + slug
 // S1-06. Layout chung: sidebar trái 248px theo vai trò, thanh trên 64px có tên và vai trò, menu người dùng.
 // Chưa đăng nhập thì chuyển về trang đăng nhập và quay lại đúng trang sau khi đăng nhập (S1-02).
 export function AppLayout({ crumb, module, children }: Props) {
-  const { user, signOut, switchRole } = useAuth();
+  const { user, switchRole } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -40,7 +40,7 @@ export function AppLayout({ crumb, module, children }: Props) {
   const multi = user.roles.length > 1;
   const items = menuFor(user.active);
   const logout = () => {
-    signOut();
+    // Trang đăng nhập mới xoá phiên, để chuyển trang xong trước rồi mới mất user (tránh bị chuyển hướng kiểu "chưa đăng nhập").
     navigate('/dang-nhap', { replace: true, state: { loggedOut: true } });
   };
   const pick = (role: number) => {

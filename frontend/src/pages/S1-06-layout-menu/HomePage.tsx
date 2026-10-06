@@ -9,6 +9,12 @@ const ADMIN_STATS = [
   ['Đăng nhập hôm nay', '132', 'phiên đang mở'],
 ];
 
+// Bản 360px của Học viên trong thiết kế. Khi tích hợp: GET /student/schedule?date=today.
+const LESSONS = [
+  ['18:30 – 20:30', 'Lập trình web cơ bản', 'Phòng 302'],
+  ['Thứ Năm, 18:30', 'Cơ sở dữ liệu', 'Phòng 204'],
+];
+
 // S1-06. Trang chủ theo vai trò đang dùng. Người giữ nhiều vai trò thấy đúng trang của vai trò hiện tại.
 export function HomePage() {
   const { user } = useAuth();
@@ -34,6 +40,18 @@ export function HomePage() {
                   <span>{label}</span>
                   <b>{value}</b>
                   <span>{sub}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {user.active === 0 && (
+            <div className="today">
+              <h3>Lịch học hôm nay</h3>
+              {LESSONS.map(([time, name, room]) => (
+                <div className="panel" key={name}>
+                  <span>{time}</span>
+                  <b>{name}</b>
+                  <small>{room}</small>
                 </div>
               ))}
             </div>
