@@ -2750,3 +2750,117 @@ select.app-input:focus {
   font-size: 14px;
   font-weight: bold;
 }
+
+/* =====================================================================
+   SPRINT 2: S2-01 - NHẬP DANH SÁCH NGƯỜI DÙNG TỪ EXCEL
+   ===================================================================== */
+#import-dropzone {
+  border-width: 2px;
+  border-style: dashed;
+  border-color: #cbd5e1;
+  background-color: #f8fafc;
+  transition: all 0.2s ease-in-out;
+}
+
+#import-dropzone.drag-active {
+  border-color: #10b981;
+  background-color: #ecfdf5;
+  transform: scale(1.01);
+}
+
+.preview-row-valid {
+  background-color: #f0fdf4;
+}
+
+.preview-row-valid:hover {
+  background-color: #dcfce7;
+}
+
+.preview-row-error {
+  background-color: #fff1f2;
+}
+
+.preview-row-error:hover {
+  background-color: #ffe4e6;
+}
+
+.preview-badge-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.preview-badge-status.is-valid {
+  background-color: #dcfce7;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.preview-badge-status.is-error {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+/* =====================================================================
+   SPRINT 2: S2-02 - HỒ SƠ CÁ NHÂN & VALIDATION SỐ ĐIỆN THOẠI VIỆT NAM
+   ===================================================================== */
+.tms-btn-topbar-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.tms-btn-topbar-profile:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+#profile-phone-input.is-valid-phone {
+  border-color: #10b981 !important;
+  background-color: #f0fdf4 !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15) !important;
+}
+
+#profile-phone-input.is-invalid-phone {
+  border-color: #ef4444 !important;
+  background-color: #fef2f2 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+.phone-indicator-valid {
+  color: #10b981;
+  animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.phone-indicator-invalid {
+  color: #ef4444;
+  animation: shakeX 0.3s ease;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes shakeX {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
