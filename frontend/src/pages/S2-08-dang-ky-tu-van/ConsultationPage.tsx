@@ -5,11 +5,10 @@ import { Icon, type IconName } from '../../components/Icon';
 import { Box } from '../../components/ui';
 import { LEADS } from '../../data/leads';
 import { PROGRAMS } from '../../data/training';
-import { PHONE_RE } from '../S1-08-tai-khoan/UserDrawer';
+import { EMAIL_RE, PHONE_RE } from '../../data/validate';
 import '../S1-01-dang-nhap/login.css';
 import './consult.css';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PROMISES: [IconName, string][] = [
   ['phone', 'Gọi lại trong 24 giờ làm việc'],
   ['check', 'Tư vấn miễn phí, không ràng buộc'],

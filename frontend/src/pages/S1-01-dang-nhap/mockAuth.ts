@@ -2,8 +2,9 @@
 // Khi tích hợp: thay login() bằng POST {VITE_API_URL}/auth/login, nhận access token và refresh token (JWT),
 // và để máy chủ đếm số lần sai, khoá tạm 15 phút sau 5 lần sai liên tiếp.
 
-/** roles là chỉ số trong ROLES (src/data/permissions.ts), xếp theo quyền giảm dần: phần tử đầu là vai trò khi vừa đăng nhập. */
-export type Account = { email: string; name: string; roles: number[] };
+import type { Account } from '../../data/auth';
+
+export type { Account };
 
 export const DEMO_PASSWORD = 'Tms@2026';
 export const MAX_ATTEMPTS = 5;

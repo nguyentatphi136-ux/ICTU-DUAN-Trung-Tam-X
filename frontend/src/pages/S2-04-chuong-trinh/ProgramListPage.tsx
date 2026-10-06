@@ -1,34 +1,13 @@
 import { useMemo, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
+import { MODULE, TrainingTabs, useCanEditTraining } from '../../components/TrainingTabs';
 import { Drawer, Filter, Pager, paginate, Pill, RowMenu, Search } from '../../components/ui';
-import { useAuth } from '../../data/auth';
-import { ADMIN_ROLE } from '../../data/permissions';
 import { money, PROGRAMS, type Program } from '../../data/training';
 
-export const MODULE = 'Chương trình & môn học';
 const STATUS = ['Đang áp dụng', 'Ngừng áp dụng'];
-
-/** Chỉ Quản lý đào tạo (toàn quyền module) và quản trị được thêm, sửa, xoá. Vai trò khác chỉ xem. */
-export function useCanEditTraining() {
-  const { user } = useAuth();
-  return !!user && (user.active === 5 || user.active === ADMIN_ROLE);
-}
-
-export function TrainingTabs() {
-  return (
-    <nav className="tabs">
-      <NavLink to="/dao-tao/chuong-trinh" className={({ isActive }) => (isActive ? 'on' : undefined)} end>
-        Chương trình
-      </NavLink>
-      <NavLink to="/dao-tao/mon-hoc" className={({ isActive }) => (isActive ? 'on' : undefined)} end>
-        Môn học
-      </NavLink>
-    </nav>
-  );
-}
 
 // S2-04. Danh sách chương trình đào tạo. Chương trình đang có lớp chạy không được xoá, chỉ được ngừng áp dụng.
 export function ProgramListPage() {

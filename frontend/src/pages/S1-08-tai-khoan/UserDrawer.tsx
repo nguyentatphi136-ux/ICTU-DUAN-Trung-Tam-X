@@ -3,10 +3,9 @@ import { Icon } from '../../components/Icon';
 import { Box, Drawer, initial, Pill } from '../../components/ui';
 import { useAuth } from '../../data/auth';
 import { ADMIN_ROLE, ROLES } from '../../data/permissions';
+import { EMAIL_RE, PHONE_RE } from '../../data/validate';
 import { statusTone, type UserRow } from '../../data/users';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-export const PHONE_RE = /^0\d{9}$/;
 
 type Props = {
   /** null: tạo mới. */

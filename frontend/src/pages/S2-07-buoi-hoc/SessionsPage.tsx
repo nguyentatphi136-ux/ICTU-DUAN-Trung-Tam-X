@@ -6,7 +6,7 @@ import { useToast } from '../../components/Toast';
 import { Box, Modal, Pill } from '../../components/ui';
 import { LESSONS, SUBJECTS, type Lesson } from '../../data/training';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
-import { MODULE, useCanEditTraining } from '../S2-04-chuong-trinh/ProgramListPage';
+import { MODULE, useCanEditTraining } from '../../components/TrainingTabs';
 
 // S2-07. Buổi học của một môn: số thứ tự, chủ đề, mục tiêu. Không khai báo quá số buổi của môn.
 // Nhân bản danh sách buổi từ môn khác, cảnh báo trước khi ghi đè. Khi tích hợp: /training/subjects/:code/sessions.
