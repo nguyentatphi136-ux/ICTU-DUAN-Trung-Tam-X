@@ -32,10 +32,10 @@
               <i data-lucide="menu" aria-hidden="true"></i>
             </button>
             <div class="flex items-center gap-2 text-sm">
-              <span class="text-muted font-medium">Hệ thống</span>
+              <span class="text-muted font-medium">Người dùng & nhật ký</span>
               <span class="text-muted">/</span>
               <h1 class="font-bold text-foreground text-base tracking-tight" id="user-display-name-header">
-                Quản lý tài khoản
+                Tài khoản
               </h1>
             </div>
           </div>
@@ -173,83 +173,85 @@
             </div>
           </section>
 
-          <section id="tai-khoan" class="app-card">
-            <div class="app-card-header flex flex-wrap items-center justify-between gap-4">
+          <section id="tai-khoan" class="app-card overflow-hidden">
+            <!-- Header bar chuẩn theo Screenshot 4 -->
+            <div class="p-6 pb-4 flex flex-wrap items-center justify-between gap-4">
               <div>
-                <h2 class="app-card-title">
-                  <i data-lucide="user-cog" aria-hidden="true"></i>Quản lý tài khoản người dùng
+                <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">
+                  Tài khoản người dùng
                 </h2>
-                <p class="app-card-subtitle">
-                  Tạo, chỉnh sửa, phân quyền và khóa tài khoản nhân sự / học viên (S1-08, S1-10)
+                <p id="account-total-count-label" class="text-sm text-slate-500 mt-1 font-medium">
+                  300 tài khoản
                 </p>
               </div>
-              <button type="button" id="open-create-user-modal" class="app-btn app-btn-primary flex items-center gap-1.5">
-                <i data-lucide="user-plus" class="size-4"></i> Thêm tài khoản mới
-              </button>
+              <div class="flex items-center gap-3">
+                <button type="button" id="btn-import-excel" class="app-btn tms-btn-excel flex items-center gap-2">
+                  <i data-lucide="upload" class="size-4"></i>
+                  <span>Nhập từ Excel</span>
+                </button>
+                <button type="button" id="open-create-user-modal" class="app-btn tms-btn-teal flex items-center gap-1.5">
+                  <i data-lucide="plus" class="size-4"></i>
+                  <span>Thêm tài khoản</span>
+                </button>
+              </div>
             </div>
 
-            <!-- Thanh Tìm kiếm & Bộ lọc (S1-08) -->
-            <div class="p-4 border-b border-border bg-surface-muted/40 flex flex-wrap items-center gap-3">
-              <div class="relative flex-1 min-w-[220px]">
-                <i data-lucide="search" class="size-4 text-muted absolute left-3 top-1/2 -translate-y-1/2"></i>
+            <!-- Thanh Tìm kiếm & Bộ lọc (S1-08, Screenshot 4) -->
+            <div class="px-6 py-4 flex flex-wrap items-center gap-3 border-y border-slate-100 bg-white">
+              <div class="relative flex-1 min-w-[280px]">
+                <i data-lucide="search" class="size-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
                 <input
                   type="text"
                   id="account-search-input"
-                  class="app-input w-full ps-9"
-                  placeholder="Tìm theo họ tên, email, số điện thoại..."
+                  class="app-input w-full ps-10 border-slate-200 rounded-lg text-sm placeholder:text-slate-400"
+                  placeholder="Tìm theo tên, email, số điện thoại"
                 />
               </div>
-              <div class="w-44">
-                <select id="account-role-filter" class="app-input w-full">
-                  <option value="ALL">Tất cả vai trò</option>
+              <div class="w-48">
+                <select id="account-role-filter" class="app-input w-full border-slate-200 rounded-lg text-sm text-slate-700">
+                  <option value="ALL">Vai trò: Tất cả</option>
                   <option value="student">Học viên</option>
                   <option value="instructor">Giảng viên</option>
                   <option value="ta">Trợ giảng</option>
                   <option value="training-manager">Quản lý đào tạo</option>
                   <option value="admissions">Tư vấn tuyển sinh</option>
                   <option value="accountant">Kế toán</option>
-                  <option value="admin">Quản trị viên</option>
+                  <option value="admin">Quản trị hệ thống</option>
                 </select>
               </div>
-              <div class="w-40">
-                <select id="account-status-filter" class="app-input w-full">
-                  <option value="ALL">Tất cả trạng thái</option>
+              <div class="w-44">
+                <select id="account-status-filter" class="app-input w-full border-slate-200 rounded-lg text-sm text-slate-700">
+                  <option value="ALL">Trạng thái: Tất cả</option>
                   <option value="ACTIVE">Hoạt động</option>
+                  <option value="PENDING">Chờ kích hoạt</option>
                   <option value="LOCKED">Đã khoá</option>
                 </select>
               </div>
-              <button type="button" id="account-reset-filter-btn" class="app-btn app-btn-outline app-btn-sm" title="Đặt lại bộ lọc">
-                <i data-lucide="rotate-ccw" class="size-3.5 inline mr-1"></i>Đặt lại
-              </button>
             </div>
 
             <div class="app-table-wrap">
-              <table id="account-table" class="app-table">
+              <table id="account-table" class="app-table w-full">
                 <thead>
-                  <tr>
-                    <th>Họ tên</th>
-                    <th>Email</th>
-                    <th>Số điện thoại</th>
-                    <th>Vai trò</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
+                  <tr class="border-b border-slate-100 bg-slate-50/50 text-slate-600 text-xs font-bold uppercase tracking-wider">
+                    <th class="py-3.5 px-6 text-left">Họ tên</th>
+                    <th class="py-3.5 px-6 text-left">Email</th>
+                    <th class="py-3.5 px-6 text-left">Số điện thoại</th>
+                    <th class="py-3.5 px-6 text-left">Vai trò</th>
+                    <th class="py-3.5 px-6 text-left">Trạng thái</th>
+                    <th class="py-3.5 px-6 text-center" style="width: 50px;"></th>
                   </tr>
                 </thead>
-                <tbody></tbody>
+                <tbody class="divide-y divide-slate-100 text-sm"></tbody>
               </table>
             </div>
 
-            <!-- Phân trang 20 dòng / trang (S1-08) -->
-            <div id="account-pagination" class="flex flex-wrap items-center justify-between p-4 border-t border-border text-sm gap-2">
-              <span id="account-pagination-info" class="text-muted">Đang tải dữ liệu...</span>
+            <!-- Phân trang 20 dòng / trang (S1-08, Screenshot 4) -->
+            <div id="account-pagination" class="flex flex-wrap items-center justify-between px-6 py-4 border-t border-slate-100 text-sm gap-2">
+              <span id="account-pagination-info" class="text-slate-500 font-medium">Hiển thị 1–20 trong 300 tài khoản</span>
               <div class="flex items-center gap-1.5" id="account-pagination-controls">
-                <button type="button" class="app-btn app-btn-outline app-btn-sm" id="account-prev-page" disabled>
-                  <i data-lucide="chevron-left" class="size-4"></i> Trước
-                </button>
-                <div id="account-page-numbers" class="flex items-center gap-1"></div>
-                <button type="button" class="app-btn app-btn-outline app-btn-sm" id="account-next-page" disabled>
-                  Sau <i data-lucide="chevron-right" class="size-4"></i>
-                </button>
+                <button type="button" class="hidden" id="account-prev-page" disabled></button>
+                <div id="account-page-numbers" class="flex items-center gap-1.5"></div>
+                <button type="button" class="hidden" id="account-next-page" disabled></button>
               </div>
             </div>
           </section>
@@ -919,74 +921,73 @@
       </div>
     </div>
 
-    <!-- Modal Khoá tài khoản & Cảnh báo bàn giao lớp học (S1-10) -->
-    <div id="lock-account-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden" role="dialog" aria-modal="true" aria-labelledby="lock-account-title">
-      <div class="bg-surface rounded-xl border border-border shadow-2xl w-full max-w-lg p-6 relative">
-        <div class="flex items-center justify-between pb-3 border-b border-border">
-          <h3 id="lock-account-title" class="font-bold text-lg flex items-center gap-2 text-rose-600">
-            <i data-lucide="user-x" class="size-5"></i> Khoá tài khoản người dùng
-          </h3>
-          <button type="button" class="app-icon-btn" data-close-lock-account aria-label="Đóng">
-            <i data-lucide="x" class="size-5"></i>
-          </button>
-        </div>
-
-        <form id="lock-account-form" class="mt-4 space-y-4">
+    <!-- Modal Khoá tài khoản & Cảnh báo bàn giao lớp học (S1-10, Screenshot 5) -->
+    <div id="lock-account-modal" class="tms-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="lock-account-modal-title">
+      <div class="tms-modal-card">
+        <form id="lock-account-form" class="space-y-4">
           <input type="hidden" id="lock-account-email" />
-          
-          <div class="p-3.5 rounded-lg bg-surface-muted border border-border text-sm space-y-1.5">
-            <div class="flex items-center justify-between">
-              <span class="text-muted">Họ và tên:</span>
-              <span id="lock-account-name" class="font-semibold text-foreground"></span>
+
+          <!-- Header Icon & Title -->
+          <div class="flex items-start gap-3.5">
+            <div class="w-10 h-10 rounded-xl border border-rose-200 bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+              <i data-lucide="lock" class="size-5"></i>
             </div>
-            <div class="flex items-center justify-between">
-              <span class="text-muted">Email:</span>
-              <span id="lock-account-email-text" class="font-mono text-xs"></span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-muted">Vai trò:</span>
-              <span id="lock-account-role" class="app-badge"></span>
+            <div>
+              <h3 id="lock-account-modal-title" class="font-bold text-lg text-slate-900 leading-tight">
+                Khoá tài khoản người dùng?
+              </h3>
+              <p id="lock-account-modal-subtitle" class="text-xs text-slate-500 font-medium mt-0.5">
+                Nhân sự · email@tms.vn
+              </p>
+              <!-- Hidden compatibility fields -->
+              <span id="lock-account-name" class="hidden"></span>
+              <span id="lock-account-email-text" class="hidden"></span>
+              <span id="lock-account-role" class="hidden"></span>
             </div>
           </div>
 
-          <!-- Cảnh báo lớp học cần bàn giao (S1-10) -->
-          <div id="lock-handover-alert" class="p-3.5 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-700/50 text-amber-900 dark:text-amber-200 text-sm hidden">
-            <div class="flex items-start gap-2.5">
-              <i data-lucide="alert-triangle" class="size-5 text-amber-600 shrink-0 mt-0.5"></i>
-              <div class="space-y-1">
-                <strong class="font-semibold text-amber-800 dark:text-amber-300 block">
-                  Cảnh báo: Nhân sự đang phụ trách lớp học!
-                </strong>
-                <p class="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-                  Tài khoản này hiện đang đảm nhiệm giảng dạy / trợ giảng các lớp chưa kết thúc. Vui lòng bàn giao lớp trước khi khóa hoặc lưu ý phân công giảng viên mới:
-                </p>
-                <ul id="lock-handover-classes" class="list-disc list-inside text-xs font-medium space-y-1 mt-1 text-amber-900 dark:text-amber-200">
-                </ul>
-              </div>
-            </div>
-          </div>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Tài khoản sẽ không đăng nhập được và mọi phiên đang mở bị thu hồi ngay.
+          </p>
 
-          <!-- Lý do khóa tài khoản (bắt buộc) -->
+          <!-- Lý do khoá (bắt buộc) -->
           <div>
-            <label for="lock-reason-input" class="block text-sm font-semibold mb-1">
-              Lý do khoá tài khoản <span class="text-rose-500">*</span>
+            <label for="lock-reason-input" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              Lý do khoá (bắt buộc)
             </label>
             <textarea
               id="lock-reason-input"
               rows="3"
-              class="app-input w-full"
-              placeholder="Nhập lý do khóa (bắt buộc, ví dụ: Nghỉ việc, Vi phạm quy chế bảo mật, Tạm đình chỉ công tác...)"
+              class="app-input w-full border-slate-200 rounded-lg text-sm"
+              placeholder="Nghỉ việc từ 05/10/2026"
               required
             ></textarea>
-            <p class="text-xs text-muted mt-1">Lý do khóa sẽ được lưu vào lịch sử tài khoản và ghi nhận trong nhật ký hệ thống (Audit Log).</p>
           </div>
 
-          <div id="lock-account-error" class="p-3 rounded-lg text-sm bg-rose-500/10 text-rose-500 border border-rose-500/20 hidden"></div>
+          <!-- Cảnh báo lớp học cần bàn giao (S1-10, Screenshot 5) -->
+          <div id="lock-handover-alert" class="tms-handover-box hidden">
+            <div class="flex items-start gap-2.5">
+              <i data-lucide="alert-triangle" class="size-5 text-amber-500 shrink-0 mt-0.5"></i>
+              <div class="space-y-1 w-full">
+                <p id="lock-handover-count-text" class="font-bold text-amber-900 text-xs">
+                  2 lớp đang do người này phụ trách cần bàn giao
+                </p>
+                <div id="lock-handover-classes" class="text-xs font-semibold text-slate-800 space-y-0.5 mt-1.5">
+                </div>
+                <p class="text-[11px] text-slate-500 mt-1.5">
+                  Quản lý đào tạo sẽ nhận cảnh báo để phân công lại.
+                </p>
+              </div>
+            </div>
+          </div>
 
-          <div class="flex justify-end gap-2 pt-3 border-t border-border">
-            <button type="button" class="app-btn app-btn-outline" data-close-lock-account>Hủy bỏ</button>
-            <button type="submit" id="lock-confirm-submit-btn" class="app-btn bg-rose-600 text-white hover:bg-rose-700 flex items-center gap-1.5">
-              <i data-lucide="lock" class="size-4"></i> Xác nhận khoá tài khoản
+          <div id="lock-account-error" class="p-3 rounded-lg text-sm bg-rose-50 text-rose-600 border border-rose-200 hidden"></div>
+
+          <div class="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+            <button type="button" class="app-btn tms-btn-drawer-cancel" data-close-lock-account>Huỷ</button>
+            <button type="submit" id="lock-confirm-submit-btn" class="app-btn tms-btn-danger-red flex items-center gap-1.5">
+              <i data-lucide="lock" class="size-4"></i>
+              <span>Khoá tài khoản</span>
             </button>
           </div>
         </form>
@@ -994,9 +995,9 @@
     </div>
 
     <!-- Modal Mở khoá tài khoản người dùng (S1-10) -->
-    <div id="unlock-account-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden" role="dialog" aria-modal="true" aria-labelledby="unlock-account-title">
-      <div class="bg-surface rounded-xl border border-border shadow-2xl w-full max-w-md p-6 relative">
-        <div class="flex items-center justify-between pb-3 border-b border-border">
+    <div id="unlock-account-modal" class="tms-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="unlock-account-title">
+      <div class="tms-modal-card">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
           <h3 id="unlock-account-title" class="font-bold text-lg flex items-center gap-2 text-emerald-600">
             <i data-lucide="unlock" class="size-5"></i> Mở khoá tài khoản người dùng
           </h3>
@@ -1008,21 +1009,21 @@
         <form id="unlock-account-form" class="mt-4 space-y-4">
           <input type="hidden" id="unlock-account-email" />
 
-          <div class="p-3.5 rounded-lg bg-surface-muted border border-border text-sm space-y-1.5">
+          <div class="p-3.5 rounded-lg bg-slate-50 border border-slate-200 text-sm space-y-1.5">
             <div class="flex items-center justify-between">
-              <span class="text-muted">Họ và tên:</span>
-              <span id="unlock-account-name" class="font-semibold text-foreground"></span>
+              <span class="text-slate-500">Họ và tên:</span>
+              <span id="unlock-account-name" class="font-semibold text-slate-800"></span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-muted">Email:</span>
+              <span class="text-slate-500">Email:</span>
               <span id="unlock-account-email-text" class="font-mono text-xs"></span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-muted">Vai trò:</span>
+              <span class="text-slate-500">Vai trò:</span>
               <span id="unlock-account-role" class="app-badge"></span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-muted">Lý do khóa trước đó:</span>
+              <span class="text-slate-500">Lý do khóa:</span>
               <span id="unlock-account-reason" class="text-rose-600 font-medium text-xs"></span>
             </div>
           </div>
@@ -1030,15 +1031,15 @@
           <div class="p-3 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-800 text-xs leading-relaxed flex items-start gap-2">
             <i data-lucide="check-circle-2" class="size-4 text-emerald-600 shrink-0 mt-0.5"></i>
             <div>
-              <strong>Xác nhận kích hoạt lại:</strong> Sau khi mở khoá, tài khoản sẽ chuyển về trạng thái <strong>Hoạt động</strong> và có thể đăng nhập bình thường. Mọi giới hạn khóa tạm (nếu có) sẽ được dỡ bỏ ngay lập tức.
+              <strong>Xác nhận mở khoá:</strong> Tài khoản sẽ chuyển về trạng thái <strong>Hoạt động</strong> và có thể đăng nhập bình thường.
             </div>
           </div>
 
-          <div id="unlock-account-error" class="p-3 rounded-lg text-sm bg-rose-500/10 text-rose-500 border border-rose-500/20 hidden"></div>
+          <div id="unlock-account-error" class="p-3 rounded-lg text-sm bg-rose-50 text-rose-500 border border-rose-200 hidden"></div>
 
-          <div class="flex justify-end gap-2 pt-3 border-t border-border">
-            <button type="button" class="app-btn app-btn-outline" data-close-unlock-account>Hủy bỏ</button>
-            <button type="submit" id="unlock-confirm-submit-btn" class="app-btn bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1.5">
+          <div class="flex justify-end gap-2 pt-3 border-t border-slate-100">
+            <button type="button" class="app-btn tms-btn-drawer-cancel" data-close-unlock-account>Huỷ</button>
+            <button type="submit" id="unlock-confirm-submit-btn" class="app-btn bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1.5 px-4 py-2 rounded-lg font-semibold text-sm">
               <i data-lucide="unlock" class="size-4"></i> Xác nhận mở khoá
             </button>
           </div>
@@ -1046,185 +1047,257 @@
       </div>
     </div>
 
-    <!-- Modal Tạo tài khoản mới (S1-08) -->
-    <div id="create-user-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden" role="dialog" aria-modal="true" aria-labelledby="create-user-title">
-      <div class="bg-surface rounded-xl border border-border shadow-2xl w-full max-w-lg p-6 relative">
-        <div class="flex items-center justify-between pb-3 border-b border-border">
-          <h3 id="create-user-title" class="font-bold text-lg flex items-center gap-2 text-primary">
-            <i data-lucide="user-plus" class="size-5"></i> Thêm tài khoản người dùng mới
+    <!-- Slide-over Drawer Thêm tài khoản mới (S1-08, Screenshot 2) -->
+    <div id="create-user-modal" class="tms-drawer-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="create-user-title">
+      <div class="tms-drawer">
+        <div class="tms-drawer-header">
+          <h3 id="create-user-title" class="text-lg font-bold text-slate-900">
+            Thêm tài khoản
           </h3>
-          <button type="button" class="app-icon-btn" data-close-create-user aria-label="Đóng">
+          <button type="button" class="tms-drawer-close-btn" data-close-create-user aria-label="Đóng">
             <i data-lucide="x" class="size-5"></i>
           </button>
         </div>
 
-        <form id="create-user-form" class="mt-4 space-y-4">
-          <div>
-            <label for="new-user-name" class="block text-sm font-semibold mb-1">
-              Họ và tên <span class="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="new-user-name"
-              class="app-input w-full"
-              required
-              placeholder="Ví dụ: Nguyễn Văn An"
-            />
-          </div>
-
-          <div>
-            <label for="new-user-email" class="block text-sm font-semibold mb-1">
-              Email đăng nhập <span class="text-rose-500">*</span>
-            </label>
-            <input
-              type="email"
-              id="new-user-email"
-              class="app-input w-full"
-              required
-              placeholder="Ví dụ: an.nguyen@edumanager.vn"
-            />
-            <p class="text-xs text-muted mt-1">Hệ thống sẽ kiểm tra chống trùng lặp email.</p>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <form id="create-user-form" class="flex-1 flex flex-col justify-between overflow-hidden">
+          <div class="tms-drawer-body">
+            <!-- Họ và tên -->
             <div>
-              <label for="new-user-phone" class="block text-sm font-semibold mb-1">
+              <label for="new-user-name" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Họ và tên
+              </label>
+              <input
+                type="text"
+                id="new-user-name"
+                class="app-input w-full border-slate-200 rounded-lg text-sm"
+                required
+                placeholder="Ngô Thanh Tú"
+              />
+            </div>
+
+            <!-- Email -->
+            <div>
+              <label for="new-user-email" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Email
+              </label>
+              <div class="relative">
+                <i data-lucide="mail" class="size-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input
+                  type="email"
+                  id="new-user-email"
+                  class="app-input w-full ps-10 border-slate-200 rounded-lg text-sm"
+                  required
+                  placeholder="hoangnam@tms.vn"
+                />
+              </div>
+              <p id="create-user-email-error" class="text-xs text-rose-500 font-medium mt-1.5 hidden"></p>
+            </div>
+
+            <!-- Số điện thoại -->
+            <div>
+              <label for="new-user-phone" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 Số điện thoại
               </label>
               <input
                 type="tel"
                 id="new-user-phone"
-                class="app-input w-full"
-                placeholder="Ví dụ: 0912345678"
+                class="app-input w-full border-slate-200 rounded-lg text-sm"
+                placeholder="0936 580 214"
               />
             </div>
 
+            <!-- Vai trò (Multi-select chips) -->
             <div>
-              <label for="new-user-role" class="block text-sm font-semibold mb-1">
-                Vai trò ban đầu <span class="text-rose-500">*</span>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Vai trò
               </label>
-              <select id="new-user-role" class="app-input w-full" required>
-                <option value="student">Học viên (Student)</option>
-                <option value="instructor">Giảng viên (Instructor)</option>
-                <option value="ta">Trợ giảng (TA)</option>
+              <div class="tms-role-chips-box relative" id="create-role-chips-container">
+                <div id="create-selected-role-chips" class="flex flex-wrap items-center gap-1.5"></div>
+                <div class="relative">
+                  <button type="button" id="create-toggle-role-dropdown" class="tms-btn-add-role">
+                    <span>Thêm vai trò</span>
+                    <i data-lucide="chevron-down" class="size-3.5"></i>
+                  </button>
+                  <div id="create-role-dropdown-menu" class="tms-role-dropdown-menu hidden">
+                  </div>
+                </div>
+              </div>
+              <!-- Hidden select for form submission and test compatibility -->
+              <select id="new-user-role" class="hidden">
+                <option value="student">Học viên</option>
+                <option value="instructor">Giảng viên</option>
+                <option value="ta">Trợ giảng</option>
                 <option value="training-manager">Quản lý đào tạo</option>
                 <option value="admissions">Tư vấn tuyển sinh</option>
                 <option value="accountant">Kế toán</option>
-                <option value="admin">Quản trị viên (Admin)</option>
+                <option value="admin">Quản trị hệ thống</option>
               </select>
+              <p class="text-xs text-slate-400 mt-1.5">Một người có thể giữ nhiều vai trò cùng lúc.</p>
+            </div>
+
+            <!-- Callout: Email kích hoạt sẽ được gửi ngay (Screenshot 2) -->
+            <div class="tms-drawer-callout">
+              <div class="size-8 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center shrink-0">
+                <i data-lucide="mail" class="size-4"></i>
+              </div>
+              <div>
+                <p class="font-bold text-sm text-slate-800">Email kích hoạt sẽ được gửi ngay</p>
+                <p class="text-xs text-slate-500 mt-0.5">Kèm mật khẩu tạm, người dùng đổi lại ở lần đăng nhập đầu.</p>
+              </div>
+            </div>
+
+            <!-- Hidden password for backend/test compatibility -->
+            <input type="hidden" id="new-user-password" value="Edu@2026" />
+
+            <div id="create-user-alert" class="p-3 rounded-lg text-sm hidden"></div>
+
+            <!-- Card thông báo tạo thành công -->
+            <div id="create-user-success-box" class="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 hidden space-y-3">
+              <div class="flex items-center gap-2 font-bold text-emerald-700">
+                <i data-lucide="check-circle" class="size-5 text-emerald-600"></i>
+                <span>Tạo tài khoản thành công!</span>
+              </div>
+              <div class="bg-white rounded-lg p-3 border border-emerald-100 text-xs space-y-1.5 font-mono text-slate-800">
+                <div><span class="text-slate-400">Họ tên:</span> <strong id="success-user-name"></strong></div>
+                <div><span class="text-slate-400">Email:</span> <strong id="success-user-email"></strong></div>
+                <div><span class="text-slate-400">Mật khẩu tạm:</span> <strong id="success-user-pass" class="text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded"></strong></div>
+              </div>
+              <div class="flex items-center justify-end gap-2 pt-1">
+                <button type="button" id="btn-copy-new-account" class="app-btn app-btn-sm app-btn-outline flex items-center gap-1">
+                  <i data-lucide="copy" class="size-3.5"></i> <span id="copy-btn-text">Sao chép thông tin</span>
+                </button>
+                <button type="button" class="app-btn app-btn-sm tms-btn-teal" data-close-create-user>
+                  Đóng
+                </button>
+              </div>
             </div>
           </div>
 
-          <div>
-            <div class="flex items-center justify-between mb-1">
-              <label for="new-user-password" class="block text-sm font-semibold">
-                Mật khẩu khởi tạo <span class="text-rose-500">*</span>
-              </label>
-              <button type="button" id="btn-generate-password" class="text-xs text-primary font-medium hover:underline flex items-center gap-1">
-                <i data-lucide="refresh-cw" class="size-3"></i> Sinh mật khẩu ngẫu nhiên
-              </button>
-            </div>
-            <div class="relative">
-              <input
-                type="text"
-                id="new-user-password"
-                class="app-input w-full pr-10 font-mono"
-                required
-                value="Edu@2026"
-                placeholder="Nhập hoặc tạo mật khẩu"
-              />
-              <button
-                type="button"
-                id="toggle-new-user-password"
-                class="absolute right-2 top-1/2 -translate-y-1/2 text-muted hover:text-foreground p-1"
-                aria-label="Ẩn/Hiện mật khẩu"
-              >
-                <i data-lucide="eye" class="size-4"></i>
-              </button>
-            </div>
-            <p class="text-xs text-muted mt-1">Mật khẩu dùng để đăng nhập lần đầu và hệ thống sẽ gửi email kích hoạt.</p>
-          </div>
-
-          <div class="p-3 rounded-lg bg-surface-muted/60 border border-border text-xs text-muted space-y-1">
-            <div class="flex items-center gap-2 text-foreground font-medium">
-              <i data-lucide="mail-check" class="size-4 text-emerald-600"></i>
-              Tự động gửi email kích hoạt kèm hướng dẫn đăng nhập
-            </div>
-            <p>Hệ thống mô phỏng gửi email thông báo kích hoạt tài khoản và mật khẩu tới hòm thư người dùng.</p>
-          </div>
-
-          <div id="create-user-alert" class="p-3 rounded-lg text-sm hidden"></div>
-
-          <!-- Card thông báo tạo thành công kèm thông tin chi tiết -->
-          <div id="create-user-success-box" class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-900 hidden space-y-3">
-            <div class="flex items-center gap-2 font-bold text-emerald-700">
-              <i data-lucide="circle-check" class="size-5 text-emerald-600"></i>
-              <span>Tạo tài khoản thành công!</span>
-            </div>
-            <div class="bg-surface rounded-lg p-3 border border-emerald-500/20 text-xs space-y-1.5 font-mono text-foreground">
-              <div><span class="text-muted">Họ tên:</span> <strong id="success-user-name"></strong></div>
-              <div><span class="text-muted">Email:</span> <strong id="success-user-email"></strong></div>
-              <div><span class="text-muted">Mật khẩu:</span> <strong id="success-user-pass" class="text-rose-600 font-bold text-sm bg-rose-50 px-1.5 py-0.5 rounded"></strong></div>
-            </div>
-            <div class="flex items-center justify-end gap-2 pt-1">
-              <button type="button" id="btn-copy-new-account" class="app-btn app-btn-sm app-btn-outline flex items-center gap-1">
-                <i data-lucide="copy" class="size-3.5"></i> <span id="copy-btn-text">Sao chép thông tin</span>
-              </button>
-              <button type="button" class="app-btn app-btn-sm app-btn-primary" data-close-create-user>
-                Đóng
-              </button>
-            </div>
-          </div>
-
-          <div id="create-user-actions" class="flex justify-end gap-2 pt-3 border-t border-border">
-            <button type="button" class="app-btn app-btn-outline" data-close-create-user>Hủy bỏ</button>
-            <button type="submit" id="create-user-submit-btn" class="app-btn app-btn-primary flex items-center gap-1.5">
-              <i data-lucide="check" class="size-4"></i> Tạo tài khoản
-            </button>
+          <div id="create-user-actions" class="tms-drawer-footer">
+            <button type="button" class="app-btn tms-btn-drawer-cancel" data-close-create-user>Huỷ</button>
+            <button type="submit" id="create-user-submit-btn" class="app-btn tms-btn-teal">Tạo tài khoản</button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Modal Chỉnh sửa tài khoản (S1-08) -->
-    <div id="edit-user-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden" role="dialog" aria-modal="true" aria-labelledby="edit-user-title">
-      <div class="bg-surface rounded-xl border border-border shadow-2xl w-full max-w-md p-6 relative">
-        <div class="flex items-center justify-between pb-3 border-b border-border">
-          <h3 id="edit-user-title" class="font-bold text-lg flex items-center gap-2">
-            <i data-lucide="user-pen" class="size-5 text-primary"></i> Sửa thông tin tài khoản
+    <!-- Slide-over Drawer Sửa tài khoản (S1-08, Screenshot 3) -->
+    <div id="edit-user-modal" class="tms-drawer-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="edit-user-title">
+      <div class="tms-drawer">
+        <div class="tms-drawer-header">
+          <h3 id="edit-user-title" class="text-lg font-bold text-slate-900">
+            Sửa tài khoản
           </h3>
-          <button type="button" class="app-icon-btn" data-close-edit-user aria-label="Đóng">
+          <button type="button" class="tms-drawer-close-btn" data-close-edit-user aria-label="Đóng">
             <i data-lucide="x" class="size-5"></i>
           </button>
         </div>
 
-        <form id="edit-user-form" class="mt-4 space-y-4">
+        <form id="edit-user-form" class="flex-1 flex flex-col justify-between overflow-hidden">
           <input type="hidden" id="edit-user-id" />
-          
-          <div>
-            <label class="block text-sm font-semibold mb-1">Email đăng nhập</label>
-            <input type="email" id="edit-user-email" class="app-input w-full bg-surface-muted cursor-not-allowed" readonly />
+
+          <div class="tms-drawer-body">
+            <!-- Header User Profile Summary (Screenshot 3) -->
+            <div class="flex items-center gap-3.5 pb-2">
+              <div id="edit-user-header-avatar" class="tms-edit-avatar">
+                N
+              </div>
+              <div>
+                <p id="edit-user-header-name" class="font-extrabold text-slate-900 text-base leading-tight">Lê Hoàng Nam</p>
+                <div class="mt-1">
+                  <span id="edit-user-header-status" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    Hoạt động
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Họ và tên -->
+            <div>
+              <label for="edit-user-name" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Họ và tên
+              </label>
+              <input
+                type="text"
+                id="edit-user-name"
+                class="app-input w-full border-slate-200 rounded-lg text-sm"
+                required
+              />
+            </div>
+
+            <!-- Email (readonly) -->
+            <div>
+              <label for="edit-user-email" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Email
+              </label>
+              <div class="relative">
+                <i data-lucide="mail" class="size-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input
+                  type="email"
+                  id="edit-user-email"
+                  class="app-input w-full ps-10 border-slate-200 rounded-lg text-sm bg-slate-50 text-slate-600 cursor-not-allowed"
+                  readonly
+                />
+              </div>
+              <p class="text-xs text-slate-400 mt-1.5">Email là tên đăng nhập, không đổi được ở đây.</p>
+            </div>
+
+            <!-- Số điện thoại -->
+            <div>
+              <label for="edit-user-phone" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Số điện thoại
+              </label>
+              <input
+                type="tel"
+                id="edit-user-phone"
+                class="app-input w-full border-slate-200 rounded-lg text-sm"
+              />
+            </div>
+
+            <!-- Vai trò (Multi-select chips, Screenshot 3) -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Vai trò
+              </label>
+              <div class="tms-role-chips-box relative" id="edit-role-chips-container">
+                <div id="edit-selected-role-chips" class="flex flex-wrap items-center gap-1.5"></div>
+                <div class="relative">
+                  <button type="button" id="edit-toggle-role-dropdown" class="tms-btn-add-role">
+                    <i data-lucide="plus" class="size-3.5"></i>
+                    <span>Thêm vai trò</span>
+                  </button>
+                  <div id="edit-role-dropdown-menu" class="tms-role-dropdown-menu hidden">
+                  </div>
+                </div>
+              </div>
+              <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                Thay đổi vai trò có hiệu lực ngay ở lần thao tác tiếp theo. Người dùng không cần đăng nhập lại. Bạn không thể tự thu hồi vai trò Quản trị hệ thống của chính mình.
+              </p>
+            </div>
+
+            <!-- Trạng thái tài khoản (Nút khoá / mở khoá tài khoản) -->
+            <div>
+              <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Trạng thái tài khoản
+              </label>
+              <div id="edit-drawer-status-action-box">
+                <button type="button" id="edit-drawer-lock-btn" class="tms-btn-lock-account">
+                  <i data-lucide="lock" class="size-4"></i>
+                  <span>Khoá tài khoản</span>
+                </button>
+                <button type="button" id="edit-drawer-unlock-btn" class="tms-btn-unlock-account hidden">
+                  <i data-lucide="unlock" class="size-4"></i>
+                  <span>Mở khoá tài khoản</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="edit-user-alert" class="p-3 rounded-lg text-sm hidden"></div>
           </div>
 
-          <div>
-            <label for="edit-user-name" class="block text-sm font-semibold mb-1">
-              Họ và tên <span class="text-rose-500">*</span>
-            </label>
-            <input type="text" id="edit-user-name" class="app-input w-full" required />
-          </div>
-
-          <div>
-            <label for="edit-user-phone" class="block text-sm font-semibold mb-1">Số điện thoại</label>
-            <input type="tel" id="edit-user-phone" class="app-input w-full" placeholder="Số điện thoại liên hệ" />
-          </div>
-
-          <div id="edit-user-alert" class="p-3 rounded-lg text-sm hidden"></div>
-
-          <div class="flex justify-end gap-2 pt-3 border-t border-border">
-            <button type="button" class="app-btn app-btn-outline" data-close-edit-user>Hủy bỏ</button>
-            <button type="submit" id="edit-user-submit-btn" class="app-btn app-btn-primary flex items-center gap-1.5">
-              <i data-lucide="save" class="size-4"></i> Lưu thông tin
-            </button>
+          <div class="tms-drawer-footer">
+            <button type="button" class="app-btn tms-btn-drawer-cancel" data-close-edit-user>Huỷ</button>
+            <button type="submit" id="edit-user-submit-btn" class="app-btn tms-btn-teal">Lưu thay đổi</button>
           </div>
         </form>
       </div>
