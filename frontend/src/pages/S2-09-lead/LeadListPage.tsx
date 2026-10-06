@@ -6,7 +6,7 @@ import { Filter, Pager, paginate, Pill, Search } from '../../components/ui';
 import { useAuth } from '../../data/auth';
 import { ADMIN_ROLE } from '../../data/permissions';
 import { COUNSELORS, LEAD_STATUSES, leadTone, LEADS, SOURCES, viDate, type Lead } from '../../data/leads';
-import { AssignDialog } from './AssignDialog';
+import { AssignLeadsDialog, assignLeads } from './AssignLeadsDialog';
 import { LeadDrawer } from './LeadDrawer';
 import './lead.css';
 
@@ -188,12 +188,11 @@ export function LeadListPage() {
         />
       )}
       {assigning && (
-        <AssignDialog
+        <AssignLeadsDialog
           leads={leads.filter((l) => picked.includes(l.id))}
-          load={(c) => leads.filter((l) => l.owner === c && l.status !== 'Đã nhập học' && l.status !== 'Không quan tâm').length}
-          onClose={() => setAssigning(false)}
-          onAssign={(c) => {
-            commit(leads.map((l) => (picked.includes(l.id) ? { ...l, owner: c, status: l.status === 'Mới' ? 'Đang chăm sóc' : l.status } : l)));
+          onCancel={() => setAssigning(false)}
+          onAssign={(c, note) => {
+            commit(assignLeads(leads, picked, c, user!.name, new Date().toISOString(), note));
             toast(`Đã phân công ${picked.length} lead`, `Giao cho ${c}.`);
             setPicked([]);
             setAssigning(false);
