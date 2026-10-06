@@ -109,12 +109,12 @@ const ROLES = {
 const DEMO_ACCOUNTS = [
   {
     email: "admin@edumanager.vn",
-    aliases: ["admin", "admin@example.com", "admin@edumanager.vn", "admin@tms.vn"],
+    aliases: ["admin", "admin@example.com", "admin@edumanager.vn", "admin@tms.vn", "quocbao@tms.vn", "quocbao"],
     password: "Admin@123",
     passwords: ["Admin@123", "admin123"],
     role: "admin",
-    fullName: "Quản trị viên",
-    phone: "0988123456",
+    fullName: "Trần Quốc Bảo",
+    phone: "0918 200 300",
   },
   {
     email: "quanlydaotao@edumanager.vn",
@@ -727,14 +727,13 @@ const escapeHtml = (value) =>
       })[char],
   );
 
-const getInitials = (name) =>
-  name
-    .split(" ")
-    .filter(Boolean)
-    .slice(-2)
-    .map((word) => word[0])
-    .join("")
-    .toUpperCase();
+const getInitials = (name) => {
+  const safe = String(name || "").trim();
+  if (!safe) return "U";
+  const parts = safe.split(" ").filter(Boolean);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return parts.slice(-2).map((word) => word[0]).join("").toUpperCase();
+};
 
 if (pageRole) {
   if (!currentUser) {
@@ -763,9 +762,9 @@ if (sidebar && currentUser && ROLES[pageRole]) {
 
     <!-- Giữ các thẻ tương thích test tự động S1-06 -->
     <div class="app-sidebar-profile" style="display: none;" aria-hidden="true">
-      <span class="app-avatar">${escapeHtml(getInitials(currentUser.fullName))}</span>
-      <p class="app-user-name" id="user-display-name">${escapeHtml(currentUser.fullName)}</p>
-      <p class="app-user-email">${escapeHtml(currentUser.email)}</p>
+      <span class="app-avatar">${escapeHtml(getInitials(currentUser.fullName || currentUser.name || "Quản trị viên"))}</span>
+      <p class="app-user-name" id="user-display-name">${escapeHtml(currentUser.fullName || currentUser.name || "Quản trị viên")}</p>
+      <p class="app-user-email">${escapeHtml(currentUser.email || "")}</p>
       <span id="user-role-badge">${role.name}</span>
     </div>
 
@@ -2802,100 +2801,329 @@ const editUserModal = document.querySelector("#edit-user-modal");
 const editUserForm = document.querySelector("#edit-user-form");
 
 if (accountTable) {
-  const SEED_ENTERPRISE_ACCOUNTS = [
-    { fullName: "Nguyễn Văn Hải", email: "hai.nguyen@tms.vn", phone: "0982112233", role: "instructor" },
-    { fullName: "Trần Mai Anh", email: "anh.tran@tms.vn", phone: "0973223344", role: "instructor" },
-    { fullName: "Lê Minh Tuấn", email: "tuan.le@tms.vn", phone: "0964334455", role: "ta" },
-    { fullName: "Phạm Thu Hương", email: "huong.pham@tms.vn", phone: "0915445566", role: "ta" },
-    { fullName: "Hoàng Gia Bảo", email: "bao.hoang@tms.vn", phone: "0936556677", role: "student" },
-    { fullName: "Vũ Phương Thảo", email: "thao.vu@tms.vn", phone: "0947667788", role: "student" },
-    { fullName: "Đặng Tiến Dũng", email: "dung.dang@tms.vn", phone: "0908778899", role: "student" },
-    { fullName: "Bùi Mỹ Linh", email: "linh.bui@tms.vn", phone: "0989889900", role: "student" },
-    { fullName: "Ngô Quốc Huy", email: "huy.ngo@tms.vn", phone: "0971990011", role: "student" },
-    { fullName: "Dương Ánh Tuyết", email: "tuyet.duong@tms.vn", phone: "0962001122", role: "admissions" },
-    { fullName: "Lý Thành Nam", email: "nam.ly@tms.vn", phone: "0913112233", role: "admissions" },
-    { fullName: "Tạ Thị Ngọc", email: "ngoc.ta@tms.vn", phone: "0934223344", role: "accountant" },
-    { fullName: "Trịnh Văn Quyết", email: "quyet.trinh@tms.vn", phone: "0945334455", role: "training-manager" },
-    { fullName: "Lê Thị Bích", email: "bich.le@tms.vn", phone: "0906445566", role: "training-manager" },
-    { fullName: "Nguyễn Đức Anh", email: "anh.duc@tms.vn", phone: "0987556677", role: "student" },
-    { fullName: "Đỗ Kim Ngân", email: "ngan.do@tms.vn", phone: "0978667788", role: "student" },
-    { fullName: "Võ Quang Vinh", email: "vinh.vo@tms.vn", phone: "0969778899", role: "instructor" },
-    { fullName: "Hồ Khánh Vy", email: "vy.ho@tms.vn", phone: "0911889900", role: "ta" },
-    { fullName: "Phan Đình Trọng", email: "trong.phan@tms.vn", phone: "0932990011", role: "student" },
-    { fullName: "Trần Bảo Trân", email: "tran.bao@tms.vn", phone: "0943001122", role: "student" },
-    { fullName: "Nguyễn Hữu Tài", email: "tai.nguyen@tms.vn", phone: "0904112233", role: "student" },
+  // -------------------------------------------------------------------
+  // Dữ liệu 300 tài khoản theo đúng mẫu thiết kế TMS (Screenshot 4)
+  // -------------------------------------------------------------------
+  const SEED_300_ACCOUNTS = (() => {
+    // 9 tài khoản đầu tiên trang 1 khớp 100% Screenshot 4
+    const fixed = [
+      { fullName: "Nguyễn Minh Anh", email: "minhanh@tms.vn", phone: "0912 345 678", role: "student", roles: ["student"], status: "ACTIVE" },
+      { fullName: "Trần Thu Hà", email: "thuha@tms.vn", phone: "0987 654 321", role: "admissions", roles: ["admissions"], status: "ACTIVE" },
+      { fullName: "Lê Hoàng Nam", email: "hoangnam@tms.vn", phone: "0903 112 233", role: "instructor", roles: ["instructor", "training-manager"], status: "ACTIVE" },
+      { fullName: "Phạm Gia Huy", email: "giahuy@tms.vn", phone: "0938 221 144", role: "ta", roles: ["ta"], status: "PENDING" },
+      { fullName: "Đỗ Thị Mai", email: "domai@tms.vn", phone: "0977 889 900", role: "accountant", roles: ["accountant"], status: "ACTIVE" },
+      { fullName: "Vũ Đức Long", email: "duclong@tms.vn", phone: "0909 456 123", role: "instructor", roles: ["instructor"], status: "LOCKED" },
+      { fullName: "Hoàng Yến Nhi", email: "yennhi@tms.vn", phone: "0965 778 210", role: "student", roles: ["student"], status: "ACTIVE" },
+      { fullName: "Bùi Quang Khải", email: "quangkhai@tms.vn", phone: "0944 310 562", role: "student", roles: ["student"], status: "ACTIVE" },
+      { fullName: "Trần Quốc Bảo", email: "quocbao@tms.vn", phone: "0918 200 300", role: "admin", roles: ["admin"], status: "ACTIVE" },
+    ];
+
+    const firstNames = ["Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý"];
+    const middleNames = ["Văn", "Thị", "Đức", "Minh", "Hồng", "Thanh", "Quang", "Bảo", "Gia", "Ngọc", "Hoàng", "Tuấn", "Mai", "Xuân"];
+    const lastNames = ["An", "Bình", "Cường", "Dũng", "Em", "Giang", "Hải", "Hùng", "Khoa", "Lâm", "Long", "Nam", "Nghĩa", "Phong", "Quân", "Sơn", "Tài", "Tâm", "Thành", "Thịnh", "Toàn", "Trung", "Tú", "Việt", "Vinh", "Ý", "Uyên", "Thảo", "Hương", "Hà", "Linh", "Trang", "Chi", "Trâm"];
+    const rolesPool = ["student", "student", "student", "instructor", "ta", "admissions", "training-manager", "accountant"];
+
+    const list = [...fixed];
+    for (let i = 10; i <= 300; i++) {
+      const fn = firstNames[i % firstNames.length];
+      const mn = middleNames[(i * 3) % middleNames.length];
+      const ln = lastNames[(i * 7) % lastNames.length];
+      const fullName = `${fn} ${mn} ${ln}`;
+      const prefix = `${ln.toLowerCase()}.${fn.toLowerCase()}${i}`;
+      const email = `${prefix}@tms.vn`;
+      const phone = `09${String(10000000 + i * 29381).substring(0, 8)}`;
+      const role = rolesPool[i % rolesPool.length];
+      const status = i % 25 === 0 ? "LOCKED" : (i % 17 === 0 ? "PENDING" : "ACTIVE");
+      list.push({
+        fullName,
+        email,
+        phone,
+        role,
+        roles: [role],
+        status,
+      });
+    }
+    return list;
+  })();
+
+  const ALL_SYSTEM_ROLES = [
+    { id: "student", name: "Học viên" },
+    { id: "instructor", name: "Giảng viên" },
+    { id: "ta", name: "Trợ giảng" },
+    { id: "training-manager", name: "Quản lý đào tạo" },
+    { id: "admissions", name: "Tư vấn tuyển sinh" },
+    { id: "accountant", name: "Kế toán" },
+    { id: "admin", name: "Quản trị hệ thống" },
   ];
 
-  const lockedAccounts = new Set(readStore("edumanager-locked-accounts", ["bao.hoang@tms.vn"]));
+  const lockedAccounts = new Set(readStore("edumanager-locked-accounts", ["duclong@tms.vn"]));
   const lockedReasons = readStore("edumanager-locked-reasons", {
+    "duclong@tms.vn": "Nghỉ việc từ 05/10/2026",
     "bao.hoang@tms.vn": "Tạm dừng học tập theo đơn bảo lưu",
   });
+
   let currentSearch = "";
   let currentRole = "ALL";
   let currentStatus = "ALL";
   let currentPage = 1;
   const PAGE_SIZE = 20;
 
-  // Lấy toàn bộ danh sách tài khoản (DEMO + SEED + người dùng mới tạo trong localStorage)
+  // Lấy toàn bộ danh sách tài khoản (SEED_300 + người dùng mới tạo/sửa)
   const getAllAccounts = () => {
     const custom = readStore("edumanager-custom-accounts") || [];
     const map = new Map();
-    DEMO_ACCOUNTS.forEach((a) => {
-      map.set(a.email, {
-        phone: a.phone || "0912345678",
-        ...a,
-      });
+    SEED_300_ACCOUNTS.forEach((a) => {
+      map.set(a.email.toLowerCase(), { ...a });
     });
-    SEED_ENTERPRISE_ACCOUNTS.forEach((a) => {
-      if (!map.has(a.email)) {
-        map.set(a.email, a);
+    // Thêm các tài khoản demo nếu chưa có
+    DEMO_ACCOUNTS.forEach((a) => {
+      if (!map.has(a.email.toLowerCase())) {
+        map.set(a.email.toLowerCase(), {
+          phone: a.phone || "0912345678",
+          roles: a.roles || [a.role],
+          status: "ACTIVE",
+          ...a,
+        });
       }
     });
+    // Ghi đè/bổ sung từ custom accounts
     custom.forEach((a) => {
-      map.set(a.email, {
-        phone: a.phone || "",
-        ...a,
-      });
+      const emailLower = (a.email || "").toLowerCase();
+      if (emailLower) {
+        const prev = map.get(emailLower) || {};
+        map.set(emailLower, {
+          ...prev,
+          phone: a.phone || prev.phone || "",
+          status: a.status || prev.status || "ACTIVE",
+          roles: a.roles || (a.role ? [a.role] : (prev.roles || ["student"])),
+          role: a.role || (a.roles && a.roles[0]) || prev.role || "student",
+          ...a,
+        });
+      }
     });
     return Array.from(map.values());
   };
 
-  // Tra cứu các lớp học đang phụ trách của nhân sự (S1-10: Cảnh báo bàn giao lớp)
+  // Tra cứu các lớp học đang phụ trách của nhân sự (S1-10: Cảnh báo bàn giao lớp, Screenshot 5)
   const getAssignedClasses = (email, role) => {
-    if (email === "giangvien@edumanager.vn" || email === "giangvien@tms.vn" || role === "instructor") {
+    const e = (email || "").toLowerCase();
+    if (e === "duclong@tms.vn" || e === "duclong@edumanager.vn") {
       return [
-        { code: "IELTS-2610", name: "IELTS Foundation & Intensive", role: "Giảng viên chính" },
-        { code: "GT-2609", name: "Tiếng Anh Giao Tiếp B2", role: "Giảng viên chính" },
+        { code: "WEB-K15", name: "Lập trình web cơ bản", role: "Giảng viên" },
+        { code: "DB-K14", name: "Cơ sở dữ liệu", role: "Giảng viên" },
       ];
     }
-    if (email === "trogiang@edumanager.vn" || email === "trogiang@tms.vn" || role === "ta") {
+    if (e === "giangvien@edumanager.vn" || e === "giangvien@tms.vn" || role === "instructor") {
       return [
-        { code: "IELTS-2610", name: "IELTS Foundation & Intensive", role: "Trợ giảng" },
-        { code: "GT-2609", name: "Tiếng Anh Giao Tiếp B2", role: "Trợ giảng" },
+        { code: "WEB-K15", name: "Lập trình web cơ bản", role: "Giảng viên" },
+        { code: "DB-K14", name: "Cơ sở dữ liệu", role: "Giảng viên" },
+      ];
+    }
+    if (e === "trogiang@edumanager.vn" || e === "trogiang@tms.vn" || role === "ta") {
+      return [
+        { code: "WEB-K15", name: "Lập trình web cơ bản", role: "Trợ giảng" },
       ];
     }
     return [];
   };
 
-  // Render danh sách tài khoản kèm Tìm kiếm, Lọc và Phân trang (S1-08)
+  // -------------------------------------------------------------------
+  // Multi-role tag chips logic cho Create Drawer (Screenshot 2)
+  // -------------------------------------------------------------------
+  let createSelectedRoles = ["instructor"]; // Mặc định Giảng viên như Screenshot 2
+
+  const renderCreateRoleChips = () => {
+    const chipsBox = document.querySelector("#create-selected-role-chips");
+    const dropdownMenu = document.querySelector("#create-role-dropdown-menu");
+    const hiddenSelect = document.querySelector("#new-user-role");
+
+    if (chipsBox) {
+      chipsBox.innerHTML = createSelectedRoles
+        .map((rId) => {
+          const rObj = ALL_SYSTEM_ROLES.find((x) => x.id === rId) || { name: rId };
+          return `
+            <span class="tms-role-chip">
+              <span>${escapeHtml(rObj.name)}</span>
+              <button type="button" class="tms-role-chip-remove" data-create-remove-role="${escapeHtml(rId)}" title="Bỏ vai trò">✕</button>
+            </span>
+          `;
+        })
+        .join("");
+    }
+
+    if (hiddenSelect && createSelectedRoles.length > 0) {
+      hiddenSelect.value = createSelectedRoles[0];
+    }
+
+    if (dropdownMenu) {
+      const available = ALL_SYSTEM_ROLES.filter((r) => !createSelectedRoles.includes(r.id));
+      if (available.length === 0) {
+        dropdownMenu.innerHTML = '<div class="p-2 text-xs text-slate-400 text-center">Đã chọn tất cả vai trò</div>';
+      } else {
+        dropdownMenu.innerHTML = available
+          .map((r) => `
+            <button type="button" class="tms-role-dropdown-item" data-create-add-role="${escapeHtml(r.id)}">
+              <span>${escapeHtml(r.name)}</span>
+            </button>
+          `)
+          .join("");
+      }
+    }
+  };
+
+  const createToggleRoleBtn = document.querySelector("#create-toggle-role-dropdown");
+  const createRoleDropdown = document.querySelector("#create-role-dropdown-menu");
+  if (createToggleRoleBtn && createRoleDropdown) {
+    createToggleRoleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      createRoleDropdown.classList.toggle("hidden");
+    });
+  }
+
+  const createChipsContainer = document.querySelector("#create-role-chips-container");
+  if (createChipsContainer) {
+    createChipsContainer.addEventListener("click", (e) => {
+      const addBtn = e.target.closest("[data-create-add-role]");
+      if (addBtn) {
+        const rId = addBtn.dataset.createAddRole;
+        if (!createSelectedRoles.includes(rId)) {
+          createSelectedRoles.push(rId);
+          renderCreateRoleChips();
+        }
+        createRoleDropdown?.classList.add("hidden");
+        return;
+      }
+
+      const removeBtn = e.target.closest("[data-create-remove-role]");
+      if (removeBtn) {
+        const rId = removeBtn.dataset.createRemoveRole;
+        if (createSelectedRoles.length > 1) {
+          createSelectedRoles = createSelectedRoles.filter((x) => x !== rId);
+          renderCreateRoleChips();
+        } else {
+          if (typeof showToast === "function") showToast("Tài khoản cần có ít nhất một vai trò.", "warning");
+        }
+      }
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // Multi-role tag chips logic cho Edit Drawer (Screenshot 3)
+  // -------------------------------------------------------------------
+  let editSelectedRoles = ["instructor"];
+  let editingUserEmail = "";
+
+  const renderEditRoleChips = () => {
+    const chipsBox = document.querySelector("#edit-selected-role-chips");
+    const dropdownMenu = document.querySelector("#edit-role-dropdown-menu");
+
+    if (chipsBox) {
+      chipsBox.innerHTML = editSelectedRoles
+        .map((rId) => {
+          const rObj = ALL_SYSTEM_ROLES.find((x) => x.id === rId) || { name: rId };
+          return `
+            <span class="tms-role-chip">
+              <span>${escapeHtml(rObj.name)}</span>
+              <button type="button" class="tms-role-chip-remove" data-edit-remove-role="${escapeHtml(rId)}" title="Bỏ vai trò">✕</button>
+            </span>
+          `;
+        })
+        .join("");
+    }
+
+    if (dropdownMenu) {
+      const available = ALL_SYSTEM_ROLES.filter((r) => !editSelectedRoles.includes(r.id));
+      if (available.length === 0) {
+        dropdownMenu.innerHTML = '<div class="p-2 text-xs text-slate-400 text-center">Đã chọn tất cả vai trò</div>';
+      } else {
+        dropdownMenu.innerHTML = available
+          .map((r) => `
+            <button type="button" class="tms-role-dropdown-item" data-edit-add-role="${escapeHtml(r.id)}">
+              <span>${escapeHtml(r.name)}</span>
+            </button>
+          `)
+          .join("");
+      }
+    }
+  };
+
+  const editToggleRoleBtn = document.querySelector("#edit-toggle-role-dropdown");
+  const editRoleDropdown = document.querySelector("#edit-role-dropdown-menu");
+  if (editToggleRoleBtn && editRoleDropdown) {
+    editToggleRoleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      editRoleDropdown.classList.toggle("hidden");
+    });
+  }
+
+  const editChipsContainer = document.querySelector("#edit-role-chips-container");
+  if (editChipsContainer) {
+    editChipsContainer.addEventListener("click", (e) => {
+      const addBtn = e.target.closest("[data-edit-add-role]");
+      if (addBtn) {
+        const rId = addBtn.dataset.editAddRole;
+        if (!editSelectedRoles.includes(rId)) {
+          editSelectedRoles.push(rId);
+          renderEditRoleChips();
+        }
+        editRoleDropdown?.classList.add("hidden");
+        return;
+      }
+
+      const removeBtn = e.target.closest("[data-edit-remove-role]");
+      if (removeBtn) {
+        const rId = removeBtn.dataset.editRemoveRole;
+        // Chặn Admin tự thu hồi quyền quản trị của chính bản thân (S1-09 AC3)
+        if (editingUserEmail.toLowerCase() === (currentUser?.email || "").toLowerCase() && rId === "admin") {
+          if (typeof showToast === "function") {
+            showToast("Bạn không thể tự thu hồi vai trò Quản trị hệ thống của chính mình.", "error");
+          } else {
+            alert("Bạn không thể tự thu hồi vai trò Quản trị hệ thống của chính mình.");
+          }
+          return;
+        }
+
+        if (editSelectedRoles.length > 1) {
+          editSelectedRoles = editSelectedRoles.filter((x) => x !== rId);
+          renderEditRoleChips();
+        } else {
+          if (typeof showToast === "function") showToast("Tài khoản cần có ít nhất một vai trò.", "warning");
+        }
+      }
+    });
+  }
+
+  // Đóng dropdown khi click ra ngoài
+  document.addEventListener("click", () => {
+    createRoleDropdown?.classList.add("hidden");
+    editRoleDropdown?.classList.add("hidden");
+    document.querySelectorAll(".tms-action-menu").forEach((m) => m.classList.add("hidden"));
+  });
+
+  // Render danh sách tài khoản kèm Tìm kiếm, Lọc và Phân trang (S1-08, Screenshot 4)
   const renderAccounts = () => {
     const all = getAllAccounts();
     const kw = currentSearch.trim().toLowerCase();
 
     // 1. Tìm kiếm (Họ tên, email, SĐT)
     let filtered = all.filter((account) => {
+      const emailLower = (account.email || "").toLowerCase();
       const matchKw = !kw ||
         account.fullName?.toLowerCase().includes(kw) ||
-        account.email?.toLowerCase().includes(kw) ||
-        account.phone?.includes(kw);
+        emailLower.includes(kw) ||
+        (account.phone && account.phone.includes(kw));
 
-      const matchRole = currentRole === "ALL" || account.role === currentRole;
+      const accRoles = account.roles && account.roles.length > 0 ? account.roles : [account.role];
+      const matchRole = currentRole === "ALL" || account.role === currentRole || accRoles.includes(currentRole);
 
       const lockout = typeof checkAccountLockout === "function" ? checkAccountLockout(account.email) : { isLocked: false };
-      const isLocked = lockedAccounts.has(account.email) || lockout.isLocked;
-      const matchStatus = currentStatus === "ALL" ||
-        (currentStatus === "LOCKED" && isLocked) ||
-        (currentStatus === "ACTIVE" && !isLocked);
+      const isLocked = lockedAccounts.has(emailLower) || lockout.isLocked;
+
+      let effectiveStatus = "ACTIVE";
+      if (isLocked) effectiveStatus = "LOCKED";
+      else if (account.status === "PENDING") effectiveStatus = "PENDING";
+
+      const matchStatus = currentStatus === "ALL" || currentStatus === effectiveStatus;
 
       return matchKw && matchRole && matchStatus;
     });
@@ -2908,85 +3136,92 @@ if (accountTable) {
     const startIndex = (currentPage - 1) * PAGE_SIZE;
     const pagedItems = filtered.slice(startIndex, startIndex + PAGE_SIZE);
 
+    // Cập nhật số lượng tài khoản trên tiêu đề
+    const totalCountLabel = document.querySelector("#account-total-count-label");
+    if (totalCountLabel) {
+      totalCountLabel.textContent = `${totalCount} tài khoản`;
+    }
+
     const tbody = accountTable.querySelector("tbody");
+    if (!tbody) return;
+
     if (pagedItems.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-muted">Không tìm thấy tài khoản nào phù hợp với bộ lọc.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10 text-slate-400">Không tìm thấy tài khoản nào phù hợp với bộ lọc.</td></tr>';
     } else {
       tbody.innerHTML = pagedItems.map((account) => {
+        const emailLower = (account.email || "").toLowerCase();
         const lockout = typeof checkAccountLockout === "function" ? checkAccountLockout(account.email) : { isLocked: false };
-        const locked = lockedAccounts.has(account.email) || lockout.isLocked;
-        const reason = lockedReasons[account.email] || (lockout.isLocked ? "Tạm khóa do nhập sai mật khẩu 5 lần" : "");
-        const isSelf = account.email === currentUser?.email;
-        const assigned = getAssignedClasses(account.email, account.role);
+        const locked = lockedAccounts.has(emailLower) || lockout.isLocked;
+        const isPending = !locked && account.status === "PENDING";
+        const isSelf = emailLower === (currentUser?.email || "").toLowerCase();
 
-        const statusHtml = locked
-          ? `<div>
-               <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                 <i data-lucide="lock" class="size-3"></i>
-                 Đã khoá
-               </span>
-               <span class="hidden">${badge("Đã khoá", "is-danger")}</span>
-               ${reason ? `<div class="text-xs text-rose-500 mt-1 max-w-[180px] truncate" title="Lý do: ${escapeHtml(reason)}"><span class="font-medium">Lý do:</span> ${escapeHtml(reason)}</div>` : ""}
-             </div>`
-          : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-               <span class="size-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-               Hoạt động
-             </span>`;
+        // Trạng thái badge chuẩn Screenshot 4
+        let statusBadge = "";
+        if (locked) {
+          statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200">Đã khoá</span>`;
+        } else if (isPending) {
+          statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">Chờ kích hoạt</span>`;
+        } else {
+          statusBadge = `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200">Hoạt động</span>`;
+        }
 
-        const actionBtn = locked
-          ? `<button type="button" class="app-btn app-btn-outline app-btn-sm text-emerald-600 border-emerald-300 hover:bg-emerald-50" data-unlock-account="${escapeHtml(account.email)}">
-               <i data-lucide="unlock" class="size-3.5 inline mr-1"></i>Mở khoá
-             </button>`
-          : `<button type="button" class="app-btn app-btn-outline app-btn-sm text-rose-600 border-rose-200 hover:bg-rose-50" data-open-lock-modal="${escapeHtml(account.email)}" ${isSelf ? 'disabled title="Không thể tự khoá tài khoản của mình"' : ""}>
-               <i data-lucide="lock" class="size-3.5 inline mr-1"></i>Khoá
-             </button>`;
-
-        const roleBadges = {
-          admin: "bg-indigo-50 text-indigo-700 border-indigo-200",
-          "training-manager": "bg-blue-50 text-blue-700 border-blue-200",
-          admissions: "bg-amber-50 text-amber-700 border-amber-200",
-          instructor: "bg-purple-50 text-purple-700 border-purple-200",
-          ta: "bg-cyan-50 text-cyan-700 border-cyan-200",
-          accountant: "bg-emerald-50 text-emerald-700 border-emerald-200",
-          student: "bg-sky-50 text-sky-700 border-sky-200",
-        };
-        const roleBadgeClass = roleBadges[account.role] || "bg-slate-100 text-slate-700 border-slate-200";
+        // Vai trò chips chuẩn Screenshot 4
+        const userRoles = account.roles && account.roles.length > 0 ? account.roles : [account.role];
+        const rolesHtml = userRoles
+          .map((r) => {
+            const rObj = ALL_SYSTEM_ROLES.find((x) => x.id === r) || { name: r };
+            return `<span class="tms-role-table-chip">${escapeHtml(rObj.name)}</span>`;
+          })
+          .join(" ");
 
         return `
-        <tr>
-          <td>
+        <tr class="hover:bg-slate-50/60 transition-colors">
+          <td class="py-3.5 px-6">
             <div class="flex items-center gap-3">
-              <span class="tms-table-avatar">
+              <span class="tms-circle-avatar">
                 ${escapeHtml(getInitials(account.fullName))}
               </span>
-              <div>
-                <p class="font-bold text-foreground text-sm">${escapeHtml(account.fullName)}</p>
-                <p class="text-xs text-muted font-mono">ID: TMS-${escapeHtml((account.email.split('@')[0] || '').substring(0, 10).toUpperCase())}</p>
-              </div>
+              <span class="font-semibold text-slate-900 text-sm">${escapeHtml(account.fullName)}</span>
             </div>
           </td>
-          <td class="font-mono text-xs text-slate-600">${escapeHtml(account.email)}</td>
-          <td class="text-slate-600 text-xs">${escapeHtml(account.phone || "—")}</td>
-          <td>
-            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${roleBadgeClass}">
-              ${escapeHtml(ROLES[account.role]?.name ?? account.role)}
-            </span>
-            ${assigned.length > 0 ? `<div class="text-xs text-amber-600 mt-1 flex items-center gap-1"><i data-lucide="book-open" class="size-3 inline"></i>Phụ trách ${assigned.length} lớp</div>` : ""}
+          <td class="py-3.5 px-6 font-mono text-xs text-slate-600">${escapeHtml(account.email)}</td>
+          <td class="py-3.5 px-6 text-xs text-slate-600">${escapeHtml(account.phone || "—")}</td>
+          <td class="py-3.5 px-6">
+            <div class="flex flex-wrap items-center gap-1">${rolesHtml}</div>
           </td>
-          <td>${statusHtml}</td>
-          <td>
-            <div class="flex items-center gap-1.5">
-              <button type="button" class="app-btn app-btn-outline app-btn-sm text-primary hover:bg-primary/5" data-edit-account="${escapeHtml(account.email)}" title="Chỉnh sửa thông tin">
-                <i data-lucide="pen-line" class="size-3.5 inline mr-1"></i>Sửa
+          <td class="py-3.5 px-6">${statusBadge}</td>
+          <td class="py-3.5 px-6 text-center">
+            <div class="relative inline-block text-left">
+              <button type="button" class="tms-action-dots-btn" data-action-trigger="${escapeHtml(account.email)}" aria-label="Thao tác">
+                <i data-lucide="more-horizontal" class="size-4"></i>
               </button>
-              ${actionBtn}
+              <div class="tms-action-menu hidden" id="action-menu-${escapeHtml(account.email)}">
+                <button type="button" class="tms-action-menu-item" data-edit-account="${escapeHtml(account.email)}">
+                  <i data-lucide="edit-3" class="size-3.5"></i>
+                  <span>Sửa thông tin</span>
+                </button>
+                ${locked
+                  ? `<button type="button" class="tms-action-menu-item text-emerald-600 hover:bg-emerald-50" data-unlock-account="${escapeHtml(account.email)}">
+                      <i data-lucide="unlock" class="size-3.5"></i>
+                      <span>Mở khoá tài khoản</span>
+                    </button>`
+                  : `<button type="button" class="tms-action-menu-item text-rose-600 hover:bg-rose-50" data-open-lock-modal="${escapeHtml(account.email)}" ${isSelf ? 'disabled title="Không thể tự khoá tài khoản của mình"' : ""}>
+                      <i data-lucide="lock" class="size-3.5"></i>
+                      <span>Khoá tài khoản</span>
+                    </button>`
+                }
+                <button type="button" class="tms-action-menu-item" data-resend-activation="${escapeHtml(account.email)}">
+                  <i data-lucide="mail" class="size-3.5"></i>
+                  <span>Gửi lại email kích hoạt</span>
+                </button>
+              </div>
             </div>
           </td>
         </tr>`;
       }).join("");
     }
 
-    // Cập nhật thanh phân trang (Pagination Bar)
+    // Cập nhật phân trang chuẩn Screenshot 4
     const paginationInfo = document.querySelector("#account-pagination-info");
     const prevBtn = document.querySelector("#account-prev-page");
     const nextBtn = document.querySelector("#account-next-page");
@@ -2998,7 +3233,7 @@ if (accountTable) {
       } else {
         const start = startIndex + 1;
         const end = Math.min(startIndex + PAGE_SIZE, totalCount);
-        paginationInfo.textContent = `Hiển thị ${start} - ${end} trên tổng số ${totalCount} tài khoản (Trang ${currentPage}/${totalPages})`;
+        paginationInfo.textContent = `Hiển thị ${start}–${end} trong ${totalCount} tài khoản`;
       }
     }
 
@@ -3007,12 +3242,37 @@ if (accountTable) {
 
     if (pageNumbersBox) {
       let pageHtml = "";
-      for (let i = 1; i <= totalPages; i++) {
-        pageHtml += `
-          <button type="button" class="app-btn app-btn-sm tms-page-btn ${i === currentPage ? 'app-btn-primary is-active' : 'app-btn-outline'}" data-page="${i}">
-            ${i}
-          </button>
-        `;
+      if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) {
+          pageHtml += `<button type="button" class="tms-page-number-btn ${i === currentPage ? "is-active" : ""}" data-page="${i}">${i}</button>`;
+        }
+      } else {
+        // Mẫu [ 1 ] [ 2 ] [ 3 ] ... [ 15 ] như Screenshot 4
+        if (currentPage <= 3) {
+          pageHtml += `
+            <button type="button" class="tms-page-number-btn ${1 === currentPage ? "is-active" : ""}" data-page="1">1</button>
+            <button type="button" class="tms-page-number-btn ${2 === currentPage ? "is-active" : ""}" data-page="2">2</button>
+            <button type="button" class="tms-page-number-btn ${3 === currentPage ? "is-active" : ""}" data-page="3">3</button>
+            <span class="tms-page-ellipsis">...</span>
+            <button type="button" class="tms-page-number-btn" data-page="${totalPages}">${totalPages}</button>
+          `;
+        } else if (currentPage >= totalPages - 2) {
+          pageHtml += `
+            <button type="button" class="tms-page-number-btn" data-page="1">1</button>
+            <span class="tms-page-ellipsis">...</span>
+            <button type="button" class="tms-page-number-btn ${totalPages - 2 === currentPage ? "is-active" : ""}" data-page="${totalPages - 2}">${totalPages - 2}</button>
+            <button type="button" class="tms-page-number-btn ${totalPages - 1 === currentPage ? "is-active" : ""}" data-page="${totalPages - 1}">${totalPages - 1}</button>
+            <button type="button" class="tms-page-number-btn ${totalPages === currentPage ? "is-active" : ""}" data-page="${totalPages}">${totalPages}</button>
+          `;
+        } else {
+          pageHtml += `
+            <button type="button" class="tms-page-number-btn" data-page="1">1</button>
+            <span class="tms-page-ellipsis">...</span>
+            <button type="button" class="tms-page-number-btn is-active" data-page="${currentPage}">${currentPage}</button>
+            <span class="tms-page-ellipsis">...</span>
+            <button type="button" class="tms-page-number-btn" data-page="${totalPages}">${totalPages}</button>
+          `;
+        }
       }
       pageNumbersBox.innerHTML = pageHtml;
     }
@@ -3092,53 +3352,268 @@ if (accountTable) {
     });
   }
 
+  // Nút Nhập từ Excel
+  const btnImportExcel = document.querySelector("#btn-import-excel");
+  if (btnImportExcel) {
+    btnImportExcel.addEventListener("click", () => {
+      if (typeof showToast === "function") {
+        showToast("Chức năng Nhập từ Excel đang được kết nối hệ thống.", "info");
+      }
+    });
+  }
+
   // -------------------------------------------------------------------
-  // Modal Thêm tài khoản mới (S1-08)
+  // Thao tác bảng: Toggle Action Menu, Sửa, Khoá, Mở khoá, Gửi email
+  // -------------------------------------------------------------------
+  accountTable.addEventListener("click", (event) => {
+    // 1. Toggle Action Menu (···)
+    const actionTrigger = event.target.closest("[data-action-trigger]");
+    if (actionTrigger) {
+      event.stopPropagation();
+      const email = actionTrigger.dataset.actionTrigger;
+      const targetMenu = document.querySelector(`#action-menu-${CSS.escape(email)}`);
+      document.querySelectorAll(".tms-action-menu").forEach((m) => {
+        if (m !== targetMenu) m.classList.add("hidden");
+      });
+      targetMenu?.classList.toggle("hidden");
+      return;
+    }
+
+    // 2. Mở Slide-over Drawer Sửa tài khoản (Screenshot 3)
+    const editBtn = event.target.closest("[data-edit-account]");
+    if (editBtn) {
+      const email = editBtn.dataset.editAccount;
+      const account = getAllAccounts().find((a) => a.email.toLowerCase() === email.toLowerCase());
+      if (!account) return;
+
+      editingUserEmail = account.email;
+      const emailLower = account.email.toLowerCase();
+      const locked = lockedAccounts.has(emailLower);
+
+      // Điền thông tin profile summary
+      const headerAvatar = document.querySelector("#edit-user-header-avatar");
+      if (headerAvatar) {
+        const parts = String(account.fullName || "").trim().split(" ").filter(Boolean);
+        headerAvatar.textContent = parts.length > 0 ? parts[parts.length - 1][0].toUpperCase() : "U";
+      }
+
+      const headerName = document.querySelector("#edit-user-header-name");
+      if (headerName) headerName.textContent = account.fullName;
+
+      const headerStatus = document.querySelector("#edit-user-header-status");
+      if (headerStatus) {
+        if (locked) {
+          headerStatus.className = "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200";
+          headerStatus.textContent = "Đã khoá";
+        } else if (account.status === "PENDING") {
+          headerStatus.className = "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200";
+          headerStatus.textContent = "Chờ kích hoạt";
+        } else {
+          headerStatus.className = "inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200";
+          headerStatus.textContent = "Hoạt động";
+        }
+      }
+
+      // Điền form fields
+      const emailInput = document.querySelector("#edit-user-email");
+      if (emailInput) emailInput.value = account.email;
+
+      const nameInput = document.querySelector("#edit-user-name");
+      if (nameInput) nameInput.value = account.fullName;
+
+      const phoneInput = document.querySelector("#edit-user-phone");
+      if (phoneInput) phoneInput.value = account.phone || "";
+
+      // Khởi tạo vai trò
+      editSelectedRoles = account.roles ? [...account.roles] : [account.role];
+      renderEditRoleChips();
+
+      // Nút Khoá / Mở khoá trong drawer
+      const lockBtnInDrawer = document.querySelector("#edit-drawer-lock-btn");
+      const unlockBtnInDrawer = document.querySelector("#edit-drawer-unlock-btn");
+      if (locked) {
+        lockBtnInDrawer?.classList.add("hidden");
+        unlockBtnInDrawer?.classList.remove("hidden");
+      } else {
+        lockBtnInDrawer?.classList.remove("hidden");
+        unlockBtnInDrawer?.classList.add("hidden");
+      }
+
+      const alertBox = document.querySelector("#edit-user-alert");
+      if (alertBox) alertBox.classList.add("hidden");
+
+      editUserModal?.classList.remove("hidden");
+      if (window.lucide) window.lucide.createIcons();
+      return;
+    }
+
+    // 3. Mở Modal Khoá tài khoản (Screenshot 5)
+    const lockBtn = event.target.closest("[data-open-lock-modal]");
+    if (lockBtn) {
+      const email = lockBtn.dataset.openLockModal;
+      openLockModalForUser(email);
+      return;
+    }
+
+    // 4. Mở Modal Mở khoá tài khoản
+    const unlockBtn = event.target.closest("[data-unlock-account]");
+    if (unlockBtn) {
+      const email = unlockBtn.dataset.unlockAccount;
+      openUnlockModalForUser(email);
+      return;
+    }
+
+    // 5. Gửi lại email kích hoạt
+    const resendBtn = event.target.closest("[data-resend-activation]");
+    if (resendBtn) {
+      const email = resendBtn.dataset.resendActivation;
+      if (typeof showToast === "function") {
+        showToast(`Đã gửi lại email kích hoạt kèm mật khẩu tạm tới ${email}!`, "success");
+      }
+      return;
+    }
+  });
+
+  // -------------------------------------------------------------------
+  // Hàm mở Modal Khoá & Mở khoá dùng chung
+  // -------------------------------------------------------------------
+  const openLockModalForUser = (email) => {
+    const account = getAllAccounts().find((a) => a.email.toLowerCase() === email.toLowerCase());
+    if (!account) return;
+
+    if (account.email.toLowerCase() === (currentUser?.email || "").toLowerCase()) {
+      alert("Không thể tự khoá tài khoản của chính mình.");
+      return;
+    }
+
+    if (lockAccountModal) {
+      document.querySelector("#lock-account-email").value = account.email;
+      const titleEl = document.querySelector("#lock-account-modal-title");
+      if (titleEl) titleEl.textContent = `Khoá tài khoản ${account.fullName}?`;
+
+      const subtitleEl = document.querySelector("#lock-account-modal-subtitle");
+      if (subtitleEl) {
+        const roleObj = ALL_SYSTEM_ROLES.find((r) => r.id === account.role) || { name: account.role };
+        subtitleEl.textContent = `${roleObj.name} · ${account.email}`;
+      }
+
+      // Compatibility fields
+      const lockName = document.querySelector("#lock-account-name");
+      if (lockName) lockName.textContent = account.fullName;
+      const lockEmail = document.querySelector("#lock-account-email-text");
+      if (lockEmail) lockEmail.textContent = account.email;
+      const lockRole = document.querySelector("#lock-account-role");
+      if (lockRole) lockRole.textContent = account.role;
+
+      // Cảnh báo lớp học phụ trách cần bàn giao (S1-10, Screenshot 5)
+      const assigned = getAssignedClasses(account.email, account.role);
+      const warningBox = document.querySelector("#lock-handover-alert");
+      const countEl = document.querySelector("#lock-handover-count-text");
+      const classesList = document.querySelector("#lock-handover-classes");
+
+      if (assigned.length > 0) {
+        if (countEl) countEl.textContent = `${assigned.length} lớp đang do người này phụ trách cần bàn giao`;
+        if (classesList) {
+          classesList.innerHTML = assigned
+            .map((c) => `<div class="py-0.5">${escapeHtml(c.code)} · ${escapeHtml(c.name)}</div>`)
+            .join("");
+        }
+        warningBox?.classList.remove("hidden");
+      } else {
+        warningBox?.classList.add("hidden");
+      }
+
+      const reasonInput = document.querySelector("#lock-reason-input");
+      if (reasonInput) {
+        reasonInput.value = account.email === "duclong@tms.vn" ? "Nghỉ việc từ 05/10/2026" : "";
+      }
+
+      const errBox = document.querySelector("#lock-account-error");
+      if (errBox) errBox.classList.add("hidden");
+
+      lockAccountModal.classList.remove("hidden");
+      if (window.lucide) window.lucide.createIcons();
+      if (reasonInput) reasonInput.focus();
+    }
+  };
+
+  const openUnlockModalForUser = (email) => {
+    const account = getAllAccounts().find((a) => a.email.toLowerCase() === email.toLowerCase());
+    const name = account ? account.fullName : email;
+    const currentReason = lockedReasons[email] || "Nghỉ việc từ 05/10/2026";
+
+    if (unlockAccountModal) {
+      document.querySelector("#unlock-account-email").value = email;
+      const uName = document.querySelector("#unlock-account-name");
+      if (uName) uName.textContent = name;
+      const uEmail = document.querySelector("#unlock-account-email-text");
+      if (uEmail) uEmail.textContent = email;
+      const uRole = document.querySelector("#unlock-account-role");
+      if (uRole) uRole.textContent = account ? (ROLES[account.role]?.name ?? account.role) : "Người dùng";
+      const uReason = document.querySelector("#unlock-account-reason");
+      if (uReason) uReason.textContent = currentReason;
+
+      const errBox = document.querySelector("#unlock-account-error");
+      if (errBox) errBox.classList.add("hidden");
+
+      unlockAccountModal.classList.remove("hidden");
+      if (window.lucide) window.lucide.createIcons();
+    }
+  };
+
+  // Nút Khoá trong Drawer Sửa tài khoản (Screenshot 3)
+  const drawerLockBtn = document.querySelector("#edit-drawer-lock-btn");
+  if (drawerLockBtn) {
+    drawerLockBtn.addEventListener("click", () => {
+      const email = document.querySelector("#edit-user-email")?.value;
+      if (email) {
+        editUserModal?.classList.add("hidden");
+        openLockModalForUser(email);
+      }
+    });
+  }
+
+  // Nút Mở khoá trong Drawer Sửa tài khoản
+  const drawerUnlockBtn = document.querySelector("#edit-drawer-unlock-btn");
+  if (drawerUnlockBtn) {
+    drawerUnlockBtn.addEventListener("click", () => {
+      const email = document.querySelector("#edit-user-email")?.value;
+      if (email) {
+        editUserModal?.classList.add("hidden");
+        openUnlockModalForUser(email);
+      }
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // Drawer Thêm tài khoản mới (S1-08, Screenshot 2)
   // -------------------------------------------------------------------
   const openCreateUserBtn = document.querySelector("#open-create-user-modal");
   const closeCreateUser = () => {
     if (createUserModal) {
       createUserModal.classList.add("hidden");
       if (createUserForm) createUserForm.reset();
-      const passInput = document.querySelector("#new-user-password");
-      if (passInput) passInput.value = "Edu@2026";
-      const alertBox = document.querySelector("#create-user-alert");
-      if (alertBox) {
-        alertBox.classList.add("hidden");
-        alertBox.textContent = "";
+      createSelectedRoles = ["instructor"];
+      renderCreateRoleChips();
+      const emailErr = document.querySelector("#create-user-email-error");
+      if (emailErr) {
+        emailErr.classList.add("hidden");
+        emailErr.textContent = "";
       }
+      document.querySelector("#new-user-email")?.classList.remove("is-invalid-duplicate");
+      const alertBox = document.querySelector("#create-user-alert");
+      if (alertBox) alertBox.classList.add("hidden");
       document.querySelector("#create-user-success-box")?.classList.add("hidden");
       document.querySelector("#create-user-actions")?.classList.remove("hidden");
     }
   };
 
-  const genPassBtn = document.querySelector("#btn-generate-password");
-  if (genPassBtn) {
-    genPassBtn.addEventListener("click", () => {
-      const passInput = document.querySelector("#new-user-password");
-      if (passInput) {
-        const randPass = "Edu@" + Math.random().toString(36).substring(2, 7) + "9";
-        passInput.value = randPass;
-        passInput.type = "text";
-        if (typeof showToast === "function") showToast(`Đã sinh mật khẩu ngẫu nhiên: ${randPass}`);
-      }
-    });
-  }
-
-  const togglePassBtn = document.querySelector("#toggle-new-user-password");
-  if (togglePassBtn) {
-    togglePassBtn.addEventListener("click", () => {
-      const passInput = document.querySelector("#new-user-password");
-      if (passInput) {
-        passInput.type = passInput.type === "password" ? "text" : "password";
-      }
-    });
-  }
-
   if (openCreateUserBtn && createUserModal) {
     openCreateUserBtn.addEventListener("click", () => {
       closeCreateUser();
       createUserModal.classList.remove("hidden");
+      createSelectedRoles = ["instructor"];
+      renderCreateRoleChips();
       const nameInput = document.querySelector("#new-user-name");
       if (nameInput) nameInput.focus();
       if (window.lucide) window.lucide.createIcons();
@@ -3155,21 +3630,50 @@ if (accountTable) {
     });
   }
 
+  // Kiểm tra trùng Email theo thời gian thực (Screenshot 2)
+  const newEmailInput = document.querySelector("#new-user-email");
+  const emailErrorEl = document.querySelector("#create-user-email-error");
+
+  if (newEmailInput) {
+    newEmailInput.addEventListener("input", (e) => {
+      const typed = e.target.value.trim().toLowerCase();
+      if (!typed) {
+        newEmailInput.classList.remove("is-invalid-duplicate");
+        emailErrorEl?.classList.add("hidden");
+        return;
+      }
+
+      const all = getAllAccounts();
+      const match = all.find((a) => a.email.toLowerCase() === typed);
+      if (match) {
+        newEmailInput.classList.add("is-invalid-duplicate");
+        if (emailErrorEl) {
+          emailErrorEl.textContent = `Email này đã được dùng cho tài khoản ${match.fullName}`;
+          emailErrorEl.classList.remove("hidden");
+        }
+      } else {
+        newEmailInput.classList.remove("is-invalid-duplicate");
+        emailErrorEl?.classList.add("hidden");
+      }
+    });
+  }
+
+  // Submit Form Thêm tài khoản mới
   if (createUserForm) {
     createUserForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const name = document.querySelector("#new-user-name")?.value.trim();
       const email = document.querySelector("#new-user-email")?.value.trim().toLowerCase();
       const phone = document.querySelector("#new-user-phone")?.value.trim() || "";
-      const role = document.querySelector("#new-user-role")?.value || "student";
-      const inputPass = document.querySelector("#new-user-password")?.value.trim();
+      const roles = createSelectedRoles.length > 0 ? [...createSelectedRoles] : ["student"];
+      const primaryRole = roles[0];
       const alertBox = document.querySelector("#create-user-alert");
 
       const showAlert = (msg, isErr = true) => {
         if (alertBox) {
           alertBox.className = isErr
-            ? "p-3 rounded-lg text-sm bg-rose-500/10 text-rose-500 border border-rose-500/20"
-            : "p-3 rounded-lg text-sm bg-emerald-500/10 text-emerald-600 border border-emerald-500/20";
+            ? "p-3 rounded-lg text-sm bg-rose-50 text-rose-600 border border-rose-200"
+            : "p-3 rounded-lg text-sm bg-emerald-50 text-emerald-600 border border-emerald-200";
           alertBox.textContent = msg;
           alertBox.classList.remove("hidden");
         }
@@ -3180,55 +3684,46 @@ if (accountTable) {
         return;
       }
 
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        showAlert("Email không đúng định dạng (ví dụ: ten@domain.com).");
-        return;
-      }
-
       // Kiểm tra trùng email (S1-08: Email trùng bị từ chối kèm thông báo cụ thể)
       const all = getAllAccounts();
-      if (all.some((a) => a.email.toLowerCase() === email || (a.aliases || []).map((x) => x.toLowerCase()).includes(email))) {
-        showAlert("Email này đã tồn tại trong hệ thống, vui lòng chọn email khác!");
+      const match = all.find((a) => a.email.toLowerCase() === email);
+      if (match) {
+        newEmailInput?.classList.add("is-invalid-duplicate");
+        if (emailErrorEl) {
+          emailErrorEl.textContent = `Email này đã được dùng cho tài khoản ${match.fullName}`;
+          emailErrorEl.classList.remove("hidden");
+        }
+        showAlert(`Email này đã được dùng cho tài khoản ${match.fullName}`);
         return;
       }
 
-      const finalPass = inputPass || ("Edu@" + Math.random().toString(36).substring(2, 8) + "9");
+      const finalPass = "Edu@" + Math.random().toString(36).substring(2, 8) + "9";
 
-      if (finalPass.length < 8 || !/[a-zA-Z]/.test(finalPass) || !/[0-9]/.test(finalPass)) {
-        showAlert("Mật khẩu khởi tạo phải có tối thiểu 8 ký tự, gồm cả chữ và số.");
-        return;
-      }
-
-      // Gửi yêu cầu API đến backend / Vite dev server để gửi email kích hoạt tài khoản thật
+      // Gửi yêu cầu API backend / Vite server
       try {
         await fetch("/api/admin/users", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, fullName: name, phone, role, password: finalPass, tempPassword: finalPass }),
+          body: JSON.stringify({ email, fullName: name, phone, role: primaryRole, roles, password: finalPass, tempPassword: finalPass }),
         }).catch(() => null);
 
         await fetch("/api/send-email", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, fullName: name, phone, role, password: finalPass, tempPassword: finalPass }),
+          body: JSON.stringify({ email, fullName: name, phone, role: primaryRole, roles, password: finalPass, tempPassword: finalPass }),
         }).catch(() => null);
       } catch (_) {}
 
-      // Đánh dấu tài khoản này cần đổi mật khẩu ở lần đăng nhập đầu tiên
-      const firstLoginMap = readStore(FIRST_LOGIN_KEY, {});
-      firstLoginMap[email.toLowerCase()] = { isFirstLogin: true, loginCount: 0 };
-      writeStore(FIRST_LOGIN_KEY, firstLoginMap);
-
-      // Lưu tài khoản mới vào danh sách lưu trữ
+      // Lưu tài khoản mới vào localStorage
       const customAccounts = readStore("edumanager-custom-accounts") || [];
       const newAcc = {
         fullName: name,
         email,
         phone,
-        role,
+        role: primaryRole,
+        roles,
+        status: "ACTIVE",
         password: finalPass,
-        passwords: [finalPass],
-        aliases: [email, email.split("@")[0]],
         createdAt: new Date().toISOString(),
         isFirstLogin: true,
         loginCount: 0,
@@ -3236,17 +3731,11 @@ if (accountTable) {
       customAccounts.unshift(newAcc);
       writeStore("edumanager-custom-accounts", customAccounts);
 
-      // Lưu mật khẩu vào custom passwords map để xác thực 100%
-      const customPasswords = readStore("edumanager-custom-passwords") || {};
-      customPasswords[email] = finalPass;
-      customPasswords[email.split("@")[0]] = finalPass;
-      writeStore("edumanager-custom-passwords", customPasswords);
-
-      addAuditLog(`Tạo tài khoản mới: ${name} (${email}) - Vai trò: ${role} - Mật khẩu đã được thiết lập`);
+      addAuditLog(`Tạo tài khoản mới: ${name} (${email}) - Vai trò: ${roles.join(", ")}`);
       renderAccounts();
       renderAuditLog();
 
-      // Hiển thị card thành công kèm mật khẩu rõ ràng ngay trong modal
+      // Hiển thị card thành công kèm mật khẩu tạm
       const successBox = document.querySelector("#create-user-success-box");
       const actionsBox = document.querySelector("#create-user-actions");
       if (successBox) {
@@ -3260,7 +3749,7 @@ if (accountTable) {
         const copyBtn = document.querySelector("#btn-copy-new-account");
         if (copyBtn) {
           copyBtn.onclick = () => {
-            const textToCopy = `Tài khoản: ${email}\nMật khẩu: ${finalPass}`;
+            const textToCopy = `Tài khoản: ${email}\nMật khẩu tạm: ${finalPass}`;
             if (navigator.clipboard) {
               navigator.clipboard.writeText(textToCopy);
             }
@@ -3276,24 +3765,21 @@ if (accountTable) {
       }
 
       if (typeof showToast === "function") {
-        showToast(`Tạo tài khoản ${email} thành công! Mật khẩu: ${finalPass}`, "success");
+        showToast(`Tạo tài khoản ${email} thành công! Mật khẩu tạm: ${finalPass}`, "success");
       }
       if (window.lucide) window.lucide.createIcons();
     });
   }
 
   // -------------------------------------------------------------------
-  // Modal Sửa thông tin tài khoản (S1-08)
+  // Drawer Sửa thông tin tài khoản (S1-08, Screenshot 3)
   // -------------------------------------------------------------------
   const closeEditUser = () => {
     if (editUserModal) {
       editUserModal.classList.add("hidden");
       if (editUserForm) editUserForm.reset();
       const alertBox = document.querySelector("#edit-user-alert");
-      if (alertBox) {
-        alertBox.classList.add("hidden");
-        alertBox.textContent = "";
-      }
+      if (alertBox) alertBox.classList.add("hidden");
     }
   };
 
@@ -3313,42 +3799,40 @@ if (accountTable) {
       const email = document.querySelector("#edit-user-email")?.value;
       const name = document.querySelector("#edit-user-name")?.value.trim();
       const phone = document.querySelector("#edit-user-phone")?.value.trim();
+      const roles = editSelectedRoles.length > 0 ? [...editSelectedRoles] : ["student"];
       const alertBox = document.querySelector("#edit-user-alert");
 
       if (!name) {
         if (alertBox) {
-          alertBox.className = "p-3 rounded-lg text-sm bg-rose-500/10 text-rose-500 border border-rose-500/20";
+          alertBox.className = "p-3 rounded-lg text-sm bg-rose-50 text-rose-600 border border-rose-200";
           alertBox.textContent = "Họ và tên không được để trống.";
           alertBox.classList.remove("hidden");
         }
         return;
       }
 
-      // Cập nhật trong custom accounts hoặc ghi đè
+      // Cập nhật custom accounts
       const customAccounts = readStore("edumanager-custom-accounts") || [];
-      const idx = customAccounts.findIndex((a) => a.email === email);
+      const idx = customAccounts.findIndex((a) => a.email.toLowerCase() === email.toLowerCase());
       if (idx >= 0) {
         customAccounts[idx].fullName = name;
         customAccounts[idx].phone = phone;
+        customAccounts[idx].roles = roles;
+        customAccounts[idx].role = roles[0];
       } else {
-        const demo = DEMO_ACCOUNTS.find((a) => a.email === email);
-        if (demo) {
-          customAccounts.push({ ...demo, fullName: name, phone });
-        }
+        const found = getAllAccounts().find((a) => a.email.toLowerCase() === email.toLowerCase());
+        customAccounts.push({
+          ...(found || {}),
+          email,
+          fullName: name,
+          phone,
+          roles,
+          role: roles[0],
+        });
       }
       writeStore("edumanager-custom-accounts", customAccounts);
 
-      // Gửi API cập nhật
-      const all = getAllAccounts();
-      const targetIdx = all.findIndex((a) => a.email === email);
-      const targetId = targetIdx >= 0 ? targetIdx + 1 : 1;
-      fetch(`/api/admin/users/${targetId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName: name, phone }),
-      }).catch(() => null);
-
-      addAuditLog(`Cập nhật thông tin tài khoản ${email}: Họ tên "${name}", SĐT "${phone}"`);
+      addAuditLog(`Cập nhật thông tin tài khoản ${email}: Họ tên "${name}", Vai trò [${roles.join(", ")}]`);
       renderAccounts();
       renderAuditLog();
       closeEditUser();
@@ -3360,217 +3844,17 @@ if (accountTable) {
   }
 
   // -------------------------------------------------------------------
-  // Modal Khoá / Mở khoá tài khoản (S1-10)
+  // Modal Khoá tài khoản (S1-10, Screenshot 5)
   // -------------------------------------------------------------------
   const closeLockModal = () => {
     if (lockAccountModal) {
       lockAccountModal.classList.add("hidden");
       if (lockAccountForm) lockAccountForm.reset();
       const errBox = document.querySelector("#lock-account-error");
-      if (errBox) {
-        errBox.classList.add("hidden");
-        errBox.textContent = "";
-      }
+      if (errBox) errBox.classList.add("hidden");
     }
   };
 
-  // Mở modal khoá / sửa / mở khoá tài khoản từ bảng
-  accountTable.addEventListener("click", (event) => {
-    // Sửa thông tin tài khoản
-    const editBtn = event.target.closest("[data-edit-account]");
-    if (editBtn) {
-      const email = editBtn.dataset.editAccount;
-      const account = getAllAccounts().find((a) => a.email === email);
-      if (!account) return;
-
-      if (editUserModal) {
-        document.querySelector("#edit-user-email").value = account.email;
-        document.querySelector("#edit-user-name").value = account.fullName;
-        document.querySelector("#edit-user-phone").value = account.phone || "";
-        const alertBox = document.querySelector("#edit-user-alert");
-        if (alertBox) alertBox.classList.add("hidden");
-        editUserModal.classList.remove("hidden");
-        const nameInput = document.querySelector("#edit-user-name");
-        if (nameInput) nameInput.focus();
-      }
-      return;
-    }
-
-    // Mở modal khoá
-    const lockBtn = event.target.closest("[data-open-lock-modal]");
-    if (lockBtn) {
-      const email = lockBtn.dataset.openLockModal;
-      const account = getAllAccounts().find((a) => a.email === email);
-      if (!account) return;
-
-      if (account.email === currentUser?.email) {
-        alert("Không thể tự khoá hoặc ngừng hoạt động tài khoản của chính mình.");
-        return;
-      }
-
-      if (lockAccountModal) {
-        document.querySelector("#lock-account-email").value = account.email;
-        document.querySelector("#lock-account-name").textContent = account.fullName;
-        document.querySelector("#lock-account-email-text").textContent = account.email;
-        document.querySelector("#lock-account-role").textContent = ROLES[account.role]?.name ?? account.role;
-
-        // Cảnh báo lớp học phụ trách cần bàn giao (S1-10)
-        const assigned = getAssignedClasses(account.email, account.role);
-        const warningBox = document.querySelector("#lock-handover-alert");
-        const classesList = document.querySelector("#lock-handover-classes");
-
-        if (assigned.length > 0) {
-          classesList.innerHTML = assigned
-            .map((c) => `<li><span class="font-bold">${escapeHtml(c.code)}</span> - ${escapeHtml(c.name)} (<span class="italic">${escapeHtml(c.role)}</span>)</li>`)
-            .join("");
-          warningBox.classList.remove("hidden");
-        } else {
-          classesList.innerHTML = "";
-          warningBox.classList.add("hidden");
-        }
-
-        const reasonInput = document.querySelector("#lock-reason-input");
-        if (reasonInput) reasonInput.value = "";
-        const errBox = document.querySelector("#lock-account-error");
-        if (errBox) errBox.classList.add("hidden");
-
-        lockAccountModal.classList.remove("hidden");
-        if (window.lucide) window.lucide.createIcons();
-        if (reasonInput) reasonInput.focus();
-      }
-      return;
-    }
-
-    // Xử lý mở khoá tài khoản
-    const unlockBtn = event.target.closest("[data-unlock-account]");
-    if (unlockBtn) {
-      const email = unlockBtn.dataset.unlockAccount;
-      const account = getAllAccounts().find((a) => a.email === email);
-      const name = account ? account.fullName : email;
-      const lockout = typeof checkAccountLockout === "function" ? checkAccountLockout(email) : { isLocked: false };
-      const currentReason = lockedReasons[email] || (lockout.isLocked ? "Tạm khóa do nhập sai mật khẩu 5 lần" : "Khóa bởi Quản trị viên");
-
-      if (unlockAccountModal) {
-        document.querySelector("#unlock-account-email").value = email;
-        document.querySelector("#unlock-account-name").textContent = name;
-        document.querySelector("#unlock-account-email-text").textContent = email;
-        document.querySelector("#unlock-account-role").textContent = account ? (ROLES[account.role]?.name ?? account.role) : "Người dùng";
-        document.querySelector("#unlock-account-reason").textContent = currentReason;
-        const errBox = document.querySelector("#unlock-account-error");
-        if (errBox) errBox.classList.add("hidden");
-
-        unlockAccountModal.classList.remove("hidden");
-        if (window.lucide) window.lucide.createIcons();
-      } else {
-        // Fallback trực tiếp nếu không tìm thấy modal
-        lockedAccounts.delete(email);
-        delete lockedReasons[email];
-        writeStore("edumanager-locked-accounts", [...lockedAccounts]);
-        writeStore("edumanager-locked-reasons", lockedReasons);
-
-        const lockoutMap = readStore(LOCKOUT_STORAGE_KEY, {});
-        const norm = typeof normalizeLoginKey === "function" ? normalizeLoginKey(email) : email.toLowerCase();
-        delete lockoutMap[norm];
-        delete lockoutMap[email.toLowerCase()];
-        writeStore(LOCKOUT_STORAGE_KEY, lockoutMap);
-
-        addAuditLog(`Mở khoá tài khoản ${email}`);
-        renderAccounts();
-        renderAuditLog();
-        if (typeof showToast === "function") {
-          showToast(`Mở khoá tài khoản ${email} thành công!`, "success");
-        }
-      }
-      return;
-    }
-  });
-
-  // Đóng modal mở khoá
-  const closeUnlockModal = () => {
-    if (unlockAccountModal) {
-      unlockAccountModal.classList.add("hidden");
-      if (unlockAccountForm) unlockAccountForm.reset();
-      const errBox = document.querySelector("#unlock-account-error");
-      if (errBox) {
-        errBox.classList.add("hidden");
-        errBox.textContent = "";
-      }
-    }
-  };
-
-  document.querySelectorAll("[data-close-unlock-account]").forEach((btn) => {
-    btn.addEventListener("click", closeUnlockModal);
-  });
-
-  if (unlockAccountModal) {
-    unlockAccountModal.addEventListener("click", (e) => {
-      if (e.target === unlockAccountModal) closeUnlockModal();
-    });
-  }
-
-  // Xác nhận submit form mở khoá tài khoản
-  if (unlockAccountForm) {
-    unlockAccountForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const email = document.querySelector("#unlock-account-email")?.value;
-      if (!email) return;
-
-      const submitBtn = document.querySelector("#unlock-confirm-submit-btn");
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="inline-block animate-spin mr-1">⌛</span> Đang mở khoá...';
-      }
-
-      try {
-        const all = getAllAccounts();
-        const targetIdx = all.findIndex((a) => a.email === email);
-        const targetId = targetIdx >= 0 ? targetIdx + 1 : 1;
-        await fetch(`/api/admin/users/${targetId}/status`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "ACTIVE" }),
-        }).catch(() => null);
-      } catch (_) {
-        // Fallback offline mock
-      } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<i data-lucide="unlock" class="size-4"></i> Xác nhận mở khoá';
-          if (window.lucide) window.lucide.createIcons();
-        }
-      }
-
-      // Xóa khỏi danh sách tài khoản bị khóa
-      lockedAccounts.delete(email);
-      delete lockedReasons[email];
-      writeStore("edumanager-locked-accounts", [...lockedAccounts]);
-      writeStore("edumanager-locked-reasons", lockedReasons);
-
-      // Dỡ bỏ khóa tạm thời 15 phút do nhập sai mật khẩu (S1-01 AC3 & S1-10)
-      const lockoutMap = readStore(LOCKOUT_STORAGE_KEY, {});
-      const norm = typeof normalizeLoginKey === "function" ? normalizeLoginKey(email) : email.toLowerCase();
-      delete lockoutMap[norm];
-      delete lockoutMap[email.toLowerCase()];
-      writeStore(LOCKOUT_STORAGE_KEY, lockoutMap);
-
-      const attemptsMap = readStore("edumanager-failed-attempts", {});
-      delete attemptsMap[norm];
-      delete attemptsMap[email.toLowerCase()];
-      writeStore("edumanager-failed-attempts", attemptsMap);
-
-      closeUnlockModal();
-      addAuditLog(`Mở khoá tài khoản ${email}`);
-      renderAccounts();
-      renderAuditLog();
-
-      if (typeof showToast === "function") {
-        showToast(`Mở khoá tài khoản ${email} thành công! Người dùng có thể đăng nhập bình thường.`, "success");
-      }
-      if (window.lucide) window.lucide.createIcons();
-    });
-  }
-
-  // Đóng modal khoá
   document.querySelectorAll("[data-close-lock-account]").forEach((btn) => {
     btn.addEventListener("click", closeLockModal);
   });
@@ -3581,7 +3865,6 @@ if (accountTable) {
     });
   }
 
-  // Xác nhận submit form khoá tài khoản
   if (lockAccountForm) {
     lockAccountForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -3606,7 +3889,7 @@ if (accountTable) {
         return;
       }
 
-      if (email === currentUser?.email) {
+      if (email.toLowerCase() === (currentUser?.email || "").toLowerCase()) {
         showErr("Không thể tự khoá tài khoản của chính mình.");
         return;
       }
@@ -3619,33 +3902,22 @@ if (accountTable) {
 
       try {
         const all = getAllAccounts();
-        const targetIdx = all.findIndex((a) => a.email === email);
+        const targetIdx = all.findIndex((a) => a.email.toLowerCase() === email.toLowerCase());
         const targetId = targetIdx >= 0 ? targetIdx + 1 : 1;
-        const res = await fetch(`/api/admin/users/${targetId}/status`, {
+        await fetch(`/api/admin/users/${targetId}/status`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ status: "LOCKED", lockedReason: reason }),
         }).catch(() => null);
+      } catch (_) {}
 
-        if (res && !res.ok) {
-          const data = await res.json().catch(() => null);
-          if (data?.message) {
-            showErr(data.message);
-            return;
-          }
-        }
-      } catch (_) {
-        // Fallback offline mock
-      } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<i data-lucide="lock" class="size-4"></i> Xác nhận khoá tài khoản';
-          if (window.lucide) window.lucide.createIcons();
-        }
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i data-lucide="lock" class="size-4"></i> <span>Khoá tài khoản</span>';
       }
 
-      lockedAccounts.add(email);
-      lockedReasons[email] = reason;
+      lockedAccounts.add(email.toLowerCase());
+      lockedReasons[email.toLowerCase()] = reason;
       writeStore("edumanager-locked-accounts", [...lockedAccounts]);
       writeStore("edumanager-locked-reasons", lockedReasons);
 
@@ -3659,9 +3931,80 @@ if (accountTable) {
       closeLockModal();
       renderAccounts();
       renderAuditLog();
+
+      if (typeof showToast === "function") {
+        showToast(`Đã khoá tài khoản ${email}. Các phiên làm việc bị thu hồi ngay.`, "warning");
+      }
     });
   }
 
+  // -------------------------------------------------------------------
+  // Modal Mở khoá tài khoản (S1-10)
+  // -------------------------------------------------------------------
+  const closeUnlockModal = () => {
+    if (unlockAccountModal) {
+      unlockAccountModal.classList.add("hidden");
+      if (unlockAccountForm) unlockAccountForm.reset();
+      const errBox = document.querySelector("#unlock-account-error");
+      if (errBox) errBox.classList.add("hidden");
+    }
+  };
+
+  document.querySelectorAll("[data-close-unlock-account]").forEach((btn) => {
+    btn.addEventListener("click", closeUnlockModal);
+  });
+
+  if (unlockAccountModal) {
+    unlockAccountModal.addEventListener("click", (e) => {
+      if (e.target === unlockAccountModal) closeUnlockModal();
+    });
+  }
+
+  if (unlockAccountForm) {
+    unlockAccountForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.querySelector("#unlock-account-email")?.value;
+      if (!email) return;
+
+      const submitBtn = document.querySelector("#unlock-confirm-submit-btn");
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="inline-block animate-spin mr-1">⌛</span> Đang mở khoá...';
+      }
+
+      try {
+        const all = getAllAccounts();
+        const targetIdx = all.findIndex((a) => a.email.toLowerCase() === email.toLowerCase());
+        const targetId = targetIdx >= 0 ? targetIdx + 1 : 1;
+        await fetch(`/api/admin/users/${targetId}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "ACTIVE" }),
+        }).catch(() => null);
+      } catch (_) {}
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i data-lucide="unlock" class="size-4"></i> Xác nhận mở khoá';
+      }
+
+      lockedAccounts.delete(email.toLowerCase());
+      delete lockedReasons[email.toLowerCase()];
+      writeStore("edumanager-locked-accounts", [...lockedAccounts]);
+      writeStore("edumanager-locked-reasons", lockedReasons);
+
+      closeUnlockModal();
+      addAuditLog(`Mở khoá tài khoản ${email}`);
+      renderAccounts();
+      renderAuditLog();
+
+      if (typeof showToast === "function") {
+        showToast(`Mở khoá tài khoản ${email} thành công! Người dùng có thể đăng nhập bình thường.`, "success");
+      }
+    });
+  }
+
+  // Khởi tạo ban đầu
   renderAccounts();
 }
 
@@ -4075,10 +4418,12 @@ const setupChangePasswordModal = () => {
     confirmInput?.classList.remove("is-error");
     confirmError?.classList.add("hidden");
 
-    ruleLength?.classList.remove("is-met");
-    ruleCase?.classList.remove("is-met");
-    ruleDigits?.classList.remove("is-met");
-    ruleSpecial?.classList.remove("is-met");
+    [ruleLength, ruleCase, ruleDigits, ruleSpecial].forEach((el) => {
+      if (!el) return;
+      el.classList.remove("is-met", "is-unmet");
+      const checkEl = el.querySelector(".cp-rule-check");
+      if (checkEl) checkEl.textContent = "✓";
+    });
 
     if (submitBtn) {
       submitBtn.disabled = true;
@@ -4150,17 +4495,42 @@ const setupChangePasswordModal = () => {
   });
 
   // Hàm tính toán kiểm tra 4 điều kiện mật khẩu và trạng thái nút Submit
+  // ĐÚNG ĐỊNH DẠNG THÌ TÍCH XANH, NẾU KHÔNG ĐÚNG THÌ X ĐỎ
   const updatePasswordRules = () => {
     const val = newPassInput?.value || "";
+    const hasTyped = val.length > 0;
+
     const isLen = val.length >= 8;
     const isCas = /[a-z]/.test(val) && /[A-Z]/.test(val);
     const isDig = /\d/.test(val);
     const isSpe = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(val);
 
-    ruleLength?.classList.toggle("is-met", isLen);
-    ruleCase?.classList.toggle("is-met", isCas);
-    ruleDigits?.classList.toggle("is-met", isDig);
-    ruleSpecial?.classList.toggle("is-met", isSpe);
+    const rules = [
+      { el: ruleLength, met: isLen },
+      { el: ruleCase, met: isCas },
+      { el: ruleDigits, met: isDig },
+      { el: ruleSpecial, met: isSpe },
+    ];
+
+    rules.forEach(({ el, met }) => {
+      if (!el) return;
+      const checkEl = el.querySelector(".cp-rule-check");
+      if (!hasTyped) {
+        // Chưa nhập mật khẩu: trạng thái trung tính mặc định
+        el.classList.remove("is-met", "is-unmet");
+        if (checkEl) checkEl.textContent = "✓";
+      } else if (met) {
+        // ĐÚNG ĐỊNH DẠNG: TÍCH XANH
+        el.classList.add("is-met");
+        el.classList.remove("is-unmet");
+        if (checkEl) checkEl.textContent = "✓";
+      } else {
+        // KHÔNG ĐÚNG ĐỊNH DẠNG: X ĐỎ
+        el.classList.add("is-unmet");
+        el.classList.remove("is-met");
+        if (checkEl) checkEl.textContent = "✕";
+      }
+    });
 
     const allRulesMet = isLen && isCas && isDig && isSpe;
     const confirmVal = confirmInput?.value || "";
@@ -4190,6 +4560,7 @@ const setupChangePasswordModal = () => {
   };
 
   newPassInput?.addEventListener("input", updatePasswordRules);
+  newPassInput?.addEventListener("change", updatePasswordRules);
   confirmInput?.addEventListener("input", updatePasswordRules);
   currentInput?.addEventListener("input", () => {
     currentInput.classList.remove("is-error");
