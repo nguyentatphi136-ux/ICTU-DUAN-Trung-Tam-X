@@ -2,17 +2,16 @@ import { useMemo, useState } from 'react';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Filter, Pager, paginate, Pill, Search } from '../../components/ui';
+import { Pager, paginate, Pill } from '../../components/ui';
 import { useAuth } from '../../data/auth';
 import { ADMIN_ROLE } from '../../data/permissions';
-import { COUNSELORS, LEAD_STATUSES, leadTone, LEADS, SOURCES, viDate, type Lead } from '../../data/leads';
+import { leadTone, LEADS, viDate, type Lead } from '../../data/leads';
 import { AssignDialog } from './AssignDialog';
 import { LeadDrawer } from './LeadDrawer';
+import { applyLeadFilter, EMPTY_LEAD_FILTER, LeadFilters, type LeadFilter } from './LeadFilters';
 import './lead.css';
 
 const MODULE = 'Tuyển sinh & lead';
-const RANGES: Record<string, string> = { '2026-09': '01/09 – 30/09/2026', '2026-08': '01/08 – 31/08/2026' };
-const UNASSIGNED = 'Chưa phân công';
 
 // S2-09 danh sách lead, thêm và sửa; S2-10 phân công một hoặc nhiều lead; S2-11 tìm theo tên, số điện thoại và bộ lọc.
 // Tư vấn viên chỉ thấy lead được giao cho mình, không có ô chọn và nút Phân công. Chỉ Quản lý đào tạo xoá được lead.
@@ -20,11 +19,7 @@ export function LeadListPage() {
   const { user } = useAuth();
   const toast = useToast();
   const [leads, setLeads] = useState(LEADS);
-  const [q, setQ] = useState('');
-  const [status, setStatus] = useState('');
-  const [source, setSource] = useState('');
-  const [owner, setOwner] = useState('');
-  const [range, setRange] = useState('');
+  const [filters, setFilters] = useState<LeadFilter>(EMPTY_LEAD_FILTER);
   const [page, setPage] = useState(1);
   const [picked, setPicked] = useState<number[]>([]);
   const [editing, setEditing] = useState<Lead | 'new' | null>(null);
@@ -35,28 +30,16 @@ export function LeadListPage() {
   const manager = role === 5 || role === ADMIN_ROLE;
   const canWrite = counselor || manager;
 
-  const filtered = useMemo(() => {
-    const k = q.trim().toLowerCase();
-    const digits = k.replace(/\D/g, '');
-    return leads.filter(
-      (l) =>
-        (!counselor || l.owner === user?.name) &&
-        (!k || l.name.toLowerCase().includes(k) || (digits.length > 2 && l.phone.replace(/\D/g, '').includes(digits))) &&
-        (!status || l.status === status) &&
-        (!source || l.source === source) &&
-        (!owner || (owner === UNASSIGNED ? !l.owner : l.owner === owner)) &&
-        (!range || l.createdAt.startsWith(range)),
-    );
-  }, [leads, q, status, source, owner, range, counselor, user]);
+  // Tư vấn viên chỉ thấy lead của mình, rồi mới áp bộ lọc S2-11.
+  const filtered = useMemo(
+    () => applyLeadFilter(counselor ? leads.filter((l) => l.owner === user?.name) : leads, filters),
+    [leads, filters, counselor, user],
+  );
   const view = paginate(filtered, page);
 
   const commit = (list: Lead[]) => {
     LEADS.splice(0, LEADS.length, ...list);
     setLeads(list);
-  };
-  const filter = (set: (v: string) => void) => (v: string) => {
-    set(v);
-    setPage(1);
   };
   const toggle = (id: number) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const allOnPage = view.items.length > 0 && view.items.every((l) => picked.includes(l.id));
@@ -75,24 +58,14 @@ export function LeadListPage() {
           </button>
         )}
       </div>
-      <div className="bar">
-        <Search placeholder="Tìm theo tên hoặc số điện thoại" value={q} onChange={filter(setQ)} width={280} />
-        <Filter label="Trạng thái" value={status} options={LEAD_STATUSES} onChange={filter(setStatus)} width={198} />
-        <Filter label="Nguồn" value={source} options={SOURCES} onChange={filter(setSource)} width={198} />
-        {!counselor && <Filter label="Phụ trách" value={owner} options={[UNASSIGNED, ...COUNSELORS]} onChange={filter(setOwner)} width={198} />}
-        <label className="filter" style={{ width: 198 }}>
-          <span>{RANGES[range] ?? 'Mọi thời gian'}</span>
-          <Icon name="down" />
-          <select value={range} onChange={(e) => filter(setRange)(e.target.value)} aria-label="Khoảng thời gian">
-            <option value="">Mọi thời gian</option>
-            {Object.entries(RANGES).map(([v, label]) => (
-              <option key={v} value={v}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+      <LeadFilters
+        value={filters}
+        showOwner={!counselor}
+        onChange={(f) => {
+          setFilters(f);
+          setPage(1);
+        }}
+      />
 
       {manager && picked.length > 0 && (
         <div className="ld-bulk">
@@ -146,7 +119,7 @@ export function LeadListPage() {
                   <td>
                     <Pill tone={leadTone(l.status)}>{l.status}</Pill>
                   </td>
-                  <td>{l.owner || <span className="ld-none">{UNASSIGNED}</span>}</td>
+                  <td>{l.owner || <span className="ld-none">Chưa phân công</span>}</td>
                   <td>{viDate(l.createdAt)}</td>
                 </tr>
               ))}
