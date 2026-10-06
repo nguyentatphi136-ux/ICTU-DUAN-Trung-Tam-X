@@ -125,3 +125,7 @@ td .err{margin:0;font-size:13px}
 .today{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:24px}
 .today h3{grid-column:1/-1;font-size:20px}
 .today .panel{padding:16px}.today span{display:block;color:var(--blue);font-size:12px;font-weight:500}.today b{display:block;font-size:16px;font-weight:600;margin:4px 0 2px}.today small{color:var(--muted);font-size:13px}
+/* S1-10. Đầu hộp thoại khoá tài khoản (LockAccountDialog) */
+.lk-head{display:flex;gap:16px;align-items:flex-start;margin-bottom:16px}
+.lk-head h3{margin:0}.lk-head p{color:var(--muted);font-size:13px}
+.lk-head .t{width:44px;height:44px;border-radius:var(--r);background:#fef3f2;color:var(--red);display:grid;place-items:center;flex:none}

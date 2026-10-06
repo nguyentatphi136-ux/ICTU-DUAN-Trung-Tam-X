@@ -6,7 +6,7 @@ import { useToast } from '../../components/Toast';
 import { Filter, initial, Pager, paginate, Pill, RowMenu, Search } from '../../components/ui';
 import { ROLES } from '../../data/permissions';
 import { statusTone, USERS, type Status, type UserRow } from '../../data/users';
-import { LockDialog } from './LockDialog';
+import { LockAccountDialog } from './LockAccountDialog';
 import { UserDrawer } from './UserDrawer';
 
 const STATUSES: Status[] = ['Hoạt động', 'Chờ kích hoạt', 'Đã khoá'];
@@ -142,9 +142,10 @@ export function UserListPage() {
         />
       )}
       {locking && (
-        <LockDialog
+        <LockAccountDialog
           user={locking}
-          onClose={() => setLocking(null)}
+          classes={locking.classes ?? []}
+          onCancel={() => setLocking(null)}
           onConfirm={(reason) => {
             const locked = locking.status !== 'Đã khoá';
             update({ ...locking, status: locked ? 'Đã khoá' : 'Hoạt động', lockReason: locked ? reason : undefined });
