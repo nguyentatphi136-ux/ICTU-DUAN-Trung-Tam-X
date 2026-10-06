@@ -52,7 +52,7 @@ Hệ thống Quản lý Đào tạo Trung tâm là nền tảng quản trị s�
 | STT | Họ và tên | Mã SV | Vai trò Scrum | Phân công nhiệm vụ kỹ thuật |
 |:---:|:---|:---:|:---|:---|
 | 1 | Nguyễn Tất Phi | [Mã SV] | Team Leader / Dev | Quản trị dự án, thiết kế kiến trúc hệ thống, BE Core Auth (Sprint 1) |
-| 2 | Nguyễn Minh Ngọc | [Mã SV] | Scrum Master / Backend Dev | Điều phối Scrum, thiết kế CSDL & xây dựng API phân công lead (S2-10), tìm kiếm & lọc lead đa điều kiện (S2-11) |
+| 2 | Nguyễn Minh Ngọc | [Mã SV] | Scrum Master / Backend Dev | Điều phối Scrum, thiết kế CSDL & xây dựng API phân công lead cho tư vấn viên (S2-10 - IDTTX-165 / IDTTX-195) |
 | 3 | Nông Hùng Nguyên | [Mã SV] | Backend Dev | Thiết kế CSDL, API quản lý tài khoản, mã hóa mật khẩu |
 | 4 | Nguyễn Trung Kiên | [Mã SV] | Backend Dev | Xây dựng bộ lọc Authorization Filter, gán và thu hồi Role |
 | 5 | Nguyễn Văn Kỳ | [Mã SV] | Backend Dev | Xử lý Session, Forgot Password qua Email, API hồ sơ người dùng |
@@ -91,7 +91,7 @@ Hệ thống Quản lý Đào tạo Trung tâm là nền tảng quản trị s�
 ### 6.2. Các bước khởi chạy dự án
 ```bash
 # 1. Clone mã nguồn dự án
-git clone [https://github.com/nguyentatphi136-ux/ICTU-DUAN-Trung-Tam-X.git](https://github.com/nguyentatphi136-ux/ICTU-DUAN-Trung-Tam-X.git)
+git clone https://github.com/nguyentatphi136-ux/ICTU-DUAN-Trung-Tam-X.git
 
 # 2. Di chuyển vào thư mục dự án
 cd ICTU-DUAN-Trung-Tam-X
@@ -107,38 +107,34 @@ git checkout develop
 
 ---
 
-## 7. Tiến độ Sprint 2: Quản lý Lead & Phân công Tuyển sinh (Nhánh `s2-10-minhngoc(BE)`)
+## 7. Tiến độ Sprint 2: Phân công lead cho tư vấn viên (Story S2-10 - Nhánh `s2-10-minhngoc(BE)`)
 
-Nhánh **`s2-10-minhngoc(BE)`** hoàn thành 2 hạng mục Backend cốt lõi thuộc Sprint 2 cho phân hệ Tuyển sinh & Quản lý Lead (Admissions / Leads CRM):
+Nhánh **`s2-10-minhngoc(BE)`** hoàn thành toàn diện hạng mục Backend cho **Story S2-10 (IDTTX-165 / Subtask IDTTX-195)**:
 
-### 7.1. Story S2-10 (IDTTX-165 / Subtask IDTTX-195): Phân công lead cho tư vấn viên
-- **Nghiệp vụ đáp ứng:**
-  - Quản lý đào tạo (`TrainingManager`) hoặc Quản trị viên (`Admin`) có thể phân công một hoặc nhiều lead cùng lúc cho một tư vấn viên tuyển sinh (`Admissions`).
-  - **Phân quyền truy cập:** Tư vấn viên (`Admissions`) chỉ nhìn thấy các lead được phân công cho chính mình; không thể truy cập hoặc thao tác trên lead của tư vấn viên khác.
-  - **Lịch sử chuyển giao:** Hệ thống tự động ghi nhận nhật ký chuyển giao vào bảng `lead_assignments` và timeline của từng lead (tư vấn viên cũ, tư vấn viên mới, người phân công, lý do, thời gian).
-- **APIs triển khai:**
-  - `POST /api/leads/assign`: Phân công lead hàng loạt.
-  - `GET /api/leads/counselors`: Lấy danh sách tư vấn viên phục vụ phân công.
-  - `GET /api/leads/:id/assignments`: Xem lịch sử chuyển giao của một lead.
+> **User Story S2-10:** Là Quản lý đào tạo, tôi muốn phân công lead cho tư vấn viên, để mỗi khách hàng tiềm năng đều có một người chịu trách nhiệm gọi lại.
 
-### 7.2. Story S2-11 (IDTTX-166 / Subtask IDTTX-198): Tìm kiếm và lọc lead đa điều kiện
-- **Nghiệp vụ đáp ứng:**
-  - Tìm kiếm nhanh theo tên, số điện thoại (hỗ trợ partial match), email hoặc khóa học quan tâm.
-  - Bộ lọc đa điều kiện: Trạng thái lead (`NEW`, `CONTACTED`, `CONSULTING`, `TRIAL_SCHEDULED`, `WON`, `REJECTED`), nguồn lead (`WEBSITE`, `FACEBOOK`, `REFERRAL`, `HOTLINE`, `TIKTOK`, `EVENT`), người phụ trách (`counselorId` hoặc `unassigned`).
-  - Lọc theo khoảng thời gian: Khoảng ngày cụ thể hoặc theo mốc định sẵn (`today`, `yesterday`, `this-week`, `this-month`, `last-month` để tìm lại cuộc trao đổi từ tháng trước khi khách gọi lại).
-  - Phân trang (`page`, `limit`) và sắp xếp dữ liệu (`sortBy`, `sortOrder`).
-- **APIs triển khai:**
-  - `GET /api/leads`: Tìm kiếm và lọc danh sách lead (tự động phân quyền theo vai trò).
-  - `GET /api/leads/stats`: Thống kê số lượng lead theo phễu phục vụ hiển thị thẻ KPI / Dashboard.
-  - `GET /api/leads/:id`: Chi tiết thông tin và timeline tương tác của lead.
-  - `POST /api/leads/:id/interactions`: Ghi nhật ký cuộc gọi / ghi chú trao đổi tư vấn.
-  - `PATCH /api/leads/:id/status`: Cập nhật trạng thái xử lý lead.
+### 7.1. Các tiêu chí nghiệm thu hoàn thành:
+1. **Phân công một hoặc nhiều lead cùng lúc:**
+   - Quản lý đào tạo (`TrainingManager`) hoặc Quản trị viên (`Admin`) có thể lựa chọn danh sách nhiều ID lead cùng lúc và giao cho một tư vấn viên tuyển sinh (`Admissions`).
+2. **Phân quyền truy cập theo vai trò:**
+   - Tư vấn viên tuyển sinh (`Admissions`) chỉ nhìn thấy danh sách các lead được phân công cho chính mình.
+   - Chặn quyền truy cập (`403 Forbidden`) nếu tư vấn viên cố tình xem thông tin lead của người khác.
+3. **Ghi lịch sử chuyển giao:**
+   - Tự động lưu vết lịch sử vào bảng `lead_assignments` (lead nào, tư vấn viên trước, tư vấn viên sau, người phân công, ghi chú lý do, thời điểm chuyển giao).
+   - Tự động bổ sung dòng thời gian (timeline audit log) vào hồ sơ lead.
 
-### 7.3. Cơ sở dữ liệu & Kiểm thử
-- **Migration SQL:** [`database/migration_s2_10_s2_11_lead_management.sql`](database/migration_s2_10_s2_11_lead_management.sql) (bảng `leads`, `lead_assignments`, `lead_interactions` đạt chuẩn 3NF và đánh index tối ưu truy vấn).
-- **Chạy kiểm thử tự động:**
+### 7.2. Danh mục RESTful APIs triển khai:
+- `POST /api/leads/assign`: Phân công lead hàng loạt cho tư vấn viên.
+- `GET /api/leads/counselors`: Lấy danh sách các tư vấn viên (`Admissions`) đang hoạt động để hiển thị danh sách chọn phân công.
+- `GET /api/leads`: Lấy danh sách lead (tự động phân quyền: tư vấn viên chỉ xem được lead của chính mình).
+- `GET /api/leads/:id`: Xem thông tin chi tiết một lead.
+- `GET /api/leads/:id/assignments`: Xem toàn bộ lịch sử chuyển giao của lead.
+
+### 7.3. Cơ sở dữ liệu & Kiểm thử tự động:
+- **Migration SQL:** [`database/migration_s2_10_lead_assignment.sql`](database/migration_s2_10_lead_assignment.sql) (thiết kế chuẩn hóa 3NF gồm bảng `leads` và bảng `lead_assignments`, có khóa ngoại và index tối ưu).
+- **Chạy kiểm thử:**
   ```bash
   cd BE
   npm test
   ```
-  *Kết quả kiểm thử:* **31/31 tests PASS (100%)** bao quát toàn bộ ca kiểm thử chức năng và phân quyền bảo mật cho S2-10 và S2-11.
+  Tất cả các ca kiểm thử nghiệp vụ cho Story S2-10 và bảo mật phân quyền đều đạt **PASS 100%**.

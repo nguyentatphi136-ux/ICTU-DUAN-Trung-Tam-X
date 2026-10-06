@@ -112,40 +112,46 @@ Mã phản hồi:
 | Admissions | `admissions@example.com` | `admissions123` | Tư vấn viên 1 (Lê Thị Thu Hà) |
 | Admissions | `tuvan@example.com` | `tuvan123` | Tư vấn viên 2 (Hoàng Văn Tư) |
 
-## API Quản lý Lead & Tuyển sinh (S2-10 & S2-11)
+## API Phân công Lead cho Tư vấn viên (Story S2-10 - IDTTX-165 / Subtask IDTTX-195)
 
-### 1. Phân công lead cho tư vấn viên (S2-10 - IDTTX-165 / IDTTX-195)
-Yêu cầu vai trò: `TrainingManager` hoặc `Admin`.
+Áp dụng cho nhánh: **`s2-10-minhngoc(BE)`**
 
-- `POST /api/leads/assign`: Phân công một hoặc nhiều lead cùng lúc cho tư vấn viên.
-  - Body mẫu:
-    ```json
-    {
-      "leadIds": ["3", "4"],
-      "counselorId": "5",
-      "note": "Giao chăm sóc khách hàng mới từ chiến dịch tuần này"
+### Yêu cầu nghiệp vụ Story S2-10:
+1. **Phân công một hoặc nhiều lead cùng lúc:** Quản lý đào tạo (`TrainingManager`) hoặc Quản trị hệ thống (`Admin`) có thể giao nhiều khách hàng tiềm năng cùng lúc cho một tư vấn viên tuyển sinh (`Admissions`).
+2. **Phân quyền truy cập theo vai trò:** Tư vấn viên tuyển sinh (`Admissions`) chỉ nhìn thấy các lead được phân công cho chính mình. Không thể xem hoặc can thiệp lead của tư vấn viên khác.
+3. **Ghi lịch sử chuyển giao:** Hệ thống tự động ghi nhật ký chuyển giao đầy đủ vào bảng `lead_assignments` và timeline chi tiết của lead (tư vấn viên cũ, tư vấn viên mới, người thực hiện phân công, ghi chú, thời điểm).
+
+### Danh sách API Story S2-10:
+
+| Phương thức | Đường dẫn | Vai trò được phép | Mô tả |
+| --- | --- | --- | --- |
+| `POST` | `/api/leads/assign` | `TrainingManager`, `Admin` | Phân công một hoặc nhiều lead cùng lúc cho tư vấn viên |
+| `GET` | `/api/leads/counselors` | `TrainingManager`, `Admin` | Lấy danh sách tư vấn viên (`Admissions`) phục vụ dropdown phân công |
+| `GET` | `/api/leads` | `TrainingManager`, `Admin`, `Admissions` | Lấy danh sách lead (Tự động lọc chỉ hiển thị lead của chính mình nếu là `Admissions`) |
+| `GET` | `/api/leads/:id` | `TrainingManager`, `Admin`, `Admissions` | Xem chi tiết lead (Chặn 403 nếu tư vấn viên xem lead của người khác) |
+| `GET` | `/api/leads/:id/assignments` | `TrainingManager`, `Admin`, `Admissions` | Xem toàn bộ lịch sử chuyển giao của lead |
+
+#### Chi tiết API `POST /api/leads/assign`:
+- **Headers:** `Authorization: Bearer <token>`, `Content-Type: application/json`
+- **Body:**
+  ```json
+  {
+    "leadIds": ["3", "4"],
+    "counselorId": "5",
+    "note": "Giao chăm sóc khách hàng mới từ chiến dịch tuyển sinh"
+  }
+  ```
+- **Phản hồi thành công (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "message": "Đã phân công thành công 2 lead cho Lê Thị Thu Hà (Tư vấn viên)",
+    "data": {
+      "updatedCount": 2,
+      "leads": [...],
+      "assignments": [...]
     }
-    ```
-  - Hệ thống tự động lưu lịch sử chuyển giao vào bảng `lead_assignments` và timeline của từng lead.
-- `GET /api/leads/counselors`: Lấy danh sách các tư vấn viên (`Admissions`) có sẵn để phục vụ phân công.
-- `GET /api/leads/:id/assignments`: Xem toàn bộ lịch sử phân công và chuyển giao của một lead.
+  }
+  ```
 
-### 2. Tìm kiếm và lọc lead đa điều kiện (S2-11 - IDTTX-166 / IDTTX-198)
-Yêu cầu vai trò: `TrainingManager`, `Admin`, hoặc `Admissions`.
-*Lưu ý phân quyền nghiệp vụ:* Nếu người dùng có vai trò `Admissions` (Tư vấn viên), hệ thống tự động lọc chỉ hiển thị các lead được phân công cho chính họ.
-
-- `GET /api/leads`: Tìm kiếm và lọc danh sách lead.
-  - Tham số query hỗ trợ:
-    - `search` hoặc `q`: Tìm kiếm nhanh theo tên, số điện thoại, email hoặc khoá học.
-    - `status`: Lọc theo trạng thái (`NEW`, `CONTACTED`, `CONSULTING`, `TRIAL_SCHEDULED`, `WON`, `REJECTED`, hỗ trợ cả alias tiếng Việt như `mới`, `đang tư vấn`, `đã đăng ký`).
-    - `source`: Lọc theo nguồn (`WEBSITE`, `FACEBOOK`, `REFERRAL`, `HOTLINE`, `TIKTOK`, `EVENT`).
-    - `counselorId`: Lọc theo ID tư vấn viên (`unassigned` để lọc lead chưa phân công).
-    - `createdFrom`, `createdTo`: Lọc theo khoảng ngày tạo.
-    - `datePreset`: Lọc theo mốc (`today`, `yesterday`, `this-week`, `this-month`, `last-month` để tìm lại cuộc trao đổi từ tháng trước).
-    - `page`, `limit`: Phân trang dữ liệu.
-    - `sortBy`, `sortOrder`: Sắp xếp theo trường (`createdAt`, `fullName`, `status`, `lastInteractionAt`).
-- `GET /api/leads/stats`: Thống kê tổng quan số lượng lead theo trạng thái phục vụ hiển thị dashboard / cards.
-- `GET /api/leads/:id`: Xem chi tiết thông tin và timeline của một lead.
-- `POST /api/leads/:id/interactions`: Ghi nhận cuộc gọi, ghi chú trao đổi vào timeline chăm sóc khách hàng.
-- `PATCH /api/leads/:id/status`: Cập nhật trạng thái xử lý lead.
 
