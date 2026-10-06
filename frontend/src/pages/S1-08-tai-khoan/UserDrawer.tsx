@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
+import { useToast } from '../../components/Toast';
 import { Box, Drawer, initial, Pill } from '../../components/ui';
 import { useAuth } from '../../data/auth';
-import { ADMIN_ROLE, ROLES } from '../../data/permissions';
+import { ADMIN_ROLE } from '../../data/permissions';
 import { statusTone, type UserRow } from '../../data/users';
+import { RoleChips } from './RoleChips';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const PHONE_RE = /^0\d{9}$/;
@@ -21,6 +23,7 @@ type Props = {
 // Khi tích hợp: POST /admin/users (máy chủ gửi email kích hoạt kèm mật khẩu tạm), PUT /admin/users/:id, PUT /admin/users/:id/roles.
 export function UserDrawer({ user, users, onClose, onSave, onLock }: Props) {
   const { user: me } = useAuth();
+  const toast = useToast();
   const [name, setName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
@@ -95,31 +98,26 @@ export function UserDrawer({ user, users, onClose, onSave, onLock }: Props) {
 
       {isNew ? (
         <div className="field">
-          <label htmlFor="ud-role">Vai trò</label>
-          <div className={'inp chipbox' + (errors.roles ? ' bad' : '')}>
-            <RoleChips roles={roles} setRoles={setRoles} />
-            <select
-              id="ud-role"
-              value=""
-              onChange={(e) => {
-                setRoles((r) => [...r, Number(e.target.value)]);
-                setErrors((x) => ({ ...x, roles: '' }));
-              }}
-            >
-              <option value="">Thêm vai trò</option>
-              {ROLES.map((r, i) => !roles.includes(i) && <option key={r} value={i}>{r}</option>)}
-            </select>
-          </div>
+          <label>Vai trò</label>
+          <RoleChips
+            value={roles}
+            onChange={(r) => {
+              setRoles(r);
+              setErrors((x) => ({ ...x, roles: '' }));
+            }}
+          />
           {errors.roles ? <p className="err">{errors.roles}</p> : <p className="hint">Một người có thể giữ nhiều vai trò cùng lúc.</p>}
         </div>
       ) : (
         <>
           <hr className="sep" />
           <div className="section-t">Vai trò</div>
-          <div className="chips">
-            <RoleChips roles={roles} setRoles={setRoles} locked={isSelf ? ADMIN_ROLE : undefined} />
-            <AddRole roles={roles} onAdd={(r) => setRoles((x) => [...x, r])} />
-          </div>
+          <RoleChips
+            value={roles}
+            onChange={setRoles}
+            protectedRole={isSelf ? ADMIN_ROLE : undefined}
+            onBlocked={() => toast('Không thu hồi được', 'Bạn không thể tự thu hồi vai trò quản trị của chính mình.')}
+          />
           {errors.roles ? <p className="err">{errors.roles}</p> : <p className="hint" style={{ marginTop: 10 }}>Thay đổi vai trò có hiệu lực ngay ở thao tác kế tiếp, người dùng không cần đăng nhập lại. Bạn không thể tự thu hồi vai trò quản trị của chính mình.</p>}
           <hr className="sep" />
           <div className="section-t">Trạng thái tài khoản</div>
@@ -146,49 +144,3 @@ export function UserDrawer({ user, users, onClose, onSave, onLock }: Props) {
   );
 }
 
-function RoleChips({ roles, setRoles, locked }: { roles: number[]; setRoles: (f: (r: number[]) => number[]) => void; locked?: number }) {
-  return (
-    <>
-      {roles.map((r) => (
-        <span className="chip" key={r}>
-          {ROLES[r]}
-          {r !== locked && (
-            <button type="button" aria-label={'Thu hồi vai trò ' + ROLES[r]} onClick={() => setRoles((x) => x.filter((y) => y !== r))}>
-              <Icon name="x" />
-            </button>
-          )}
-        </span>
-      ))}
-    </>
-  );
-}
-
-function AddRole({ roles, onAdd }: { roles: number[]; onAdd: (r: number) => void }) {
-  const [open, setOpen] = useState(false);
-  const rest = ROLES.map((r, i) => [r, i] as const).filter(([, i]) => !roles.includes(i));
-  if (!rest.length) return null;
-  return (
-    <span style={{ position: 'relative' }}>
-      <button type="button" className="chip-add" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-        <Icon name="plus" />
-        Thêm vai trò
-      </button>
-      {open && (
-        <div className="dropdown" style={{ left: 0, right: 'auto' }}>
-          {rest.map(([r, i]) => (
-            <button
-              key={r}
-              type="button"
-              onClick={() => {
-                onAdd(i);
-                setOpen(false);
-              }}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      )}
-    </span>
-  );
-}
