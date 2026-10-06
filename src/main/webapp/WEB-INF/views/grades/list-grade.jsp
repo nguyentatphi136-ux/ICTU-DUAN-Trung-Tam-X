@@ -48,10 +48,14 @@
         <div class="card shadow-sm border-0">
             <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
                 <h5 class="mb-0 fw-bold"><i class="bi bi-journal-text text-primary me-2"></i>Bảng điểm học viên</h5>
-                <!-- Nút thử truy cập trang học phí để kiểm tra quyền -->
-                <a href="${pageContext.request.contextPath}/tuition/list" class="btn btn-outline-secondary btn-sm">
-                    <i class="bi bi-wallet2 me-1"></i> Sang trang Học phí (Kiểm tra quyền)
-                </a>
+                <div class="d-flex gap-2">
+                    <a href="${pageContext.request.contextPath}/lead/list" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-funnel me-1"></i> Tư vấn Tuyển sinh (Leads)
+                    </a>
+                    <a href="${pageContext.request.contextPath}/tuition/list" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-wallet2 me-1"></i> Sang trang Học phí (Kiểm tra quyền)
+                    </a>
+                </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
