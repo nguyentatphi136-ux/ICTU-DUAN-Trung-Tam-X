@@ -125,3 +125,4 @@ td .err{margin:0;font-size:13px}
 .today{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:24px}
 .today h3{grid-column:1/-1;font-size:20px}
 .today .panel{padding:16px}.today span{display:block;color:var(--blue);font-size:12px;font-weight:500}.today b{display:block;font-size:16px;font-weight:600;margin:4px 0 2px}.today small{color:var(--muted);font-size:13px}
+.muted{color:var(--muted)}
