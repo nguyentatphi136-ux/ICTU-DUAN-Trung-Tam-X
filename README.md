@@ -107,9 +107,9 @@ git checkout develop
 
 ---
 
-## 7. Tiến độ Sprint 2: Quản lý Lead & Phân công Tuyển sinh (Nhánh `minhngoc2`)
+## 7. Tiến độ Sprint 2: Quản lý Lead & Phân công Tuyển sinh (Nhánh `s2-10-minhngoc(BE)`)
 
-Nhánh **`minhngoc2`** hoàn thành 2 hạng mục Backend cốt lõi thuộc Sprint 2 cho phân hệ Tuyển sinh & Quản lý Lead (Admissions / Leads CRM):
+Nhánh **`s2-10-minhngoc(BE)`** hoàn thành 2 hạng mục Backend cốt lõi thuộc Sprint 2 cho phân hệ Tuyển sinh & Quản lý Lead (Admissions / Leads CRM):
 
 ### 7.1. Story S2-10 (IDTTX-165 / Subtask IDTTX-195): Phân công lead cho tư vấn viên
 - **Nghiệp vụ đáp ứng:**
