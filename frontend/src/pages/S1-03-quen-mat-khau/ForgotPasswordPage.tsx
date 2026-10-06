@@ -5,8 +5,8 @@ import { Icon } from '../../components/Icon';
 import { PasswordField } from '../../components/PasswordField';
 import { isStrongPassword, PasswordRules } from '../../components/PasswordRules';
 import { Box } from '../../components/ui';
+import { EMAIL_RE } from '../../data/validate';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LINK_SECONDS = 30 * 60;
 const mmss = (s: number) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 

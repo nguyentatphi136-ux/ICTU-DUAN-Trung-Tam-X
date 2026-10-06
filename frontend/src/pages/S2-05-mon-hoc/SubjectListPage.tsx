@@ -5,7 +5,7 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Box, Drawer, Filter, Pager, paginate, RowMenu, Search } from '../../components/ui';
 import { CURRICULUM, PROGRAMS, programsUsing, SUBJECTS, type Subject } from '../../data/training';
-import { MODULE, TrainingTabs, useCanEditTraining } from '../S2-04-chuong-trinh/ProgramListPage';
+import { MODULE, TrainingTabs, useCanEditTraining } from '../../components/TrainingTabs';
 
 // S2-05. Môn học dùng lại được ở nhiều chương trình (cột Dùng trong). Môn đã có lớp học thì không xoá được.
 export function SubjectListPage() {

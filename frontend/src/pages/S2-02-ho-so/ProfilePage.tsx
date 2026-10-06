@@ -5,7 +5,7 @@ import { useToast } from '../../components/Toast';
 import { initial } from '../../components/ui';
 import { useAuth } from '../../data/auth';
 import { ROLES } from '../../data/permissions';
-import { PHONE_RE } from '../S1-08-tai-khoan/UserDrawer';
+import { PHONE_RE } from '../../data/validate';
 import { AvatarCropDialog } from './AvatarCropDialog';
 import './profile.css';
 
