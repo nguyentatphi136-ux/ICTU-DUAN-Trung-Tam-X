@@ -52,7 +52,7 @@ Hệ thống Quản lý Đào tạo Trung tâm là nền tảng quản trị s�
 | STT | Họ và tên | Mã SV | Vai trò Scrum | Phân công nhiệm vụ kỹ thuật |
 |:---:|:---|:---:|:---|:---|
 | 1 | Nguyễn Tất Phi | [Mã SV] | Team Leader / Dev | Quản trị dự án, thiết kế kiến trúc hệ thống, BE Core Auth (Sprint 1) |
-| 2 | Nguyễn Minh Ngọc | [Mã SV] | Scrum Master / Backend Dev | Điều phối Scrum, thiết kế CSDL & xây dựng API phân công lead cho tư vấn viên (S2-10 - IDTTX-165 / IDTTX-195) |
+| 2 | Nguyễn Minh Ngọc | [Mã SV] | Scrum Master / Backend Dev | Điều phối Scrum, thiết kế CSDL & API tìm kiếm, lọc lead đa điều kiện (S2-11 - IDTTX-166 / IDTTX-198) |
 | 3 | Nông Hùng Nguyên | [Mã SV] | Backend Dev | Thiết kế CSDL, API quản lý tài khoản, mã hóa mật khẩu |
 | 4 | Nguyễn Trung Kiên | [Mã SV] | Backend Dev | Xây dựng bộ lọc Authorization Filter, gán và thu hồi Role |
 | 5 | Nguyễn Văn Kỳ | [Mã SV] | Backend Dev | Xử lý Session, Forgot Password qua Email, API hồ sơ người dùng |
@@ -107,34 +107,39 @@ git checkout develop
 
 ---
 
-## 7. Tiến độ Sprint 2: Phân công lead cho tư vấn viên (Story S2-10 - Nhánh `s2-10-minhngoc(BE)`)
+## 7. Tiến độ Sprint 2: Tìm kiếm và lọc lead đa điều kiện (Story S2-11 - Nhánh `s2-11-minhngoc(BE)`)
 
-Nhánh **`s2-10-minhngoc(BE)`** hoàn thành toàn diện hạng mục Backend cho **Story S2-10 (IDTTX-165 / Subtask IDTTX-195)**:
+Nhánh **`s2-11-minhngoc(BE)`** hoàn thành toàn diện hạng mục Backend cho **Story S2-11 (IDTTX-166 / Subtask IDTTX-198)**:
 
-> **User Story S2-10:** Là Quản lý đào tạo, tôi muốn phân công lead cho tư vấn viên, để mỗi khách hàng tiềm năng đều có một người chịu trách nhiệm gọi lại.
+> **User Story S2-11:** Là Tư vấn tuyển sinh, tôi muốn tìm kiếm và lọc lead theo nhiều điều kiện, để tìm lại được cuộc trao đổi từ tháng trước khi khách gọi lại.
 
 ### 7.1. Các tiêu chí nghiệm thu hoàn thành:
-1. **Phân công một hoặc nhiều lead cùng lúc:**
-   - Quản lý đào tạo (`TrainingManager`) hoặc Quản trị viên (`Admin`) có thể lựa chọn danh sách nhiều ID lead cùng lúc và giao cho một tư vấn viên tuyển sinh (`Admissions`).
-2. **Phân quyền truy cập theo vai trò:**
-   - Tư vấn viên tuyển sinh (`Admissions`) chỉ nhìn thấy danh sách các lead được phân công cho chính mình.
-   - Chặn quyền truy cập (`403 Forbidden`) nếu tư vấn viên cố tình xem thông tin lead của người khác.
-3. **Ghi lịch sử chuyển giao:**
-   - Tự động lưu vết lịch sử vào bảng `lead_assignments` (lead nào, tư vấn viên trước, tư vấn viên sau, người phân công, ghi chú lý do, thời điểm chuyển giao).
-   - Tự động bổ sung dòng thời gian (timeline audit log) vào hồ sơ lead.
+1. **Lọc theo nhiều điều kiện:**
+   - Trạng thái lead (`status`): `NEW`, `CONTACTED`, `CONSULTING`, `TRIAL_SCHEDULED`, `WON`, `REJECTED` (hỗ trợ chuẩn hóa alias từ Frontend như `mới`, `đang tư vấn`, `đã đăng ký`).
+   - Nguồn lead (`source`): `WEBSITE`, `FACEBOOK`, `REFERRAL`, `HOTLINE`, `TIKTOK`, `EVENT`.
+   - Người phụ trách (`counselorId`): Lọc theo ID tư vấn viên hoặc `unassigned` cho lead chưa phân công.
+   - Khoảng thời gian: Lọc theo khoảng ngày (`createdFrom`, `createdTo`) hoặc theo mốc định sẵn (`datePreset`: `today`, `yesterday`, `this-week`, `this-month`, `last-month` để tìm lại cuộc trao đổi từ tháng trước).
+2. **Tìm nhanh theo tên hoặc số điện thoại:**
+   - Tìm kiếm không phân biệt hoa thường theo tên, số điện thoại (hỗ trợ partial match đầu số như `0988`), email hoặc khóa học quan tâm.
+3. **Tra cứu và ghi nhận lịch sử cuộc trao đổi (Timeline):**
+   - Bảng `lead_interactions` và timeline lưu lại toàn bộ các cuộc gọi, ghi chú trao đổi, thời lượng cuộc gọi và người thực hiện, giúp tư vấn viên tra cứu ngay cuộc trao đổi cũ khi khách gọi lại.
+4. **Phân trang và sắp xếp:**
+   - Hỗ trợ đầy đủ `page`, `limit`, `sortBy`, `sortOrder`.
+5. **Thống kê phễu tuyển sinh:**
+   - Cung cấp số liệu tổng quan (tổng lead, mới, đang tư vấn, đã chốt, chưa phân công) phục vụ thẻ KPI / Dashboard.
 
 ### 7.2. Danh mục RESTful APIs triển khai:
-- `POST /api/leads/assign`: Phân công lead hàng loạt cho tư vấn viên.
-- `GET /api/leads/counselors`: Lấy danh sách các tư vấn viên (`Admissions`) đang hoạt động để hiển thị danh sách chọn phân công.
-- `GET /api/leads`: Lấy danh sách lead (tự động phân quyền: tư vấn viên chỉ xem được lead của chính mình).
-- `GET /api/leads/:id`: Xem thông tin chi tiết một lead.
-- `GET /api/leads/:id/assignments`: Xem toàn bộ lịch sử chuyển giao của lead.
+- `GET /api/leads`: Tìm kiếm và lọc danh sách lead đa điều kiện.
+- `GET /api/leads/stats`: Thống kê số lượng lead theo trạng thái phễu.
+- `GET /api/leads/:id`: Xem chi tiết thông tin và toàn bộ timeline cuộc trao đổi của lead.
+- `POST /api/leads/:id/interactions`: Ghi nhận cuộc gọi tư vấn / ghi chú trao đổi vào hồ sơ khách hàng.
+- `PATCH /api/leads/:id/status`: Cập nhật trạng thái xử lý lead.
 
 ### 7.3. Cơ sở dữ liệu & Kiểm thử tự động:
-- **Migration SQL:** [`database/migration_s2_10_lead_assignment.sql`](database/migration_s2_10_lead_assignment.sql) (thiết kế chuẩn hóa 3NF gồm bảng `leads` và bảng `lead_assignments`, có khóa ngoại và index tối ưu).
+- **Migration SQL:** [`database/migration_s2_11_lead_search_filter.sql`](database/migration_s2_11_lead_search_filter.sql) (thiết kế chuẩn hóa 3NF gồm bảng `leads` và bảng `lead_interactions`, có index tối ưu truy vấn tìm kiếm).
 - **Chạy kiểm thử:**
   ```bash
   cd BE
   npm test
   ```
-  Tất cả các ca kiểm thử nghiệp vụ cho Story S2-10 và bảo mật phân quyền đều đạt **PASS 100%**.
+  Tất cả các ca kiểm thử nghiệp vụ cho Story S2-11 đều đạt **PASS 100%**.

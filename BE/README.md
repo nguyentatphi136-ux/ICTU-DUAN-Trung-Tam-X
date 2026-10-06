@@ -112,46 +112,76 @@ Mã phản hồi:
 | Admissions | `admissions@example.com` | `admissions123` | Tư vấn viên 1 (Lê Thị Thu Hà) |
 | Admissions | `tuvan@example.com` | `tuvan123` | Tư vấn viên 2 (Hoàng Văn Tư) |
 
-## API Phân công Lead cho Tư vấn viên (Story S2-10 - IDTTX-165 / Subtask IDTTX-195)
+## API Tìm kiếm & Lọc Lead đa điều kiện (Story S2-11 - IDTTX-166 / Subtask IDTTX-198)
 
-Áp dụng cho nhánh: **`s2-10-minhngoc(BE)`**
+Áp dụng cho nhánh: **`s2-11-minhngoc(BE)`**
 
-### Yêu cầu nghiệp vụ Story S2-10:
-1. **Phân công một hoặc nhiều lead cùng lúc:** Quản lý đào tạo (`TrainingManager`) hoặc Quản trị hệ thống (`Admin`) có thể giao nhiều khách hàng tiềm năng cùng lúc cho một tư vấn viên tuyển sinh (`Admissions`).
-2. **Phân quyền truy cập theo vai trò:** Tư vấn viên tuyển sinh (`Admissions`) chỉ nhìn thấy các lead được phân công cho chính mình. Không thể xem hoặc can thiệp lead của tư vấn viên khác.
-3. **Ghi lịch sử chuyển giao:** Hệ thống tự động ghi nhật ký chuyển giao đầy đủ vào bảng `lead_assignments` và timeline chi tiết của lead (tư vấn viên cũ, tư vấn viên mới, người thực hiện phân công, ghi chú, thời điểm).
+### Yêu cầu nghiệp vụ Story S2-11:
+> **User Story:** Là Tư vấn tuyển sinh, tôi muốn tìm kiếm và lọc lead theo nhiều điều kiện, để tìm lại được cuộc trao đổi từ tháng trước khi khách gọi lại.
 
-### Danh sách API Story S2-10:
+1. **Lọc theo nhiều điều kiện:**
+   - Trạng thái lead (`status`): `NEW`, `CONTACTED`, `CONSULTING`, `TRIAL_SCHEDULED`, `WON`, `REJECTED` (hỗ trợ cả alias tiếng Việt như `mới`, `đang tư vấn`, `đã đăng ký`).
+   - Nguồn lead (`source`): `WEBSITE`, `FACEBOOK`, `REFERRAL`, `HOTLINE`, `TIKTOK`, `EVENT`.
+   - Người phụ trách (`counselorId`): Lọc theo ID tư vấn viên hoặc `unassigned` cho lead chưa phân công.
+   - Khoảng thời gian: Lọc theo khoảng ngày (`createdFrom`, `createdTo`) hoặc theo mốc định sẵn (`datePreset`: `today`, `yesterday`, `this-week`, `this-month`, `last-month` để tìm lại cuộc trao đổi từ tháng trước).
+2. **Tìm nhanh theo tên hoặc số điện thoại:**
+   - Hỗ trợ tham số `search` hoặc `q`: tìm kiếm không phân biệt hoa thường theo tên khách hàng, số điện thoại (hỗ trợ partial match đầu số như `0988`), email hoặc khoá học quan tâm.
+3. **Tra cứu lịch sử cuộc trao đổi từ tháng trước:**
+   - Bảng `lead_interactions` và dòng thời gian `timeline` trong chi tiết lead lưu lại toàn bộ các cuộc gọi, ghi chú trao đổi, thời lượng cuộc gọi và người thực hiện.
+4. **Phân trang và sắp xếp:**
+   - Hỗ trợ `page`, `limit`, `sortBy`, `sortOrder`.
+
+### Danh sách API Story S2-11:
 
 | Phương thức | Đường dẫn | Vai trò được phép | Mô tả |
 | --- | --- | --- | --- |
-| `POST` | `/api/leads/assign` | `TrainingManager`, `Admin` | Phân công một hoặc nhiều lead cùng lúc cho tư vấn viên |
-| `GET` | `/api/leads/counselors` | `TrainingManager`, `Admin` | Lấy danh sách tư vấn viên (`Admissions`) phục vụ dropdown phân công |
-| `GET` | `/api/leads` | `TrainingManager`, `Admin`, `Admissions` | Lấy danh sách lead (Tự động lọc chỉ hiển thị lead của chính mình nếu là `Admissions`) |
-| `GET` | `/api/leads/:id` | `TrainingManager`, `Admin`, `Admissions` | Xem chi tiết lead (Chặn 403 nếu tư vấn viên xem lead của người khác) |
-| `GET` | `/api/leads/:id/assignments` | `TrainingManager`, `Admin`, `Admissions` | Xem toàn bộ lịch sử chuyển giao của lead |
+| `GET` | `/api/leads` | `Admissions`, `TrainingManager`, `Admin` | Tìm kiếm và lọc danh sách lead theo nhiều tiêu chí (hỗ trợ datePreset `last-month`) |
+| `GET` | `/api/leads/stats` | `Admissions`, `TrainingManager`, `Admin` | Thống kê số lượng lead theo phễu tuyển sinh phục vụ Dashboard / Thẻ KPI |
+| `GET` | `/api/leads/:id` | `Admissions`, `TrainingManager`, `Admin` | Xem chi tiết thông tin và dòng thời gian cuộc trao đổi (timeline) của lead |
+| `POST` | `/api/leads/:id/interactions` | `Admissions`, `TrainingManager`, `Admin` | Ghi nhận cuộc gọi tư vấn, ghi chú chăm sóc khách hàng vào lịch sử |
+| `PATCH` | `/api/leads/:id/status` | `Admissions`, `TrainingManager`, `Admin` | Cập nhật trạng thái xử lý lead |
 
-#### Chi tiết API `POST /api/leads/assign`:
-- **Headers:** `Authorization: Bearer <token>`, `Content-Type: application/json`
-- **Body:**
-  ```json
-  {
-    "leadIds": ["3", "4"],
-    "counselorId": "5",
-    "note": "Giao chăm sóc khách hàng mới từ chiến dịch tuyển sinh"
-  }
-  ```
-- **Phản hồi thành công (`200 OK`):**
+#### Chi tiết tham số `GET /api/leads`:
+```
+GET /api/leads?search=0988&status=CONSULTING&source=FACEBOOK&datePreset=last-month&page=1&limit=20&sortBy=createdAt&sortOrder=desc
+```
+- **Phản hồi mẫu (`200 OK`):**
   ```json
   {
     "success": true,
-    "message": "Đã phân công thành công 2 lead cho Lê Thị Thu Hà (Tư vấn viên)",
-    "data": {
-      "updatedCount": 2,
-      "leads": [...],
-      "assignments": [...]
+    "data": [
+      {
+        "id": "1",
+        "fullName": "Vũ Minh Anh",
+        "phone": "0988123456",
+        "email": "minhanh.vu@gmail.com",
+        "source": "FACEBOOK",
+        "course": "Lập trình Web Fullstack",
+        "status": "CONSULTING",
+        "statusLabel": "Đang tư vấn",
+        "assignedCounselorId": "5",
+        "assignedCounselorName": "Lê Thị Thu Hà (Tư vấn viên)",
+        "createdAt": "2026-09-01T10:30:00.000Z",
+        "timeline": [
+          {
+            "id": "1",
+            "type": "CALL",
+            "title": "Cuộc gọi tư vấn học phí tháng trước",
+            "content": "Khách hàng hỏi chi tiết về chính sách chia nhỏ đợt đóng học phí 3 lần...",
+            "durationSeconds": 240,
+            "author": "Lê Thị Thu Hà (Tư vấn viên)"
+          }
+        ]
+      }
+    ],
+    "pagination": {
+      "total": 1,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 1
     }
   }
   ```
+
 
 
