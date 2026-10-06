@@ -17,6 +17,8 @@ export type Lead = {
 export const LEAD_STATUSES: LeadStatus[] = ['Mới', 'Đang chăm sóc', 'Hẹn gọi lại', 'Đã nhập học', 'Không quan tâm'];
 export const SOURCES = ['Biểu mẫu web', 'Facebook', 'Zalo', 'Giới thiệu'];
 export const COUNSELORS = ['TRAN THU HA', 'NGO THANH TU', 'DANG BAO VY'];
+export const CONSULTANTS = COUNSELORS;
+export const LEAD_SOURCES = SOURCES;
 
 export const leadTone = (s: LeadStatus): 'info' | 'wait' | 'ok' | undefined =>
   s === 'Mới' ? 'info' : s === 'Đang chăm sóc' || s === 'Hẹn gọi lại' ? 'wait' : s === 'Đã nhập học' ? 'ok' : undefined;
