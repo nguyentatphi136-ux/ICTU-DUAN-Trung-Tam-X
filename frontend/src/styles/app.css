@@ -7,7 +7,7 @@
 .side .me b{display:block;font-size:15px}.side .me span{display:block;font-size:13px;color:var(--muted)}
 .me-roles{display:none;border-bottom:1px solid var(--line);margin:0 0 10px;padding-bottom:10px}
 .nav{flex:1;overflow:auto}
-.nav a,.side .out{display:flex;align-items:center;gap:12px;height:40px;padding:0 12px;border-radius:var(--r);color:var(--ink);font-weight:400;font-size:14px;margin-bottom:4px;border:0;background:none;width:100%;text-align:left}
+.nav a,.side .out{display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:var(--r);color:var(--ink);font-weight:400;font-size:13.5px;margin-bottom:4px;border:0;background:none;width:100%;text-align:left;white-space:nowrap}
 .nav a svg,.side .out svg{color:var(--muted)}
 .nav a:hover{background:#f7f9fc}
 .nav a.on{background:var(--soft);color:var(--blue);font-weight:600}.nav a.on svg{color:var(--blue)}
@@ -70,7 +70,7 @@ td .err{margin:0;font-size:13px}
 .filter span{overflow:hidden;text-overflow:ellipsis}
 .filter svg{color:var(--muted)}
 .filter select{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
-.icon-btn{width:32px;height:32px;border:0;background:none;color:var(--muted);display:grid;place-items:center;border-radius:var(--r)}
+.icon-btn{width:32px;height:32px;border:0;background:none;color:var(--muted);display:inline-grid;place-items:center;border-radius:var(--r)}
 .icon-btn:hover{background:#f0f1f5;color:var(--ink)}
 .rowmenu{position:relative;display:inline-block}
 .rowmenu .menu,.dropdown{position:absolute;right:0;top:36px;min-width:230px;background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:0 12px 30px rgba(5,36,77,.14);padding:6px;z-index:15}
@@ -121,3 +121,7 @@ td .err{margin:0;font-size:13px}
 .drawer header,.drawer .body,.drawer footer{padding-left:20px;padding-right:20px}.modal{padding:22px 20px}
 .search,.filter{width:100%!important}
 }
+/* Lịch học hôm nay của Học viên (S1-06, bản 360px) */
+.today{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:24px}
+.today h3{grid-column:1/-1;font-size:20px}
+.today .panel{padding:16px}.today span{display:block;color:var(--blue);font-size:12px;font-weight:500}.today b{display:block;font-size:16px;font-weight:600;margin:4px 0 2px}.today small{color:var(--muted);font-size:13px}

@@ -27,7 +27,7 @@ const hhmm = (t: number) => new Date(t).toTimeString().slice(0, 5);
 // hết hạn thì lưu nháp và về trang đăng nhập, đăng nhập lại thì mở đúng form và điền lại nội dung.
 // ?canh-bao=1 mở ngay hộp thoại cảnh báo để kiểm thử.
 export function SessionDemoPage() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const toast = useToast();
@@ -43,10 +43,9 @@ export function SessionDemoPage() {
     (expired: boolean) => {
       const email = user?.email;
       if (expired) sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ ...formRef.current, savedAt: Date.now() }));
-      signOut();
       navigate('/dang-nhap', { replace: true, state: expired ? { expired: true, email, from: location.pathname } : { loggedOut: true } });
     },
-    [user, signOut, navigate, location.pathname],
+    [user, navigate, location.pathname],
   );
 
   // Khôi phục bản nháp sau khi đăng nhập lại.
