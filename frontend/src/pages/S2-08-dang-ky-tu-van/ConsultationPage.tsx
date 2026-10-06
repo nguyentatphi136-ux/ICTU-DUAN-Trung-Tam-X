@@ -48,6 +48,7 @@ export function ConsultationPage() {
       program: f.program,
       status: 'Mới',
       owner: '',
+      history: [],
       createdAt: new Date().toISOString().slice(0, 10),
       note: f.message.trim() || undefined,
     });

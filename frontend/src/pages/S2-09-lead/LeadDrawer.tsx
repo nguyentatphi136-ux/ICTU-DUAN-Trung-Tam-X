@@ -44,6 +44,7 @@ export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, 
     onSave({
       id: lead?.id ?? 0,
       owner: lead?.owner ?? '',
+      history: lead?.history ?? [],
       createdAt: lead?.createdAt ?? new Date().toISOString().slice(0, 10),
       name: f.name.trim().toUpperCase(),
       phone: f.phone.trim(),
@@ -140,6 +141,18 @@ export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, 
           </div>
         </div>
       </fieldset>
+      {!!lead?.history.length && (
+        <>
+          <hr className="sep" />
+          <div className="section-t">Lịch sử chuyển giao</div>
+          {lead.history.map((h, i) => (
+            <p key={i} className="hint">
+              {new Date(h.at).toLocaleString('vi-VN')}: {h.by} giao từ {h.from || 'chưa phân công'} sang {h.to}
+              {h.note ? ` (${h.note})` : ''}
+            </p>
+          ))}
+        </>
+      )}
     </Drawer>
   );
 }
