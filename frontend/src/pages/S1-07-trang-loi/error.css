@@ -1,0 +1,12 @@
+/* S1-07. Trang lỗi 403, 404, 500. */
+.er-page{min-height:100vh;background:#fff;padding:28px 40px;display:flex;flex-direction:column}
+.er-page .logo{padding:0}
+.er-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 0 80px}
+.er-num{font-size:220px;font-weight:700;line-height:1;letter-spacing:-4px;margin-bottom:-58px;background:linear-gradient(180deg,#cfe4fd,#b3d4fb);-webkit-background-clip:text;background-clip:text;color:transparent;user-select:none}
+.er-main .badge{position:relative;margin-bottom:16px}
+.er-main .eyebrow{margin-bottom:8px}
+.er-main h1{font-size:40px;line-height:1.25;max-width:820px}
+.er-main p{color:var(--muted);font-size:17px;line-height:1.6;max-width:600px;margin-top:12px}
+.er-acts{display:flex;gap:14px;margin-top:32px;flex-wrap:wrap;justify-content:center}
+.er-btn{width:210px;height:52px;font-size:16px}
+@media(max-width:600px){.er-page{padding:20px 16px}.er-num{font-size:120px;margin-bottom:-30px}.er-main h1{font-size:26px}.er-main p{font-size:15px}.er-btn{width:100%}.er-acts{width:100%}}
