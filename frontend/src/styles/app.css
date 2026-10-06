@@ -125,3 +125,9 @@ td .err{margin:0;font-size:13px}
 .today{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:24px}
 .today h3{grid-column:1/-1;font-size:20px}
 .today .panel{padding:16px}.today span{display:block;color:var(--blue);font-size:12px;font-weight:500}.today b{display:block;font-size:16px;font-weight:600;margin:4px 0 2px}.today small{color:var(--muted);font-size:13px}
+/* S1-09. Thẻ vai trò (RoleChips) */
+.rc-chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-height:46px;border:1px solid var(--line);border-radius:var(--r);padding:7px 8px;background:#fff}
+.rc-chip{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 10px;border-radius:var(--r);background:var(--soft);color:var(--blue);font-weight:500;font-size:14px}
+.rc-chip button{border:0;background:none;color:var(--blue);display:grid;place-items:center;padding:0}
+.rc-chip button svg{width:14px;height:14px}
+.rc-chips select{border:0;height:30px;flex:1;min-width:140px;padding:0 6px;color:var(--muted);background:none;outline:none}
