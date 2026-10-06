@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#015aa0" />
-    <title>Quản trị hệ thống | EduManager</title>
+    <meta name="theme-color" content="#0974F1" />
+    <title>Quản trị hệ thống | TMS. - Hệ thống Quản lý Đào tạo</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -31,23 +31,26 @@
             >
               <i data-lucide="menu" aria-hidden="true"></i>
             </button>
-            <div>
-              <p class="app-eyebrow">Quản trị hệ thống · Admin</p>
-              <h1 class="app-page-title">
-                Xin chào, <span data-user="fullName"></span>
+            <div class="flex items-center gap-2 text-sm">
+              <span class="text-muted font-medium">Hệ thống</span>
+              <span class="text-muted">/</span>
+              <h1 class="font-bold text-foreground text-base tracking-tight" id="user-display-name-header">
+                Quản lý tài khoản
               </h1>
             </div>
           </div>
           <div class="flex items-center gap-3">
-            <span class="app-muted hidden sm:inline" data-today></span>
+            <span class="app-muted hidden sm:inline text-xs font-medium" data-today></span>
             <button
-              id="open-change-password-modal"
               type="button"
-              class="app-btn app-btn-outline app-btn-sm"
-              title="Đổi mật khẩu"
+              class="tms-bell-btn"
+              title="Thông báo hệ thống"
+              aria-label="Thông báo"
             >
-              <i data-lucide="key" class="size-[16px] me-1" aria-hidden="true"></i>Đổi mật khẩu
+              <i data-lucide="bell" class="size-5"></i>
+              <span class="tms-bell-badge"></span>
             </button>
+
             <button
               id="theme-toggle"
               type="button"
@@ -57,45 +60,115 @@
             >
               <i data-lucide="moon" class="size-[18px]" aria-hidden="true"></i>
             </button>
+
+            <!-- Nút Đổi mật khẩu tiện ích trên Topbar (S1-04) -->
+            <button type="button" class="tms-btn-topbar-changepass" id="topbar-change-pass-btn" title="Đổi mật khẩu tài khoản">
+              <i data-lucide="key" class="size-4"></i>
+              <span class="hidden md:inline">Đổi mật khẩu</span>
+            </button>
+
+            <!-- User profile dropdown pill (UI_UX/S1-02_Phiên/Menu đăng xuất.png) -->
+            <div class="relative">
+              <div
+                id="tms-user-profile-btn"
+                class="tms-user-pill"
+                tabindex="0"
+                role="button"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                <div class="tms-user-info hidden sm:block">
+                  <div class="tms-user-name" id="user-display-name" data-user="fullName"></div>
+                  <div class="tms-user-role" id="user-role-badge">Quản trị viên</div>
+                </div>
+                <div class="tms-avatar-circle" id="user-avatar-initials">
+                  QT
+                </div>
+                <i data-lucide="chevron-down" class="size-4 text-muted hidden sm:inline"></i>
+              </div>
+
+              <!-- Menu đăng xuất & cài đặt -->
+              <div class="tms-user-dropdown" id="tms-user-dropdown-menu">
+                <div class="p-3 border-b border-border">
+                  <p class="font-bold text-sm text-foreground truncate" data-user="fullName"></p>
+                  <p class="text-xs text-muted truncate font-mono" data-user="email"></p>
+                  <span class="app-badge is-info mt-1.5 text-xs">Quản trị viên · Admin</span>
+                </div>
+                <div class="p-1 space-y-0.5">
+                  <button type="button" class="tms-dropdown-item tms-dropdown-changepass" id="open-change-password-modal">
+                    <span class="flex items-center gap-2">
+                      <i data-lucide="key" class="size-4 text-primary"></i>
+                      <span>Đổi mật khẩu</span>
+                    </span>
+                    <span class="tms-badge-key">Bảo mật</span>
+                  </button>
+                  <div class="tms-dropdown-divider"></div>
+                  <button type="button" class="tms-dropdown-item is-danger" data-nav="logout">
+                    <i data-lucide="log-out" class="size-4 text-rose-600"></i>
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </header>
 
         <main class="app-content page-enter">
-          <section id="tong-quan" class="app-stats" aria-label="Tổng quan">
-            <div class="app-stat">
-              <span class="app-stat-icon"
-                ><i data-lucide="users" aria-hidden="true"></i
-              ></span>
-              <div>
-                <p class="app-stat-label">Tài khoản</p>
-                <p class="app-stat-value">7</p>
+          <!-- 4 Thẻ thống kê chuẩn theo UI_UX/S1-08_Tài khoản/Danh sách.png & Desktop.png -->
+          <section id="tong-quan" class="app-stats tms-stats-grid" aria-label="Tổng quan">
+            <div class="app-stat tms-stat-card">
+              <div class="flex items-center justify-between mb-2">
+                <span class="tms-stat-label">Hoạt động</span>
+                <span class="size-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <i data-lucide="user-check" class="size-5"></i>
+                </span>
+              </div>
+              <p class="app-stat-value tms-stat-value">286</p>
+              <div class="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold mt-2">
+                <i data-lucide="arrow-up-right" class="size-3.5"></i>
+                <span>+12% so với tháng trước</span>
               </div>
             </div>
-            <div class="app-stat">
-              <span class="app-stat-icon"
-                ><i data-lucide="key-round" aria-hidden="true"></i
-              ></span>
-              <div>
-                <p class="app-stat-label">Vai trò</p>
-                <p class="app-stat-value">8</p>
+
+            <div class="app-stat tms-stat-card">
+              <div class="flex items-center justify-between mb-2">
+                <span class="tms-stat-label">Chờ kích hoạt</span>
+                <span class="size-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
+                  <i data-lucide="mail" class="size-5"></i>
+                </span>
+              </div>
+              <p class="app-stat-value tms-stat-value">12</p>
+              <div class="flex items-center gap-1.5 text-xs text-amber-700 font-medium mt-2">
+                <i data-lucide="clock" class="size-3.5"></i>
+                <span>4 tài khoản mới hôm nay</span>
               </div>
             </div>
-            <div class="app-stat">
-              <span class="app-stat-icon"
-                ><i data-lucide="server" aria-hidden="true"></i
-              ></span>
-              <div>
-                <p class="app-stat-label">Trạng thái hệ thống</p>
-                <p class="app-stat-value">Ổn định</p>
+
+            <div class="app-stat tms-stat-card">
+              <div class="flex items-center justify-between mb-2">
+                <span class="tms-stat-label">Bị khoá</span>
+                <span class="size-9 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+                  <i data-lucide="user-x" class="size-5"></i>
+                </span>
+              </div>
+              <p class="app-stat-value tms-stat-value">4</p>
+              <div class="flex items-center gap-1.5 text-xs text-rose-600 font-medium mt-2">
+                <i data-lucide="shield-alert" class="size-3.5"></i>
+                <span>Tạm ngừng hoạt động</span>
               </div>
             </div>
-            <div class="app-stat">
-              <span class="app-stat-icon"
-                ><i data-lucide="database-backup" aria-hidden="true"></i
-              ></span>
-              <div>
-                <p class="app-stat-label">Sao lưu gần nhất</p>
-                <p class="app-stat-value">02:00</p>
+
+            <div class="app-stat tms-stat-card">
+              <div class="flex items-center justify-between mb-2">
+                <span class="tms-stat-label">Đăng nhập hôm nay</span>
+                <span class="size-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <i data-lucide="activity" class="size-5"></i>
+                </span>
+              </div>
+              <p class="app-stat-value tms-stat-value">132</p>
+              <div class="flex items-center gap-1.5 text-xs text-blue-600 font-medium mt-2">
+                <i data-lucide="users" class="size-3.5"></i>
+                <span>Chiếm 46% nhân sự</span>
               </div>
             </div>
           </section>
@@ -182,108 +255,420 @@
           </section>
 
           <section id="vai-tro" class="app-card">
-            <div class="app-card-header">
-              <h2 class="app-card-title">
-                <i data-lucide="key-round" aria-hidden="true"></i>Vai trò &
-                quyền hạn
-              </h2>
+            <div class="app-card-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+              <div>
+                <h2 class="app-card-title">
+                  <i data-lucide="key-round" aria-hidden="true"></i>Vai trò & Ma trận phân quyền 12 Module
+                </h2>
+                <p style="font-size: 13px; color: var(--color-text-secondary); margin-top: 4px;">
+                  Đối chiếu quyền hạn 8 vai trò nghiệp vụ trên 12 phân hệ theo tài liệu chuẩn User Roles & Story IDTTX-20 / S1-05
+                </p>
+              </div>
+              <!-- Tab Switcher -->
+              <div style="display: inline-flex; gap: 4px; background: #F1F5F9; padding: 4px; border-radius: 8px; border: 1px solid var(--color-border);">
+                <button
+                  type="button"
+                  id="tab-btn-matrix"
+                  class="app-btn app-btn-sm"
+                  style="background: #FFFFFF; font-weight: 700; color: var(--color-navy-title); border: 1px solid #CBD5E1; box-shadow: 0 1px 2px rgba(0,0,0,0.05); padding: 6px 14px; border-radius: 6px; cursor: pointer;"
+                >
+                  <i data-lucide="layout-grid" class="size-4" style="margin-right: 4px;"></i> Ma trận 12 Module
+                </button>
+                <button
+                  type="button"
+                  id="tab-btn-roles"
+                  class="app-btn app-btn-sm"
+                  style="background: transparent; border: 1px solid transparent; font-weight: 600; color: var(--color-text-secondary); padding: 6px 14px; border-radius: 6px; cursor: pointer;"
+                >
+                  <i data-lucide="users" class="size-4" style="margin-right: 4px;"></i> Danh mục 8 vai trò
+                </button>
+              </div>
             </div>
-            <div class="app-table-wrap">
-              <table class="app-table">
-                <thead>
-                  <tr>
-                    <th>Vai trò</th>
-                    <th>Đối tượng</th>
-                    <th>Quyền chính</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="font-bold">
-                      Khách truy cập
-                      <p class="app-muted">Guest</p>
-                    </td>
-                    <td>Người quan tâm khoá học, chưa có tài khoản</td>
-                    <td>Để lại thông tin đăng ký tư vấn</td>
-                  </tr>
-                  <tr>
-                    <td class="font-bold">
-                      Học viên
-                      <p class="app-muted">Student</p>
-                    </td>
-                    <td>Người đang theo học một lớp</td>
-                    <td>
-                      Xem lịch học, nhận bài tập, nộp bài, xem điểm và công nợ
-                      học phí của mình
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="font-bold">
-                      Giảng viên
-                      <p class="app-muted">Instructor</p>
-                    </td>
-                    <td>Người đứng lớp, phụ trách chuyên môn</td>
-                    <td>
-                      Điểm danh, giao bài, chấm điểm, theo dõi tiến độ lớp mình
-                      dạy
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="font-bold">
-                      Trợ giảng
-                      <p class="app-muted">TA</p>
-                    </td>
-                    <td>Hỗ trợ giảng viên, kèm học viên yếu</td>
-                    <td>
-                      Điểm danh và chấm bài trong phạm vi giảng viên uỷ quyền;
-                      không sửa được điểm tổng kết
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="font-bold">
-                      Quản lý đào tạo
-                      <p class="app-muted">Training Manager</p>
-                    </td>
-                    <td>Chủ sở hữu vận hành đào tạo</td>
-                    <td>
-                      Mở lớp, xếp lịch, phân công giảng viên, duyệt bảo lưu,
-                      giám sát chất lượng toàn khoá
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="font-bold">
-                      Tư vấn tuyển sinh
-                      <p class="app-muted">Admissions</p>
-                    </td>
-                    <td>Nhân sự bán hàng đầu phễu</td>
-                    <td>
-                      Quản lý lead, chăm sóc, chuyển đổi thành học viên nhập học
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="font-bold">
-                      Kế toán
-                      <p class="app-muted">Accountant</p>
-                    </td>
-                    <td>Phụ trách thu học phí</td>
-                    <td>
-                      Ghi nhận thanh toán, theo dõi công nợ, xuất báo cáo doanh
-                      thu
-                    </td>
-                  </tr>
-                  <tr>
-                    <td class="font-bold">
-                      Quản trị hệ thống
-                      <p class="app-muted">Admin</p>
-                    </td>
-                    <td>Người vận hành ứng dụng</td>
-                    <td>
-                      Quản lý tài khoản, vai trò, danh mục dùng chung, xem nhật
-                      ký hệ thống
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+
+            <!-- ========================================================= -->
+            <!-- TAB 1: MA TRẬN 12 MODULE (THEO USER ROLES EXCEL)          -->
+            <!-- ========================================================= -->
+            <div id="tab-pane-matrix">
+              <!-- Chú thích ký hiệu phân quyền (Legend) -->
+              <div style="padding: 12px 24px; background: #F8FAFC; border-bottom: 1px solid var(--color-border); font-size: 12.5px;">
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px;">
+                  <span style="font-weight: 700; color: var(--color-navy-title);">Ký hiệu:</span>
+                  <span style="display: inline-flex; align-items: center; gap: 5px;">
+                    <span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 1px 7px; font-size: 11.5px;">F</span>
+                    <span>Toàn quyền (Full)</span>
+                  </span>
+                  <span style="display: inline-flex; align-items: center; gap: 5px;">
+                    <span style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-weight: 800; border-radius: 5px; padding: 1px 7px; font-size: 11.5px;">W</span>
+                    <span>Ghi trong phạm vi (Write)</span>
+                  </span>
+                  <span style="display: inline-flex; align-items: center; gap: 5px;">
+                    <span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 1px 7px; font-size: 11.5px;">R</span>
+                    <span>Chỉ xem (Read)</span>
+                  </span>
+                  <span style="display: inline-flex; align-items: center; gap: 5px;">
+                    <span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 1px 7px; font-size: 11.5px;">–</span>
+                    <span>Không truy cập (Deny)</span>
+                  </span>
+                  <span style="display: inline-flex; align-items: center; gap: 5px;">
+                    <span style="background: #FEF3F2; color: #DC2626; border: 1px solid #FECACA; font-weight: 800; border-radius: 5px; padding: 1px 6px; font-size: 11.5px;">*</span>
+                    <span style="color: var(--color-text-secondary); font-style: italic;">Chỉ trên dữ liệu chính mình hoặc lớp mình phụ trách (Server-enforced)</span>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Thanh tìm kiếm & lọc module -->
+              <div style="padding: 12px 24px; background: #FFFFFF; border-bottom: 1px solid var(--color-border); display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;">
+                <div style="position: relative; flex: 1; max-width: 320px;">
+                  <i data-lucide="search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--color-text-muted); pointer-events: none;"></i>
+                  <input
+                    type="text"
+                    id="matrix-search-input"
+                    placeholder="Tìm theo tên phân hệ/module..."
+                    class="tms-input"
+                    style="padding-left: 36px; height: 38px; font-size: 13px;"
+                  />
+                </div>
+                <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                  <span style="font-size: 12.5px; color: var(--color-text-secondary); font-weight: 600; margin-right: 4px;">Lọc:</span>
+                  <button type="button" class="matrix-filter-pill active" data-filter="all" style="padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid var(--color-blue-primary); background: #EFF6FF; color: var(--color-blue-primary); cursor: pointer;">Tất cả (12)</button>
+                  <button type="button" class="matrix-filter-pill" data-filter="training" style="padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid var(--color-border); background: #FFFFFF; color: var(--color-text-secondary); cursor: pointer;">Đào tạo & Lớp học</button>
+                  <button type="button" class="matrix-filter-pill" data-filter="grade" style="padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid var(--color-border); background: #FFFFFF; color: var(--color-text-secondary); cursor: pointer;">Điểm số & Bài tập</button>
+                  <button type="button" class="matrix-filter-pill" data-filter="finance" style="padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid var(--color-border); background: #FFFFFF; color: var(--color-text-secondary); cursor: pointer;">Học phí & Doanh thu</button>
+                  <button type="button" class="matrix-filter-pill" data-filter="admissions" style="padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid var(--color-border); background: #FFFFFF; color: var(--color-text-secondary); cursor: pointer;">Tuyển sinh & Lead</button>
+                </div>
+              </div>
+
+              <!-- Bảng ma trận 12 module -->
+              <div class="app-table-wrap">
+                <table id="role-matrix-table" class="app-table" style="text-align: center; border-collapse: separate; border-spacing: 0;">
+                  <thead>
+                    <tr>
+                      <th style="text-align: left; width: 44px; padding-left: 20px;">STT</th>
+                      <th style="text-align: left; min-width: 200px;">Module / Phân hệ nghiệp vụ</th>
+                      <th style="min-width: 85px;">Student<br><span style="font-weight: 400; font-size: 11px; color: var(--color-text-muted);">Học viên</span></th>
+                      <th style="min-width: 85px;">TA<br><span style="font-weight: 400; font-size: 11px; color: var(--color-text-muted);">Trợ giảng</span></th>
+                      <th style="min-width: 95px; background: #FEF3F2;">Instructor<br><span style="font-weight: 400; font-size: 11px; color: #B42318;">Giảng viên</span></th>
+                      <th style="min-width: 95px;">Admissions<br><span style="font-weight: 400; font-size: 11px; color: var(--color-text-muted);">Tuyển sinh</span></th>
+                      <th style="min-width: 95px; background: #FEF6EE;">Accountant<br><span style="font-weight: 400; font-size: 11px; color: #B54708;">Kế toán</span></th>
+                      <th style="min-width: 105px;">Training Mgr<br><span style="font-weight: 400; font-size: 11px; color: var(--color-text-muted);">QL Đào tạo</span></th>
+                      <th style="min-width: 85px; background: #EFF6FF;">Admin<br><span style="font-weight: 400; font-size: 11px; color: var(--color-blue-primary);">Quản trị</span></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- 1. Chương trình & môn học -->
+                    <tr data-category="training">
+                      <td style="text-align: left; padding-left: 20px; font-weight: 600; color: var(--color-text-muted);">1</td>
+                      <td style="text-align: left; font-weight: 700; color: var(--color-navy-title);">
+                        <i data-lucide="book-open" class="size-4" style="display: inline; vertical-align: middle; margin-right: 6px; color: var(--color-blue-primary);"></i>
+                        Chương trình & môn học
+                      </td>
+                      <td><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td style="background: #FFFBFB;"><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td style="background: #FFFDF9;"><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                      <td style="background: #F8FAFF;"><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                    </tr>
+
+                    <!-- 2. Tuyển sinh & lead -->
+                    <tr data-category="admissions">
+                      <td style="text-align: left; padding-left: 20px; font-weight: 600; color: var(--color-text-muted);">2</td>
+                      <td style="text-align: left; font-weight: 700; color: var(--color-navy-title);">
+                        <i data-lucide="user-plus" class="size-4" style="display: inline; vertical-align: middle; margin-right: 6px; color: #0284C7;"></i>
+                        Tuyển sinh & lead
+                      </td>
+                      <td><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td style="background: #FFFBFB;"><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                      <td style="background: #FFFDF9;"><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td style="background: #F8FAFF;"><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                    </tr>
+
+                    <!-- 3. Hồ sơ học viên -->
+                    <tr data-category="training">
+                      <td style="text-align: left; padding-left: 20px; font-weight: 600; color: var(--color-text-muted);">3</td>
+                      <td style="text-align: left; font-weight: 700; color: var(--color-navy-title);">
+                        <i data-lucide="contact" class="size-4" style="display: inline; vertical-align: middle; margin-right: 6px; color: #8B5CF6;"></i>
+                        Hồ sơ học viên
+                      </td>
+                      <td><span title="Chỉ sửa thông tin cá nhân của chính mình" style="background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">W*</span></td>
+                      <td><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td style="background: #FFFBFB;"><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td><span style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">W</span></td>
+                      <td style="background: #FFFDF9;"><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                      <td style="background: #F8FAFF;"><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                    </tr>
+
+                    <!-- 4. Lớp học & thời khoá biểu -->
+                    <tr data-category="training">
+                      <td style="text-align: left; padding-left: 20px; font-weight: 600; color: var(--color-text-muted);">4</td>
+                      <td style="text-align: left; font-weight: 700; color: var(--color-navy-title);">
+                        <i data-lucide="calendar" class="size-4" style="display: inline; vertical-align: middle; margin-right: 6px; color: var(--color-blue-primary);"></i>
+                        Lớp học & thời khoá biểu
+                      </td>
+                      <td><span title="Chỉ xem lịch lớp mình theo học" style="background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R*</span></td>
+                      <td><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td style="background: #FFFBFB;"><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td style="background: #FFFDF9;"><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                      <td style="background: #F8FAFF;"><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                    </tr>
+
+                    <!-- 5. Điểm danh -->
+                    <tr data-category="grade">
+                      <td style="text-align: left; padding-left: 20px; font-weight: 600; color: var(--color-text-muted);">5</td>
+                      <td style="text-align: left; font-weight: 700; color: var(--color-navy-title);">
+                        <i data-lucide="check-square" class="size-4" style="display: inline; vertical-align: middle; margin-right: 6px; color: #10B981;"></i>
+                        Điểm danh
+                      </td>
+                      <td><span title="Chỉ xem lịch sử điểm danh của bản thân" style="background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R*</span></td>
+                      <td><span style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">W</span></td>
+                      <td style="background: #FFFBFB;"><span style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">W</span></td>
+                      <td><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td style="background: #FFFDF9;"><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                      <td style="background: #F8FAFF;"><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                    </tr>
+
+                    <!-- 6. Học liệu & thông báo lớp -->
+                    <tr data-category="training">
+                      <td style="text-align: left; padding-left: 20px; font-weight: 600; color: var(--color-text-muted);">6</td>
+                      <td style="text-align: left; font-weight: 700; color: var(--color-navy-title);">
+                        <i data-lucide="file-text" class="size-4" style="display: inline; vertical-align: middle; margin-right: 6px; color: #6366F1;"></i>
+                        Học liệu & thông báo lớp
+                      </td>
+                      <td><span title="Chỉ xem học liệu lớp mình học" style="background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R*</span></td>
+                      <td><span title="Chỉ đăng học liệu lớp trợ giảng" style="background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">W*</span></td>
+                      <td style="background: #FFFBFB;"><span title="Chỉ đăng học liệu lớp mình giảng dạy" style="background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">W*</span></td>
+                      <td><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td style="background: #FFFDF9;"><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                      <td style="background: #F8FAFF;"><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                    </tr>
+
+                    <!-- 7. Bài tập & chấm điểm (CỐT LÕI IDTTX-20) -->
+                    <tr data-category="grade" style="background: #FFFDF5;">
+                      <td style="text-align: left; padding-left: 20px; font-weight: 600; color: var(--color-text-muted);">7</td>
+                      <td style="text-align: left; font-weight: 700; color: var(--color-navy-title);">
+                        <i data-lucide="edit-3" class="size-4" style="display: inline; vertical-align: middle; margin-right: 6px; color: #EA580C;"></i>
+                        Bài tập & chấm điểm
+                        <span style="display: inline-block; font-size: 10.5px; background: #FEF3F2; color: #B42318; border: 1px solid #FECDCA; border-radius: 4px; padding: 1px 6px; margin-left: 6px;">IDTTX-20</span>
+                      </td>
+                      <td><span title="Nộp bài và xem điểm của chính mình" style="background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">W*</span></td>
+                      <td><span style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">W</span></td>
+                      <td style="background: #FEF3F2;"><span title="Giảng viên CÓ QUYỀN toàn diện tạo bài & chấm điểm" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                      <td><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td style="background: #FFFDF9;"><span title="Kế toán TUYỆT ĐỐI KHÔNG có quyền chấm điểm" style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td style="background: #F8FAFF;"><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                    </tr>
+
+                    <!-- 8. Điểm tổng kết & tốt nghiệp (CỐT LÕI IDTTX-20) -->
+                    <tr data-category="grade" style="background: #FFFDF5;">
+                      <td style="text-align: left; padding-left: 20px; font-weight: 600; color: var(--color-text-muted);">8</td>
+                      <td style="text-align: left; font-weight: 700; color: var(--color-navy-title);">
+                        <i data-lucide="award" class="size-4" style="display: inline; vertical-align: middle; margin-right: 6px; color: #D97706;"></i>
+                        Điểm tổng kết & tốt nghiệp
+                        <span style="display: inline-block; font-size: 10.5px; background: #FEF3F2; color: #B42318; border: 1px solid #FECDCA; border-radius: 4px; padding: 1px 6px; margin-left: 6px;">IDTTX-20</span>
+                      </td>
+                      <td><span title="Chỉ xem điểm tổng kết của chính mình" style="background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R*</span></td>
+                      <td><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td style="background: #FEF3F2;"><span title="Giảng viên CÓ QUYỀN sửa điểm (GRADE_EDIT) lớp mình dạy" style="background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">W</span></td>
+                      <td><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td style="background: #FFFDF9;"><span title="Kế toán TUYỆT ĐỐI KHÔNG có quyền sửa điểm" style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                      <td style="background: #F8FAFF;"><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                    </tr>
+
+                    <!-- 9. Học phí & công nợ (CỐT LÕI IDTTX-20) -->
+                    <tr data-category="finance" style="background: #FFF9F5;">
+                      <td style="text-align: left; padding-left: 20px; font-weight: 600; color: var(--color-text-muted);">9</td>
+                      <td style="text-align: left; font-weight: 700; color: var(--color-navy-title);">
+                        <i data-lucide="credit-card" class="size-4" style="display: inline; vertical-align: middle; margin-right: 6px; color: #059669;"></i>
+                        Học phí & công nợ
+                        <span style="display: inline-block; font-size: 10.5px; background: #FEF6EE; color: #B54708; border: 1px solid #F9DBAF; border-radius: 4px; padding: 1px 6px; margin-left: 6px;">IDTTX-20</span>
+                      </td>
+                      <td><span title="Chỉ xem công nợ học phí của bản thân" style="background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R*</span></td>
+                      <td><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td style="background: #FFFBFB;"><span title="Giảng viên TUYỆT ĐỐI KHÔNG có quyền xem/sửa học phí" style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td style="background: #FEF6EE;"><span title="Kế toán CÓ QUYỀN toàn diện quản lý học phí (TUITION_EDIT)" style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                      <td><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td style="background: #F8FAFF;"><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                    </tr>
+
+                    <!-- 10. Khảo sát chất lượng -->
+                    <tr data-category="training">
+                      <td style="text-align: left; padding-left: 20px; font-weight: 600; color: var(--color-text-muted);">10</td>
+                      <td style="text-align: left; font-weight: 700; color: var(--color-navy-title);">
+                        <i data-lucide="help-circle" class="size-4" style="display: inline; vertical-align: middle; margin-right: 6px; color: #0284C7;"></i>
+                        Khảo sát chất lượng
+                      </td>
+                      <td><span title="Thực hiện đánh giá khảo sát của cá nhân" style="background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">W*</span></td>
+                      <td><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td style="background: #FFFBFB;"><span title="Chỉ xem kết quả khảo sát lớp mình dạy" style="background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R*</span></td>
+                      <td><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td style="background: #FFFDF9;"><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                      <td style="background: #F8FAFF;"><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                    </tr>
+
+                    <!-- 11. Báo cáo & dashboard -->
+                    <tr data-category="training">
+                      <td style="text-align: left; padding-left: 20px; font-weight: 600; color: var(--color-text-muted);">11</td>
+                      <td style="text-align: left; font-weight: 700; color: var(--color-navy-title);">
+                        <i data-lucide="bar-chart-2" class="size-4" style="display: inline; vertical-align: middle; margin-right: 6px; color: #7C3AED;"></i>
+                        Báo cáo & dashboard
+                      </td>
+                      <td><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td style="background: #FFFBFB;"><span title="Chỉ xem dashboard lớp mình phụ trách" style="background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R*</span></td>
+                      <td><span title="Chỉ xem dashboard doanh số lead của mình" style="background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R*</span></td>
+                      <td style="background: #FFFDF9;"><span title="Chỉ xem báo cáo tài chính / công nợ" style="background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R*</span></td>
+                      <td><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                      <td style="background: #F8FAFF;"><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                    </tr>
+
+                    <!-- 12. Người dùng & nhật ký -->
+                    <tr data-category="training">
+                      <td style="text-align: left; padding-left: 20px; font-weight: 600; color: var(--color-text-muted);">12</td>
+                      <td style="text-align: left; font-weight: 700; color: var(--color-navy-title);">
+                        <i data-lucide="shield" class="size-4" style="display: inline; vertical-align: middle; margin-right: 6px; color: var(--color-navy-title);"></i>
+                        Người dùng & nhật ký
+                      </td>
+                      <td><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td style="background: #FFFBFB;"><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td style="background: #FFFDF9;"><span style="background: #F1F5F9; color: #94A3B8; border: 1px solid #CBD5E1; font-weight: 700; border-radius: 5px; padding: 2px 8px; font-size: 12px;">–</span></td>
+                      <td><span style="background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">R</span></td>
+                      <td style="background: #F8FAFF;"><span style="background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; font-weight: 800; border-radius: 5px; padding: 2px 8px; font-size: 12px;">F</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Hộp ghi chú bảo mật IDTTX-20 & S1-05 -->
+              <div style="margin: 18px 24px; padding: 14px 18px; border-radius: var(--radius-md); background: #EFF6FF; border: 1px solid #BFDBFE; display: flex; align-items: flex-start; gap: 12px;">
+                <i data-lucide="shield-check" style="width: 22px; height: 22px; color: var(--color-blue-primary); flex-shrink: 0; margin-top: 2px;"></i>
+                <div style="font-size: 13px; line-height: 1.5; color: #1E3A8A;">
+                  <strong>Ràng buộc kiểm soát phân quyền cốt lõi (IDTTX-20 & S1-05):</strong>
+                  <ul style="margin: 6px 0 0 16px; padding: 0; list-style-type: disc;">
+                    <li><strong>Giảng viên (Instructor):</strong> Toàn quyền <code>F</code> tại Bài tập & chấm điểm, quyền <code>W</code> Điểm tổng kết, nhưng <strong>TUYỆT ĐỐI KHÔNG CÓ QUYỀN (<code>–</code>)</strong> truy cập Học phí & công nợ.</li>
+                    <li><strong>Kế toán (Accountant):</strong> Toàn quyền <code>F</code> tại Học phí & công nợ, nhưng <strong>TUYỆT ĐỐI KHÔNG CÓ QUYỀN (<code>–</code>)</strong> chỉnh sửa Điểm danh, Bài tập và Điểm tổng kết.</li>
+                    <li><strong>Quản trị viên (Admin):</strong> Toàn quyền <code>F</code> trên mọi module của hệ thống.</li>
+                    <li><strong>Ràng buộc <code>*</code>:</strong> Phân quyền dữ liệu cá nhân/phụ trách được ép buộc trực tiếp ở tầng server (Default-Deny), ngăn chặn mọi hành vi leo thang đặc quyền.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- TAB 2: DANH MỤC 8 VAI TRÒ NGHIỆP VỤ (BẢO TOÀN GỐC)        -->
+            <!-- ========================================================= -->
+            <div id="tab-pane-roles" class="hidden">
+              <div class="app-table-wrap">
+                <table class="app-table">
+                  <thead>
+                    <tr>
+                      <th>Vai trò</th>
+                      <th>Đối tượng</th>
+                      <th>Quyền chính</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold">
+                        Khách truy cập
+                        <p class="app-muted">Guest</p>
+                      </td>
+                      <td>Người quan tâm khoá học, chưa có tài khoản</td>
+                      <td>Để lại thông tin đăng ký tư vấn</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold">
+                        Học viên
+                        <p class="app-muted">Student</p>
+                      </td>
+                      <td>Người đang theo học một lớp</td>
+                      <td>
+                        Xem lịch học, nhận bài tập, nộp bài, xem điểm và công nợ
+                        học phí của mình
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold">
+                        Giảng viên
+                        <p class="app-muted">Instructor</p>
+                      </td>
+                      <td>Người đứng lớp, phụ trách chuyên môn</td>
+                      <td>
+                        Điểm danh, giao bài, chấm điểm, theo dõi tiến độ lớp mình
+                        dạy
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold">
+                        Trợ giảng
+                        <p class="app-muted">TA</p>
+                      </td>
+                      <td>Hỗ trợ giảng viên, kèm học viên yếu</td>
+                      <td>
+                        Điểm danh và chấm bài trong phạm vi giảng viên uỷ quyền;
+                        không sửa được điểm tổng kết
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold">
+                        Quản lý đào tạo
+                        <p class="app-muted">Training Manager</p>
+                      </td>
+                      <td>Chủ sở hữu vận hành đào tạo</td>
+                      <td>
+                        Mở lớp, xếp lịch, phân công giảng viên, duyệt bảo lưu,
+                        giám sát chất lượng toàn khoá
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold">
+                        Tư vấn tuyển sinh
+                        <p class="app-muted">Admissions</p>
+                      </td>
+                      <td>Nhân sự bán hàng đầu phễu</td>
+                      <td>
+                        Quản lý lead, chăm sóc, chuyển đổi thành học viên nhập học
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold">
+                        Kế toán
+                        <p class="app-muted">Accountant</p>
+                      </td>
+                      <td>Phụ trách thu học phí</td>
+                      <td>
+                        Ghi nhận thanh toán, theo dõi công nợ, xuất báo cáo doanh
+                        thu
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold">
+                        Quản trị hệ thống
+                        <p class="app-muted">Admin</p>
+                      </td>
+                      <td>Người vận hành ứng dụng</td>
+                      <td>
+                        Quản lý tài khoản, vai trò, danh mục dùng chung, xem nhật
+                        ký hệ thống
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </section>
 
@@ -329,6 +714,7 @@
                   class="mt-4 flex gap-2"
                 >
                   <input
+                    id="catalog-course-input"
                     class="app-input"
                     placeholder="Tên khoá học mới"
                     aria-label="Tên khoá học mới"
@@ -348,6 +734,7 @@
                 </ul>
                 <form data-catalog-form="catalog-rooms" class="mt-4 flex gap-2">
                   <input
+                    id="catalog-room-input"
                     class="app-input"
                     placeholder="Tên phòng mới"
                     aria-label="Tên phòng mới"
@@ -389,59 +776,146 @@
       </div>
     </div>
 
-    <!-- Modal Đổi mật khẩu (S1-04) -->
-    <div id="change-password-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden" role="dialog" aria-modal="true" aria-labelledby="change-pass-title">
-      <div class="bg-surface rounded-xl border border-border shadow-2xl w-full max-w-md p-6 relative">
-        <div class="flex items-center justify-between pb-3 border-b border-border">
-          <h3 id="change-pass-title" class="font-bold text-lg flex items-center gap-2">
-            <i data-lucide="shield-lock" class="text-primary size-5"></i> Đổi mật khẩu
-          </h3>
-          <button type="button" class="app-icon-btn" data-close-change-pass aria-label="Đóng">
-            <i data-lucide="x" class="size-5"></i>
+    <!-- Modal Đổi mật khẩu (S1-04) chuẩn thiết kế Screenshot -->
+    <div id="change-password-modal" class="cp-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="cp-modal-title">
+      <div class="cp-modal-card">
+        <!-- Top bar: Nút đóng bên trái, Huy hiệu Bảo mật bên phải -->
+        <div class="cp-top-bar">
+          <button type="button" class="cp-close-btn" data-close-change-pass aria-label="Đóng">
+            <i data-lucide="x" class="size-4"></i>
           </button>
+          <div class="cp-security-badge">
+            <i data-lucide="lock" class="size-3.5"></i>
+            <span>Bảo mật</span>
+          </div>
         </div>
 
-        <form id="change-password-form" class="mt-4 space-y-4">
-          <div>
-            <label for="cp-current" class="block text-sm font-semibold mb-1">Mật khẩu hiện tại <span class="text-rose-500">*</span></label>
-            <div class="relative">
-              <input type="password" id="cp-current" name="currentPassword" class="app-input w-full pe-10" required placeholder="Nhập mật khẩu hiện tại" autocomplete="current-password" />
-              <button type="button" class="toggle-pass-btn absolute right-3 top-1/2 -translate-y-1/2 text-muted" data-target="cp-current">
-                <i data-lucide="eye" class="size-4"></i>
-              </button>
+        <!-- MÀN HÌNH 1: FORM NHẬP ĐỔI MẬT KHẨU -->
+        <div id="cp-form-view">
+          <!-- Icon chìa khóa trung tâm -->
+          <div class="cp-center-badge">
+            <i data-lucide="key" class="size-6"></i>
+          </div>
+
+          <h2 id="cp-modal-title" class="cp-title">Đổi mật khẩu</h2>
+          <p class="cp-subtitle">Nhập mật khẩu hiện tại rồi chọn một mật khẩu mới.</p>
+
+          <div id="first-login-notice" class="p-3 mb-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-xs hidden">
+            <div class="flex items-start gap-2">
+              <i data-lucide="info" class="size-4 shrink-0 mt-0.5 text-blue-600"></i>
+              <div>
+                <span class="font-bold">Đổi mật khẩu lần đầu:</span>
+                Chào mừng bạn đến với TMS! Đây là lần đầu tiên bạn đăng nhập bằng mật khẩu tạm. Vui lòng thiết lập mật khẩu mới để bảo vệ tài khoản cá nhân.
+              </div>
             </div>
           </div>
 
-          <div>
-            <label for="cp-new" class="block text-sm font-semibold mb-1">Mật khẩu mới <span class="text-rose-500">*</span></label>
-            <div class="relative">
-              <input type="password" id="cp-new" name="newPassword" class="app-input w-full pe-10" required minlength="8" placeholder="Tối thiểu 8 ký tự (chữ + số)" autocomplete="new-password" />
-              <button type="button" class="toggle-pass-btn absolute right-3 top-1/2 -translate-y-1/2 text-muted" data-target="cp-new">
-                <i data-lucide="eye" class="size-4"></i>
-              </button>
+          <form id="change-password-form" novalidate>
+            <!-- 1. Mật khẩu hiện tại -->
+            <div class="cp-field">
+              <label for="cp-current" class="cp-label">Mật khẩu hiện tại</label>
+              <div class="cp-input-wrap">
+                <span class="cp-input-icon"><i data-lucide="lock" class="size-4"></i></span>
+                <input type="password" id="cp-current" name="currentPassword" class="cp-input" placeholder="••••••••••" autocomplete="current-password" required />
+                <button type="button" class="cp-toggle-pass" data-target="cp-current" aria-label="Ẩn hiện mật khẩu">
+                  <i data-lucide="eye" class="size-4"></i>
+                </button>
+              </div>
+              <p id="cp-current-error" class="cp-error-msg hidden">Mật khẩu hiện tại không đúng</p>
             </div>
-            <p class="text-xs text-muted mt-1">Tối thiểu 8 ký tự, bắt buộc có cả chữ cái và chữ số.</p>
-          </div>
 
-          <div>
-            <label for="cp-confirm" class="block text-sm font-semibold mb-1">Xác nhận mật khẩu mới <span class="text-rose-500">*</span></label>
-            <div class="relative">
-              <input type="password" id="cp-confirm" name="confirmPassword" class="app-input w-full pe-10" required placeholder="Nhập lại mật khẩu mới" autocomplete="new-password" />
-              <button type="button" class="toggle-pass-btn absolute right-3 top-1/2 -translate-y-1/2 text-muted" data-target="cp-confirm">
-                <i data-lucide="eye" class="size-4"></i>
-              </button>
+            <!-- 2. Mật khẩu mới -->
+            <div class="cp-field">
+              <label for="cp-new" class="cp-label">Mật khẩu mới</label>
+              <div class="cp-input-wrap">
+                <span class="cp-input-icon"><i data-lucide="lock" class="size-4"></i></span>
+                <input type="password" id="cp-new" name="newPassword" class="cp-input" placeholder="••••••••••" autocomplete="new-password" required />
+                <button type="button" class="cp-toggle-pass" data-target="cp-new" aria-label="Ẩn hiện mật khẩu">
+                  <i data-lucide="eye" class="size-4"></i>
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div id="cp-alert" class="p-3 rounded-lg text-sm hidden"></div>
+            <!-- 3. Xác nhận mật khẩu -->
+            <div class="cp-field">
+              <label for="cp-confirm" class="cp-label">Xác nhận mật khẩu</label>
+              <div class="cp-input-wrap">
+                <span class="cp-input-icon"><i data-lucide="lock" class="size-4"></i></span>
+                <input type="password" id="cp-confirm" name="confirmPassword" class="cp-input" placeholder="Nhập lại mật khẩu mới" autocomplete="new-password" required />
+                <button type="button" class="cp-toggle-pass" data-target="cp-confirm" aria-label="Ẩn hiện mật khẩu">
+                  <i data-lucide="eye" class="size-4"></i>
+                </button>
+              </div>
+              <p id="cp-confirm-error" class="cp-error-msg hidden">Xác nhận mật khẩu mới không trùng khớp</p>
+            </div>
 
-          <div class="flex justify-end gap-2 pt-2 border-t border-border">
-            <button type="button" class="app-btn app-btn-outline" data-close-change-pass>Hủy</button>
-            <button type="submit" id="cp-submit-btn" class="app-btn app-btn-primary flex items-center gap-1.5">
-              <i data-lucide="check" class="size-4"></i> Lưu thay đổi
+            <!-- Thẻ điều kiện mật khẩu cần có (Live validation) -->
+            <div class="cp-rules-card">
+              <div class="cp-rules-title">Mật khẩu cần có:</div>
+              <ul class="cp-rules-list">
+                <li id="cp-rule-length" class="cp-rule-item">
+                  <span class="cp-rule-check">✓</span>
+                  <span>Tối thiểu 8 ký tự</span>
+                </li>
+                <li id="cp-rule-case" class="cp-rule-item">
+                  <span class="cp-rule-check">✓</span>
+                  <span>Bao gồm chữ cái in hoa và chữ cái thường</span>
+                </li>
+                <li id="cp-rule-digits" class="cp-rule-item">
+                  <span class="cp-rule-check">✓</span>
+                  <span>Có các chữ số</span>
+                </li>
+                <li id="cp-rule-special" class="cp-rule-item">
+                  <span class="cp-rule-check">✓</span>
+                  <span>Ít nhất một ký tự đặc biệt (!, @, #, $, ^, *)</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Thẻ thông báo đăng xuất thiết bị khác -->
+            <div class="cp-devices-card">
+              <div class="cp-devices-icon">
+                <i data-lucide="monitor" class="size-4"></i>
+              </div>
+              <div>
+                <div class="cp-devices-title">Các thiết bị khác sẽ bị đăng xuất</div>
+                <div class="cp-devices-sub">Phiên trên thiết bị này vẫn giữ nguyên.</div>
+              </div>
+            </div>
+
+            <!-- Nút Cập nhật mật khẩu -->
+            <button type="submit" id="cp-submit-btn" class="cp-submit-action is-disabled" disabled>
+              Cập nhật mật khẩu
             </button>
+          </form>
+        </div>
+
+        <!-- MÀN HÌNH 2: HOÀN TẤT - ĐÃ ĐỔI MẬT KHẨU (SCREENSHOT 1) -->
+        <div id="cp-success-view" class="cp-success-wrapper hidden">
+          <!-- Icon tick xanh trung tâm -->
+          <div class="cp-center-badge" style="background: #00c48c;">
+            <i data-lucide="check" class="size-6"></i>
           </div>
-        </form>
+
+          <div class="cp-success-tag">HOÀN TẤT</div>
+          <h2 class="cp-title">Đã đổi mật khẩu</h2>
+          <p class="cp-subtitle">Mật khẩu mới có hiệu lực ngay từ bây giờ.</p>
+
+          <div class="cp-success-card">
+            <div class="cp-success-icon">
+              <i data-lucide="monitor" class="size-4"></i>
+            </div>
+            <div>
+              <div class="cp-success-title">Các phiên đăng nhập khác đã bị thu hồi</div>
+              <div class="cp-success-desc">Phiên trên thiết bị này vẫn giữ nguyên.</div>
+            </div>
+          </div>
+
+          <button type="button" id="cp-finish-btn" class="cp-home-action" data-close-change-pass>
+            <span>Về trang chủ</span>
+            <i data-lucide="arrow-up-right" class="size-4"></i>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -513,6 +987,59 @@
             <button type="button" class="app-btn app-btn-outline" data-close-lock-account>Hủy bỏ</button>
             <button type="submit" id="lock-confirm-submit-btn" class="app-btn bg-rose-600 text-white hover:bg-rose-700 flex items-center gap-1.5">
               <i data-lucide="lock" class="size-4"></i> Xác nhận khoá tài khoản
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal Mở khoá tài khoản người dùng (S1-10) -->
+    <div id="unlock-account-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm hidden" role="dialog" aria-modal="true" aria-labelledby="unlock-account-title">
+      <div class="bg-surface rounded-xl border border-border shadow-2xl w-full max-w-md p-6 relative">
+        <div class="flex items-center justify-between pb-3 border-b border-border">
+          <h3 id="unlock-account-title" class="font-bold text-lg flex items-center gap-2 text-emerald-600">
+            <i data-lucide="unlock" class="size-5"></i> Mở khoá tài khoản người dùng
+          </h3>
+          <button type="button" class="app-icon-btn" data-close-unlock-account aria-label="Đóng">
+            <i data-lucide="x" class="size-5"></i>
+          </button>
+        </div>
+
+        <form id="unlock-account-form" class="mt-4 space-y-4">
+          <input type="hidden" id="unlock-account-email" />
+
+          <div class="p-3.5 rounded-lg bg-surface-muted border border-border text-sm space-y-1.5">
+            <div class="flex items-center justify-between">
+              <span class="text-muted">Họ và tên:</span>
+              <span id="unlock-account-name" class="font-semibold text-foreground"></span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-muted">Email:</span>
+              <span id="unlock-account-email-text" class="font-mono text-xs"></span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-muted">Vai trò:</span>
+              <span id="unlock-account-role" class="app-badge"></span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-muted">Lý do khóa trước đó:</span>
+              <span id="unlock-account-reason" class="text-rose-600 font-medium text-xs"></span>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-800 text-xs leading-relaxed flex items-start gap-2">
+            <i data-lucide="check-circle-2" class="size-4 text-emerald-600 shrink-0 mt-0.5"></i>
+            <div>
+              <strong>Xác nhận kích hoạt lại:</strong> Sau khi mở khoá, tài khoản sẽ chuyển về trạng thái <strong>Hoạt động</strong> và có thể đăng nhập bình thường. Mọi giới hạn khóa tạm (nếu có) sẽ được dỡ bỏ ngay lập tức.
+            </div>
+          </div>
+
+          <div id="unlock-account-error" class="p-3 rounded-lg text-sm bg-rose-500/10 text-rose-500 border border-rose-500/20 hidden"></div>
+
+          <div class="flex justify-end gap-2 pt-3 border-t border-border">
+            <button type="button" class="app-btn app-btn-outline" data-close-unlock-account>Hủy bỏ</button>
+            <button type="submit" id="unlock-confirm-submit-btn" class="app-btn bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1.5">
+              <i data-lucide="unlock" class="size-4"></i> Xác nhận mở khoá
             </button>
           </div>
         </form>
