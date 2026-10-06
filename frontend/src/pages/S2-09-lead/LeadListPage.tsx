@@ -76,7 +76,7 @@ export function LeadListPage() {
         )}
       </div>
       <div className="bar">
-        <Search placeholder="Tìm theo tên hoặc số điện thoại" value={q} onChange={filter(setQ)} width={300} />
+        <Search placeholder="Tìm theo tên hoặc số điện thoại" value={q} onChange={filter(setQ)} width={280} />
         <Filter label="Trạng thái" value={status} options={LEAD_STATUSES} onChange={filter(setStatus)} width={198} />
         <Filter label="Nguồn" value={source} options={SOURCES} onChange={filter(setSource)} width={198} />
         {!counselor && <Filter label="Phụ trách" value={owner} options={[UNASSIGNED, ...COUNSELORS]} onChange={filter(setOwner)} width={198} />}

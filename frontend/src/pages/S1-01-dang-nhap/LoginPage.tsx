@@ -19,10 +19,15 @@ const FEATURES = [
 type LoginState = { from?: string; loggedOut?: boolean; expired?: boolean; email?: string } | null;
 
 export function LoginPage() {
-  const { signIn } = useAuth();
+  const { signIn, signOut } = useAuth();
   const navigate = useNavigate();
   const state = useLocation().state as LoginState;
   const [email, setEmail] = useState(state?.email ?? '');
+
+  // Đến từ nút Đăng xuất hoặc phiên hết hạn: xoá phiên ở đây. Khi tích hợp: POST /auth/logout để máy chủ thu hồi token.
+  useEffect(() => {
+    if (state?.loggedOut || state?.expired) signOut();
+  }, [state, signOut]);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
