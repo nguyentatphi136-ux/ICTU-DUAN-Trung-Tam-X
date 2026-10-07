@@ -106,17 +106,28 @@
                   Lead khách để lại ở trang chủ sẽ xuất hiện tại đây
                 </p>
               </div>
-              <label class="flex items-center gap-2 text-xs font-bold">
-                Lọc
-                <select id="lead-filter" class="app-select app-input-sm">
-                  <option value="">Tất cả trạng thái</option>
-                  <option>Mới</option>
-                  <option>Đang chăm sóc</option>
-                  <option>Hẹn test đầu vào</option>
-                  <option>Đã nhập học</option>
-                  <option>Không tiềm năng</option>
-                </select>
-              </label>
+              <div class="flex items-center gap-2">
+                <a
+                  href="lead-consultation-prototype.html"
+                  class="app-btn app-btn-primary app-btn-sm"
+                  style="background: #0575e6; color: white; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;"
+                  title="Mở giao diện TMS chuẩn Figma (S2-11)"
+                >
+                  <i data-lucide="external-link" class="size-3.5"></i>
+                  Giao diện Figma (S2-11)
+                </a>
+                <label class="flex items-center gap-2 text-xs font-bold">
+                  Lọc
+                  <select id="lead-filter" class="app-select app-input-sm">
+                    <option value="">Tất cả trạng thái</option>
+                    <option>Mới</option>
+                    <option>Đang chăm sóc</option>
+                    <option>Hẹn test đầu vào</option>
+                    <option>Đã nhập học</option>
+                    <option>Không tiềm năng</option>
+                  </select>
+                </label>
+              </div>
             </div>
             <div class="app-table-wrap">
               <table id="lead-table" class="app-table">
