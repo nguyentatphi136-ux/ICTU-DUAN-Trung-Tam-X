@@ -1320,6 +1320,8 @@
       document.getElementById('sessionNumberInput').value = `Buổi ${sessions.length + 1}`;
       document.getElementById('sessionTopicInput').value = '';
       document.getElementById('sessionObjectiveInput').value = '';
+      document.getElementById('sessionTopicInput').style.borderColor = '';
+      document.getElementById('sessionObjectiveInput').style.borderColor = '';
       document.getElementById('sessionFormModalOverlay').classList.add('active');
       setTimeout(() => document.getElementById('sessionTopicInput').focus(), 100);
     }
@@ -1332,6 +1334,8 @@
       document.getElementById('sessionNumberInput').value = `Buổi ${s.sessionNumber}`;
       document.getElementById('sessionTopicInput').value = s.topic;
       document.getElementById('sessionObjectiveInput').value = s.objective;
+      document.getElementById('sessionTopicInput').style.borderColor = '';
+      document.getElementById('sessionObjectiveInput').style.borderColor = '';
       document.getElementById('sessionFormModalOverlay').classList.add('active');
       setTimeout(() => document.getElementById('sessionTopicInput').focus(), 100);
     }
@@ -1346,19 +1350,26 @@
     }
 
     function saveSessionForm() {
-      const topic = document.getElementById('sessionTopicInput').value.trim();
-      const objective = document.getElementById('sessionObjectiveInput').value.trim();
+      const topicInput = document.getElementById('sessionTopicInput');
+      const objectiveInput = document.getElementById('sessionObjectiveInput');
+      const topic = topicInput.value.trim();
+      const objective = objectiveInput.value.trim();
 
       if (!topic) {
-        alert('Vui lòng nhập chủ đề buổi học.');
-        document.getElementById('sessionTopicInput').focus();
+        showToast('Vui lòng nhập chủ đề buổi học.', 'error');
+        topicInput.focus();
+        topicInput.style.borderColor = '#ef4444';
         return;
       }
+      topicInput.style.borderColor = '';
+
       if (!objective) {
-        alert('Vui lòng nhập mục tiêu buổi học.');
-        document.getElementById('sessionObjectiveInput').focus();
+        showToast('Vui lòng nhập mục tiêu buổi học.', 'error');
+        objectiveInput.focus();
+        objectiveInput.style.borderColor = '#ef4444';
         return;
       }
+      objectiveInput.style.borderColor = '';
 
       if (editingSessionIndex !== null) {
         // Cập nhật buổi học đã có
