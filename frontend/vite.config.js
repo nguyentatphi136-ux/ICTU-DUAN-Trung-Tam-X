@@ -14,6 +14,7 @@ const pages = [
   "admissions.html",
   "accountant.html",
   "admin.html",
+  "course-sessions-prototype.html",
 ];
 
 export default defineConfig({
