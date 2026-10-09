@@ -125,22 +125,49 @@ Mô hình dữ liệu được thiết kế tuân thủ nghiêm ngặt chuẩn h
 
 ---
 
-## 4. Ma trận phân quyền 8 vai trò nghiệp vụ (Role - Permission Matrix)
+## 4. Ma trận phân quyền theo 12 Module (Chuẩn tài liệu User Roles & IDTTX-20)
 
-| STT | Mã vai trò | Tên vai trò | Quyền Quản trị (`USER_*/ROLE_*`) | Quyền Điểm số (`GRADE_EDIT`) | Quyền Học phí (`TUITION_EDIT`) | Quyền Lớp học (`CLASS_MANAGE`) | Quyền Lead (`LEAD_MANAGE`) |
-|:---:|:---|:---|:---:|:---:|:---:|:---:|:---:|
-| 1 | `Admin` | Quản trị hệ thống | ✅ Toàn quyền | ✅ Có | ✅ Có | ✅ Có | ✅ Có |
-| 2 | `TrainingManager` | Quản lý đào tạo | ❌ Xem hồ sơ | ✅ Có | ❌ **Không** | ✅ Có | ❌ Không |
-| 3 | `Admissions` | Tư vấn tuyển sinh | ❌ Không | ❌ Không | ❌ Không | ❌ Không | ✅ Có |
-| 4 | `Instructor` | Giảng viên | ❌ Không | ✅ **CÓ** | ❌ **KHÔNG** | ❌ Không | ❌ Không |
-| 5 | `TeachingAssistant` | Trợ giảng | ❌ Không | ❌ Chỉ xem | ❌ **KHÔNG** | ❌ Không | ❌ Không |
-| 6 | `Accountant` | Kế toán | ❌ Không | ❌ **KHÔNG** | ✅ **CÓ** | ❌ Không | ❌ Không |
-| 7 | `Student` | Học viên | ❌ Không | ❌ Chỉ xem bản thân | ❌ Chỉ xem bản thân | ❌ Không | ❌ Không |
-| 8 | `Guest` | Khách truy cập | ❌ Không | ❌ Không | ❌ Không | ❌ Không | ❌ Không |
+### 4.1. Quy ước ký hiệu phân quyền (Permission Legend)
+- **`F` (Full / Toàn quyền)**: Có quyền toàn diện trên module (Xem, Thêm mới, Chỉnh sửa, Xóa, Cấu hình, Duyệt).
+- **`W` (Write / Ghi trong phạm vi)**: Được ghi, sửa, chấm bài, điểm danh trong phạm vi được phân công/giao phó.
+- **`R` (Read / Chỉ xem)**: Chỉ được xem dữ liệu, không có quyền chỉnh sửa.
+- **`–` (None / Không truy cập)**: Không có quyền truy cập vào phân hệ (từ chối ngay từ menu và filter 403 ở tầng server).
+- **`*` (Scope Constraint / Ràng buộc phạm vi)**: Chỉ thao tác trên dữ liệu của **chính mình** hoặc của **lớp mình trực tiếp phụ trách**. Đây là **ràng buộc bắt buộc kiểm tra ở tầng server**, không phải quy ước giao diện.
+- **`Admin`**: Có toàn quyền (`F`) trên mọi module của hệ thống.
 
-> **Điểm kiểm chứng cốt lõi của Story IDTTX-20:**
-> - Hàng số 4 (`Instructor`): Cột `GRADE_EDIT` là **CÓ**, cột `TUITION_EDIT` là **KHÔNG**.
-> - Hàng số 6 (`Accountant`): Cột `GRADE_EDIT` là **KHÔNG**, cột `TUITION_EDIT` là **CÓ**.
+---
+
+### 4.2. Bảng Ma trận phân quyền chi tiết theo 12 Module nghiệp vụ
+
+| STT | Phân hệ / Module nghiệp vụ | Student<br>(Học viên) | TA<br>(Trợ giảng) | Instructor<br>(Giảng viên) | Admissions<br>(Tuyển sinh) | Accountant<br>(Kế toán) | Training Mgr<br>(QL Đào tạo) | Admin<br>(Quản trị) |
+|:---:|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| 1 | **Chương trình & môn học** | `R` | `R` | `R` | `R` | `–` | `F` | `F` |
+| 2 | **Tuyển sinh & lead** | `–` | `–` | `–` | `F` | `R` | `R` | `F` |
+| 3 | **Hồ sơ học viên** | `W*` | `R` | `R` | `W` | `R` | `F` | `F` |
+| 4 | **Lớp học & thời khoá biểu** | `R*` | `R` | `R` | `R` | `–` | `F` | `F` |
+| 5 | **Điểm danh** | `R*` | `W` | `W` | `–` | `–` | `F` | `F` |
+| 6 | **Học liệu & thông báo lớp** | `R*` | `W*` | `W*` | `–` | `–` | `F` | `F` |
+| 7 | **Bài tập & chấm điểm** | `W*` | `W` | `F` | `–` | `–` | `R` | `F` |
+| 8 | **Điểm tổng kết & tốt nghiệp** | `R*` | `R` | `W` | `–` | `–` | `F` | `F` |
+| 9 | **Học phí & công nợ** | `R*` | `–` | `–` | `R` | `F` | `R` | `F` |
+| 10 | **Khảo sát chất lượng** | `W*` | `–` | `R*` | `–` | `–` | `F` | `F` |
+| 11 | **Báo cáo & dashboard** | `–` | `–` | `R*` | `R*` | `R*` | `F` | `F` |
+| 12 | **Người dùng & nhật ký** | `–` | `–` | `–` | `–` | `–` | `R` | `F` |
+
+---
+
+### 4.3. Điểm kiểm chứng cốt lõi của Story IDTTX-20 & S1-05
+1. **Giảng viên (`Instructor`)**:
+   - Module `Bài tập & chấm điểm`: **`F`** (Toàn quyền quản lý bài tập & chấm điểm lớp dạy).
+   - Module `Điểm tổng kết & tốt nghiệp`: **`W`** (CÓ quyền nhập/sửa điểm tổng kết lớp phụ trách).
+   - Module `Học phí & công nợ`: **`–`** (Tuyệt đối **KHÔNG CÓ QUYỀN** xem hoặc sửa học phí).
+2. **Kế toán (`Accountant`)**:
+   - Module `Học phí & công nợ`: **`F`** (Toàn quyền ghi nhận thanh toán, theo dõi công nợ, xuất báo cáo).
+   - Module `Bài tập & chấm điểm` & `Điểm tổng kết`: **`–`** (Tuyệt đối **KHÔNG CÓ QUYỀN** chỉnh sửa điểm số học viên).
+3. **Quản trị hệ thống (`Admin`)**:
+   - Toàn quyền **`F`** trên toàn bộ 12 module của hệ thống.
+4. **Học viên (`Student`)**:
+   - Chỉ được xem (`R*`) và nộp bài/cập nhật hồ sơ của chính mình (`W*`). Tuyệt đối không xem được dữ liệu của học viên khác.
 
 ---
 

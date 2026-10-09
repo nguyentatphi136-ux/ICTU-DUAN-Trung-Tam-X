@@ -3,347 +3,318 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1C3E70" />
+    <meta name="theme-color" content="#0974F1" />
     <meta
       name="description"
-      content="Đăng nhập vào hệ thống quản lý đào tạo EduManager."
+      content="TMS - Hệ thống quản lý đào tạo nội bộ trên nền web."
     />
     <meta name="google-client-id" content="" />
     <meta name="google-auth-endpoint" content="/api/auth/google" />
-    <title>Đăng nhập | EduManager</title>
+    <title>Đăng nhập | TMS.</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-
     <script src="https://unpkg.com/lucide@latest"></script>
     <script type="module" src="/src/main.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
-  <body class="bg-oat text-ink antialiased">
-    <main class="page-enter grid min-h-screen lg:grid-cols-2">
-      <section
-        aria-labelledby="hero-title"
-        class="brand-panel auth-brand-panel relative hidden min-h-screen overflow-hidden px-10 py-9 lg:flex lg:flex-col xl:px-16 xl:py-11"
-      >
-        <div aria-hidden="true" class="hero-grid absolute inset-0"></div>
-        <div
-          aria-hidden="true"
-          class="pointer-events-none absolute -right-32 top-1/4 h-[520px] w-[520px]"
-        >
-          <div class="hero-orbit inset-[5%]"></div>
-          <div class="hero-orbit inset-[20%]"></div>
-          <div class="hero-orbit inset-[35%]"></div>
-          <div
-            class="absolute left-[18%] top-[20%] h-2 w-2 rounded-full bg-blush shadow-[0_0_18px_rgba(243,196,204,0.8)]"
-          ></div>
-          <div
-            class="absolute bottom-[24%] right-[20%] h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.8)]"
-          ></div>
-        </div>
-
-        <header class="relative z-10 flex items-center gap-3">
-          <div
-            class="auth-logo-mark flex size-11 items-center justify-center rounded-xl border border-white/10 bg-berry text-white shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
-          >
-            <i
-              data-lucide="graduation-cap"
-              class="size-5"
-              aria-hidden="true"
-            ></i>
-          </div>
-          <span class="text-lg font-extrabold tracking-normal">EduManager</span>
-        </header>
-
-        <div class="relative z-10 my-auto max-w-xl py-16">
-          <div
-            class="mb-7 inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.04] px-3.5 py-2 text-[10px] font-bold tracking-[0.12em] text-white/75"
-          >
-            <span
-              class="size-1.5 rounded-full bg-emerald-300 shadow-[0_0_10px_rgba(110,231,183,0.8)]"
-            ></span>
-            NỀN TẢNG QUẢN LÝ THÔNG MINH
-          </div>
-          <h1
-            id="hero-title"
-            class="max-w-[560px] text-4xl font-extrabold leading-[1.15] tracking-normal xl:text-[52px]"
-          >
-            Hệ thống quản lý đào tạo
-            <span class="brand-accent mt-1 block text-blush">tích hợp AI</span>
-          </h1>
-          <p
-            class="mt-6 max-w-[490px] text-sm leading-7 text-white/65 xl:text-[15px]"
-          >
-            Quản lý khóa học, học viên, giảng viên và báo cáo kết quả đào tạo
-            trên một nền tảng. Trợ lý AI hỗ trợ giải đáp mọi thắc mắc từ dữ liệu
-            thật.
-          </p>
-
-          <div
-            class="mt-12 flex max-w-[430px] items-center gap-4 border-t border-white/10 pt-5"
-          >
-            <div class="flex -space-x-2" aria-hidden="true">
-              <span
-                class="flex size-8 items-center justify-center rounded-full border-2 border-wine bg-[#D8AA8A] text-[10px] font-bold text-wine"
-                >D</span
-              >
-              <span
-                class="flex size-8 items-center justify-center rounded-full border-2 border-wine bg-[#E8C6A8] text-[10px] font-bold text-wine"
-                >L</span
-              >
-              <span
-                class="flex size-8 items-center justify-center rounded-full border-2 border-wine bg-[#B8C9B6] text-[10px] font-bold text-wine"
-                >P</span
-              >
+  <body>
+    <main class="tms-login-wrapper">
+      <div class="tms-login-container">
+        <!-- Cột trái: Hero Gradient (UI_UX/S1-01_TMS Đăng nhập/Desktop.png) -->
+        <section class="tms-login-hero" aria-labelledby="hero-title">
+          <div class="tms-brand tms-brand-white">
+            <div class="tms-logo-box">
+              <i data-lucide="graduation-cap" aria-hidden="true"></i>
             </div>
-            <p class="text-xs leading-5 text-white/55">
-              <span class="font-semibold text-white/85"
-                >Một nền tảng, mọi hành trình học tập.</span
-              ><br />Đồng hành cùng đội ngũ đào tạo mỗi ngày.
+            <span>TMS.</span>
+          </div>
+
+          <div>
+            <h1 id="hero-title">Một nguồn dữ liệu cho<br />trọn vòng đời học viên.</h1>
+            <p class="hero-desc">
+              TMS là hệ thống quản lý đào tạo nội bộ trên nền web, theo dõi học viên từ lúc còn là lead đến ngày tốt nghiệp.
             </p>
-          </div>
-        </div>
 
-        <footer class="relative z-10 text-[11px] text-white/40">
-          © 2026 EduManager. Bảo lưu mọi quyền.
-        </footer>
-      </section>
-
-      <section
-        aria-label="Đăng nhập EduManager"
-        class="login-section flex min-h-screen flex-col bg-oat px-5 py-5 sm:px-8 sm:py-7 xl:px-12 xl:py-8"
-      >
-        <header class="flex min-h-10 items-center justify-between gap-3">
-          <p class="text-xs font-medium text-wine/65 sm:text-sm">
-            Bạn cần hỗ trợ?
-          </p>
-          <div class="flex items-center gap-2 sm:gap-3">
-            <a
-              href="mailto:admin@edumanager.vn"
-              class="inline-flex min-h-10 items-center gap-2 rounded-lg px-2.5 text-xs font-semibold text-wine/75 transition hover:bg-wine/[0.06] hover:text-wine sm:px-3 sm:text-sm"
-            >
-              <i data-lucide="headset" class="size-4" aria-hidden="true"></i>
-              <span>Liên hệ quản trị viên</span>
-            </a>
-            <button
-              id="theme-toggle"
-              type="button"
-              aria-label="Chuyển giao diện tối"
-              title="Chuyển giao diện tối"
-              class="flex size-10 items-center justify-center rounded-lg text-wine/70 transition hover:bg-wine/[0.06] hover:text-wine"
-            >
-              <i data-lucide="moon" class="size-[18px]" aria-hidden="true"></i>
-            </button>
-          </div>
-        </header>
-
-        <div class="flex flex-1 items-center justify-center py-8 sm:py-10">
-          <div class="form-enter w-full max-w-[496px]">
-            <div
-              class="login-card rounded-xl border border-wine/[0.045] bg-panel p-6 shadow-[0_18px_55px_rgba(62,0,13,0.08)] sm:rounded-2xl sm:p-9"
-            >
-              <a
-                href="index.html"
-                data-nav="home"
-                class="group mb-6 inline-flex items-center gap-1.5 text-xs font-bold text-berry underline-offset-4 hover:underline"
-              >
-                <i
-                  data-lucide="arrow-left"
-                  class="size-4 transition-transform group-hover:-translate-x-0.5"
-                  aria-hidden="true"
-                ></i>
-                Về trang chủ
-              </a>
-
-              <div class="mb-7">
-                <div
-                  class="mb-5 flex size-10 items-center justify-center rounded-[10px] bg-wine text-paper lg:hidden"
-                >
-                  <i
-                    data-lucide="graduation-cap"
-                    class="size-5"
-                    aria-hidden="true"
-                  ></i>
+            <div class="tms-feature-cards">
+              <div class="tms-feature-card">
+                <div class="tms-feature-icon">
+                  <i data-lucide="share-2" aria-hidden="true"></i>
                 </div>
-                <p
-                  class="mb-2 text-[11px] font-bold uppercase tracking-[0.13em] text-berry"
-                >
-                  EduManager
-                </p>
-                <h2
-                  class="text-[26px] font-extrabold leading-tight text-wine sm:text-[30px]"
-                >
-                  Chào mừng trở lại
-                </h2>
-                <p class="mt-2 text-[13px] leading-5 text-wine/60">
-                  Đăng nhập để tiếp tục vào hệ thống quản lý đào tạo.
-                </p>
+                <div class="tms-feature-text">
+                  <h4>Từ lead đến tốt nghiệp</h4>
+                  <p>Cả hành trình của học viên nằm trên một nguồn dữ liệu duy nhất.</p>
+                </div>
               </div>
 
-              <form id="login-form" class="space-y-[18px]" novalidate>
-                <div>
-                  <label
-                    for="email"
-                    class="mb-2 block text-xs font-bold text-wine/85"
-                    >Email</label
-                  >
-                  <div class="relative">
-                    <i
-                      data-lucide="user-round"
-                      class="pointer-events-none absolute left-3.5 top-1/2 size-[17px] -translate-y-1/2 text-wine/40"
-                      aria-hidden="true"
-                    ></i>
-                    <input
-                      id="email"
-                      name="email"
-                      type="email"
-                      autocomplete="email"
-                      placeholder="admin@example.com"
-                      required
-                      class="h-12 w-full rounded-lg border border-wine/10 bg-white/55 pl-11 pr-4 text-sm text-wine outline-none transition placeholder:text-wine/35 hover:border-wine/20 focus:border-berry focus:bg-white/80 focus:ring-2 focus:ring-berry/10"
-                    />
-                  </div>
-                  <p
-                    id="email-error"
-                    class="field-error"
-                    aria-live="polite"
-                  ></p>
+              <div class="tms-feature-card">
+                <div class="tms-feature-icon">
+                  <i data-lucide="users" aria-hidden="true"></i>
                 </div>
-
-                <div>
-                  <label
-                    for="password"
-                    class="mb-2 block text-xs font-bold text-wine/85"
-                    >Mật khẩu</label
-                  >
-                  <div class="relative">
-                    <i
-                      data-lucide="lock-keyhole"
-                      class="pointer-events-none absolute left-3.5 top-1/2 size-[17px] -translate-y-1/2 text-wine/40"
-                      aria-hidden="true"
-                    ></i>
-                    <input
-                      id="password"
-                      name="password"
-                      type="password"
-                      autocomplete="current-password"
-                      placeholder="Nhập mật khẩu"
-                      required
-                      class="h-12 w-full rounded-lg border border-wine/10 bg-white/55 pl-11 pr-12 text-sm text-wine outline-none transition placeholder:text-wine/35 hover:border-wine/20 focus:border-berry focus:bg-white/80 focus:ring-2 focus:ring-berry/10"
-                    />
-                    <button
-                      id="password-toggle"
-                      type="button"
-                      aria-label="Hiện mật khẩu"
-                      class="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-md text-wine/45 transition hover:bg-wine/[0.05] hover:text-wine"
-                    >
-                      <i
-                        data-lucide="eye"
-                        class="size-[17px]"
-                        aria-hidden="true"
-                      ></i>
-                    </button>
-                  </div>
-                  <p
-                    id="password-error"
-                    class="field-error"
-                    aria-live="polite"
-                  ></p>
+                <div class="tms-feature-text">
+                  <h4>Mọi vai trò, cùng một sự thật</h4>
+                  <p>Số liệu cập nhật theo thời gian thực, thay cho Sheets, Zalo và sổ tay.</p>
                 </div>
+              </div>
 
-                <div class="flex items-center justify-between gap-3 pt-0.5">
-                  <label
-                    class="inline-flex cursor-pointer items-center gap-2 text-xs text-wine/70"
-                  >
-                    <input
-                      type="checkbox"
-                      name="remember"
-                      class="size-4 rounded border-wine/25 accent-berry focus:ring-berry"
-                    />
-                    Ghi nhớ đăng nhập
-                  </label>
-                  <a
-                    href="ForgotPasswordForm.html"
-                    data-nav="forgot-password"
-                    class="text-xs font-bold text-berry underline-offset-4 hover:underline"
-                    >Quên mật khẩu?</a
-                  >
+              <div class="tms-feature-card">
+                <div class="tms-feature-icon">
+                  <i data-lucide="bell" aria-hidden="true"></i>
                 </div>
-
-                <button
-                  type="submit"
-                  class="flex h-12 w-full items-center justify-center gap-2 rounded-lg bg-wine text-sm font-bold text-paper shadow-[0_5px_14px_rgba(19,45,85,0.16)] transition hover:bg-[#0E2446] focus:outline-none focus:ring-2 focus:ring-wine focus:ring-offset-2 focus:ring-offset-panel active:translate-y-px"
-                >
-                  Đăng nhập
-                  <i
-                    data-lucide="arrow-right"
-                    class="size-4"
-                    aria-hidden="true"
-                  ></i>
-                </button>
-                <div class="google-divider" aria-hidden="true">
-                  <span></span>
-                  <span>Hoặc</span>
-                  <span></span>
+                <div class="tms-feature-text">
+                  <h4>Chủ động cảnh báo rủi ro</h4>
+                  <p>Hệ thống báo sớm khi có dấu hiệu bất thường, không chờ người phát hiện.</p>
                 </div>
-                <button
-                  id="google-login"
-                  type="button"
-                  class="google-login-button"
-                >
-                  <span class="google-mark" aria-hidden="true">G</span>
-                  <span>Tiếp tục với Google</span>
-                </button>
-                <p
-                  id="form-status"
-                  role="status"
-                  aria-live="polite"
-                  class="hidden text-xs leading-5 text-berry"
-                ></p>
-              </form>
-
-              <p class="mt-5 text-center text-xs text-wine/60">
-                Chưa có tài khoản?
-                <a
-                  href="mailto:admin@edumanager.vn?subject=Y%C3%AAu%20c%E1%BA%A7u%20t%E1%BA%A1o%20t%C3%A0i%20kho%E1%BA%A3n"
-                  class="font-bold text-berry underline-offset-4 hover:underline"
-                  >Tạo tài khoản</a
-                >
-              </p>
-
-              <div
-                class="mt-6 flex items-start gap-2.5 border-t border-wine/[0.08] pt-4"
-              >
-                <i
-                  data-lucide="shield-check"
-                  class="mt-0.5 size-4 shrink-0 text-berry/70"
-                  aria-hidden="true"
-                ></i>
-                <p class="text-[10px] leading-[18px] text-wine/55">
-                  Mật khẩu được mã hóa
-                  <span class="px-0.5 text-wine/30">·</span> Phiên tự hết hạn
-                  sau 8 giờ.
-                </p>
               </div>
             </div>
           </div>
-        </div>
 
-        <footer
-          class="flex items-center justify-between gap-3 text-[10px] text-wine/50 sm:text-[11px]"
-        >
-          <span>Phiên bản 1.0.0</span>
-          <a
-            href="#api-docs"
-            class="font-semibold text-wine/65 underline-offset-4 hover:text-wine hover:underline"
-            >Tài liệu API</a
-          >
-        </footer>
-      </section>
+          <div style="font-size: 12px; color: rgba(255, 255, 255, 0.75);">
+            Hệ thống đào tạo thực hành · ICTU & CodeGym
+          </div>
+        </section>
+
+        <!-- Cột phải: Form Đăng nhập -->
+        <section class="tms-login-form-panel" aria-label="Đăng nhập TMS">
+          <div>
+            <!-- Logo hiển thị trên mobile -->
+            <div class="tms-mobile-brand" style="display: none;">
+              <div class="tms-brand">
+                <div class="tms-logo-box">
+                  <i data-lucide="graduation-cap" aria-hidden="true"></i>
+                </div>
+                <span>TMS.</span>
+              </div>
+            </div>
+
+            <p class="tms-eyebrow">CHÀO MỪNG QUAY TRỞ LẠI</p>
+            <h2 class="tms-form-title">Đăng nhập</h2>
+            <p class="tms-form-subtitle">Nhập thông tin tài khoản của bạn để truy cập hệ thống quản trị đào tạo.</p>
+
+            <!-- Banner Lỗi sai thông tin (S1-01 / Sai email hoặc mật khẩu.png) -->
+            <div id="login-error-banner" class="tms-alert tms-alert-error hidden" role="alert" style="display: none;">
+              <strong>Email hoặc mật khẩu không đúng</strong>
+              <span id="login-attempts-remaining">Bạn còn 4 lần thử trước khi tài khoản bị khóa tạm.</span>
+            </div>
+
+            <!-- Banner Khóa tạm 15 phút (S1-01 / Khóa tạm.png) -->
+            <div id="login-lockout-banner" class="tms-alert tms-alert-warning hidden" role="alert" style="display: none;">
+              <strong>Tài khoản tạm khóa</strong>
+              <span id="lockout-timer-text">Bạn đã nhập sai 5 lần. Vui lòng thử lại sau 15:00.</span>
+            </div>
+
+            <!-- Banner Đã đăng xuất (S1-02 / Đã đăng xuất.png) -->
+            <div id="logout-success-banner" class="tms-alert tms-alert-success hidden" role="alert" style="display: none;">
+              <strong>Bạn đã đăng xuất</strong>
+              <span id="logout-banner-text">Phiên làm việc đã kết thúc trên máy chủ. Đăng nhập lại để tiếp tục.</span>
+            </div>
+
+            <form id="login-form" novalidate>
+              <div class="tms-form-group">
+                <label for="email" class="tms-form-label">Email</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="name@tms.vn"
+                  required
+                  class="tms-input"
+                />
+                <p id="email-error" class="field-error" aria-live="polite" style="color: var(--color-error); font-size: 12px; margin-top: 4px; display: none;"></p>
+              </div>
+
+              <div class="tms-form-group">
+                <label for="password" class="tms-form-label">Mật khẩu</label>
+                <div class="tms-input-password-wrap">
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    placeholder="Nhập mật khẩu"
+                    required
+                    class="tms-input"
+                  />
+                  <button
+                    id="password-toggle"
+                    type="button"
+                    aria-label="Hiện mật khẩu"
+                    class="tms-password-toggle"
+                  >
+                    <i data-lucide="eye" style="width: 18px; height: 18px;" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <p id="password-error" class="field-error" aria-live="polite" style="color: var(--color-error); font-size: 12px; margin-top: 4px; display: none;"></p>
+              </div>
+
+              <div class="tms-checkbox-row">
+                <label class="tms-checkbox-label">
+                  <input type="checkbox" name="remember" checked />
+                  <span>Ghi nhớ đăng nhập</span>
+                </label>
+                <a href="ForgotPasswordForm.html" data-nav="forgot-password">Quên mật khẩu?</a>
+              </div>
+
+              <button type="submit" class="tms-btn-primary" style="width: 100%; height: 46px; font-size: 15px;">
+                Đăng nhập
+              </button>
+
+              <div class="tms-social-divider">HOẶC TIẾP TỤC VỚI</div>
+
+              <div class="tms-social-buttons">
+                <button type="button" id="google-login" class="tms-social-btn">
+                  <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                  </svg>
+                  <span>Google</span>
+                </button>
+                <button type="button" class="tms-social-btn">
+                  <svg style="width: 16px; height: 16px;" fill="#1877F2" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                  <span>Facebook</span>
+                </button>
+              </div>
+
+              <div class="tms-security-footnote">
+                <i data-lucide="lock" style="width: 14px; height: 14px;" aria-hidden="true"></i>
+                <span>Dữ liệu được bảo mật tối đa theo tiêu chuẩn ISO 27001</span>
+              </div>
+
+              <!-- Thanh chuyển đổi nhanh Demo vai trò -->
+              <div class="tms-role-switcher" aria-label="Đăng nhập thử vai trò">
+                <span style="font-size: 11px; font-weight: 700; color: var(--color-navy-title);">Demo:</span>
+                <button type="button" class="tms-role-pill-btn" data-demo-role="admin">Admin</button>
+                <button type="button" class="tms-role-pill-btn" data-demo-role="training-manager">Quản lý ĐT</button>
+                <button type="button" class="tms-role-pill-btn" data-demo-role="instructor">Giảng viên</button>
+                <button type="button" class="tms-role-pill-btn" data-demo-role="ta">Trợ giảng</button>
+                <button type="button" class="tms-role-pill-btn" data-demo-role="admissions">Tuyển sinh</button>
+                <button type="button" class="tms-role-pill-btn" data-demo-role="accountant">Kế toán</button>
+                <button type="button" class="tms-role-pill-btn" data-demo-role="student">Học viên</button>
+              </div>
+
+              <p id="form-status" role="status" aria-live="polite" class="hidden" style="color: var(--color-error); font-size: 13px; text-align: center; margin-top: 8px;"></p>
+            </form>
+
+            <!-- 
+            [ĐÃ ẨN THEO TÀI LIỆU BACKLOG: Hệ thống TMS nội bộ không có chức năng tự đăng ký tài khoản (Sign Up)]
+            <p style="text-align: center; font-size: 13px; color: var(--color-text-secondary); margin-top: 14px;">
+              Chưa có tài khoản?
+              <button
+                type="button"
+                id="open-register-modal"
+                style="background: transparent; border: none; color: var(--color-blue-primary); font-weight: 700; cursor: pointer; text-decoration: underline;"
+              >
+                Tạo tài khoản mới
+              </button>
+            </p>
+            -->
+          </div>
+
+          <footer class="tms-login-footer">
+            <span>© 2026 TMS Platform.</span>
+            <a href="mailto:support@tms.vn">Trợ giúp & hỗ trợ</a>
+          </footer>
+        </section>
+      </div>
     </main>
 
+    <!-- 
+    [ĐÃ ẨN THEO TÀI LIỆU BACKLOG: Modal Đăng ký tài khoản mới (Chỉ Admin cấp tài khoản S1-08 / S2-01 / S3-03)]
+    <div id="register-modal" class="tms-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="register-modal-title">
+      <div class="tms-modal-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--color-border); padding-bottom: 14px; margin-bottom: 18px;">
+          <h3 id="register-modal-title" style="font-size: 18px; font-weight: 800; color: var(--color-navy-title); display: flex; align-items: center; gap: 8px;">
+            <i data-lucide="user-plus" style="width: 20px; height: 20px; color: var(--color-blue-primary);"></i>
+            Đăng ký tài khoản mới
+          </h3>
+          <button type="button" id="close-register-modal" class="tms-close-btn" aria-label="Đóng">
+            <i data-lucide="x" style="width: 18px; height: 18px;"></i>
+          </button>
+        </div>
+
+        <form id="register-form" novalidate>
+          <div class="tms-form-group">
+            <label for="reg-name" class="tms-form-label">Họ và tên *</label>
+            <input type="text" id="reg-name" required placeholder="Nguyễn Văn A" class="tms-input" />
+          </div>
+
+          <div class="tms-form-group">
+            <label for="reg-email" class="tms-form-label">Email *</label>
+            <input type="email" id="reg-email" required placeholder="name@tms.vn" class="tms-input" />
+          </div>
+
+          <div class="tms-form-group">
+            <label for="reg-phone" class="tms-form-label">Số điện thoại</label>
+            <input type="tel" id="reg-phone" placeholder="0912 345 678" class="tms-input" />
+          </div>
+
+          <div class="tms-form-group">
+            <label for="reg-role" class="tms-form-label">Vai trò mong muốn</label>
+            <select id="reg-role" class="tms-select">
+              <option value="student">Học viên</option>
+              <option value="instructor">Giảng viên</option>
+              <option value="ta">Trợ giảng</option>
+              <option value="training-manager">Quản lý đào tạo</option>
+              <option value="admissions">Tư vấn tuyển sinh</option>
+              <option value="accountant">Kế toán</option>
+            </select>
+          </div>
+
+          <div class="tms-form-group">
+            <label for="reg-password" class="tms-form-label">Mật khẩu *</label>
+            <input type="password" id="reg-password" required minlength="8" placeholder="Tối thiểu 8 ký tự (chữ + số)" class="tms-input" />
+          </div>
+
+          <div id="register-alert" class="tms-alert hidden" style="margin-top: 12px;"></div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid var(--color-border); padding-top: 16px;">
+            <button type="button" class="tms-btn-secondary" id="cancel-register-btn">Hủy bỏ</button>
+            <button type="submit" class="tms-btn-primary">Đăng ký tài khoản</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    -->
+
+    <!-- Modal Cảnh báo sắp hết phiên (UI_UX/S1-01_Phiên/Cảnh báo sắp hết hạn.png) -->
+    <div id="session-warning-modal" class="tms-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="session-warn-title">
+      <div class="tms-modal-card" style="text-align: center; max-width: 440px;">
+        <div style="width: 52px; height: 52px; border-radius: var(--radius-full); background: var(--bg-warning); color: var(--color-warning); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+          <i data-lucide="clock" style="width: 26px; height: 26px;"></i>
+        </div>
+        <h3 id="session-warn-title" style="font-size: 20px; font-weight: 800; color: var(--color-navy-title); margin-bottom: 8px;">
+          Phiên sắp hết hạn
+        </h3>
+        <p style="font-size: 14px; color: var(--color-text-secondary); line-height: 1.5; margin-bottom: 24px;">
+          Bạn chưa thao tác trong 28 phút. Phiên sẽ tự kết thúc sau <strong id="session-countdown" style="color: var(--color-warning);">01:59</strong>. Nội dung đang nhập vẫn được giữ nguyên.
+        </p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button type="button" id="btn-session-logout" class="tms-btn-secondary" style="flex: 1;">
+            Đăng xuất
+          </button>
+          <button type="button" id="btn-session-extend" class="tms-btn-primary" style="flex: 1;">
+            Tiếp tục làm việc
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="/app.js"></script>
+    <script>
+      // Khởi tạo lucide icons
+      document.addEventListener("DOMContentLoaded", () => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      });
+    </script>
   </body>
 </html>
