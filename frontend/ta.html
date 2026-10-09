@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0974F1" />
+    <title>Trợ giảng | TMS. - Hệ thống Quản lý Đào tạo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body class="app-body antialiased" data-role="ta">
+    <div class="app-shell">
+      <aside id="app-sidebar" class="app-sidebar"></aside>
+      <div class="app-backdrop" aria-hidden="true"></div>
+
+      <div class="app-main">
+        <header class="app-topbar">
+          <div class="flex items-center gap-3">
+            <button
+              id="sidebar-toggle"
+              type="button"
+              class="app-icon-btn app-sidebar-toggle"
+              aria-label="Mở menu"
+            >
+              <i data-lucide="menu" aria-hidden="true"></i>
+            </button>
+            <div class="flex items-center gap-2 text-sm">
+              <span class="text-muted font-medium">Trợ giảng</span>
+              <span class="text-muted">/</span>
+              <h1 class="font-bold text-foreground text-base tracking-tight">
+                Xin chào, <span data-user="fullName"></span>
+              </h1>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="app-muted hidden sm:inline text-xs font-medium" data-today></span>
+            <button
+              type="button"
+              class="tms-bell-btn"
+              title="Thông báo hỗ trợ lớp"
+              aria-label="Thông báo"
+            >
+              <i data-lucide="bell" class="size-5"></i>
+              <span class="tms-bell-badge"></span>
+            </button>
+
+            <button
+              id="theme-toggle"
+              type="button"
+              aria-label="Chuyển giao diện tối"
+              title="Chuyển giao diện tối"
+              class="app-icon-btn"
+            >
+              <i data-lucide="moon" class="size-[18px]" aria-hidden="true"></i>
+            </button>
+
+            <!-- Nút Đổi mật khẩu tiện ích trên Topbar (S1-04) -->
+            <button type="button" class="tms-btn-topbar-changepass" id="topbar-change-pass-btn" title="Đổi mật khẩu tài khoản">
+              <i data-lucide="key" class="size-4"></i>
+              <span class="hidden md:inline">Đổi mật khẩu</span>
+            </button>
+
+            <div class="relative">
+              <div
+                id="tms-user-profile-btn"
+                class="tms-user-pill"
+                tabindex="0"
+                role="button"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                <div class="tms-user-info hidden sm:block">
+                  <div class="tms-user-name" data-user="fullName"></div>
+                  <div class="tms-user-role">Trợ giảng</div>
+                </div>
+                <div class="tms-avatar-circle" id="user-avatar-initials">
+                  TG
+                </div>
+                <i data-lucide="chevron-down" class="size-4 text-muted hidden sm:inline"></i>
+              </div>
+
+              <div class="tms-user-dropdown" id="tms-user-dropdown-menu">
+                <div class="p-3 border-b border-border">
+                  <p class="font-bold text-sm text-foreground truncate" data-user="fullName"></p>
+                  <p class="text-xs text-muted truncate font-mono" data-user="email"></p>
+                  <span class="app-badge is-info mt-1.5 text-xs">Trợ giảng · TA</span>
+                </div>
+                <div class="p-1 space-y-0.5">
+                  <button type="button" class="tms-dropdown-item tms-dropdown-changepass" id="open-change-password-modal">
+                    <span class="flex items-center gap-2">
+                      <i data-lucide="key" class="size-4 text-primary"></i>
+                      <span>Đổi mật khẩu</span>
+                    </span>
+                    <span class="tms-badge-key">Bảo mật</span>
+                  </button>
+                  <div class="tms-dropdown-divider"></div>
+                  <button type="button" class="tms-dropdown-item is-danger" data-nav="logout">
+                    <i data-lucide="log-out" class="size-4 text-rose-600"></i>
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main class="app-content page-enter">
+          <section id="tong-quan" class="app-stats" aria-label="Tổng quan">
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="school" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Lớp được uỷ quyền</p>
+                <p class="app-stat-value">2</p>
+              </div>
+            </div>
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="file-clock" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Bài chờ chấm</p>
+                <p class="app-stat-value">9</p>
+              </div>
+            </div>
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="heart-handshake" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Học viên cần kèm</p>
+                <p class="app-stat-value">3</p>
+              </div>
+            </div>
+            <div class="app-stat">
+              <span class="app-stat-icon"
+                ><i data-lucide="calendar-clock" aria-hidden="true"></i
+              ></span>
+              <div>
+                <p class="app-stat-label">Buổi kèm tuần này</p>
+                <p class="app-stat-value">4</p>
+              </div>
+            </div>
+          </section>
+
+          <section id="uy-quyen" class="app-card">
+            <div class="app-card-header">
+              <h2 class="app-card-title">
+                <i data-lucide="shield-check" aria-hidden="true"></i>Phạm vi uỷ
+                quyền
+              </h2>
+              <span class="app-badge">Uỷ quyền bởi GV Trần Thị Giảng</span>
+            </div>
+            <div class="grid gap-3 md:grid-cols-3">
+              <div class="app-note">
+                <i data-lucide="circle-check" aria-hidden="true"></i>
+                <p><b>Được phép:</b> điểm danh lớp IELTS-2610 và GT-2609.</p>
+              </div>
+              <div class="app-note">
+                <i data-lucide="circle-check" aria-hidden="true"></i>
+                <p><b>Được phép:</b> chấm điểm bài tập hằng ngày.</p>
+              </div>
+              <div class="app-note">
+                <i data-lucide="lock" aria-hidden="true"></i>
+                <p>
+                  <b>Không được phép:</b> sửa điểm tổng kết (chỉ giảng viên được
+                  sửa).
+                </p>
+              </div>
+            </div>
+          </section>
+
+          <div class="grid gap-6 xl:grid-cols-2">
+            <section id="diem-danh" class="app-card">
+              <form data-attendance-form="GT-2609">
+                <div class="app-card-header">
+                  <div>
+                    <h2 class="app-card-title">
+                      <i data-lucide="clipboard-check" aria-hidden="true"></i
+                      >Điểm danh
+                    </h2>
+                    <p class="app-card-subtitle">
+                      Lớp GT-2609 · Hôm nay 18:00 · P.204
+                    </p>
+                  </div>
+                  <span class="app-badge is-info" data-attendance-count></span>
+                </div>
+                <ul class="app-list">
+                  <li class="app-list-item">
+                    <label class="flex items-center gap-3">
+                      <input type="checkbox" class="app-checkbox" checked />
+                      Đinh Văn Khang
+                    </label>
+                    <span class="app-muted">HV021</span>
+                  </li>
+                  <li class="app-list-item">
+                    <label class="flex items-center gap-3">
+                      <input type="checkbox" class="app-checkbox" checked />
+                      Mai Thu Trang
+                    </label>
+                    <span class="app-muted">HV022</span>
+                  </li>
+                  <li class="app-list-item">
+                    <label class="flex items-center gap-3">
+                      <input type="checkbox" class="app-checkbox" />
+                      Hồ Minh Tuấn
+                    </label>
+                    <span class="app-muted">HV023</span>
+                  </li>
+                  <li class="app-list-item">
+                    <label class="flex items-center gap-3">
+                      <input type="checkbox" class="app-checkbox" checked />
+                      Cao Bảo Ngọc
+                    </label>
+                    <span class="app-muted">HV024</span>
+                  </li>
+                </ul>
+                <button type="submit" class="app-btn mt-4">
+                  <i data-lucide="save" aria-hidden="true"></i>Lưu điểm danh
+                </button>
+                <p
+                  class="app-status"
+                  role="status"
+                  aria-live="polite"
+                  hidden
+                ></p>
+              </form>
+            </section>
+
+            <section id="kem-hoc" class="app-card">
+              <div class="app-card-header">
+                <h2 class="app-card-title">
+                  <i data-lucide="heart-handshake" aria-hidden="true"></i>Học
+                  viên cần kèm
+                </h2>
+              </div>
+              <ul class="app-list">
+                <li class="app-list-item">
+                  <div>
+                    <p class="app-list-title">Hồ Minh Tuấn · GT-2609</p>
+                    <p class="app-muted">
+                      Vắng 3 buổi liên tiếp, yếu phần nghe
+                    </p>
+                  </div>
+                  <span class="app-badge is-danger">Ưu tiên cao</span>
+                </li>
+                <li class="app-list-item">
+                  <div>
+                    <p class="app-list-title">Phan Quốc Huy · IELTS-2610</p>
+                    <p class="app-muted">Writing dưới 6.0 · Kèm thứ 7, 14:00</p>
+                  </div>
+                  <span class="app-badge is-warning">Đang kèm</span>
+                </li>
+                <li class="app-list-item">
+                  <div>
+                    <p class="app-list-title">Lý Thị Mai · IELTS-2610</p>
+                    <p class="app-muted">Cần luyện phát âm · Kèm CN, 09:00</p>
+                  </div>
+                  <span class="app-badge is-success">Tiến bộ tốt</span>
+                </li>
+              </ul>
+            </section>
+          </div>
+
+          <section id="cham-bai" class="app-card">
+            <form data-grade-form="Listening practice test 4">
+              <div class="app-card-header">
+                <div>
+                  <h2 class="app-card-title">
+                    <i data-lucide="pen-line" aria-hidden="true"></i>Chấm bài
+                  </h2>
+                  <p class="app-card-subtitle">
+                    Listening practice test 4 · Lớp IELTS-2610 · Thang 10
+                  </p>
+                </div>
+                <button type="submit" class="app-btn app-btn-sm">
+                  <i data-lucide="save" aria-hidden="true"></i>Lưu điểm
+                </button>
+              </div>
+              <div class="app-table-wrap">
+                <table class="app-table">
+                  <thead>
+                    <tr>
+                      <th>Học viên</th>
+                      <th>Nộp lúc</th>
+                      <th>Điểm bài</th>
+                      <th>Điểm tổng kết</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold">Nguyễn Văn Học</td>
+                      <td>06/10 20:11</td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.25"
+                          class="app-input app-input-sm"
+                          aria-label="Điểm bài Nguyễn Văn Học"
+                        />
+                      </td>
+                      <td>
+                        <span class="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value="8.2"
+                            class="app-input app-input-sm"
+                            disabled
+                            aria-label="Điểm tổng kết Nguyễn Văn Học (chỉ xem)"
+                          />
+                          <i
+                            data-lucide="lock"
+                            class="size-4 app-muted"
+                            aria-hidden="true"
+                          ></i>
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold">Phan Quốc Huy</td>
+                      <td>06/10 22:47</td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.25"
+                          class="app-input app-input-sm"
+                          aria-label="Điểm bài Phan Quốc Huy"
+                        />
+                      </td>
+                      <td>
+                        <span class="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value="6.4"
+                            class="app-input app-input-sm"
+                            disabled
+                            aria-label="Điểm tổng kết Phan Quốc Huy (chỉ xem)"
+                          />
+                          <i
+                            data-lucide="lock"
+                            class="size-4 app-muted"
+                            aria-hidden="true"
+                          ></i>
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold">Võ Thành Đạt</td>
+                      <td>07/10 07:30</td>
+                      <td>
+                        <input
+                          type="number"
+                          min="0"
+                          max="10"
+                          step="0.25"
+                          value="7"
+                          class="app-input app-input-sm"
+                          aria-label="Điểm bài Võ Thành Đạt"
+                        />
+                      </td>
+                      <td>
+                        <span class="flex items-center gap-2">
+                          <input
+                            type="number"
+                            value="7.7"
+                            class="app-input app-input-sm"
+                            disabled
+                            aria-label="Điểm tổng kết Võ Thành Đạt (chỉ xem)"
+                          />
+                          <i
+                            data-lucide="lock"
+                            class="size-4 app-muted"
+                            aria-hidden="true"
+                          ></i>
+                        </span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p class="app-status" role="status" aria-live="polite" hidden></p>
+            </form>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <!-- Modal Đổi mật khẩu (S1-04) chuẩn thiết kế Screenshot -->
+    <div id="change-password-modal" class="cp-modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="cp-modal-title">
+      <div class="cp-modal-card">
+        <!-- Top bar: Nút đóng bên trái, Huy hiệu Bảo mật bên phải -->
+        <div class="cp-top-bar">
+          <button type="button" class="cp-close-btn" data-close-change-pass aria-label="Đóng">
+            <i data-lucide="x" class="size-4"></i>
+          </button>
+          <div class="cp-security-badge">
+            <i data-lucide="lock" class="size-3.5"></i>
+            <span>Bảo mật</span>
+          </div>
+        </div>
+
+        <!-- MÀN HÌNH 1: FORM NHẬP ĐỔI MẬT KHẨU -->
+        <div id="cp-form-view">
+          <!-- Icon chìa khóa trung tâm -->
+          <div class="cp-center-badge">
+            <i data-lucide="key" class="size-6"></i>
+          </div>
+
+          <h2 id="cp-modal-title" class="cp-title">Đổi mật khẩu</h2>
+          <p class="cp-subtitle">Nhập mật khẩu hiện tại rồi chọn một mật khẩu mới.</p>
+
+          <div id="first-login-notice" class="p-3 mb-4 rounded-lg bg-blue-50 border border-blue-200 text-blue-800 text-xs hidden">
+            <div class="flex items-start gap-2">
+              <i data-lucide="info" class="size-4 shrink-0 mt-0.5 text-blue-600"></i>
+              <div>
+                <span class="font-bold">Đổi mật khẩu lần đầu:</span>
+                Chào mừng bạn đến với TMS! Đây là lần đầu tiên bạn đăng nhập bằng mật khẩu tạm. Vui lòng thiết lập mật khẩu mới để bảo vệ tài khoản cá nhân.
+              </div>
+            </div>
+          </div>
+
+          <form id="change-password-form" novalidate>
+            <!-- 1. Mật khẩu hiện tại -->
+            <div class="cp-field">
+              <label for="cp-current" class="cp-label">Mật khẩu hiện tại</label>
+              <div class="cp-input-wrap">
+                <span class="cp-input-icon"><i data-lucide="lock" class="size-4"></i></span>
+                <input type="password" id="cp-current" name="currentPassword" class="cp-input" placeholder="••••••••••" autocomplete="current-password" required />
+                <button type="button" class="cp-toggle-pass" data-target="cp-current" aria-label="Ẩn hiện mật khẩu">
+                  <i data-lucide="eye" class="size-4"></i>
+                </button>
+              </div>
+              <p id="cp-current-error" class="cp-error-msg hidden">Mật khẩu hiện tại không đúng</p>
+            </div>
+
+            <!-- 2. Mật khẩu mới -->
+            <div class="cp-field">
+              <label for="cp-new" class="cp-label">Mật khẩu mới</label>
+              <div class="cp-input-wrap">
+                <span class="cp-input-icon"><i data-lucide="lock" class="size-4"></i></span>
+                <input type="password" id="cp-new" name="newPassword" class="cp-input" placeholder="••••••••••" autocomplete="new-password" required />
+                <button type="button" class="cp-toggle-pass" data-target="cp-new" aria-label="Ẩn hiện mật khẩu">
+                  <i data-lucide="eye" class="size-4"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- 3. Xác nhận mật khẩu -->
+            <div class="cp-field">
+              <label for="cp-confirm" class="cp-label">Xác nhận mật khẩu</label>
+              <div class="cp-input-wrap">
+                <span class="cp-input-icon"><i data-lucide="lock" class="size-4"></i></span>
+                <input type="password" id="cp-confirm" name="confirmPassword" class="cp-input" placeholder="Nhập lại mật khẩu mới" autocomplete="new-password" required />
+                <button type="button" class="cp-toggle-pass" data-target="cp-confirm" aria-label="Ẩn hiện mật khẩu">
+                  <i data-lucide="eye" class="size-4"></i>
+                </button>
+              </div>
+              <p id="cp-confirm-error" class="cp-error-msg hidden">Xác nhận mật khẩu mới không trùng khớp</p>
+            </div>
+
+            <!-- Thẻ điều kiện mật khẩu cần có (Live validation) -->
+            <div class="cp-rules-card">
+              <div class="cp-rules-title">Mật khẩu cần có:</div>
+              <ul class="cp-rules-list">
+                <li id="cp-rule-length" class="cp-rule-item">
+                  <span class="cp-rule-check">✓</span>
+                  <span>Tối thiểu 8 ký tự</span>
+                </li>
+                <li id="cp-rule-case" class="cp-rule-item">
+                  <span class="cp-rule-check">✓</span>
+                  <span>Bao gồm chữ cái in hoa và chữ cái thường</span>
+                </li>
+                <li id="cp-rule-digits" class="cp-rule-item">
+                  <span class="cp-rule-check">✓</span>
+                  <span>Có các chữ số</span>
+                </li>
+                <li id="cp-rule-special" class="cp-rule-item">
+                  <span class="cp-rule-check">✓</span>
+                  <span>Ít nhất một ký tự đặc biệt (!, @, #, $, ^, *)</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- Thẻ thông báo đăng xuất thiết bị khác -->
+            <div class="cp-devices-card">
+              <div class="cp-devices-icon">
+                <i data-lucide="monitor" class="size-4"></i>
+              </div>
+              <div>
+                <div class="cp-devices-title">Các thiết bị khác sẽ bị đăng xuất</div>
+                <div class="cp-devices-sub">Phiên trên thiết bị này vẫn giữ nguyên.</div>
+              </div>
+            </div>
+
+            <!-- Nút Cập nhật mật khẩu -->
+            <button type="submit" id="cp-submit-btn" class="cp-submit-action is-disabled" disabled>
+              Cập nhật mật khẩu
+            </button>
+          </form>
+        </div>
+
+        <!-- MÀN HÌNH 2: HOÀN TẤT - ĐÃ ĐỔI MẬT KHẨU (SCREENSHOT 1) -->
+        <div id="cp-success-view" class="cp-success-wrapper hidden">
+          <!-- Icon tick xanh trung tâm -->
+          <div class="cp-center-badge" style="background: #00c48c;">
+            <i data-lucide="check" class="size-6"></i>
+          </div>
+
+          <div class="cp-success-tag">HOÀN TẤT</div>
+          <h2 class="cp-title">Đã đổi mật khẩu</h2>
+          <p class="cp-subtitle">Mật khẩu mới có hiệu lực ngay từ bây giờ.</p>
+
+          <div class="cp-success-card">
+            <div class="cp-success-icon">
+              <i data-lucide="monitor" class="size-4"></i>
+            </div>
+            <div>
+              <div class="cp-success-title">Các phiên đăng nhập khác đã bị thu hồi</div>
+              <div class="cp-success-desc">Phiên trên thiết bị này vẫn giữ nguyên.</div>
+            </div>
+          </div>
+
+          <button type="button" id="cp-finish-btn" class="cp-home-action" data-close-change-pass>
+            <span>Về trang chủ</span>
+            <i data-lucide="arrow-up-right" class="size-4"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
