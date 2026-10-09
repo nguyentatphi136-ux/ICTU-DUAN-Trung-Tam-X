@@ -1,54 +1,24 @@
-# =====================================================================
-# Git Ignore - Hệ Thống Quản Lý Đào Tạo Trung Tâm (EMS)
-# =====================================================================
-
-# 1. Maven & Java Build Output
-target/
+# Compiled class file
 *.class
+
+# Log file
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
 *.jar
 *.war
-*.ear
 *.nar
+*.ear
 *.zip
 *.tar.gz
 *.rar
 
-# 2. Node & Frontend dependencies
-node_modules/
-dist/
-dist-ssr/
-*.local
-.vite/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# 3. Environment & Secrets
-.env
-.env.production
-
-# 4. IDE & Editors
-.idea/
-*.iml
-*.iws
-*.ipr
-.settings/
-.project
-.classpath
-*.sublime-project
-*.sublime-workspace
-
-# 5. OS & Temporary files
-.DS_Store
-Thumbs.db
-ehthumbs.db
-*.tmp
-*.bak
-*.swp
-*~
-
-# 6. Logs & Crash reports
-*.log
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
