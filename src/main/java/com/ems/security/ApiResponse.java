@@ -12,9 +12,28 @@ public final class ApiResponse {
 
     public static void success(HttpServletResponse response, String code, String message, Object data)
             throws IOException {
-        response.setStatus(HttpServletResponse.SC_OK);
+        success(response, HttpServletResponse.SC_OK, code, message, data);
+    }
+
+    public static void success(HttpServletResponse response, int status, String code, String message, Object data)
+            throws IOException {
+        response.setStatus(status);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write(GSON.toJson(new Success(true, code, message, data)));
+    }
+
+    public static void created(HttpServletResponse response, String code, String message, Object data)
+            throws IOException {
+        success(response, HttpServletResponse.SC_CREATED, code, message, data);
+    }
+
+    public static void error(
+            HttpServletResponse response,
+            int status,
+            String code,
+            String message
+    ) throws IOException {
+        error(response, status, code, message, "Quay lại", "/index.html");
     }
 
     public static void error(
@@ -32,7 +51,8 @@ public final class ApiResponse {
                 "error", Map.of(
                         "code", code,
                         "message", message,
-                        "action", Map.of("label", actionLabel, "href", actionHref)
+                        "action", Map.of("label", actionLabel != null ? actionLabel : "Quay lại",
+                                         "href", actionHref != null ? actionHref : "/index.html")
                 )
         )));
     }
