@@ -13,6 +13,9 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.regex.Pattern;
 
 /**
  * Mục 12 & 13: JDBC & CRUD, JDBC Querying
@@ -194,6 +197,36 @@ public class UserDAO {
             } catch (SQLException | RuntimeException e) {
                 connection.rollback();
                 throw e;
+            }
+        }
+    }
+
+    public User findById(long userId) throws SQLException {
+        String sql = "SELECT id, user_code, email, full_name, phone, status FROM users WHERE id = ?";
+        try (Connection connection = DBConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, userId);
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next()) return null;
+                User user = new User();
+                user.setId(result.getLong("id"));
+                user.setUserCode(result.getString("user_code"));
+                user.setEmail(result.getString("email"));
+                user.setFullName(result.getString("full_name"));
+                user.setPhone(result.getString("phone"));
+                user.setStatus(result.getString("status"));
+                List<String> roles = new ArrayList<>();
+                try (PreparedStatement roleStmt = connection.prepareStatement(
+                        "SELECT r.role_code FROM user_roles ur JOIN roles r ON r.id = ur.role_id "
+                                + "WHERE ur.user_id = ? ORDER BY CASE r.role_code WHEN 'ADMIN' THEN 0 ELSE 1 END, r.id")) {
+                    roleStmt.setLong(1, userId);
+                    try (ResultSet roleRs = roleStmt.executeQuery()) {
+                        while (roleRs.next()) roles.add(roleRs.getString("role_code"));
+                    }
+                }
+                user.setRoles(roles);
+                if (!roles.isEmpty()) user.setPrimaryRole(roles.get(0));
+                return user;
             }
         }
     }
