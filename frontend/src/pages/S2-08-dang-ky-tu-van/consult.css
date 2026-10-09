@@ -1,0 +1,21 @@
+/* S2-08. Biểu mẫu đăng ký tư vấn dùng lại khung hai cột của trang đăng nhập. */
+/* login.css đặt margin, padding về 0 cho mọi phần tử trong .lg-page nên trả lại khoảng cách của ô nhập ở đây. */
+.ct-right .field{margin-bottom:16px}.ct-right .field label{margin-bottom:6px}.ct-right .err{margin-top:5px}.ct-right .inp textarea{padding:10px 14px}
+.lg-page .ct-card{grid-template-columns:560px 1fr}
+.lg-page .ct-h{font-size:38px}
+.lg-page .ct-feat{align-items:center;padding:10px 12px}
+.lg-page .ct-feat .lg-ic{width:36px;height:36px}
+.lg-page .ct-feat h3{font-size:15px}
+.ct-right{padding:56px 64px;display:flex;flex-direction:column;justify-content:center}
+.ct-right h2{font-size:32px;margin:6px 0 24px}
+.ct-right .inp input,.ct-right .inp select{height:44px}.ct-right .inp select{padding:0 14px}
+.ct-right select.ph{color:#a4abba}
+.ct-captcha{display:flex;align-items:center;gap:12px;width:300px;max-width:100%;height:60px;padding:0 16px;border:1px solid var(--line);border-radius:var(--r);background:#f7f9fc;cursor:pointer;margin-top:4px}
+.ct-captcha input{width:22px;height:22px;accent-color:var(--blue)}
+.ct-captcha svg{margin-left:auto;color:var(--muted)}
+.ct-captcha.bad{border-color:var(--red)}
+.ct-submit{margin-top:22px;height:54px}
+.ct-note{text-align:center;margin-top:12px;font-size:13px}
+.ct-thanks .box{text-align:left}
+.ct-back{margin-top:4px;height:48px;font-size:14px}
+@media(max-width:900px){.lg-page .ct-card{grid-template-columns:1fr}.ct-right{padding:32px 24px}.ct-right h2{font-size:26px}.lg-page .ct-h{font-size:30px}}
