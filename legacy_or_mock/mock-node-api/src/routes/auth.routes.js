@@ -12,6 +12,11 @@ const invalidCredentialsMessage = 'Email hoặc mật khẩu không chính xác'
 const dummySalt = randomBytes(16);
 const dummyHash = randomBytes(64);
 
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
+const LOCKOUT_DURATION_MS = LOCKOUT_MINUTES * 60 * 1000;
+const failedLoginAttempts = new Map(); // normalizedEmail -> { count, lockedUntil }
+
 async function verifyPassword(password, user) {
   const salt = user ? Buffer.from(`idttx-44:${user.id}`) : dummySalt;
   const expectedHash = user ? user.passwordHash : dummyHash;
@@ -31,15 +36,51 @@ router.post('/login', async (req, res, next) => {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+
+    // S1-01 AC3: Khóa tạm 15 phút sau 5 lần sai liên tiếp
+    const now = Date.now();
+    const attemptRecord = failedLoginAttempts.get(normalizedEmail);
+    if (attemptRecord && attemptRecord.lockedUntil && attemptRecord.lockedUntil > now) {
+      const remainingMinutes = Math.ceil((attemptRecord.lockedUntil - now) / (60 * 1000));
+      return res.status(423).json({
+        success: false,
+        code: 'ACCOUNT_TEMPORARILY_LOCKED',
+        message: `Tài khoản tạm thời bị khóa 15 phút do nhập sai 5 lần liên tiếp. Vui lòng thử lại sau ${remainingMinutes} phút.`,
+        remainingMinutes,
+      });
+    }
+
     const user = users.find((candidate) => candidate.email === normalizedEmail);
     const passwordIsValid = await verifyPassword(password, user);
 
     if (!user || !passwordIsValid) {
-      return res.status(401).json({
-        success: false,
-        message: invalidCredentialsMessage,
-      });
+      let record = attemptRecord;
+      if (!record || (record.lockedUntil && record.lockedUntil <= now)) {
+        record = { count: 0, lockedUntil: null };
+      }
+      record.count += 1;
+      if (record.count >= MAX_FAILED_ATTEMPTS) {
+        record.lockedUntil = now + LOCKOUT_DURATION_MS;
+        failedLoginAttempts.set(normalizedEmail, record);
+        return res.status(423).json({
+          success: false,
+          code: 'ACCOUNT_TEMPORARILY_LOCKED',
+          message: 'Tài khoản đã bị tạm khóa 15 phút do nhập sai 5 lần liên tiếp. Vui lòng thử lại sau 15 phút.',
+          remainingMinutes: LOCKOUT_MINUTES,
+        });
+      } else {
+        failedLoginAttempts.set(normalizedEmail, record);
+        const remainingAttempts = MAX_FAILED_ATTEMPTS - record.count;
+        return res.status(401).json({
+          success: false,
+          message: invalidCredentialsMessage,
+          remainingAttempts,
+        });
+      }
     }
+
+    // Đăng nhập thành công -> Reset bộ đếm thất bại
+    failedLoginAttempts.delete(normalizedEmail);
 
     // roles trong token chỉ để client hiển thị; quyền truy cập luôn được
     // kiểm tra lại từ kho người dùng bởi middleware authenticate/authorize.
@@ -141,4 +182,68 @@ router.post('/change-password', authenticate, async (req, res, next) => {
   }
 });
 
+// S1-03 AC1, AC2, AC3: Quên mật khẩu qua email - Anti-probing, Constant-time, 15m Rate Limiting
+const resetTokens = new Map();
+const rateLimitStore = new Map();
+const RATE_LIMIT_COOLDOWN_MS = 15 * 60 * 1000; // 15 phút
+
+router.post('/forgot-password', async (req, res, next) => {
+  const startTime = Date.now();
+  try {
+    const { email } = req.body || {};
+    if (!email || !email.includes('@')) {
+      return res.status(400).json({
+        success: false,
+        code: 'VALIDATION_ERROR',
+        message: 'Vui lòng nhập địa chỉ email hợp lệ',
+      });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // Giới hạn 1 email chỉ gửi được 1 lần sau 15 phút (Rate Limiting)
+    const lastSent = rateLimitStore.get(normalizedEmail);
+    if (lastSent && (Date.now() - lastSent < RATE_LIMIT_COOLDOWN_MS)) {
+      const remainingMinutes = Math.ceil((RATE_LIMIT_COOLDOWN_MS - (Date.now() - lastSent)) / 60000);
+      return res.status(429).json({
+        success: false,
+        code: 'RATE_LIMITED',
+        message: `Email này chỉ có thể nhận liên kết đặt lại mật khẩu 1 lần mỗi 15 phút để bảo vệ hệ thống. Vui lòng thử lại sau ${remainingMinutes} phút.`,
+      });
+    }
+    rateLimitStore.set(normalizedEmail, Date.now());
+
+    const user = users.find((u) => u.email === normalizedEmail);
+
+    if (user) {
+      const token = 'rst_' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36);
+      resetTokens.set(token, {
+        userId: user.id,
+        email: user.email,
+        expiresAt: Date.now() + 30 * 60 * 1000, // 30 phút
+        isUsed: false,
+      });
+    }
+
+    // Bảo vệ chống tấn công đo lường thời gian (Constant-time ~ 200ms)
+    const elapsed = Date.now() - startTime;
+    if (elapsed < 200) {
+      await new Promise((resolve) => setTimeout(resolve, 200 - elapsed));
+    }
+
+    // Luôn trả về cùng một thông báo chung dù email có tồn tại hay không (Anti-probing)
+    return res.status(200).json({
+      success: true,
+      code: 'AUTH_RESET_ACCEPTED',
+      message: 'Nếu địa chỉ email tồn tại trên hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu qua email trong vài phút.',
+    });
+  } catch (error) {
+    return res.status(200).json({
+      success: true,
+      message: 'Nếu địa chỉ email tồn tại trên hệ thống, bạn sẽ nhận được hướng dẫn đặt lại mật khẩu qua email trong vài phút.',
+    });
+  }
+});
+
 module.exports = router;
+
