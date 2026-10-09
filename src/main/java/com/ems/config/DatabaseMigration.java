@@ -67,7 +67,57 @@ public class DatabaseMigration {
                 )
             """);
 
-            LOGGER.info("Đã kiểm tra và đảm bảo cấu trúc bảng programs và classes thành công.");
+            // 3. Tạo bảng subjects (S2-05)
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS subjects (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    subject_code VARCHAR(50) NOT NULL UNIQUE,
+                    subject_name VARCHAR(150) NOT NULL,
+                    total_sessions INT NOT NULL DEFAULT 15,
+                    credit_weight DECIMAL(4, 2) NOT NULL DEFAULT 1.00,
+                    min_pass_score DECIMAL(4, 2) NOT NULL DEFAULT 5.00,
+                    learning_outcomes TEXT NULL,
+                    status VARCHAR(20) DEFAULT 'ACTIVE',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """);
+
+            // 4. Tạo bảng program_subjects (S2-06)
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS program_subjects (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    program_id INT NOT NULL,
+                    subject_id INT NOT NULL,
+                    order_index INT NOT NULL DEFAULT 1,
+                    prerequisite_subject_id INT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """);
+
+            // 5. Tạo bảng subject_lessons (S2-07)
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS subject_lessons (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    subject_id INT NOT NULL,
+                    session_order INT NOT NULL,
+                    topic VARCHAR(255) NOT NULL,
+                    objectives TEXT NULL
+                )
+            """);
+
+            // 6. Tạo bảng class_subjects (hỗ trợ kiểm tra ràng buộc lớp học)
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS class_subjects (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    class_id BIGINT NOT NULL,
+                    subject_id INT NOT NULL,
+                    status VARCHAR(20) DEFAULT 'PLANNING'
+                )
+            """);
+
+            LOGGER.info("Đã kiểm tra và đảm bảo cấu trúc bảng programs, classes, subjects, program_subjects, subject_lessons thành công.");
         }
     }
 }

@@ -47,7 +47,7 @@ def main():
 
     # 3. Sprint 2 Test Suites
     results.append(("Sprint 2: S2-01 & S2-02", run_command("Sprint 2 (Excel Import & Profile)", [sys.executable, "scratch/test_s2_01_and_s2_02.py"])))
-    results.append(("Sprint 2: S2-04", run_command("Sprint 2 (Training Programs)", [sys.executable, "scratch/test_s2_04_training_programs.py"])))
+    results.append(("Sprint 2: S2-04 -> S2-07 Full", run_command("Sprint 2 EP-02 Training Full (S2-04, S2-05, S2-06, S2-07)", [sys.executable, "scratch/test_s2_04_to_s2_07_full.py"])))
     results.append(("Sprint 2: S2-09", run_command("Sprint 2 (Leads CRUD & Validation)", ["node", "scratch/test_s2_09_lead.js"])))
 
     print("\n" + "=" * 80)

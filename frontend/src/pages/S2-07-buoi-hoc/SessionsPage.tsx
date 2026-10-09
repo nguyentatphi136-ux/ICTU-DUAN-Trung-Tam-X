@@ -4,7 +4,7 @@ import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Box, Modal, Pill } from '../../components/ui';
-import { LESSONS, SUBJECTS, type Lesson } from '../../data/training';
+import { loadLessons, loadSubjects, saveLessons, type Lesson } from '../../data/training';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
 import { MODULE, useCanEditTraining } from '../S2-04-chuong-trinh/ProgramListPage';
 
@@ -12,17 +12,20 @@ import { MODULE, useCanEditTraining } from '../S2-04-chuong-trinh/ProgramListPag
 // Nhân bản danh sách buổi từ môn khác, cảnh báo trước khi ghi đè. Khi tích hợp: /training/subjects/:code/sessions.
 export function SessionsPage() {
   const code = useParams().code ?? '';
-  const subject = SUBJECTS.find((s) => s.code === code);
+  const subjects = loadSubjects();
+  const subject = subjects.find((s) => s.code === code);
   const toast = useToast();
   const canEdit = useCanEditTraining();
-  const [lessons, setLessons] = useState<Lesson[]>(() => LESSONS[code] ?? []);
+  const [lessons, setLessons] = useState<Lesson[]>(() => loadLessons()[code] ?? []);
   const [editing, setEditing] = useState<number | 'new' | null>(null);
   const [cloning, setCloning] = useState(false);
 
   if (!subject) return <ErrorPage code="404" />;
 
   const commit = (list: Lesson[]) => {
-    LESSONS[code] = list;
+    const all = loadLessons();
+    all[code] = list;
+    saveLessons(all);
     setLessons(list);
   };
   const full = lessons.length >= subject.sessions;
@@ -173,9 +176,11 @@ function LessonModal({ index, lesson, onClose, onSave }: { index: number; lesson
 }
 
 function CloneDialog({ target, targetSessions, current, onClose, onClone }: { target: string; targetSessions: number; current: number; onClose: () => void; onClone: (l: Lesson[]) => void }) {
-  const sources = SUBJECTS.filter((s) => s.code !== target && LESSONS[s.code]?.length);
+  const allLessons = loadLessons();
+  const allSubjects = loadSubjects();
+  const sources = allSubjects.filter((s) => s.code !== target && allLessons[s.code]?.length);
   const [from, setFrom] = useState(sources[0]?.code ?? '');
-  const list = LESSONS[from] ?? [];
+  const list = allLessons[from] ?? [];
   const n = Math.min(list.length, targetSessions);
   return (
     <Modal onClose={onClose} label="Nhân bản danh sách buổi">
@@ -186,7 +191,7 @@ function CloneDialog({ target, targetSessions, current, onClose, onClone }: { ta
           <select id="cl-from" value={from} onChange={(e) => setFrom(e.target.value)}>
             {sources.map((s) => (
               <option key={s.code} value={s.code}>
-                {s.code} · {s.name} · {LESSONS[s.code].length} buổi
+                {s.code} · {s.name} · {allLessons[s.code].length} buổi
               </option>
             ))}
           </select>
@@ -210,7 +215,7 @@ function CloneDialog({ target, targetSessions, current, onClose, onClone }: { ta
         <button type="button" className="btn" style={{ width: 100 }} onClick={onClose}>
           Huỷ
         </button>
-        <button type="button" className="btn primary" style={{ width: 150 }} disabled={!n} onClick={() => onClone(list)}>
+        <button type="button" className="btn primary" style={{ width: 150 }} disabled={!n} onClick={() => onClone(list.slice(0, targetSessions))}>
           <Icon name="copy" size={16} />
           Nhân bản
         </button>
