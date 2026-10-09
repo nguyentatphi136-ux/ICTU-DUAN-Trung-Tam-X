@@ -2233,3 +2233,32 @@ select.app-input:focus {
   transform: translateY(-1px);
   box-shadow: 0 5px 16px rgba(9, 116, 241, 0.4);
 }
+
+:root:not(.dark-mode) .app-body.home-page {
+  --app-bg: #fbf3e2;
+  --app-card: #fffaf1;
+  --app-text: #142d52;
+  --app-muted: rgba(20, 45, 82, 0.62);
+  --app-border: rgba(20, 45, 82, 0.12);
+  --app-soft: rgba(20, 45, 82, 0.04);
+  --app-input-bg: rgba(20, 45, 82, 0.035);
+  --app-input-border: rgba(20, 45, 82, 0.19);
+  --app-accent: #174bd1;
+}
+
+:root:not(.dark-mode) .app-body.home-page .home-schedule {
+  --app-card: #fff8e8;
+  --app-text: #132d55;
+  --app-muted: rgba(19, 45, 85, 0.6);
+  --app-border: rgba(19, 45, 85, 0.12);
+  --app-soft: rgba(19, 45, 85, 0.05);
+  --app-accent: #015aa0;
+  color: var(--app-text);
+}
+
+.home-page .guest-brand .app-logo {
+  background: linear-gradient(145deg, #3471f5 0%, #1241c6 100%);
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 7px 18px rgba(18, 65, 198, 0.22);
+  color: #fff;
+}

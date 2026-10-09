@@ -153,6 +153,18 @@ const DEMO_ACCOUNTS = [
     phone: "0934567890",
   },
   {
+    email: "quanlydaotao@edumanager.vn",
+    password: "123456",
+    role: "training-manager",
+    fullName: "Phạm Thị Quản",
+  },
+  {
+    email: "tuvan@edumanager.vn",
+    password: "123456",
+    role: "admissions",
+    fullName: "Hoàng Văn Tư",
+  },
+  {
     email: "ketoan@edumanager.vn",
     aliases: ["ketoan@tms.vn", "ketoan", "accountant@example.com", "accountant@edumanager.vn", "accountant@tms.vn", "accountant"],
     password: "Ketoan@123",
@@ -173,21 +185,6 @@ const DEMO_ACCOUNTS = [
 ];
 
 const SESSION_KEY = "edumanager-session";
-const LOGIN_FORM_KEY = "edumanager-login-form";
-const AUTH_TOKEN_KEY = "edumanager-auth-token";
-const ROLE_REVOCATION_KEY = "edumanager-role-revocations";
-const SESSION_TIMEOUT_MS = 60 * 60 * 1000;
-
-const getSessionData = () => {
-  try {
-    const data = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "null");
-    if (!data) return null;
-
-    if (Number(data.expiresAt) && Date.now() > Number(data.expiresAt)) {
-      sessionStorage.removeItem(SESSION_KEY);
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-      return null;
-    }
 
     return data;
   } catch {
@@ -355,19 +352,10 @@ const saveLoginFormState = (email = "", password = "") => {
     LOGIN_FORM_KEY,
     JSON.stringify({ email: email.trim(), password: password.trim() }),
   );
-};
 
-const restoreLoginFormState = () => {
-  const loginFormElement = document.querySelector("#login-form");
-  if (!loginFormElement) return;
-
+const getCurrentUser = () => {
   try {
-    const saved = JSON.parse(localStorage.getItem(LOGIN_FORM_KEY) ?? "{}");
-    const emailInput = document.querySelector("#email");
-    const passwordInput = document.querySelector("#password");
-
-    if (emailInput && saved.email) emailInput.value = saved.email;
-    if (passwordInput && saved.password) passwordInput.value = saved.password;
+    return JSON.parse(sessionStorage.getItem(SESSION_KEY));
   } catch {
     localStorage.removeItem(LOGIN_FORM_KEY);
   }
@@ -577,10 +565,6 @@ const readRevokedRoles = () => {
   }
 };
 
-const writeRevokedRoles = (roles) => {
-  localStorage.setItem(ROLE_REVOCATION_KEY, JSON.stringify([...roles]));
-};
-
 // Dữ liệu demo lưu trong localStorage để các trang dùng chung
 // (vd: khách để lại thông tin -> tư vấn tuyển sinh thấy lead mới).
 const readStore = (key, fallback = []) => {
@@ -607,14 +591,7 @@ const FIRST_LOGIN_KEY = "edumanager-first-login-status";
 
 const login = (account) => {
   const { password, ...user } = account;
-  const session = {
-    ...user,
-    token: `demo-token-${Date.now()}`,
-    expiresAt: Date.now() + SESSION_TIMEOUT_MS,
-  };
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
-  localStorage.setItem(AUTH_TOKEN_KEY, session.token);
-  localStorage.removeItem(LOGIN_FORM_KEY);
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(user));
   addAuditLog("Đăng nhập", user.email);
 
   // Kiểm tra trạng thái lần đầu đăng nhập
@@ -738,11 +715,8 @@ const getInitials = (name) =>
 
 if (pageRole) {
   if (!currentUser) {
-    expireSession();
-  } else if (readRevokedRoles().has(currentUser.role)) {
-    showToast("Vai trò của bạn đã bị thu hồi. Vui lòng liên hệ quản trị viên để được hỗ trợ.", "warning");
     goToLogin();
-  } else if (currentUser.role !== pageRole && !(currentUser.roles ?? []).includes(pageRole)) {
+  } else if (currentUser.role !== pageRole) {
     goToRoleHome(currentUser.role);
   }
 }
@@ -1017,28 +991,6 @@ const showStatus = (message) => {
   formStatus.classList.remove("hidden");
 };
 
-function showToast(message, tone = "info") {
-  if (!message) return;
-
-  let toast = document.querySelector("#app-toast");
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "app-toast";
-    toast.className = "app-toast";
-    toast.setAttribute("role", "status");
-    document.body.appendChild(toast);
-  }
-
-  toast.textContent = message;
-  toast.dataset.tone = tone;
-  toast.classList.add("is-visible");
-
-  window.clearTimeout(showToast.timeoutId);
-  showToast.timeoutId = window.setTimeout(() => {
-    toast.classList.remove("is-visible");
-  }, 3200);
-}
-
 const hideStatus = () => formStatus?.classList.add("hidden");
 
 const setFieldError = (input, errorElement, message) => {
@@ -1052,15 +1004,6 @@ const setFieldError = (input, errorElement, message) => {
 // ---------------------------------------------------------------------
 const emailInput = document.querySelector("#email");
 const emailError = document.querySelector("#email-error");
-
-const VALID_ROLE_ALIASES = new Set([
-  "admin", "daotao", "quanlydaotao", "training",
-  "tuvan", "tuyensinh", "admissions",
-  "giangvien", "instructor",
-  "trogiang", "ta",
-  "ketoan", "accountant",
-  "hocvien", "student",
-]);
 
 const validateEmail = () => {
   const value = emailInput.value.trim().toLowerCase();
@@ -1082,14 +1025,11 @@ const validateEmail = () => {
 if (emailInput && emailError) {
   emailInput.setAttribute("aria-describedby", "email-error");
   emailInput.addEventListener("input", () => {
-    saveLoginFormState(emailInput.value, passwordInput?.value ?? "");
     if (emailInput.value.trim() && emailInput.validity.valid) {
       setFieldError(emailInput, emailError, "");
     }
   });
 }
-
-restoreLoginFormState();
 
 // ---------------------------------------------------------------------
 // 4. Trang đăng nhập: ẩn/hiện mật khẩu, kiểm tra form
@@ -1121,7 +1061,6 @@ if (passwordInput && passwordToggle) {
 if (passwordInput && passwordError) {
   passwordInput.setAttribute("aria-describedby", "password-error");
   passwordInput.addEventListener("input", () => {
-    saveLoginFormState(emailInput?.value ?? "", passwordInput.value);
     if (passwordInput.value.trim()) {
       setFieldError(passwordInput, passwordError, "");
     }
@@ -2877,7 +2816,6 @@ if (accountTable) {
     return [];
   };
 
-  // Render danh sách tài khoản kèm Tìm kiếm, Lọc và Phân trang (S1-08)
   const renderAccounts = () => {
     const all = getAllAccounts();
     const kw = currentSearch.trim().toLowerCase();
@@ -3297,84 +3235,6 @@ if (accountTable) {
     }
   };
 
-  document.querySelectorAll("[data-close-edit-user]").forEach((btn) => {
-    btn.addEventListener("click", closeEditUser);
-  });
-
-  if (editUserModal) {
-    editUserModal.addEventListener("click", (e) => {
-      if (e.target === editUserModal) closeEditUser();
-    });
-  }
-
-  if (editUserForm) {
-    editUserForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const email = document.querySelector("#edit-user-email")?.value;
-      const name = document.querySelector("#edit-user-name")?.value.trim();
-      const phone = document.querySelector("#edit-user-phone")?.value.trim();
-      const alertBox = document.querySelector("#edit-user-alert");
-
-      if (!name) {
-        if (alertBox) {
-          alertBox.className = "p-3 rounded-lg text-sm bg-rose-500/10 text-rose-500 border border-rose-500/20";
-          alertBox.textContent = "Họ và tên không được để trống.";
-          alertBox.classList.remove("hidden");
-        }
-        return;
-      }
-
-      // Cập nhật trong custom accounts hoặc ghi đè
-      const customAccounts = readStore("edumanager-custom-accounts") || [];
-      const idx = customAccounts.findIndex((a) => a.email === email);
-      if (idx >= 0) {
-        customAccounts[idx].fullName = name;
-        customAccounts[idx].phone = phone;
-      } else {
-        const demo = DEMO_ACCOUNTS.find((a) => a.email === email);
-        if (demo) {
-          customAccounts.push({ ...demo, fullName: name, phone });
-        }
-      }
-      writeStore("edumanager-custom-accounts", customAccounts);
-
-      // Gửi API cập nhật
-      const all = getAllAccounts();
-      const targetIdx = all.findIndex((a) => a.email === email);
-      const targetId = targetIdx >= 0 ? targetIdx + 1 : 1;
-      fetch(`/api/admin/users/${targetId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName: name, phone }),
-      }).catch(() => null);
-
-      addAuditLog(`Cập nhật thông tin tài khoản ${email}: Họ tên "${name}", SĐT "${phone}"`);
-      renderAccounts();
-      renderAuditLog();
-      closeEditUser();
-
-      if (typeof showToast === "function") {
-        showToast("Cập nhật thông tin tài khoản thành công!", "success");
-      }
-    });
-  }
-
-  // -------------------------------------------------------------------
-  // Modal Khoá / Mở khoá tài khoản (S1-10)
-  // -------------------------------------------------------------------
-  const closeLockModal = () => {
-    if (lockAccountModal) {
-      lockAccountModal.classList.add("hidden");
-      if (lockAccountForm) lockAccountForm.reset();
-      const errBox = document.querySelector("#lock-account-error");
-      if (errBox) {
-        errBox.classList.add("hidden");
-        errBox.textContent = "";
-      }
-    }
-  };
-
-  // Mở modal khoá / sửa / mở khoá tài khoản từ bảng
   accountTable.addEventListener("click", (event) => {
     // Sửa thông tin tài khoản
     const editBtn = event.target.closest("[data-edit-account]");
@@ -3575,93 +3435,6 @@ if (accountTable) {
     btn.addEventListener("click", closeLockModal);
   });
 
-  if (lockAccountModal) {
-    lockAccountModal.addEventListener("click", (e) => {
-      if (e.target === lockAccountModal) closeLockModal();
-    });
-  }
-
-  // Xác nhận submit form khoá tài khoản
-  if (lockAccountForm) {
-    lockAccountForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const email = document.querySelector("#lock-account-email")?.value;
-      const reason = document.querySelector("#lock-reason-input")?.value.trim();
-      const errBox = document.querySelector("#lock-account-error");
-
-      const showErr = (msg) => {
-        if (errBox) {
-          errBox.textContent = msg;
-          errBox.classList.remove("hidden");
-        }
-      };
-
-      if (!email) {
-        showErr("Không tìm thấy thông tin tài khoản cần khoá.");
-        return;
-      }
-
-      if (!reason) {
-        showErr("Bắt buộc phải ghi rõ lý do khi khoá tài khoản.");
-        return;
-      }
-
-      if (email === currentUser?.email) {
-        showErr("Không thể tự khoá tài khoản của chính mình.");
-        return;
-      }
-
-      const submitBtn = document.querySelector("#lock-confirm-submit-btn");
-      if (submitBtn) {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="inline-block animate-spin mr-1">⌛</span> Đang xử lý...';
-      }
-
-      try {
-        const all = getAllAccounts();
-        const targetIdx = all.findIndex((a) => a.email === email);
-        const targetId = targetIdx >= 0 ? targetIdx + 1 : 1;
-        const res = await fetch(`/api/admin/users/${targetId}/status`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: "LOCKED", lockedReason: reason }),
-        }).catch(() => null);
-
-        if (res && !res.ok) {
-          const data = await res.json().catch(() => null);
-          if (data?.message) {
-            showErr(data.message);
-            return;
-          }
-        }
-      } catch (_) {
-        // Fallback offline mock
-      } finally {
-        if (submitBtn) {
-          submitBtn.disabled = false;
-          submitBtn.innerHTML = '<i data-lucide="lock" class="size-4"></i> Xác nhận khoá tài khoản';
-          if (window.lucide) window.lucide.createIcons();
-        }
-      }
-
-      lockedAccounts.add(email);
-      lockedReasons[email] = reason;
-      writeStore("edumanager-locked-accounts", [...lockedAccounts]);
-      writeStore("edumanager-locked-reasons", lockedReasons);
-
-      const assigned = getAssignedClasses(email, "");
-      if (assigned.length > 0) {
-        addAuditLog(`Khoá tài khoản ${email}. Lý do: ${reason} (Cảnh báo: Cần bàn giao ${assigned.length} lớp học)`);
-      } else {
-        addAuditLog(`Khoá tài khoản ${email}. Lý do: ${reason}`);
-      }
-
-      closeLockModal();
-      renderAccounts();
-      renderAuditLog();
-    });
-  }
-
   renderAccounts();
 }
 
@@ -3684,62 +3457,6 @@ document.querySelectorAll("[data-catalog-form]").forEach((form) => {
     clearContainerDrafts(form);
   });
 });
-
-const roleTable = document.querySelector("#current-role-table");
-
-if (roleTable) {
-  const renderCurrentRoles = () => {
-    const revoked = readRevokedRoles();
-    roleTable.querySelector("tbody").innerHTML = Object.entries(ROLES)
-      .map(([key, role]) => {
-        const revokedRole = revoked.has(key);
-        const isCurrent = currentUser?.role === key;
-
-        return `
-          <tr>
-            <td class="font-bold">${escapeHtml(role.name)} <p class="app-muted">${escapeHtml(role.en)}</p></td>
-            <td>${escapeHtml(role.page)}</td>
-            <td>${revokedRole ? badge("Đã thu hồi", "is-danger") : badge("Hoạt động", "is-success")}</td>
-            <td>
-              <button
-                type="button"
-                class="app-btn app-btn-outline app-btn-sm"
-                data-role-action="${key}"
-                ${isCurrent ? 'disabled title="Vai trò đang được sử dụng ở phiên hiện tại"' : ""}
-              >
-                ${revokedRole ? "Khôi phục" : "Thu hồi"}
-              </button>
-            </td>
-          </tr>`;
-      })
-      .join("");
-  };
-
-  roleTable.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-role-action]");
-    if (!button) return;
-
-    const roleKey = button.dataset.roleAction;
-    if (roleKey === currentUser?.role) {
-      showToast("Không thể thu hồi vai trò đang được sử dụng bởi tài khoản hiện tại.", "warning");
-      return;
-    }
-
-    const revoked = readRevokedRoles();
-    if (revoked.has(roleKey)) {
-      revoked.delete(roleKey);
-      showToast(`Đã khôi phục quyền ${ROLES[roleKey]?.name ?? roleKey}.`, "success");
-    } else {
-      revoked.add(roleKey);
-      showToast(`Đã thu hồi quyền ${ROLES[roleKey]?.name ?? roleKey}. Tài khoản thuộc vai trò này sẽ nhận thông báo 403 khi truy cập.`, "warning");
-    }
-
-    writeRevokedRoles(revoked);
-    renderCurrentRoles();
-  });
-
-  renderCurrentRoles();
-}
 
 function renderAuditLog() {
   const auditTable = document.querySelector("#audit-table");
