@@ -1,0 +1,15 @@
+/* S1-05. Ma trận phân quyền. */
+.mx-legend{display:flex;gap:28px;flex-wrap:wrap;color:var(--muted);margin:-8px 0 16px}
+.mx-legend span{display:flex;align-items:center;gap:10px}
+.mx-tag{font-style:normal;display:inline-grid;place-items:center;min-width:28px;height:24px;padding:0 8px;border-radius:var(--r);font-size:12px;font-weight:600}
+.mx-f{background:#ecfdf3;color:#067647}.mx-w{background:var(--soft);color:var(--blue)}.mx-r{background:#f0f1f5;color:var(--ink)}.mx-n{background:#fff;color:var(--muted);border:1px solid var(--line)}
+.mx th{text-align:center;padding:20px 8px}.mx th:first-child{text-align:left;padding-left:20px}
+.mx th.admin{color:var(--blue)}
+.mx td{text-align:center;padding:8px;color:var(--ink)}
+.mx td.mx-mod{text-align:left;padding-left:20px;font-size:15px;font-weight:500;white-space:nowrap}
+.mx-mod svg{color:var(--muted);margin-right:10px;vertical-align:-3px}
+.mx-cell{position:relative;display:inline-flex;align-items:center;justify-content:space-between;width:72px;height:28px;padding:0 8px 0 12px;border-radius:var(--r);font-size:13px;font-weight:600}
+.mx-cell svg{width:14px;height:14px}
+.mx-cell select{position:absolute;inset:0;opacity:0;cursor:pointer}
+.mx-cell.locked{cursor:not-allowed}
+.mx-foot{margin-top:16px;font-size:13px}
