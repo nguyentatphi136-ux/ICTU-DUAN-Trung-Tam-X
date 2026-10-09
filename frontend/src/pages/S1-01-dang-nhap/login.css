@@ -1,0 +1,102 @@
+/* S1-01. Style riêng của trang đăng nhập, mọi class có tiền tố lg- để không đụng style chung. */
+.lg-page{--navy:#06244d; --navy-soft:#1d3f6e;
+    --ink:#1b2437; --muted:#6b7488; --line:#e3e7ef;
+    --blue:#0575E6; --mint:#00F260;}
+.lg-page *{box-sizing:border-box;margin:0;padding:0}
+.lg-page{font-family:'Be Vietnam Pro',system-ui,sans-serif;
+    background:#f3f5fb; color:var(--ink);
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding:24px;}
+.lg-page .lg-card{width:min(1320px,100%); min-height:min(820px,calc(100vh - 48px));
+    display:grid; grid-template-columns:47% 53%;
+    background:#fff; border-radius:6px; overflow:hidden;
+    box-shadow:0 30px 80px rgba(9,116,241,.16);}
+.lg-page /* Trái */
+  .lg-left{background:linear-gradient(135deg,#9FCCFA 0%,#0974F1 100%);
+    color:var(--navy); padding:56px 60px;
+    display:flex; flex-direction:column; position:relative; overflow:hidden;}
+.lg-page .lg-left::after{content:""; position:absolute; right:-140px; top:-140px;
+    width:420px; height:420px; border-radius:50%;
+    background:rgba(255,255,255,.14);}
+.lg-page .lg-logo{display:flex; align-items:center; gap:12px; font-weight:700; font-size:22px; position:relative; z-index:1}
+.lg-page .lg-logo span{width:44px; height:44px; border-radius:6px; background:#fff;
+    display:grid; place-items:center; box-shadow:0 6px 16px rgba(6,36,77,.15);}
+.lg-page .lg-hero{margin-top:88px; position:relative; z-index:1}
+.lg-page .lg-hero h1{font-size:44px; line-height:1.2; font-weight:700; letter-spacing:-.5px}
+.lg-page .lg-hero p{margin-top:22px; font-size:17px; line-height:1.7; color:var(--navy-soft); max-width:460px}
+.lg-page .lg-features{margin-top:auto; padding-top:48px; display:flex; flex-direction:column; gap:14px; position:relative; z-index:1}
+.lg-page .lg-feat{display:flex; gap:16px; align-items:flex-start;
+    background:rgba(255,255,255,.22); border:1px solid rgba(255,255,255,.35);
+    border-radius:6px; padding:16px 18px; backdrop-filter:blur(6px);}
+.lg-page .lg-feat .lg-ic{flex:none; width:44px; height:44px; border-radius:6px; background:#fff;
+    display:grid; place-items:center; color:#0974F1;}
+.lg-page .lg-feat h3{font-size:16px; font-weight:600}
+.lg-page .lg-feat p{font-size:14px; line-height:1.55; margin-top:3px; color:var(--navy-soft)}
+.lg-page /* Phải */
+  .lg-right{padding:56px 72px; display:flex; flex-direction:column; justify-content:center}
+.lg-page .lg-eyebrow{font-size:12px; font-weight:600; letter-spacing:1.2px; color:var(--blue); text-transform:uppercase}
+.lg-page .lg-right h2{font-size:36px; font-weight:700; margin-top:10px}
+.lg-page .lg-lead{color:var(--muted); font-size:15px; margin-top:10px}
+.lg-page form{margin-top:32px}
+.lg-page label.lg-f{display:block; font-size:14px; font-weight:600; margin-bottom:8px}
+.lg-page .lg-field{position:relative; margin-bottom:20px}
+.lg-page .lg-field input{width:100%; height:54px; border:1px solid var(--line); border-radius:6px;
+    padding:0 48px 0 18px; font:inherit; font-size:15px; color:var(--ink); outline:none;
+    transition:border-color .15s, box-shadow .15s;}
+.lg-page .lg-field input::placeholder{color:#a4abba}
+.lg-page .lg-field input:focus{border-color:var(--blue); box-shadow:0 0 0 4px rgba(5,117,230,.12)}
+.lg-page .lg-eye{position:absolute; right:12px; top:50%; transform:translateY(-50%);
+    width:34px; height:34px; border:0; background:none; cursor:pointer; color:var(--muted);
+    display:grid; place-items:center; border-radius:6px;}
+.lg-page .lg-row{display:flex; justify-content:space-between; align-items:center; font-size:14px; margin-bottom:24px}
+.lg-page .lg-row label{display:flex; align-items:center; gap:8px; cursor:pointer}
+.lg-page .lg-row input{width:17px; height:17px; accent-color:var(--blue)}
+.lg-page a{color:var(--blue); text-decoration:none; font-weight:500}
+.lg-page a:hover{text-decoration:underline}
+.lg-page .lg-btn{width:100%; height:56px; border:0; border-radius:6px; cursor:pointer;
+    background:linear-gradient(135deg,var(--blue) 0%,var(--mint) 100%);
+    color:#fff; font:inherit; font-size:16px; font-weight:700;
+    text-shadow:0 1px 2px rgba(3,60,90,.35);
+    box-shadow:0 12px 26px rgba(0,190,130,.28);
+    transition:transform .15s, box-shadow .15s, filter .15s;}
+.lg-page .lg-btn:hover{transform:translateY(-1px); filter:brightness(1.04); box-shadow:0 16px 30px rgba(0,190,130,.34)}
+.lg-page .lg-btn:active{transform:translateY(0)}
+.lg-page .lg-or{display:flex; align-items:center; gap:14px; margin:26px 0 18px;
+    font-size:11px; letter-spacing:1px; color:var(--muted); text-transform:uppercase;}
+.lg-page .lg-or::before,.lg-page .lg-or::after{content:""; flex:1; height:1px; background:var(--line)}
+.lg-page .lg-social{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+.lg-page .lg-social button{height:52px; border:1px solid var(--line); border-radius:6px; background:#fff;
+    font:inherit; font-size:15px; font-weight:600; color:var(--ink); cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:10px;}
+.lg-page .lg-social button:hover{background:#f7f9fc}
+.lg-page .lg-dot{width:22px; height:22px; border-radius:50%; display:grid; place-items:center; font-size:13px; font-weight:700}
+.lg-page .lg-g{color:#4285F4; border:1px solid var(--line)}
+.lg-page .lg-fb{background:#1877F2; color:#fff}
+.lg-page .lg-secure{display:flex; align-items:center; justify-content:center; gap:8px; margin-top:20px; font-size:13px; color:var(--muted)}
+.lg-page .lg-foot{display:flex; justify-content:space-between; margin-top:36px; font-size:13px; color:var(--muted)}
+.lg-page .lg-field.lg-invalid input{border-color:#d92d20; box-shadow:0 0 0 4px rgba(217,45,32,.1)}
+.lg-page .lg-err{color:#d92d20; font-size:13px; margin-top:6px}
+.lg-page .lg-eye{top:27px}
+.lg-page .lg-alert{margin-top:24px; padding:12px 14px; border-radius:6px; font-size:14px; line-height:1.5}
+.lg-page .lg-alert strong{display:block; font-weight:600}
+.lg-page .lg-alert.lg-error{background:#fef3f2; border:1px solid #fecdca; color:#b42318}
+.lg-page .lg-alert.lg-lock{background:#fffaeb; border:1px solid #fedf89; color:#93370d}
+.lg-page .lg-alert + form{margin-top:16px}
+.lg-page .lg-btn:disabled{opacity:.55; filter:grayscale(.5); cursor:not-allowed; transform:none; box-shadow:none}
+.lg-page .lg-field input:disabled{background:#f5f6f9; color:var(--muted)}
+.lg-page .lg-demo{margin-top:18px; font-size:13px; color:var(--muted)}
+.lg-page .lg-demo summary{cursor:pointer; color:var(--blue); font-weight:500}
+.lg-page .lg-demo table{margin-top:8px; border-collapse:collapse; width:100%}
+.lg-page .lg-demo td{padding:4px 8px 4px 0}
+.lg-page .lg-demo code{font-family:ui-monospace,monospace; color:var(--ink)}
+@media (max-width:900px){
+.lg-page{padding:16px}
+.lg-page .lg-card{grid-template-columns:1fr; border-radius:6px}
+.lg-page .lg-left{padding:36px 28px}
+.lg-page .lg-hero{margin-top:40px}
+.lg-page .lg-hero h1{font-size:32px}
+.lg-page .lg-right{padding:40px 28px}
+.lg-page .lg-right h2{font-size:30px}
+}
+.lg-page .lg-alert.lg-ok{background:#ecfdf3; border:1px solid #abefc6; color:#067647}
+.lg-page .lg-alert.lg-info{background:#eff6ff; border:1px solid #b3d4fb; color:#0b4a99}
