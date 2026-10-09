@@ -1,16 +1,24 @@
 /* S2-06. Lộ trình môn học và cột thêm môn. */
 .cu{display:grid;grid-template-columns:1fr 388px;gap:24px;align-items:start}
-.cu-saved{display:flex;gap:6px;align-items:center;color:var(--green);font-size:13px}
+.cu-saved{display:flex;gap:6px;align-items:center;color:var(--green);font-size:13px;font-weight:500;background:rgba(18,183,106,.1);padding:4px 10px;border-radius:20px}
 .cu-list{padding:20px 24px 24px}
 .cu-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
 .cu-head b{font-size:17px;font-weight:600}.cu-head span{color:var(--muted);font-size:13px;flex:1}
-.cu-head small{width:200px;margin-right:50px;font-size:12px;font-weight:600;color:var(--muted)}
-.cu-row{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:var(--r);padding:16px 12px;margin-bottom:12px;background:#fff}
+.cu-head small{width:200px;margin-right:80px;font-size:12px;font-weight:600;color:var(--muted)}
+.cu-row{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);border-radius:var(--r);padding:14px 14px;margin-bottom:10px;background:#fff;transition:all .15s ease}
 .cu-row[draggable=true]{cursor:grab}
-.cu-row.drag{border-color:var(--blue);box-shadow:0 10px 24px rgba(5,36,77,.12);opacity:.85}
-.cu-row>svg{color:#a4abba}
+.cu-row[draggable=true]:active{cursor:grabbing}
+.cu-row.drag,.cu-row.dragging{border-color:var(--blue);box-shadow:0 12px 28px rgba(22,93,255,.2);opacity:.45;background:#f0f5ff;border-style:dashed}
+.cu-row.drag-over{border-color:var(--blue);border-width:2px;background:#eef5ff;transform:translateY(2px)}
+.cu-grip{display:flex;align-items:center;cursor:grab;padding:6px;color:#8a94a6;border-radius:4px;transition:all .15s}
+.cu-grip:hover{color:var(--blue);background:var(--soft)}
+.cu-grip:active{cursor:grabbing}
 .cu-num{width:28px;height:28px;border-radius:var(--r);background:var(--soft);color:var(--blue);display:grid;place-items:center;font-size:13px;font-weight:600;flex:none}
 .cu-name{flex:1;min-width:0}.cu-name b{display:block;font-size:15px;font-weight:600}.cu-name span{font-size:12px;color:var(--muted)}
+.cu-reorder-acts{display:flex;flex-direction:column;gap:2px;margin-right:4px}
+.cu-btn-move{width:24px;height:22px;padding:0;display:grid;place-items:center;border-radius:4px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer;transition:all .15s}
+.cu-btn-move:hover:not(:disabled){background:var(--soft);color:var(--blue);border-color:var(--blue)}
+.cu-btn-move:disabled{opacity:.25;cursor:not-allowed}
 .cu-pre{position:relative}
 .cu-pre .filter{width:200px;height:40px;font:inherit;font-size:13px;color:var(--ink);cursor:pointer}
 .cu-pre .filter.empty span{color:#a4abba}

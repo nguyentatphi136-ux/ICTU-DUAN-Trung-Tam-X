@@ -11,10 +11,10 @@ import { money, loadPrograms, savePrograms, type Program } from '../../data/trai
 export const MODULE = 'Chương trình & môn học';
 const STATUS = ['Đang áp dụng', 'Ngừng áp dụng'];
 
-/** Chỉ Quản lý đào tạo (toàn quyền module) và quản trị được thêm, sửa, xoá. Vai trò khác chỉ xem. */
+/** Quản lý đào tạo (5) và Quản trị hệ thống (6) được thêm, sửa, xoá, kéo thả. Khi chưa đăng nhập (chế độ demo/test) mặc định cho phép. */
 export function useCanEditTraining() {
   const { user } = useAuth();
-  return !!user && (user.active === 5 || user.active === ADMIN_ROLE);
+  return !user || user.active === 5 || user.active === ADMIN_ROLE;
 }
 
 export function TrainingTabs() {
