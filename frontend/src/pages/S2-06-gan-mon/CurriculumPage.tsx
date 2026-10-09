@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
+import { useToast } from '../../components/Toast';
 import { Search } from '../../components/ui';
 import { loadCurriculum, loadPrograms, loadSubjects, saveCurriculum, type CurriculumItem } from '../../data/training';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
@@ -14,6 +15,7 @@ const hhmm = () => new Date().toTimeString().slice(0, 5);
 // Môn tiên quyết chỉ chọn được từ các môn đứng trước. Khi tích hợp: PUT /training/programs/:code/subjects.
 export function CurriculumPage() {
   const code = useParams().code ?? '';
+  const toast = useToast();
   const programs = loadPrograms();
   const program = programs.find((p) => p.code === code);
   const subjects = loadSubjects();
@@ -22,6 +24,7 @@ export function CurriculumPage() {
   const [items, setItems] = useState<CurriculumItem[]>(() => loadCurriculum()[code] ?? []);
   const [savedAt, setSavedAt] = useState('');
   const [dragging, setDragging] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [q, setQ] = useState('');
 
   if (!program) return <ErrorPage code="404" />;
@@ -35,11 +38,15 @@ export function CurriculumPage() {
     setItems(fixed);
     setSavedAt(hhmm());
   };
+
   const move = (from: number, to: number) => {
-    if (from === to) return;
+    if (from === to || from < 0 || from >= items.length || to < 0 || to >= items.length) return;
     const list = [...items];
-    list.splice(to, 0, list.splice(from, 1)[0]);
+    const [removed] = list.splice(from, 1);
+    list.splice(to, 0, removed);
     commit(list);
+    const subjName = subject(removed.code)?.name ?? removed.code;
+    toast('Đã đổi thứ tự môn học', `${subjName} chuyển sang vị trí thứ ${to + 1}`);
   };
 
   const total = items.reduce((n, it) => n + (subject(it.code)?.sessions ?? 0), 0);
@@ -51,7 +58,7 @@ export function CurriculumPage() {
       <div className="h">
         <div>
           <h2>{program.name}</h2>
-          <p>{canEdit ? 'Kéo thả để đổi thứ tự học. Thứ tự được lưu tự động.' : 'Lộ trình học của chương trình.'}</p>
+          <p>{canEdit ? 'Kéo thả hoặc bấm nút mũi tên để đổi thứ tự học. Thứ tự được lưu tự động.' : 'Lộ trình học của chương trình.'}</p>
         </div>
         {savedAt && (
           <span className="cu-saved">
@@ -71,23 +78,56 @@ export function CurriculumPage() {
           </div>
           {items.map((it, i) => {
             const s = subject(it.code);
+            const isDraggingThis = dragging === i;
+            const isTargetOver = dragOverIndex === i && dragging !== i;
+
             return (
               <div
                 key={it.code}
-                className={'cu-row' + (dragging === i ? ' drag' : '')}
+                className={
+                  'cu-row' +
+                  (isDraggingThis ? ' dragging' : '') +
+                  (isTargetOver ? ' drag-over' : '')
+                }
                 draggable={canEdit}
                 onDragStart={(e) => {
                   setDragging(i);
                   e.dataTransfer.effectAllowed = 'move';
+                  e.dataTransfer.setData('text/plain', String(i));
                 }}
-                onDragEnd={() => setDragging(null)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={() => {
-                  if (dragging !== null) move(dragging, i);
+                onDragEnd={() => {
                   setDragging(null);
+                  setDragOverIndex(null);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  if (dragOverIndex !== i) setDragOverIndex(i);
+                }}
+                onDragEnter={(e) => {
+                  e.preventDefault();
+                  setDragOverIndex(i);
+                }}
+                onDragLeave={(e) => {
+                  if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+                  if (dragOverIndex === i) setDragOverIndex(null);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const rawFrom = e.dataTransfer.getData('text/plain');
+                  const from = dragging !== null ? dragging : Number(rawFrom);
+                  if (!isNaN(from) && from !== i) {
+                    move(from, i);
+                  }
+                  setDragging(null);
+                  setDragOverIndex(null);
                 }}
               >
-                {canEdit && <Icon name="grip" />}
+                {canEdit && (
+                  <span className="cu-grip" title="Kéo thả để đổi vị trí môn học">
+                    <Icon name="grip" size={16} />
+                  </span>
+                )}
                 <span className="cu-num">{i + 1}</span>
                 <div className="cu-name">
                   <b>{s?.name ?? it.code}</b>
@@ -95,6 +135,32 @@ export function CurriculumPage() {
                     {it.code} · {s?.sessions ?? 0} buổi
                   </span>
                 </div>
+
+                {canEdit && (
+                  <div className="cu-reorder-acts" title="Đổi thứ tự">
+                    <button
+                      type="button"
+                      className="cu-btn-move"
+                      disabled={i === 0}
+                      aria-label={`Chuyển ${s?.name ?? it.code} lên trên`}
+                      title="Chuyển lên trên"
+                      onClick={() => move(i, i - 1)}
+                    >
+                      <Icon name="up" size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      className="cu-btn-move"
+                      disabled={i === items.length - 1}
+                      aria-label={`Chuyển ${s?.name ?? it.code} xuống dưới`}
+                      title="Chuyển xuống dưới"
+                      onClick={() => move(i, i + 1)}
+                    >
+                      <Icon name="down" size={14} />
+                    </button>
+                  </div>
+                )}
+
                 <Prereq
                   value={it.prereq}
                   options={items.slice(0, i).map((x) => x.code)}
