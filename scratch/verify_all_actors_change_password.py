@@ -1,5 +1,12 @@
 import os
 import re
+import sys
+
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
 
 FRONTEND_DIR = r"d:\TTCS\ICTU-DUAN-Trung-Tam-X\ICTU-DUAN-Trung-Tam-X\frontend"
 

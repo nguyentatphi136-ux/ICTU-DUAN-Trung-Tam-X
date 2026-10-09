@@ -1,10 +1,15 @@
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { defineConfig } from "vite";
-import nodemailer from "nodemailer";
+
+let nodemailer = null;
+try {
+  const mod = await import("nodemailer");
+  nodemailer = mod.default || mod;
+} catch (_) {}
 
 function emailPlugin() {
-  const transporter = nodemailer.createTransport({
+  const transporter = nodemailer ? nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 587,
     secure: false,
@@ -12,7 +17,7 @@ function emailPlugin() {
       user: "tatphi2006@gmail.com",
       pass: "tcjotoxtkhfwyldn",
     },
-  });
+  }) : null;
 
   const resetTokenStore = new Map(); // token -> { email, expiresAt, isUsed, createdAt }
   const rateLimitStore = new Map(); // email -> lastRequestTimestamp (15 phút cooldown)
@@ -105,7 +110,8 @@ function emailPlugin() {
               console.log(`\x1b[36m[SMTP Gmail] Đang gửi liên kết đặt lại mật khẩu đến: ${toEmail}...\x1b[0m`);
 
               try {
-                await transporter.sendMail({
+                if (transporter) {
+                  await transporter.sendMail({
                   from: '"TMS - Quản Lý Đào Tạo" <tatphi2006@gmail.com>',
                   to: toEmail,
                   subject: "[TMS] Đặt lại mật khẩu tài khoản của bạn",
@@ -142,6 +148,7 @@ function emailPlugin() {
                   `,
                 });
                 console.log(`\x1b[32m[SMTP Gmail] Đã gửi liên kết khôi phục thành công đến: ${toEmail}\x1b[0m`);
+              }
               } catch (emailErr) {
                 console.warn("[SMTP Gmail Warning]", emailErr.message);
               }
@@ -261,7 +268,8 @@ function emailPlugin() {
               const loginLink = data.loginLink || "http://localhost:5173/login.html";
 
               if (toEmail && tempPassword) {
-                await transporter.sendMail({
+                if (transporter) {
+                  await transporter.sendMail({
                   from: '"TMS - Quản Lý Đào Tạo" <tatphi2006@gmail.com>',
                   to: toEmail,
                   subject: "[TMS] Thông tin tài khoản và mật khẩu tạm thời",
@@ -283,6 +291,7 @@ Trân trọng,
 Ban Quản trị Hệ thống TMS`,
                 });
                 console.log(`\x1b[32m[SMTP Gmail] Đã gửi email kích hoạt thành công đến: ${toEmail}\x1b[0m`);
+                }
               }
 
               res.setHeader("Content-Type", "application/json");
@@ -344,6 +353,235 @@ Ban Quản trị Hệ thống TMS`,
             }
           });
           return;
+        }
+
+        // 7. Endpoint Tải tệp mẫu Excel / CSV (S2-01 AC1)
+        if (req.method === "GET" && (req.url === "/api/admin/users/import/template" || req.url === "/api/users/import/template")) {
+          const csvContent = "\uFEFFHọ và tên,Email,Số điện thoại,Vai trò,Ngày sinh,Giới tính,Địa chỉ\n"
+            + "Nguyễn Văn An,an.nguyen@tms.vn,0912345678,HOC_VIEN,2003-05-15,Nam,Hà Nội\n"
+            + "Trần Thị Bình,binh.tran@tms.vn,0987654321,HOC_VIEN,2002-11-20,Nữ,Thái Nguyên\n"
+            + "Lê Hoàng Cường,cuong.le@tms.vn,0903112233,GIANG_VIEN,1990-08-10,Nam,Đà Nẵng\n";
+          res.setHeader("Content-Type", "text/csv; charset=UTF-8");
+          res.setHeader("Content-Disposition", 'attachment; filename="mau_nhap_nguoi_dung_tms.csv"');
+          res.end(csvContent);
+          return;
+        }
+
+        // 8. Endpoint Xem trước và báo lỗi từng dòng tệp Excel (S2-01 AC2)
+        if (req.method === "POST" && (req.url === "/api/admin/users/import/preview" || req.url === "/api/users/import/preview")) {
+          let body = "";
+          req.on("data", (chunk) => { body += chunk; });
+          req.on("end", () => {
+            try {
+              const data = JSON.parse(body || "{}");
+              const rows = Array.isArray(data.rows) ? data.rows : [];
+              const vnPhoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+              const seenEmails = new Set();
+
+              let validRows = 0;
+              let errorRows = 0;
+
+              const evaluated = rows.map((r, idx) => {
+                const rowNum = idx + 1;
+                const errors = [];
+                const fullName = (r.fullName || r.name || "").trim();
+                const email = (r.email || "").trim().toLowerCase();
+                const phone = (r.phone || "").trim().replace(/[\s.-]/g, "");
+
+                if (!fullName) errors.push("Thiếu họ và tên");
+                if (!email) {
+                  errors.push("Thiếu địa chỉ email");
+                } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                  errors.push("Định dạng email không hợp lệ");
+                } else if (seenEmails.has(email)) {
+                  errors.push("Email bị trùng lặp trong tệp tải lên");
+                } else {
+                  seenEmails.add(email);
+                  // Check existing demo emails
+                  if (email === "hoangnam@tms.vn" || email === "admin@tms.vn" || email === "minhanh@tms.vn" || email === "thuha@tms.vn") {
+                    errors.push(`Email này đã được dùng cho tài khoản ${r.fullName || "người dùng khác"}`);
+                  }
+                }
+
+                if (phone && !vnPhoneRegex.test(phone)) {
+                  errors.push("Số điện thoại không đúng chuẩn di động VN (10 số, bắt đầu 03, 05, 07, 08, 09)");
+                }
+
+                const validRoles = ["student", "instructor", "ta", "training-manager", "admissions", "accountant", "admin"];
+                const role = (r.role || "student").trim().toLowerCase();
+                if (!validRoles.includes(role)) {
+                  errors.push(`Vai trò '${role}' không tồn tại trong hệ thống`);
+                }
+
+                const isValid = errors.length === 0;
+                if (isValid) validRows++; else errorRows++;
+
+                return {
+                  ...r,
+                  rowIndex: rowNum,
+                  isValid,
+                  errors,
+                  errorMessage: errors.join(", "),
+                };
+              });
+
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({
+                success: true,
+                totalRows: rows.length,
+                validRows,
+                errorRows,
+                rows: evaluated,
+              }));
+            } catch (err) {
+              res.setHeader("Content-Type", "application/json");
+              res.statusCode = 500;
+              res.end(JSON.stringify({ success: false, error: err.message }));
+            }
+          });
+          return;
+        }
+
+        // 9. Endpoint Nhập danh sách tài khoản hàng loạt & Báo cáo tổng kết (S2-01 AC3)
+        if (req.method === "POST" && (req.url === "/api/admin/users/import" || req.url === "/api/users/import")) {
+          let body = "";
+          req.on("data", (chunk) => { body += chunk; });
+          req.on("end", () => {
+            try {
+              const data = JSON.parse(body || "{}");
+              const rows = Array.isArray(data.rows) ? data.rows : [];
+              const fileName = data.fileName || "danh_sach_nguoi_dung.xlsx";
+              const vnPhoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+              const seenEmails = new Set();
+
+              const successUsers = [];
+              const errorItems = [];
+
+              rows.forEach((r, idx) => {
+                const rowIdx = idx + 1;
+                const fullName = (r.fullName || r.name || "").trim();
+                const email = (r.email || "").trim().toLowerCase();
+                const phone = (r.phone || "").trim().replace(/[\s.-]/g, "");
+                const role = (r.role || "student").toLowerCase();
+
+                let error = null;
+                if (!fullName) error = "Thiếu họ và tên";
+                else if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) error = "Email không hợp lệ hoặc bị trống";
+                else if (seenEmails.has(email)) error = "Email bị trùng lặp trong tệp";
+                else if (phone && !vnPhoneRegex.test(phone)) error = "Số điện thoại không đúng chuẩn di động VN";
+                else if (!["student", "instructor", "ta", "training-manager", "admissions", "accountant", "admin"].includes(role)) error = `Vai trò '${role}' không tồn tại trong hệ thống`;
+
+                if (error) {
+                  errorItems.push({ rowIndex: rowIdx, fullName, email, reason: error });
+                } else {
+                  seenEmails.add(email);
+                  const tempPassword = "Edu@" + Math.random().toString(36).substring(2, 8) + "9";
+                  successUsers.push({
+                    id: Date.now() + idx,
+                    rowIndex: rowIdx,
+                    userCode: "HV" + (Math.floor(100000 + Math.random() * 900000)),
+                    fullName,
+                    email,
+                    phone: phone || "",
+                    role,
+                    tempPassword,
+                  });
+                }
+              });
+
+              res.setHeader("Content-Type", "application/json");
+              res.end(JSON.stringify({
+                success: true,
+                batchCode: "IMP-" + Date.now(),
+                fileName,
+                totalRows: rows.length,
+                successRows: successUsers.length,
+                failedRows: errorItems.length,
+                successUsers,
+                errors: errorItems,
+              }));
+            } catch (err) {
+              res.setHeader("Content-Type", "application/json");
+              res.statusCode = 500;
+              res.end(JSON.stringify({ success: false, error: err.message }));
+            }
+          });
+          return;
+        }
+
+        // 10. Endpoint Lấy và Cập nhật hồ sơ cá nhân (S2-02)
+        if (req.url === "/api/profile" || req.url === "/api/user/profile") {
+          if (req.method === "GET") {
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({
+              success: true,
+              data: {
+                fullName: "Trần Quốc Bảo",
+                email: "quocbao@tms.vn",
+                phone: "0918200300",
+                dateOfBirth: "1992-06-15",
+                gender: "MALE",
+                address: "Tổ 10, Phường Quang Trung, TP Thái Nguyên",
+                role: "admin",
+                roles: ["admin"],
+              },
+            }));
+            return;
+          }
+
+          if (req.method === "PUT" || req.method === "POST") {
+            let body = "";
+            req.on("data", (chunk) => { body += chunk; });
+            req.on("end", () => {
+              try {
+                const data = JSON.parse(body || "{}");
+                const vnPhoneRegex = /^(0|\+84)(3|5|7|8|9)[0-9]{8}$/;
+
+                // Kiểm tra định dạng số điện thoại Việt Nam (S2-02 AC3)
+                const phone = (data.phone || "").trim().replace(/[\s.-]/g, "");
+                if (phone && !vnPhoneRegex.test(phone)) {
+                  res.setHeader("Content-Type", "application/json");
+                  res.statusCode = 400;
+                  res.end(JSON.stringify({
+                    success: false,
+                    code: "INVALID_PHONE_FORMAT",
+                    message: "Số điện thoại không đúng định dạng di động Việt Nam (gồm 10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09).",
+                  }));
+                  return;
+                }
+
+                if (!data.fullName || !data.fullName.trim()) {
+                  res.setHeader("Content-Type", "application/json");
+                  res.statusCode = 400;
+                  res.end(JSON.stringify({
+                    success: false,
+                    code: "NAME_REQUIRED",
+                    message: "Họ và tên không được để trống.",
+                  }));
+                  return;
+                }
+
+                // Bảo vệ email và vai trò (S2-02 AC2): không thay đổi email và role
+                res.setHeader("Content-Type", "application/json");
+                res.end(JSON.stringify({
+                  success: true,
+                  message: "Cập nhật hồ sơ cá nhân thành công!",
+                  data: {
+                    fullName: data.fullName.trim(),
+                    phone,
+                    dateOfBirth: data.dateOfBirth || "",
+                    gender: data.gender || "OTHER",
+                    address: data.address || "",
+                  },
+                }));
+              } catch (err) {
+                res.setHeader("Content-Type", "application/json");
+                res.statusCode = 500;
+                res.end(JSON.stringify({ success: false, error: err.message }));
+              }
+            });
+            return;
+          }
         }
         next();
       });
