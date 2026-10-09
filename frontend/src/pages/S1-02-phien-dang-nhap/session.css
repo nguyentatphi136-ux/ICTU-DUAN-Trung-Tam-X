@@ -1,0 +1,27 @@
+/* S1-02. Trang minh hoạ phiên: thanh trên dạng tab, form thêm học viên, hộp thoại cảnh báo. */
+.ss-page{min-height:100vh}
+.ss-top{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 32px;gap:24px;position:sticky;top:0;z-index:5}
+.ss-top .logo{padding:0;width:130px}
+.ss-top .logo span{background:linear-gradient(135deg,#9FCCFA,#0974F1)}
+.ss-top nav{flex:1;display:flex;gap:46px}
+.ss-top nav a{color:var(--muted);font-weight:400;font-size:15px}
+.ss-top nav a.on{color:var(--blue);font-weight:600}
+.ss-menu{width:240px;top:58px}
+.ss-menu .sep-top{border-top:1px solid var(--line)}
+.ss-menu .danger{background:#fef3f2}
+.ss-form{max-width:960px;margin:40px auto;padding:0 0 32px}
+.ss-head{display:flex;align-items:center;gap:12px;padding:23px 31px;border-bottom:1px solid var(--line);margin-bottom:20px}
+.ss-head h1{font-size:28px}
+.ss-ic{width:40px;height:40px;border-radius:var(--r);display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--blue),var(--mint))}
+.ss-form form{padding:0 31px}
+.ss-form .grid2{gap:0 32px}
+.ss-form .field label{font-size:14px}
+.ss-form .inp input{height:48px;font-size:15px}
+.ss-form .inp textarea{height:150px;font-size:15px}
+.ss-form .actions{margin-top:36px}
+.ss-btn{height:48px;width:120px;font-size:15px}.ss-btn.wide{width:180px}.ss-btn.grow{flex:1}
+.ss-dialog{max-width:480px}
+.ss-dialog h3{font-size:22px;margin-bottom:8px}
+.ss-dialog p{color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:24px}
+.ss-dialog .ss-btn{width:150px}
+@media(max-width:900px){.ss-top{padding:0 16px;gap:12px}.ss-top nav{display:none}.ss-top .logo{flex:1}.ss-form{margin:16px}.ss-form form,.ss-head{padding-left:16px;padding-right:16px}.ss-head h1{font-size:22px}}
