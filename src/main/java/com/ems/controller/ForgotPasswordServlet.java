@@ -33,6 +33,9 @@ public class ForgotPasswordServlet extends HttpServlet {
     private static final Pattern EMAIL = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
     private final PasswordResetTokenDAO tokenDAO = new PasswordResetTokenDAO();
 
+    private static final java.util.concurrent.ConcurrentHashMap<String, Long> RATE_LIMIT_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final long RATE_LIMIT_COOLDOWN_MS = 15 * 60 * 1000L; // 15 phút
+
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         req.getRequestDispatcher("/forgot-password.jsp").forward(req, resp);
@@ -62,6 +65,16 @@ public class ForgotPasswordServlet extends HttpServlet {
         }
 
         email = email.trim().toLowerCase(Locale.ROOT);
+
+        // Giới hạn 1 email chỉ được yêu cầu liên kết 1 lần mỗi 15 phút để bảo vệ hệ thống (Rate Limiting)
+        Long lastSent = RATE_LIMIT_CACHE.get(email);
+        if (lastSent != null && (System.currentTimeMillis() - lastSent < RATE_LIMIT_COOLDOWN_MS)) {
+            long remainingMin = Math.max(1, (RATE_LIMIT_COOLDOWN_MS - (System.currentTimeMillis() - lastSent)) / 60000L);
+            sendResponse(req, resp, false, "Email này chỉ có thể nhận liên kết đặt lại mật khẩu 1 lần mỗi 15 phút để bảo vệ hệ thống. Vui lòng thử lại sau " + remainingMin + " phút.");
+            return;
+        }
+        RATE_LIMIT_CACHE.put(email, System.currentTimeMillis());
+
         long startedAt = System.nanoTime();
         try {
             User user = tokenDAO.findUserByEmail(email);
