@@ -173,86 +173,31 @@
             </div>
           </section>
 
-          <section id="tai-khoan" class="app-card overflow-hidden">
-            <!-- Header bar chuẩn theo Screenshot 4 -->
-            <div class="p-6 pb-4 flex flex-wrap items-center justify-between gap-4">
+          <section id="tai-khoan" class="app-card">
+            <div class="app-card-header">
               <div>
-                <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight">
-                  Tài khoản người dùng
+                <h2 class="app-card-title">
+                  <i data-lucide="user-cog" aria-hidden="true"></i>Quản lý tài
+                  khoản
                 </h2>
-                <p id="account-total-count-label" class="text-sm text-slate-500 mt-1 font-medium">
-                  300 tài khoản
+                <p class="app-card-subtitle">
+                  Tài khoản bị khoá sẽ không đăng nhập được
                 </p>
               </div>
-              <div class="flex items-center gap-3">
-                <button type="button" id="btn-import-excel" class="app-btn tms-btn-excel flex items-center gap-2">
-                  <i data-lucide="upload" class="size-4"></i>
-                  <span>Nhập từ Excel</span>
-                </button>
-                <button type="button" id="open-create-user-modal" class="app-btn tms-btn-teal flex items-center gap-1.5">
-                  <i data-lucide="plus" class="size-4"></i>
-                  <span>Thêm tài khoản</span>
-                </button>
-              </div>
             </div>
-
-            <!-- Thanh Tìm kiếm & Bộ lọc (S1-08, Screenshot 4) -->
-            <div class="px-6 py-4 flex flex-wrap items-center gap-3 border-y border-slate-100 bg-white">
-              <div class="relative flex-1 min-w-[280px]">
-                <i data-lucide="search" class="size-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-                <input
-                  type="text"
-                  id="account-search-input"
-                  class="app-input w-full ps-10 border-slate-200 rounded-lg text-sm placeholder:text-slate-400"
-                  placeholder="Tìm theo tên, email, số điện thoại"
-                />
-              </div>
-              <div class="w-48">
-                <select id="account-role-filter" class="app-input w-full border-slate-200 rounded-lg text-sm text-slate-700">
-                  <option value="ALL">Vai trò: Tất cả</option>
-                  <option value="student">Học viên</option>
-                  <option value="instructor">Giảng viên</option>
-                  <option value="ta">Trợ giảng</option>
-                  <option value="training-manager">Quản lý đào tạo</option>
-                  <option value="admissions">Tư vấn tuyển sinh</option>
-                  <option value="accountant">Kế toán</option>
-                  <option value="admin">Quản trị hệ thống</option>
-                </select>
-              </div>
-              <div class="w-44">
-                <select id="account-status-filter" class="app-input w-full border-slate-200 rounded-lg text-sm text-slate-700">
-                  <option value="ALL">Trạng thái: Tất cả</option>
-                  <option value="ACTIVE">Hoạt động</option>
-                  <option value="PENDING">Chờ kích hoạt</option>
-                  <option value="LOCKED">Đã khoá</option>
-                </select>
-              </div>
-            </div>
-
             <div class="app-table-wrap">
               <table id="account-table" class="app-table w-full">
                 <thead>
-                  <tr class="border-b border-slate-100 bg-slate-50/50 text-slate-600 text-xs font-bold uppercase tracking-wider">
-                    <th class="py-3.5 px-6 text-left">Họ tên</th>
-                    <th class="py-3.5 px-6 text-left">Email</th>
-                    <th class="py-3.5 px-6 text-left">Số điện thoại</th>
-                    <th class="py-3.5 px-6 text-left">Vai trò</th>
-                    <th class="py-3.5 px-6 text-left">Trạng thái</th>
-                    <th class="py-3.5 px-6 text-center" style="width: 50px;"></th>
+                  <tr>
+                    <th>Họ tên</th>
+                    <th>Email</th>
+                    <th>Vai trò</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 text-sm"></tbody>
               </table>
-            </div>
-
-            <!-- Phân trang 20 dòng / trang (S1-08, Screenshot 4) -->
-            <div id="account-pagination" class="flex flex-wrap items-center justify-between px-6 py-4 border-t border-slate-100 text-sm gap-2">
-              <span id="account-pagination-info" class="text-slate-500 font-medium">Hiển thị 1–20 trong 300 tài khoản</span>
-              <div class="flex items-center gap-1.5" id="account-pagination-controls">
-                <button type="button" class="hidden" id="account-prev-page" disabled></button>
-                <div id="account-page-numbers" class="flex items-center gap-1.5"></div>
-                <button type="button" class="hidden" id="account-next-page" disabled></button>
-              </div>
             </div>
           </section>
 
@@ -671,27 +616,6 @@
                   </tbody>
                 </table>
               </div>
-            </div>
-          </section>
-
-          <section id="vai-tro-hien-tai" class="app-card">
-            <div class="app-card-header">
-              <h2 class="app-card-title">
-                <i data-lucide="shield-check" aria-hidden="true"></i>Vai trò hiện tại
-              </h2>
-            </div>
-            <div class="app-table-wrap">
-              <table id="current-role-table" class="app-table">
-                <thead>
-                  <tr>
-                    <th>Vai trò</th>
-                    <th>Trang</th>
-                    <th>Trạng thái</th>
-                    <th>Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
             </div>
           </section>
 
