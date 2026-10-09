@@ -47,6 +47,10 @@ export function UserListPage() {
           <h2>Tài khoản người dùng</h2>
           <p>{users.length} tài khoản</p>
         </div>
+        <Link to="/quan-tri/phan-quyen" className="btn">
+          <Icon name="shield" size={16} />
+          Ma trận phân quyền
+        </Link>
         <Link to="/quan-tri/nhap-excel" className="btn">
           <Icon name="upload" size={16} />
           Nhập từ Excel
