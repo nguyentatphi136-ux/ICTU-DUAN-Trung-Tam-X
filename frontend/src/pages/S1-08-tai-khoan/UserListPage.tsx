@@ -5,7 +5,7 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Filter, initial, Pager, paginate, Pill, RowMenu, Search } from '../../components/ui';
 import { ROLES } from '../../data/permissions';
-import { statusTone, USERS, type Status, type UserRow } from '../../data/users';
+import { statusTone, loadUsers, saveUsers, type Status, type UserRow } from '../../data/users';
 import { LockDialog } from './LockDialog';
 import { UserDrawer } from './UserDrawer';
 
@@ -15,7 +15,7 @@ const STATUSES: Status[] = ['Hoạt động', 'Chờ kích hoạt', 'Đã khoá'
 // S1-09 (gán vai trò) nằm trong ngăn Sửa, S1-10 (khoá, mở khoá) là hộp thoại mở từ menu ba chấm.
 export function UserListPage() {
   const toast = useToast();
-  const [users, setUsers] = useState(USERS);
+  const [users, setUsers] = useState<UserRow[]>(loadUsers);
   const [q, setQ] = useState('');
   const [role, setRole] = useState('');
   const [status, setStatus] = useState('');
@@ -34,7 +34,13 @@ export function UserListPage() {
   }, [users, q, role, status]);
   const view = paginate(filtered, page);
 
-  const update = (u: UserRow) => setUsers((list) => list.map((x) => (x.id === u.id ? u : x)));
+  const update = (u: UserRow) => {
+    setUsers((list) => {
+      const next = list.map((x) => (x.id === u.id ? u : x));
+      saveUsers(next);
+      return next;
+    });
+  };
   const resetPage = <T,>(f: (v: T) => void) => (v: T) => {
     f(v);
     setPage(1);
@@ -135,7 +141,10 @@ export function UserListPage() {
           }}
           onSave={(u) => {
             if (editing === 'new') {
-              setUsers((list) => [{ ...u, id: Math.max(...list.map((x) => x.id)) + 1 }, ...list]);
+              const nextId = Math.max(0, ...users.map((x) => x.id)) + 1;
+              const next = [{ ...u, id: nextId }, ...users];
+              setUsers(next);
+              saveUsers(next);
               toast('Đã tạo tài khoản', `Email kích hoạt đã gửi tới ${u.email}.`);
             } else {
               update(u);
