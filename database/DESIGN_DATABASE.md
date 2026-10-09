@@ -125,22 +125,49 @@ Mô hình dữ liệu được thiết kế tuân thủ nghiêm ngặt chuẩn h
 
 ---
 
-## 4. Ma trận phân quyền 8 vai trò nghiệp vụ (Role - Permission Matrix)
+## 4. Ma trận phân quyền theo 12 Module (Chuẩn tài liệu User Roles & IDTTX-20)
 
-| STT | Mã vai trò | Tên vai trò | Quyền Quản trị (`USER_*/ROLE_*`) | Quyền Điểm số (`GRADE_EDIT`) | Quyền Học phí (`TUITION_EDIT`) | Quyền Lớp học (`CLASS_MANAGE`) | Quyền Lead (`LEAD_MANAGE`) |
-|:---:|:---|:---|:---:|:---:|:---:|:---:|:---:|
-| 1 | `Admin` | Quản trị hệ thống | ✅ Toàn quyền | ✅ Có | ✅ Có | ✅ Có | ✅ Có |
-| 2 | `TrainingManager` | Quản lý đào tạo | ❌ Xem hồ sơ | ✅ Có | ❌ **Không** | ✅ Có | ❌ Không |
-| 3 | `Admissions` | Tư vấn tuyển sinh | ❌ Không | ❌ Không | ❌ Không | ❌ Không | ✅ Có |
-| 4 | `Instructor` | Giảng viên | ❌ Không | ✅ **CÓ** | ❌ **KHÔNG** | ❌ Không | ❌ Không |
-| 5 | `TeachingAssistant` | Trợ giảng | ❌ Không | ❌ Chỉ xem | ❌ **KHÔNG** | ❌ Không | ❌ Không |
-| 6 | `Accountant` | Kế toán | ❌ Không | ❌ **KHÔNG** | ✅ **CÓ** | ❌ Không | ❌ Không |
-| 7 | `Student` | Học viên | ❌ Không | ❌ Chỉ xem bản thân | ❌ Chỉ xem bản thân | ❌ Không | ❌ Không |
-| 8 | `Guest` | Khách truy cập | ❌ Không | ❌ Không | ❌ Không | ❌ Không | ❌ Không |
+### 4.1. Quy ước ký hiệu phân quyền (Permission Legend)
+- **`F` (Full / Toàn quyền)**: Có quyền toàn diện trên module (Xem, Thêm mới, Chỉnh sửa, Xóa, Cấu hình, Duyệt).
+- **`W` (Write / Ghi trong phạm vi)**: Được ghi, sửa, chấm bài, điểm danh trong phạm vi được phân công/giao phó.
+- **`R` (Read / Chỉ xem)**: Chỉ được xem dữ liệu, không có quyền chỉnh sửa.
+- **`–` (None / Không truy cập)**: Không có quyền truy cập vào phân hệ (từ chối ngay từ menu và filter 403 ở tầng server).
+- **`*` (Scope Constraint / Ràng buộc phạm vi)**: Chỉ thao tác trên dữ liệu của **chính mình** hoặc của **lớp mình trực tiếp phụ trách**. Đây là **ràng buộc bắt buộc kiểm tra ở tầng server**, không phải quy ước giao diện.
+- **`Admin`**: Có toàn quyền (`F`) trên mọi module của hệ thống.
 
-> **Điểm kiểm chứng cốt lõi của Story IDTTX-20:**
-> - Hàng số 4 (`Instructor`): Cột `GRADE_EDIT` là **CÓ**, cột `TUITION_EDIT` là **KHÔNG**.
-> - Hàng số 6 (`Accountant`): Cột `GRADE_EDIT` là **KHÔNG**, cột `TUITION_EDIT` là **CÓ**.
+---
+
+### 4.2. Bảng Ma trận phân quyền chi tiết theo 12 Module nghiệp vụ
+
+| STT | Phân hệ / Module nghiệp vụ | Student<br>(Học viên) | TA<br>(Trợ giảng) | Instructor<br>(Giảng viên) | Admissions<br>(Tuyển sinh) | Accountant<br>(Kế toán) | Training Mgr<br>(QL Đào tạo) | Admin<br>(Quản trị) |
+|:---:|:---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| 1 | **Chương trình & môn học** | `R` | `R` | `R` | `R` | `–` | `F` | `F` |
+| 2 | **Tuyển sinh & lead** | `–` | `–` | `–` | `F` | `R` | `R` | `F` |
+| 3 | **Hồ sơ học viên** | `W*` | `R` | `R` | `W` | `R` | `F` | `F` |
+| 4 | **Lớp học & thời khoá biểu** | `R*` | `R` | `R` | `R` | `–` | `F` | `F` |
+| 5 | **Điểm danh** | `R*` | `W` | `W` | `–` | `–` | `F` | `F` |
+| 6 | **Học liệu & thông báo lớp** | `R*` | `W*` | `W*` | `–` | `–` | `F` | `F` |
+| 7 | **Bài tập & chấm điểm** | `W*` | `W` | `F` | `–` | `–` | `R` | `F` |
+| 8 | **Điểm tổng kết & tốt nghiệp** | `R*` | `R` | `W` | `–` | `–` | `F` | `F` |
+| 9 | **Học phí & công nợ** | `R*` | `–` | `–` | `R` | `F` | `R` | `F` |
+| 10 | **Khảo sát chất lượng** | `W*` | `–` | `R*` | `–` | `–` | `F` | `F` |
+| 11 | **Báo cáo & dashboard** | `–` | `–` | `R*` | `R*` | `R*` | `F` | `F` |
+| 12 | **Người dùng & nhật ký** | `–` | `–` | `–` | `–` | `–` | `R` | `F` |
+
+---
+
+### 4.3. Điểm kiểm chứng cốt lõi của Story IDTTX-20 & S1-05
+1. **Giảng viên (`Instructor`)**:
+   - Module `Bài tập & chấm điểm`: **`F`** (Toàn quyền quản lý bài tập & chấm điểm lớp dạy).
+   - Module `Điểm tổng kết & tốt nghiệp`: **`W`** (CÓ quyền nhập/sửa điểm tổng kết lớp phụ trách).
+   - Module `Học phí & công nợ`: **`–`** (Tuyệt đối **KHÔNG CÓ QUYỀN** xem hoặc sửa học phí).
+2. **Kế toán (`Accountant`)**:
+   - Module `Học phí & công nợ`: **`F`** (Toàn quyền ghi nhận thanh toán, theo dõi công nợ, xuất báo cáo).
+   - Module `Bài tập & chấm điểm` & `Điểm tổng kết`: **`–`** (Tuyệt đối **KHÔNG CÓ QUYỀN** chỉnh sửa điểm số học viên).
+3. **Quản trị hệ thống (`Admin`)**:
+   - Toàn quyền **`F`** trên toàn bộ 12 module của hệ thống.
+4. **Học viên (`Student`)**:
+   - Chỉ được xem (`R*`) và nộp bài/cập nhật hồ sơ của chính mình (`W*`). Tuyệt đối không xem được dữ liệu của học viên khác.
 
 ---
 
@@ -204,3 +231,39 @@ Mô hình dữ liệu được thiết kế tuân thủ nghiêm ngặt chuẩn h
 - **Ràng buộc Foreign Keys:**
   - `ON DELETE CASCADE` cho quan hệ phụ thuộc chặt chẽ (`user_roles`, `role_permissions`).
   - `ON DELETE RESTRICT` cho quan hệ lịch sử/dữ liệu nghiệp vụ (`grades.updated_by`, `tuition_fees.updated_by`) để đảm bảo tính minh bạch kiểm toán (Audit Trail), ngăn chặn việc xóa tài khoản làm hỏng dữ liệu điểm số và tài chính.
+
+---
+
+## 7. Thiết kế CSDL cho Sprint 2 (Epic EP-01)
+
+### 7.1. Chức năng S2-01: Nhập người dùng hàng loạt từ Excel (Batch User Import)
+- **Bảng `user_import_batches` (Lịch sử các đợt nhập tệp Excel/CSV):**
+  - `id` (BIGINT, PK, Auto Increment): Mã định danh đợt nhập.
+  - `batch_code` (VARCHAR(64), UNIQUE): Mã theo dõi lô, sinh tự động (VD: `IMP-20261006-001`).
+  - `actor_id` (BIGINT, FK -> users.id): Quản trị viên thực hiện thao tác nhập.
+  - `file_name` (VARCHAR(255)): Tên file Excel/CSV tải lên.
+  - `total_rows` (INT): Tổng số dòng dữ liệu đọc được từ file.
+  - `success_rows` (INT): Số dòng nhập thành công vào hệ thống.
+  - `failed_rows` (INT): Số dòng bị từ chối do dữ liệu lỗi.
+  - `summary_note` (TEXT): Ghi chú tổng kết quá trình nhập.
+  - `created_at` (DATETIME): Thời điểm thực hiện nhập dữ liệu.
+- **Bảng `user_import_errors` (Chi tiết các dòng bị bỏ qua do lỗi):**
+  - `id` (BIGINT, PK, Auto Increment).
+  - `batch_id` (BIGINT, FK -> user_import_batches.id, ON DELETE CASCADE).
+  - `row_index` (INT): Thứ tự dòng dữ liệu trong tệp gốc.
+  - `raw_data` (JSON): Nội dung bản ghi thô người dùng đã cung cấp.
+  - `error_reason` (VARCHAR(255)): Lý do từ chối (Trùng email, sai SĐT VN, thiếu họ tên,...).
+  - `created_at` (DATETIME).
+- **Quy tắc nghiệp vụ Partial Import:**
+  - Áp dụng nguyên tắc **Dòng lỗi bị bỏ qua, dòng hợp lệ vẫn được nhập**: Mỗi dòng hợp lệ được commit tạo tài khoản độc lập, dòng lỗi được ghi vào `user_import_errors` để đối soát mà không rollback toàn bộ lô.
+
+### 7.2. Chức năng S2-02: Cập nhật hồ sơ cá nhân (User Profile Management)
+- **Mở rộng các thuộc tính trong bảng `users`:**
+  - `date_of_birth` (DATE, NULL): Ngày tháng năm sinh của người dùng.
+  - `gender` (ENUM('MALE', 'FEMALE', 'OTHER')): Giới tính.
+  - `address` (VARCHAR(255), NULL): Địa chỉ liên hệ / thường trú.
+  - `phone` (VARCHAR(20), NULL): Số điện thoại di động Việt Nam.
+- **Ràng buộc an ninh & Toàn vẹn:**
+  - **Bảo vệ email & vai trò:** Người dùng tuyệt đối không được tự ý sửa `email` (tên đăng nhập) và `roles` qua API cập nhật hồ sơ cá nhân. Mọi thay đổi vai trò chỉ được cấp bởi Quản trị viên (`ADMIN`).
+  - **Định dạng số điện thoại Việt Nam:** Kiểm soát chặt chẽ ở cả Frontend và Backend bằng biểu thức chính quy: `^(0|\+84)(3|5|7|8|9)[0-9]{8}$` (10 chữ số, các đầu mạng di động Viettel, Mobifone, Vinaphone, Vietnamobile, Itelecom, Gmobile, Wintel).
+

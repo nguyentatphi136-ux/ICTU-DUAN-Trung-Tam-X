@@ -16,10 +16,12 @@ public class PermissionConstant {
     public static final String TUITION_VIEW = "TUITION_VIEW";
     public static final String TUITION_EDIT = "TUITION_EDIT";
 
-    // Quyền quản trị
+    // Quyền quản trị và đào tạo
     public static final String USER_MANAGE = "USER_MANAGE";
     public static final String ROLE_MANAGE = "ROLE_MANAGE";
     public static final String CLASS_MANAGE = "CLASS_MANAGE";
+    public static final String PROGRAM_MANAGE = "PROGRAM_MANAGE";
+    public static final String PROGRAM_VIEW = "PROGRAM_VIEW";
     public static final String LEAD_MANAGE = "LEAD_MANAGE";
     public static final String PUBLIC_VIEW = "PUBLIC_VIEW";
 
@@ -29,13 +31,13 @@ public class PermissionConstant {
     static {
         // 1. Quản trị hệ thống (Admin): Có toàn quyền
         ROLE_PERMISSIONS.put(RoleConstant.ADMIN, new HashSet<>(Arrays.asList(
-                USER_MANAGE, ROLE_MANAGE, CLASS_MANAGE, LEAD_MANAGE,
+                USER_MANAGE, ROLE_MANAGE, CLASS_MANAGE, PROGRAM_MANAGE, PROGRAM_VIEW, LEAD_MANAGE,
                 GRADE_VIEW, GRADE_EDIT, TUITION_VIEW, TUITION_EDIT, PUBLIC_VIEW
         )));
 
-        // 2. Quản lý đào tạo (TrainingManager): Quản lý lớp, xem và sửa điểm
+        // 2. Quản lý đào tạo (TrainingManager): Quản lý chương trình đào tạo, quản lý lớp, xem và sửa điểm
         ROLE_PERMISSIONS.put(RoleConstant.TRAINING_MANAGER, new HashSet<>(Arrays.asList(
-                CLASS_MANAGE, GRADE_VIEW, GRADE_EDIT, PUBLIC_VIEW
+                PROGRAM_MANAGE, PROGRAM_VIEW, CLASS_MANAGE, GRADE_VIEW, GRADE_EDIT, PUBLIC_VIEW
         )));
 
         // 3. Tư vấn tuyển sinh (Admissions): Quản lý lead
