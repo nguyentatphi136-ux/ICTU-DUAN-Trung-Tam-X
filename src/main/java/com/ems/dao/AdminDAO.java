@@ -522,6 +522,259 @@ public class AdminDAO {
         return classes;
     }
 
+    public static final java.util.regex.Pattern VN_PHONE_REGEX =
+            java.util.regex.Pattern.compile("^(0|\\+84)(3|5|7|8|9)[0-9]{8}$");
+
+    /**
+     * Chức năng S2-01 AC2: Xem trước và báo lỗi theo từng dòng trước khi nhập từ tệp Excel
+     */
+    public Map<String, Object> previewUsersBatch(List<Map<String, Object>> rows) throws SQLException {
+        List<Map<String, Object>> evaluatedRows = new ArrayList<>();
+        Set<String> seenEmailsInBatch = new java.util.HashSet<>();
+        int validCount = 0;
+        int errorCount = 0;
+
+        try (Connection connection = DBConnection.getConnection()) {
+            for (int i = 0; i < rows.size(); i++) {
+                Map<String, Object> raw = rows.get(i);
+                int rowIdx = i + 1;
+                Map<String, Object> eval = new LinkedHashMap<>(raw);
+                eval.put("rowIndex", rowIdx);
+
+                List<String> errors = new ArrayList<>();
+                String fullName = raw.get("fullName") != null ? String.valueOf(raw.get("fullName")).trim()
+                        : (raw.get("name") != null ? String.valueOf(raw.get("name")).trim() : "");
+                String email = raw.get("email") != null ? String.valueOf(raw.get("email")).trim().toLowerCase(java.util.Locale.ROOT) : "";
+                String phone = raw.get("phone") != null ? String.valueOf(raw.get("phone")).trim().replaceAll("[\\s.-]", "") : "";
+
+                if (fullName.isEmpty()) {
+                    errors.add("Thiếu họ và tên");
+                }
+                if (email.isEmpty()) {
+                    errors.add("Thiếu địa chỉ email");
+                } else if (!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+                    errors.add("Định dạng email không hợp lệ");
+                } else if (seenEmailsInBatch.contains(email)) {
+                    errors.add("Email bị trùng lặp trong chính tệp tải lên");
+                } else {
+                    seenEmailsInBatch.add(email);
+                    // Kiểm tra tồn tại trong DB
+                    try (PreparedStatement checkStmt = connection.prepareStatement("SELECT full_name FROM users WHERE email = ?")) {
+                        checkStmt.setString(1, email);
+                        try (ResultSet rs = checkStmt.executeQuery()) {
+                            if (rs.next()) {
+                                String existingName = rs.getString("full_name");
+                                errors.add("Email đã được dùng cho tài khoản " + existingName);
+                            }
+                        }
+                    }
+                }
+
+                if (!phone.isEmpty() && !VN_PHONE_REGEX.matcher(phone).matches()) {
+                    errors.add("Số điện thoại không đúng chuẩn di động VN (10 số, bắt đầu 03, 05, 07, 08, 09)");
+                }
+
+                boolean isValid = errors.isEmpty();
+                if (isValid) validCount++; else errorCount++;
+
+                eval.put("isValid", isValid);
+                eval.put("errors", errors);
+                eval.put("errorMessage", String.join(", ", errors));
+                evaluatedRows.add(eval);
+            }
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("totalRows", rows.size());
+        result.put("validRows", validCount);
+        result.put("errorRows", errorCount);
+        result.put("rows", evaluatedRows);
+        return result;
+    }
+
+    /**
+     * Chức năng S2-01 AC3: Dòng lỗi bị bỏ qua, dòng hợp lệ vẫn được nhập, có báo cáo tổng kết
+     */
+    public Map<String, Object> importUsersBatch(long actorId, String fileName, List<Map<String, Object>> rows) throws SQLException {
+        if (fileName == null || fileName.isBlank()) fileName = "import_users.xlsx";
+        String batchCode = "IMP-" + System.currentTimeMillis();
+
+        List<Map<String, Object>> successUsers = new ArrayList<>();
+        List<Map<String, Object>> errorItems = new ArrayList<>();
+        Set<String> seenEmailsInBatch = new java.util.HashSet<>();
+
+        int totalRows = rows.size();
+        int successCount = 0;
+        int failedCount = 0;
+
+        try (Connection connection = DBConnection.getConnection()) {
+            for (int i = 0; i < rows.size(); i++) {
+                Map<String, Object> raw = rows.get(i);
+                int rowIdx = i + 1;
+                String fullName = raw.get("fullName") != null ? String.valueOf(raw.get("fullName")).trim()
+                        : (raw.get("name") != null ? String.valueOf(raw.get("name")).trim() : "");
+                String email = raw.get("email") != null ? String.valueOf(raw.get("email")).trim().toLowerCase(java.util.Locale.ROOT) : "";
+                String phone = raw.get("phone") != null ? String.valueOf(raw.get("phone")).trim().replaceAll("[\\s.-]", "") : null;
+                String role = raw.get("role") != null ? String.valueOf(raw.get("role")).trim().toUpperCase(java.util.Locale.ROOT) : "STUDENT";
+                String dateOfBirth = raw.get("dateOfBirth") != null ? String.valueOf(raw.get("dateOfBirth")).trim() : null;
+                String gender = raw.get("gender") != null ? String.valueOf(raw.get("gender")).trim().toUpperCase(java.util.Locale.ROOT) : "OTHER";
+                String address = raw.get("address") != null ? String.valueOf(raw.get("address")).trim() : null;
+
+                // Validate row
+                String errorReason = null;
+                if (fullName.isEmpty()) {
+                    errorReason = "Thiếu họ và tên";
+                } else if (email.isEmpty() || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+                    errorReason = "Email không hợp lệ hoặc bị trống";
+                } else if (seenEmailsInBatch.contains(email)) {
+                    errorReason = "Email bị trùng lặp trong chính tệp tải lên";
+                } else {
+                    try (PreparedStatement checkStmt = connection.prepareStatement("SELECT full_name FROM users WHERE email = ?")) {
+                        checkStmt.setString(1, email);
+                        try (ResultSet rs = checkStmt.executeQuery()) {
+                            if (rs.next()) {
+                                errorReason = "Email đã tồn tại trong hệ thống (tài khoản " + rs.getString("full_name") + ")";
+                            }
+                        }
+                    }
+                }
+
+                if (errorReason == null && phone != null && !phone.isEmpty() && !VN_PHONE_REGEX.matcher(phone).matches()) {
+                    errorReason = "Số điện thoại không đúng chuẩn di động VN";
+                }
+
+                if (errorReason != null) {
+                    failedCount++;
+                    Map<String, Object> err = new LinkedHashMap<>();
+                    err.put("rowIndex", rowIdx);
+                    err.put("fullName", fullName);
+                    err.put("email", email);
+                    err.put("reason", errorReason);
+                    errorItems.add(err);
+                    continue;
+                }
+
+                seenEmailsInBatch.add(email);
+
+                // Dòng hợp lệ: Thêm vào database
+                try {
+                    connection.setAutoCommit(false);
+                    String userCode = "HV" + (System.currentTimeMillis() % 1000000) + (rowIdx % 100);
+                    String tempPass = generateTempPassword();
+                    String hashed = BCrypt.hashpw(tempPass, BCrypt.gensalt(10));
+
+                    java.sql.Date dobDate = null;
+                    if (dateOfBirth != null && !dateOfBirth.isEmpty()) {
+                        try {
+                            dobDate = java.sql.Date.valueOf(dateOfBirth);
+                        } catch (Exception ignored) {}
+                    }
+
+                    long newUserId = 0;
+                    String insertSql = "INSERT INTO users (user_code, email, password_hash, full_name, phone, date_of_birth, gender, address, status, created_at, updated_at) "
+                            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', NOW(), NOW())";
+                    try (PreparedStatement stmt = connection.prepareStatement(insertSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                        stmt.setString(1, userCode);
+                        stmt.setString(2, email);
+                        stmt.setString(3, hashed);
+                        stmt.setString(4, fullName);
+                        stmt.setString(5, (phone != null && !phone.isEmpty()) ? phone : null);
+                        stmt.setDate(6, dobDate);
+                        stmt.setString(7, ("MALE".equals(gender) || "FEMALE".equals(gender)) ? gender : "OTHER");
+                        stmt.setString(8, address);
+                        stmt.executeUpdate();
+                        try (ResultSet rs = stmt.getGeneratedKeys()) {
+                            if (rs.next()) newUserId = rs.getLong(1);
+                        }
+                    }
+
+                    // Gán vai trò
+                    List<Integer> roleIds = findRoleIds(connection, Set.of(role));
+                    if (roleIds.isEmpty()) roleIds = findRoleIds(connection, Set.of("STUDENT"));
+                    if (!roleIds.isEmpty()) {
+                        try (PreparedStatement roleStmt = connection.prepareStatement("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)")) {
+                            for (int rId : roleIds) {
+                                roleStmt.setLong(1, newUserId);
+                                roleStmt.setInt(2, rId);
+                                roleStmt.executeUpdate();
+                            }
+                        }
+                    }
+
+                    connection.commit();
+                    successCount++;
+
+                    Map<String, Object> succ = new LinkedHashMap<>();
+                    succ.put("id", newUserId);
+                    succ.put("rowIndex", rowIdx);
+                    succ.put("userCode", userCode);
+                    succ.put("fullName", fullName);
+                    succ.put("email", email);
+                    succ.put("phone", phone != null ? phone : "");
+                    succ.put("role", role);
+                    succ.put("tempPassword", tempPass);
+                    successUsers.add(succ);
+                } catch (Exception ex) {
+                    connection.rollback();
+                    failedCount++;
+                    Map<String, Object> err = new LinkedHashMap<>();
+                    err.put("rowIndex", rowIdx);
+                    err.put("fullName", fullName);
+                    err.put("email", email);
+                    err.put("reason", "Lỗi lưu CSDL: " + ex.getMessage());
+                    errorItems.add(err);
+                }
+            }
+
+            // Ghi nhận vào bảng user_import_batches (nếu bảng tồn tại)
+            long batchId = 0;
+            try {
+                String batchSql = "INSERT INTO user_import_batches (batch_code, actor_id, file_name, total_rows, success_rows, failed_rows, summary_note, created_at) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, NOW())";
+                try (PreparedStatement bStmt = connection.prepareStatement(batchSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                    bStmt.setString(1, batchCode);
+                    bStmt.setObject(2, actorId > 0 ? actorId : null);
+                    bStmt.setString(3, fileName);
+                    bStmt.setInt(4, totalRows);
+                    bStmt.setInt(5, successCount);
+                    bStmt.setInt(6, failedCount);
+                    bStmt.setString(7, String.format("Nhập thành công %d/%d dòng, bỏ qua %d dòng lỗi.", successCount, totalRows, failedCount));
+                    bStmt.executeUpdate();
+                    try (ResultSet rs = bStmt.getGeneratedKeys()) {
+                        if (rs.next()) batchId = rs.getLong(1);
+                    }
+                }
+
+                // Ghi lỗi từng dòng vào user_import_errors
+                if (batchId > 0 && !errorItems.isEmpty()) {
+                    String errSql = "INSERT INTO user_import_errors (batch_id, row_index, raw_data, error_reason, created_at) VALUES (?, ?, ?, ?, NOW())";
+                    try (PreparedStatement eStmt = connection.prepareStatement(errSql)) {
+                        for (Map<String, Object> err : errorItems) {
+                            eStmt.setLong(1, batchId);
+                            eStmt.setInt(2, (int) err.get("rowIndex"));
+                            eStmt.setString(3, "{\"email\":\"" + err.get("email") + "\",\"name\":\"" + err.get("fullName") + "\"}");
+                            eStmt.setString(4, (String) err.get("reason"));
+                            eStmt.addBatch();
+                        }
+                        eStmt.executeBatch();
+                    }
+                }
+            } catch (SQLException ignored) {
+                // Tiếp tục trả kết quả nếu bảng phụ chưa sẵn sàng
+            }
+        }
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+        summary.put("batchCode", batchCode);
+        summary.put("fileName", fileName);
+        summary.put("totalRows", totalRows);
+        summary.put("successRows", successCount);
+        summary.put("failedRows", failedCount);
+        summary.put("successUsers", successUsers);
+        summary.put("errors", errorItems);
+        return summary;
+    }
+
     private void recordAuditLog(Connection connection, long actorId, String action, String entityType,
                                 String entityId, String oldVal, String newVal) {
         String sql = "INSERT INTO audit_logs (user_id, action, entity_type, entity_id, old_values, new_values) "
