@@ -972,9 +972,9 @@ select.app-input:focus {
 .tms-modal-overlay {
   position: fixed;
   inset: 0;
-  background-color: rgba(6, 36, 77, 0.45);
+  background-color: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(4px);
-  z-index: 100;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -988,15 +988,16 @@ select.app-input:focus {
 .tms-modal-overlay:not(.hidden) {
   opacity: 1;
   pointer-events: auto;
+  display: flex !important;
 }
 
 .tms-modal-card {
   background-color: #FFFFFF;
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18);
   width: 100%;
   max-width: 520px;
-  padding: 32px;
+  padding: 30px;
   position: relative;
   transform: scale(0.96);
   transition: transform 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -1005,6 +1006,20 @@ select.app-input:focus {
 .tms-modal-overlay.is-active .tms-modal-card,
 .tms-modal-overlay:not(.hidden) .tms-modal-card {
   transform: scale(1);
+}
+
+.tms-edit-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #e0f2fe;
+  color: #0284c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+  flex-shrink: 0;
 }
 
 /* Slide-over Drawer từ bên phải */
@@ -1020,12 +1035,13 @@ select.app-input:focus {
   z-index: 110;
   display: flex;
   flex-direction: column;
-  transform: translateX(100%);
+  transform: translateX(0);
   transition: transform 260ms cubic-bezier(0.2, 0, 0, 1);
 }
 
-.tms-drawer.is-open {
-  transform: translateX(0);
+.tms-drawer.is-open,
+.tms-drawer-backdrop:not(.hidden) .tms-drawer {
+  transform: translateX(0) !important;
 }
 
 .tms-drawer-header {
@@ -2064,21 +2080,52 @@ select.app-input:focus {
 
 .cp-rule-item {
   font-size: 12px;
-  color: #94a3b8;
+  color: #64748b;
   display: flex;
   align-items: center;
-  gap: 7px;
-  transition: color 0.15s ease, font-weight 0.15s ease;
+  gap: 8px;
+  transition: all 0.18s ease;
 }
 
+.cp-rule-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  flex-shrink: 0;
+  background: #f1f5f9;
+  color: #94a3b8;
+  border: 1px solid #e2e8f0;
+  transition: all 0.18s ease;
+}
+
+/* ĐÚNG ĐỊNH DẠNG: TÍCH XANH */
 .cp-rule-item.is-met {
   color: #059669 !important;
   font-weight: 600 !important;
 }
 
-.cp-rule-check {
-  font-size: 12px;
-  font-weight: 700;
+.cp-rule-item.is-met .cp-rule-check {
+  background: #d1fae5 !important;
+  color: #059669 !important;
+  border-color: #a7f3d0 !important;
+}
+
+/* KHÔNG ĐÚNG ĐỊNH DẠNG: X ĐỎ */
+.cp-rule-item.is-unmet {
+  color: #ef4444 !important;
+  font-weight: 600 !important;
+}
+
+.cp-rule-item.is-unmet .cp-rule-check {
+  background: #fee2e2 !important;
+  color: #ef4444 !important;
+  border-color: #fecaca !important;
 }
 
 /* Thẻ thông báo đăng xuất thiết bị khác */
