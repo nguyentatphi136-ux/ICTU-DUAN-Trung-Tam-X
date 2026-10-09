@@ -23,6 +23,10 @@ public class PermissionConstant {
     public static final String PROGRAM_MANAGE = "PROGRAM_MANAGE";
     public static final String PROGRAM_VIEW = "PROGRAM_VIEW";
     public static final String LEAD_MANAGE = "LEAD_MANAGE";
+    public static final String LEAD_VIEW = "LEAD_VIEW";
+    public static final String LEAD_CREATE = "LEAD_CREATE";
+    public static final String LEAD_UPDATE = "LEAD_UPDATE";
+    public static final String LEAD_DELETE = "LEAD_DELETE";
     public static final String PUBLIC_VIEW = "PUBLIC_VIEW";
 
     // Ma trận phân quyền theo vai trò
@@ -32,17 +36,19 @@ public class PermissionConstant {
         // 1. Quản trị hệ thống (Admin): Có toàn quyền
         ROLE_PERMISSIONS.put(RoleConstant.ADMIN, new HashSet<>(Arrays.asList(
                 USER_MANAGE, ROLE_MANAGE, CLASS_MANAGE, PROGRAM_MANAGE, PROGRAM_VIEW, LEAD_MANAGE,
+                LEAD_VIEW, LEAD_CREATE, LEAD_UPDATE, LEAD_DELETE,
                 GRADE_VIEW, GRADE_EDIT, TUITION_VIEW, TUITION_EDIT, PUBLIC_VIEW
         )));
 
-        // 2. Quản lý đào tạo (TrainingManager): Quản lý chương trình đào tạo, quản lý lớp, xem và sửa điểm
+        // 2. Quản lý đào tạo (TrainingManager): Quản lý chương trình đào tạo, quản lý lớp, xem và sửa điểm, toàn quyền CRUD lead
         ROLE_PERMISSIONS.put(RoleConstant.TRAINING_MANAGER, new HashSet<>(Arrays.asList(
-                PROGRAM_MANAGE, PROGRAM_VIEW, CLASS_MANAGE, GRADE_VIEW, GRADE_EDIT, PUBLIC_VIEW
+                PROGRAM_MANAGE, PROGRAM_VIEW, CLASS_MANAGE, GRADE_VIEW, GRADE_EDIT, PUBLIC_VIEW,
+                LEAD_VIEW, LEAD_CREATE, LEAD_UPDATE, LEAD_DELETE, LEAD_MANAGE
         )));
 
-        // 3. Tư vấn tuyển sinh (Admissions): Quản lý lead
+        // 3. Tư vấn tuyển sinh (Admissions): Quản lý lead (Create, Read, Update - TUYỆT ĐỐI KHÔNG CÓ LEAD_DELETE)
         ROLE_PERMISSIONS.put(RoleConstant.ADMISSIONS, new HashSet<>(Arrays.asList(
-                LEAD_MANAGE, PUBLIC_VIEW
+                LEAD_MANAGE, LEAD_VIEW, LEAD_CREATE, LEAD_UPDATE, PUBLIC_VIEW
         )));
 
         // 4. Giảng viên (Instructor): CÓ QUYỀN SỬA ĐIỂM, TUYỆT ĐỐI KHÔNG CÓ QUYỀN SỬA HỌC PHÍ
