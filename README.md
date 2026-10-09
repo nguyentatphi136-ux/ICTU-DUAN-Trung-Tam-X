@@ -80,27 +80,84 @@ Hệ thống Quản lý Đào tạo Trung tâm là nền tảng quản trị s�
 
 ---
 
-## 6. Hướng dẫn cài đặt môi trường cho nhà phát triển
+## 6. Cấu trúc thư mục dự án sau khi sắp xếp chuẩn mực
 
-### 6.1. Yêu cầu hệ thống
-* JDK: Phiên bản 17 hoặc 21 LTS.
-* Apache Tomcat: Phiên bản 9.0 hoặc 10.1.
-* Hệ quản trị CSDL: MySQL 8.0+.
-* IDE khuyên dùng: IntelliJ IDEA Ultimate hoặc Eclipse EE.
+```text
+ICTU-DUAN-Trung-Tam-X/
+├── pom.xml                                     # Cấu hình Maven (Java 17, Servlet 4.0, JSP, JSTL, MySQL)
+├── package.json                                # Quản lý script npm (Proxy 'npm run dev' vào frontend)
+├── README.md                                   # Tài liệu hướng dẫn toàn diện dự án
+├── src/                                        # BỘ NGUỒN CHÍNH THỨC: JAVA SERVLET & JSP (MVC)
+│   ├── main/
+│   │   ├── java/com/ems/
+│   │   │   ├── config/                         # DBConnection, SessionBlacklist, Migration
+│   │   │   ├── constant/                       # RoleConstant (8 vai trò), PermissionConstant (Ma trận quyền)
+│   │   │   ├── controller/                     # Servlets điều hướng: Login, Logout, UserRole, Grade, Tuition, Program
+│   │   │   ├── dao/                            # Data Access Objects (UserDAO, AdminDAO, PermissionDAO, TrainingProgramDAO)
+│   │   │   ├── dto/                            # Data Transfer Objects
+│   │   │   ├── filter/                         # AuthorizationFilter (RBAC), SessionAuthFilter (Sliding session)
+│   │   │   ├── model/                          # Entities: User, Grade, TuitionFee, TrainingProgram
+│   │   │   ├── security/                       # ApiResponse, Password policies
+│   │   │   └── service/                        # EmailService, TrainingProgramService, UserStore (In-memory store & fallback)
+│   │   └── webapp/                             # Giao diện JSP, JSTL và cấu hình Web Descriptor
+│   │       ├── index.jsp                       # Điều hướng trang chủ
+│   │       ├── login.jsp                       # Giao diện đăng nhập (có nút chọn nhanh tài khoản test)
+│   │       ├── dashboard.jsp                   # Bảng điều khiển phân hệ nghiệp vụ theo vai trò
+│   │       ├── admin.jsp                       # Quản lý tài khoản người dùng
+│   │       ├── change-password.jsp             # Đổi mật khẩu
+│   │       ├── forgot-password.jsp             # Quên mật khẩu qua email
+│   │       ├── reset-password.jsp              # Đặt lại mật khẩu từ liên kết bảo mật
+│   │       └── WEB-INF/
+│   │           ├── web.xml                     # Cấu hình Deployment Descriptor, session-timeout 8h, error pages
+│   │           └── views/
+│   │               ├── common/                 # 403.jsp, 404.jsp, 500.jsp (Thông báo tiếng Việt thân thiện)
+│   │               ├── admin/                  # user-roles.jsp (Gán & thu hồi vai trò Jira IDTTX-24)
+│   │               ├── grades/                 # list-grade.jsp, edit-grade.jsp (Giảng viên sửa điểm, Kế toán chỉ xem)
+│   │               ├── tuition/                # list-tuition.jsp, edit-tuition.jsp (Kế toán sửa học phí, Giảng viên chỉ xem)
+│   │               └── programs/               # list-programs.jsp (Danh mục chương trình đào tạo S2-04)
+│   └── test/java/com/ems/                      # Bộ kiểm thử tự động JUnit 5 cho RBAC, IDTTX-24, Session, Auth
+├── database/                                   # CSDL MySQL (schema.sql, DESIGN_DATABASE.md)
+├── frontend/                                   # Giao diện web client (Vite, HTML5, CSS3, JS)
+├── legacy_or_mock/                             # Lưu trữ prototype cũ Node.js & mock data để đối chiếu
+└── UI_UX/                                      # Bản vẽ thiết kế, wireframes và screenshots nghiệm thu
+```
 
-### 6.2. Các bước khởi chạy dự án
+---
+
+## 7. Danh sách tài khoản thử nghiệm (Demo Accounts)
+
+Hệ thống hỗ trợ cơ chế xác thực kép: tự động truy vấn MySQL `UserDAO` nếu CSDL đang chạy, hoặc chuyển sang `UserStore` in-memory fallback nếu chưa cấu hình CSDL, đảm bảo luôn đăng nhập được 100%:
+
+| STT | Vai trò nghiệp vụ | Email đăng nhập | Mật khẩu chuẩn | Mật khẩu phụ (chấp nhận) | Phân hệ được truy cập |
+|:---:|:---|:---|:---:|:---:|:---|
+| 1 | **Quản trị hệ thống (Admin)** | `admin@edumanager.vn` | `Admin@123` | `123456` | Toàn quyền, Phân quyền vai trò (`/admin/users/roles`), Quản lý tài khoản |
+| 2 | **Giảng viên (Instructor)** | `giangvien@edumanager.vn` | `Giangvien@123` | `123456` | Bảng điểm học viên, Sửa điểm (`/grade/list`) — *Bị chặn sửa học phí (403)* |
+| 3 | **Kế toán (Accountant)** | `ketoan@edumanager.vn` | `Ketoan@123` | `123456` | Bảng học phí, Sửa học phí (`/tuition/list`) — *Bị chặn sửa điểm (403)* |
+| 4 | **Quản lý đào tạo (Training Manager)** | `daotao@edumanager.vn` | `Daotao@123` | `123456` | Danh mục chương trình đào tạo (`/training-programs`), Bảng điểm |
+| 5 | **Học viên (Student)** | `hocvien@edumanager.vn` | `Hocvien@123` | `123456` | Xem bảng điểm cá nhân, xem học phí cá nhân |
+| 6 | **Tư vấn tuyển sinh (Admissions)** | `tuvan@edumanager.vn` | `Tuyensinh@123` | `123456` | Xem thông tin chương trình học, quản lý tuyển sinh |
+| 7 | **Trợ giảng (Teaching Assistant)** | `trogiang@edumanager.vn` | `Trogiang@123` | `123456` | Hỗ trợ lớp học, xem điểm |
+
+---
+
+## 8. Hướng dẫn chạy dự án
+
+### Cách 1: Chạy toàn bộ ứng dụng Java Servlet / JSP trên Apache Tomcat (Khuyên dùng)
+1. Mở dự án trên **IntelliJ IDEA** hoặc **Eclipse**: Chọn thư mục gốc `ICTU-DUAN-Trung-Tam-X`.
+2. IntelliJ sẽ tự động nhận diện file `pom.xml` làm dự án Maven.
+3. Thêm cấu hình chạy **Tomcat Server (Local)**:
+   - Deployment: Thêm Artifact `education-management-system:war exploded` (hoặc thư mục `src/main/webapp`).
+   - Application context: `/` hoặc `/ems`.
+4. Nhấn **Run** (Shift + F10).
+5. Mở trình duyệt tại: `http://localhost:8080/` (hệ thống sẽ tự động chuyển hướng đến `login.jsp`).
+6. Bấm nút chọn nhanh tài khoản thử nghiệm trên giao diện để đăng nhập ngay!
+
+### Cách 2: Chạy giao diện Web Frontend độc lập (Vite)
+Nếu bạn muốn phát triển hoặc kiểm thử nhanh giao diện HTML/CSS/JS:
 ```bash
-# 1. Clone mã nguồn dự án
-git clone [https://github.com/nguyentatphi136-ux/ICTU-DUAN-Trung-Tam-X.git](https://github.com/nguyentatphi136-ux/ICTU-DUAN-Trung-Tam-X.git)
+# Ở bất kỳ thư mục nào (thư mục gốc hoặc thư mục frontend/):
+npm run dev
 
-# 2. Di chuyển vào thư mục dự án
-cd ICTU-DUAN-Trung-Tam-X
-
-# 3. Chuyển sang nhánh làm việc develop
-git checkout develop
-
-# 4. Cấu hình kết nối cơ sở dữ liệu:
-# Mở file src/main/resources/database.properties và cập nhật DB_URL, DB_USER, DB_PASSWORD
-
-# 5. Build và chạy ứng dụng trên Tomcat server tại địa chỉ:
-# http://localhost:8080/
+# Trình duyệt mở:
+http://localhost:5173/login.html
+```

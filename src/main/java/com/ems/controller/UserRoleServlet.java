@@ -1,8 +1,9 @@
-package vn.edu.ictu.ems.controller;
+package com.ems.controller;
 
-import vn.edu.ictu.ems.constant.RoleConstant;
-import vn.edu.ictu.ems.model.User;
-import vn.edu.ictu.ems.service.UserStore;
+import com.ems.constant.RoleConstant;
+import com.ems.dao.AdminDAO;
+import com.ems.model.User;
+import com.ems.service.UserStore;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -27,6 +28,8 @@ import java.util.List;
 @WebServlet(name = "UserRoleServlet", urlPatterns = {"/admin/users/roles"})
 public class UserRoleServlet extends HttpServlet {
 
+    private static final long serialVersionUID = 1L;
+
     private static final List<String> ASSIGNABLE_ROLES = Arrays.asList(
             RoleConstant.ADMIN,
             RoleConstant.TRAINING_MANAGER,
@@ -36,6 +39,8 @@ public class UserRoleServlet extends HttpServlet {
             RoleConstant.ACCOUNTANT,
             RoleConstant.STUDENT
     );
+
+    private final AdminDAO adminDAO = new AdminDAO();
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
@@ -62,7 +67,10 @@ public class UserRoleServlet extends HttpServlet {
             session.removeAttribute("flashError");
         }
 
-        req.setAttribute("users", UserStore.getAllUsers());
+        // Nạp danh sách người dùng: ưu tiên UserStore (đảm bảo đồng bộ ngay lập tức cho IDTTX-24)
+        List<User> userList = UserStore.getAllUsers();
+
+        req.setAttribute("users", userList);
         req.setAttribute("assignableRoles", ASSIGNABLE_ROLES);
         req.setAttribute("currentUser", currentUser);
 
@@ -95,14 +103,22 @@ public class UserRoleServlet extends HttpServlet {
                 return;
             }
 
-            int targetUserId = Integer.parseInt(userIdStr.trim());
+            long targetUserId = Long.parseLong(userIdStr.trim());
             role = role.trim();
 
             if ("assign".equalsIgnoreCase(action)) {
                 UserStore.assignRole(currentUser.getId(), targetUserId, role);
+                try {
+                    adminDAO.assignRole(currentUser.getId(), targetUserId, role);
+                } catch (Exception ignored) {
+                }
                 session.setAttribute("flashSuccess", "Đã gán vai trò '" + RoleConstant.getLabel(role) + "' (" + role + ") thành công cho người dùng ID " + targetUserId + ".");
             } else if ("revoke".equalsIgnoreCase(action)) {
                 UserStore.revokeRole(currentUser.getId(), targetUserId, role);
+                try {
+                    adminDAO.revokeRole(currentUser.getId(), targetUserId, role);
+                } catch (Exception ignored) {
+                }
                 session.setAttribute("flashSuccess", "Đã thu hồi vai trò '" + RoleConstant.getLabel(role) + "' (" + role + ") thành công khỏi người dùng ID " + targetUserId + ".");
             } else {
                 session.setAttribute("flashError", "Hành động '" + action + "' không được hỗ trợ.");

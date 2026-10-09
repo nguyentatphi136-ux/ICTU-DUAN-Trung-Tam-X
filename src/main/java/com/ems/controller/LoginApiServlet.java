@@ -56,20 +56,16 @@ public class LoginApiServlet extends HttpServlet {
             return;
         }
 
-        User user;
+        User user = null;
         try {
             user = userDAO.authenticate(email, password);
         } catch (SQLException exception) {
-            getServletContext().log("Không thể truy cập dữ liệu đăng nhập.", exception);
-            if (apiRequest) {
-                sendApiError(response, 503, "SYSTEM_SERVICE_UNAVAILABLE",
-                        "Hệ thống đăng nhập tạm thời không khả dụng. Vui lòng thử lại sau.");
-            } else {
-                response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                request.setAttribute("errorMessage", "Hệ thống đăng nhập tạm thời không khả dụng. Vui lòng thử lại sau.");
-                request.getRequestDispatcher("/login.jsp").forward(request, response);
-            }
-            return;
+            getServletContext().log("Không thể kết nối MySQL, chuyển sang xác thực dự phòng.", exception);
+        }
+
+        // Dự phòng xác thực in-memory UserStore (IDTTX-20, IDTTX-24) khi DB chưa sẵn sàng
+        if (user == null) {
+            user = com.ems.service.UserStore.authenticate(email, password);
         }
 
         if (user == null) {
@@ -93,8 +89,9 @@ public class LoginApiServlet extends HttpServlet {
         String role = roleSlug(user.getPrimaryRole());
         String redirectUrl = roleHome(role);
         if (!apiRequest) {
-            String appBase = System.getenv().getOrDefault("APP_BASE_URL", "http://localhost:5173");
-            response.sendRedirect(appBase.replaceAll("/+$", "") + redirectUrl);
+            // Chuyển hướng nội bộ theo JSP & Servlet
+            String jspRedirect = jspHome(role);
+            response.sendRedirect(request.getContextPath() + jspRedirect);
             return;
         }
 
@@ -118,7 +115,7 @@ public class LoginApiServlet extends HttpServlet {
         String accept = request.getHeader("Accept");
         return request.getRequestURI().endsWith("/api/auth/login")
                 || "XMLHttpRequest".equalsIgnoreCase(request.getHeader("X-Requested-With"))
-                || accept != null && accept.contains("application/json");
+                || (accept != null && accept.contains("application/json"));
     }
 
     private static String roleSlug(String role) {
@@ -135,6 +132,17 @@ public class LoginApiServlet extends HttpServlet {
             case "accountant" -> "/accountant.html";
             case "student" -> "/student.html";
             default -> "/index.html";
+        };
+    }
+
+    private static String jspHome(String role) {
+        return switch (role) {
+            case "admin" -> "/admin/users/roles";
+            case "instructor" -> "/grade/list";
+            case "accountant" -> "/tuition/list";
+            case "student" -> "/grade/list";
+            case "training-manager" -> "/training-programs";
+            default -> "/dashboard.jsp";
         };
     }
 

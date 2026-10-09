@@ -1,12 +1,12 @@
-package vn.edu.ictu.ems;
+package com.ems.test;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import vn.edu.ictu.ems.constant.PermissionConstant;
-import vn.edu.ictu.ems.constant.RoleConstant;
-import vn.edu.ictu.ems.model.User;
-import vn.edu.ictu.ems.service.UserStore;
+import com.ems.constant.PermissionConstant;
+import com.ems.constant.RoleConstant;
+import com.ems.model.User;
+import com.ems.service.UserStore;
 
 import java.util.NoSuchElementException;
 
@@ -24,9 +24,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class UserRoleManagementTest {
 
-    private static final int ADMIN_ID = 1;
-    private static final int INSTRUCTOR_ID = 2;
-    private static final int STUDENT_ID = 3;
+    private static final long ADMIN_ID = 1L;
+    private static final long INSTRUCTOR_ID = 2L;
+    private static final long STUDENT_ID = 3L;
 
     @BeforeEach
     void setUp() {
@@ -164,7 +164,7 @@ public class UserRoleManagementTest {
         });
 
         assertThrows(NoSuchElementException.class, () -> {
-            UserStore.assignRole(ADMIN_ID, 9999, RoleConstant.STUDENT);
+            UserStore.assignRole(ADMIN_ID, 9999L, RoleConstant.STUDENT);
         });
     }
 }
