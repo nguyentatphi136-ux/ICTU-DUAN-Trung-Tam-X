@@ -601,6 +601,7 @@ const pages = [
   "admissions.html",
   "accountant.html",
   "admin.html",
+  "import-users-prototype.html",
 ];
 
 export default defineConfig({
