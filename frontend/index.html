@@ -3,298 +3,397 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#015aa0" />
+    <meta name="theme-color" content="#0974F1" />
     <meta
       name="description"
-      content="EduManager - tổng quan vận hành hệ thống quản lý đào tạo."
+      content="TMS - Hệ thống quản lý đào tạo toàn diện. Đăng ký nhận tư vấn khóa học và thông tin đào tạo."
     />
-    <title>Tổng quan đào tạo | EduManager</title>
+    <title>Hệ thống Quản lý Đào tạo | TMS.</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap"
       rel="stylesheet"
     />
-
     <script src="https://unpkg.com/lucide@latest"></script>
     <script type="module" src="/src/main.js"></script>
   </head>
-  <body class="app-body home-page antialiased">
-    <header class="guest-header">
-      <a href="index.html" class="guest-brand">
-        <span class="app-logo"
-          ><i data-lucide="graduation-cap" aria-hidden="true"></i
-        ></span>
-        EduManager
+  <body style="background-color: var(--color-bg-page); min-height: 100vh; display: flex; flex-direction: column;">
+    <!-- Topbar cho trang khách -->
+    <header style="height: var(--topbar-height); background: #FFFFFF; border-bottom: 1px solid var(--color-border); padding: 0 36px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 40;">
+      <a href="index.html" class="tms-brand">
+        <div class="tms-logo-box">
+          <i data-lucide="graduation-cap" aria-hidden="true"></i>
+        </div>
+        <span>TMS.</span>
       </a>
-      <nav class="guest-nav" aria-label="Điều hướng trang khách">
-        <a href="#dashboard">Tổng quan</a>
-        <a href="#today-schedule">Lịch đào tạo</a>
-        <a href="#work-queue">Cần xử lý</a>
+
+      <nav style="display: flex; align-items: center; gap: 24px; font-size: 14px; font-weight: 600;">
+        <a href="#tu-van" style="color: var(--color-navy-title);">Đăng ký tư vấn</a>
+        <a href="#chuong-trinh" style="color: var(--color-text-secondary);">Chương trình đào tạo</a>
+        <a href="#vai-tro-demo" style="color: var(--color-text-secondary);">Trải nghiệm 8 vai trò</a>
       </nav>
-      <div class="flex items-center gap-2">
-        <button
-          id="theme-toggle"
-          type="button"
-          aria-label="Chuyển giao diện tối"
-          title="Chuyển giao diện tối"
-          class="app-icon-btn"
-        >
-          <i data-lucide="moon" class="size-[18px]" aria-hidden="true"></i>
-        </button>
-        <a href="login.html" data-nav="login" class="app-btn">
-          <i data-lucide="log-in" aria-hidden="true"></i>
+
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <a href="login.html" data-nav="login" class="tms-btn-primary" style="height: 38px; padding: 0 18px; font-size: 13.5px;">
+          <i data-lucide="log-in" style="width: 16px; height: 16px;"></i>
           Đăng nhập
         </a>
       </div>
     </header>
 
-    <main id="dashboard" class="home-dashboard page-enter">
-      <section class="home-overview" aria-labelledby="home-title">
-        <div class="home-heading-row">
-          <div>
-            <p class="app-eyebrow">EDUMANAGER · ĐIỀU HÀNH ĐÀO TẠO</p>
-            <h1 id="home-title" class="home-title">Tổng quan hệ thống</h1>
-            <p class="app-muted home-subtitle">
-              Theo dõi lớp học, lịch giảng dạy và các công việc cần xử lý hôm
-              nay.
+    <!-- Main Container -->
+    <main style="flex: 1; padding: 40px 24px; max-width: 1200px; margin: 0 auto; width: 100%;">
+      <!-- Section: Biểu mẫu công khai đăng ký tư vấn (UI_UX/S2-08_Đăng ký tư vấn/Biểu mẫu công khai.png) -->
+      <section id="tu-van" style="margin-bottom: 48px;">
+        <div class="tms-login-container" style="box-shadow: var(--shadow-lg);">
+          <!-- Cột trái: Thông điệp tư vấn -->
+          <div class="tms-login-hero" style="padding: 48px 40px;">
+            <div class="tms-brand tms-brand-white">
+              <div class="tms-logo-box">
+                <i data-lucide="graduation-cap" aria-hidden="true"></i>
+              </div>
+              <span>TMS.</span>
+            </div>
+
+            <div style="margin: auto 0;">
+              <h1 style="font-size: 34px; font-weight: 800; line-height: 1.25; margin-bottom: 16px;">
+                Để lại thông tin, chúng tôi sẽ gọi lại cho bạn.
+              </h1>
+              <p class="hero-desc" style="font-size: 15px; line-height: 1.6; margin-bottom: 36px;">
+                Tư vấn viên sẽ giúp bạn chọn khoá học phù hợp với mục tiêu và thời gian của bạn.
+              </p>
+
+              <div class="tms-feature-cards">
+                <div class="tms-feature-card">
+                  <div class="tms-feature-icon">
+                    <i data-lucide="phone-call" aria-hidden="true"></i>
+                  </div>
+                  <div class="tms-feature-text">
+                    <h4>Gọi lại trong 24 giờ làm việc</h4>
+                    <p>Đội ngũ chuyên viên tư vấn hỗ trợ chi tiết lộ trình học tập.</p>
+                  </div>
+                </div>
+
+                <div class="tms-feature-card">
+                  <div class="tms-feature-icon">
+                    <i data-lucide="check-circle-2" aria-hidden="true"></i>
+                  </div>
+                  <div class="tms-feature-text">
+                    <h4>Tư vấn miễn phí, không ràng buộc</h4>
+                    <p>Định hướng nghề nghiệp công nghệ thông tin rõ ràng và thực chiến.</p>
+                  </div>
+                </div>
+
+                <div class="tms-feature-card">
+                  <div class="tms-feature-icon">
+                    <i data-lucide="user-check" aria-hidden="true"></i>
+                  </div>
+                  <div class="tms-feature-text">
+                    <h4>Không cần tạo tài khoản</h4>
+                    <p>Chỉ cần 30 giây để hoàn tất gửi thông tin tư vấn nhanh chóng.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="font-size: 12px; color: rgba(255, 255, 255, 0.75);">
+              Trung tâm đào tạo Công nghệ Thông tin ICTU
+            </div>
+          </div>
+
+          <!-- Cột phải: Form Đăng ký tư vấn (S2-08) -->
+          <div class="tms-login-form-panel" style="padding: 48px 44px;">
+            <div>
+              <p class="tms-eyebrow">ĐĂNG KÝ TƯ VẤN</p>
+              <h2 class="tms-form-title" style="font-size: 28px;">Bạn quan tâm khoá học nào?</h2>
+              <p class="tms-form-subtitle">Điền thông tin bên dưới để được kết nối cùng chuyên viên tư vấn.</p>
+
+              <form id="public-lead-form">
+                <div class="tms-form-group">
+                  <label for="lead-name" class="tms-form-label">Họ và tên *</label>
+                  <div style="position: relative;">
+                    <i data-lucide="user" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; color: var(--color-text-muted); pointer-events: none;"></i>
+                    <input
+                      type="text"
+                      id="lead-name"
+                      required
+                      placeholder="Nguyễn Văn A"
+                      class="tms-input"
+                      style="padding-left: 42px;"
+                    />
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                  <div class="tms-form-group">
+                    <label for="lead-phone" class="tms-form-label">Số điện thoại *</label>
+                    <div style="position: relative;">
+                      <i data-lucide="phone" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; color: var(--color-text-muted); pointer-events: none;"></i>
+                      <input
+                        type="tel"
+                        id="lead-phone"
+                        required
+                        placeholder="09xx xxx xxx"
+                        class="tms-input"
+                        style="padding-left: 42px;"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="tms-form-group">
+                    <label for="lead-email" class="tms-form-label">Email (không bắt buộc)</label>
+                    <div style="position: relative;">
+                      <i data-lucide="mail" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 17px; height: 17px; color: var(--color-text-muted); pointer-events: none;"></i>
+                      <input
+                        type="email"
+                        id="lead-email"
+                        placeholder="ban@email.com"
+                        class="tms-input"
+                        style="padding-left: 42px;"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="tms-form-group">
+                  <label for="lead-program" class="tms-form-label">Chương trình quan tâm *</label>
+                  <select id="lead-program" class="tms-select" required style="width: 100%;">
+                    <option value="" disabled selected>Chọn chương trình đào tạo</option>
+                    <option value="WEB-FS">WEB-FS · Lập trình web Full-stack (240 giờ)</option>
+                    <option value="DATA-01">DATA-01 · Phân tích dữ liệu chuyên nghiệp (180 giờ)</option>
+                    <option value="UIUX-01">UIUX-01 · Thiết kế đồ họa & UI/UX (150 giờ)</option>
+                    <option value="JAVA-BE">JAVA-BE · Lập trình Java Backend chuyên sâu (200 giờ)</option>
+                    <option value="TEST-01">TEST-01 · Kiểm thử phần mềm QA/QC (120 giờ)</option>
+                  </select>
+                </div>
+
+                <div class="tms-form-group">
+                  <label for="lead-notes" class="tms-form-label">Lời nhắn (không bắt buộc)</label>
+                  <textarea
+                    id="lead-notes"
+                    rows="3"
+                    class="tms-input"
+                    style="height: auto; padding: 10px 14px;"
+                    placeholder="Ví dụ: mình muốn học buổi tối, bắt đầu từ tháng 11..."
+                  ></textarea>
+                </div>
+
+                <!-- Chống spam captcha mô phỏng -->
+                <div style="display: flex; align-items: center; justify-content: space-between; background: var(--color-bg-subtle); border: 1px solid var(--color-border); border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 20px;">
+                  <label class="tms-checkbox-label">
+                    <input type="checkbox" id="lead-captcha" required />
+                    <span style="font-weight: 500; font-size: 13.5px;">Tôi không phải người máy</span>
+                  </label>
+                  <div style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--color-text-muted);">
+                    <i data-lucide="shield-check" style="width: 18px; height: 18px; color: var(--color-blue-primary);"></i>
+                    <span>reCAPTCHA</span>
+                  </div>
+                </div>
+
+                <button type="submit" class="tms-btn-primary" style="width: 100%; height: 48px; font-size: 15px;">
+                  Gửi đăng ký
+                </button>
+              </form>
+            </div>
+
+            <p style="font-size: 12px; color: var(--color-text-muted); text-align: center; margin-top: 18px;">
+              Thông tin của bạn chỉ dùng để trung tâm liên hệ tư vấn.
             </p>
           </div>
-          <div class="home-overview-actions">
-            <div class="home-date-indicator">
-              <i data-lucide="calendar-days" aria-hidden="true"></i>
-              <span data-home-date></span>
-            </div>
-          </div>
-        </div>
-
-        <div class="home-stats" aria-label="Chỉ số đào tạo">
-          <article class="app-stat">
-            <span class="app-stat-icon"
-              ><i data-lucide="book-open-check" aria-hidden="true"></i
-            ></span>
-            <div>
-              <p class="app-stat-label">Lớp đang vận hành</p>
-              <p class="app-stat-value">18</p>
-            </div>
-            <span class="home-stat-trend">+2 tháng này</span>
-          </article>
-          <article class="app-stat">
-            <span class="app-stat-icon"
-              ><i data-lucide="users-round" aria-hidden="true"></i
-            ></span>
-            <div>
-              <p class="app-stat-label">Học viên đang học</p>
-              <p class="app-stat-value">426</p>
-            </div>
-            <span class="home-stat-trend">7 vai trò</span>
-          </article>
-          <article class="app-stat">
-            <span class="app-stat-icon"
-              ><i data-lucide="calendar-check-2" aria-hidden="true"></i
-            ></span>
-            <div>
-              <p class="app-stat-label">Buổi học hôm nay</p>
-              <p class="app-stat-value">32</p>
-            </div>
-            <span class="home-stat-trend">4 cơ sở</span>
-          </article>
-          <article class="app-stat">
-            <span class="app-stat-icon"
-              ><i data-lucide="clipboard-check" aria-hidden="true"></i
-            ></span>
-            <div>
-              <p class="app-stat-label">Việc cần xử lý</p>
-              <p class="app-stat-value">12</p>
-            </div>
-            <span class="home-stat-trend is-pending">Cần theo dõi</span>
-          </article>
         </div>
       </section>
 
-      <div class="home-workspace">
-        <section
-          id="today-schedule"
-          class="app-card home-schedule"
-          aria-labelledby="schedule-title"
-        >
-          <div class="app-card-header">
+      <!-- Section: Khám phá hệ thống 8 vai trò (Demo Switcher) -->
+      <section id="vai-tro-demo" style="margin-top: 48px;">
+        <div style="text-align: center; margin-bottom: 28px;">
+          <p class="tms-eyebrow">KHÁM PHÁ HỆ THỐNG</p>
+          <h2 style="font-size: 28px; font-weight: 800; color: var(--color-navy-title);">
+            Trải nghiệm phân quyền 8 vai trò nghiệp vụ
+          </h2>
+          <p style="color: var(--color-text-secondary); font-size: 14px; margin-top: 6px;">
+            Bấm chọn bất kỳ vai trò nào bên dưới để truy cập trực tiếp vào giao diện và phân quyền tương ứng:
+          </p>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px;">
+          <!-- Admin -->
+          <a href="admin.html" class="tms-stat-card" style="text-decoration: none; display: flex; flex-direction: column; justify-content: space-between;">
             <div>
-              <h2 id="schedule-title" class="app-card-title">
-                <i data-lucide="calendar-clock" aria-hidden="true"></i>Lịch đào
-                tạo hôm nay
-              </h2>
-              <p class="app-card-subtitle">
-                Các lớp đang diễn ra và sắp bắt đầu
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <span class="tms-badge tms-badge-blue">Admin</span>
+                <i data-lucide="shield" style="width: 20px; height: 20px; color: var(--color-blue-primary);"></i>
+              </div>
+              <h3 style="font-size: 16px; font-weight: 700; color: var(--color-navy-title); margin-bottom: 4px;">Quản trị hệ thống</h3>
+              <p style="font-size: 13px; color: var(--color-text-secondary); line-height: 1.4;">
+                Quản lý 300 tài khoản, gán vai trò, khóa tài khoản và ma trận 12 module.
               </p>
             </div>
-            <a href="login.html" data-nav="login" class="home-text-link"
-              >Xem lịch đầy đủ</a
-            >
-          </div>
-          <div class="app-table-wrap">
-            <table class="app-table home-schedule-table">
-              <thead>
-                <tr>
-                  <th>Thời gian</th>
-                  <th>Lớp học</th>
-                  <th>Giảng viên</th>
-                  <th>Phòng</th>
-                  <th>Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>08:30</td>
-                  <td>
-                    <strong>IELTS Foundation</strong
-                    ><span class="home-table-subtitle"
-                      >IEL-F03 · 16 học viên</span
-                    >
-                  </td>
-                  <td>Trần Minh Anh</td>
-                  <td>A-204</td>
-                  <td><span class="app-badge is-success">Đang học</span></td>
-                </tr>
-                <tr>
-                  <td>09:00</td>
-                  <td>
-                    <strong>Web Front-end 02</strong
-                    ><span class="home-table-subtitle"
-                      >WEB-02 · 18 học viên</span
-                    >
-                  </td>
-                  <td>Nguyễn Hoàng Nam</td>
-                  <td>B-105</td>
-                  <td><span class="app-badge is-info">Sắp bắt đầu</span></td>
-                </tr>
-                <tr>
-                  <td>13:30</td>
-                  <td>
-                    <strong>Tiếng Anh giao tiếp</strong
-                    ><span class="home-table-subtitle"
-                      >ENG-C12 · 12 học viên</span
-                    >
-                  </td>
-                  <td>Lê Thu Hà</td>
-                  <td>A-301</td>
-                  <td><span class="app-badge is-info">Sắp bắt đầu</span></td>
-                </tr>
-                <tr>
-                  <td>18:00</td>
-                  <td>
-                    <strong>Phân tích dữ liệu</strong
-                    ><span class="home-table-subtitle"
-                      >DAT-01 · 14 học viên</span
-                    >
-                  </td>
-                  <td>Phạm Quốc Bảo</td>
-                  <td>Online</td>
-                  <td><span class="app-badge">Chưa bắt đầu</span></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </section>
+            <div style="margin-top: 16px; font-size: 13px; font-weight: 700; color: var(--color-blue-primary); display: flex; align-items: center; gap: 4px;">
+              Truy cập Quản trị <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+            </div>
+          </a>
 
-        <aside class="home-side-stack">
-          <section
-            id="work-queue"
-            class="app-card home-queue"
-            aria-labelledby="queue-title"
-          >
-            <div class="app-card-header">
-              <div>
-                <h2 id="queue-title" class="app-card-title">
-                  <i data-lucide="list-todo" aria-hidden="true"></i>Cần xử lý
-                </h2>
-                <p class="app-card-subtitle">Tổng hợp từ các bộ phận</p>
+          <!-- Training Manager -->
+          <a href="training-manager.html" class="tms-stat-card" style="text-decoration: none; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <span class="tms-badge" style="background: #F0FDF4; color: #15803D;">Training Mgr</span>
+                <i data-lucide="book-open" style="width: 20px; height: 20px; color: #15803D;"></i>
               </div>
+              <h3 style="font-size: 16px; font-weight: 700; color: var(--color-navy-title); margin-bottom: 4px;">Quản lý đào tạo</h3>
+              <p style="font-size: 13px; color: var(--color-text-secondary); line-height: 1.4;">
+                Khai báo chương trình, môn học, mở lớp, sinh lịch không trùng và duyệt bảo lưu.
+              </p>
             </div>
-            <a href="login.html" data-nav="login" class="home-queue-item">
-              <span class="home-queue-icon is-blue"
-                ><i data-lucide="file-check-2" aria-hidden="true"></i
-              ></span>
-              <span class="home-queue-copy"
-                ><strong>Bài tập chờ chấm</strong
-                ><small>Giảng viên · Học vụ</small></span
-              >
-              <span class="home-queue-count">12</span>
-            </a>
-            <a href="login.html" data-nav="login" class="home-queue-item">
-              <span class="home-queue-icon is-amber"
-                ><i data-lucide="user-round-check" aria-hidden="true"></i
-              ></span>
-              <span class="home-queue-copy"
-                ><strong>Yêu cầu bảo lưu</strong
-                ><small>Quản lý đào tạo</small></span
-              >
-              <span class="home-queue-count">3</span>
-            </a>
-            <a href="login.html" data-nav="login" class="home-queue-item">
-              <span class="home-queue-icon is-green"
-                ><i data-lucide="phone-call" aria-hidden="true"></i
-              ></span>
-              <span class="home-queue-copy"
-                ><strong>Lead cần liên hệ</strong
-                ><small>Tư vấn tuyển sinh</small></span
-              >
-              <span class="home-queue-count">8</span>
-            </a>
-            <a href="login.html" data-nav="login" class="home-queue-link"
-              >Mở danh sách công việc<i
-                data-lucide="arrow-right"
-                aria-hidden="true"
-              ></i
-            ></a>
-          </section>
+            <div style="margin-top: 16px; font-size: 13px; font-weight: 700; color: #15803D; display: flex; align-items: center; gap: 4px;">
+              Truy cập Đào tạo <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+            </div>
+          </a>
 
-          <section
-            id="role-access"
-            class="app-card home-access"
-            aria-labelledby="access-title"
-          >
-            <div class="app-card-header">
-              <div>
-                <h2 id="access-title" class="app-card-title">
-                  <i data-lucide="panels-top-left" aria-hidden="true"></i>Không
-                  gian làm việc
-                </h2>
-                <p class="app-card-subtitle">Truy cập theo vai trò của bạn</p>
+          <!-- Instructor -->
+          <a href="instructor.html" class="tms-stat-card" style="text-decoration: none; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <span class="tms-badge" style="background: #FEF3F2; color: #B42318;">Instructor</span>
+                <i data-lucide="edit-3" style="width: 20px; height: 20px; color: #B42318;"></i>
               </div>
+              <h3 style="font-size: 16px; font-weight: 700; color: var(--color-navy-title); margin-bottom: 4px;">Giảng viên</h3>
+              <p style="font-size: 13px; color: var(--color-text-secondary); line-height: 1.4;">
+                Điểm danh &lt;60s trên di động, giao bài tập, chấm điểm rubric và upload học liệu.
+              </p>
             </div>
-            <div class="home-role-list">
-              <span
-                ><i data-lucide="graduation-cap" aria-hidden="true"></i>Học
-                viên</span
-              >
-              <span
-                ><i data-lucide="presentation" aria-hidden="true"></i>Giảng viên
-                & trợ giảng</span
-              >
-              <span
-                ><i data-lucide="briefcase-business" aria-hidden="true"></i>Vận
-                hành & quản trị</span
-              >
+            <div style="margin-top: 16px; font-size: 13px; font-weight: 700; color: #B42318; display: flex; align-items: center; gap: 4px;">
+              Truy cập Giảng dạy <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
             </div>
-            <a
-              href="login.html"
-              data-nav="login"
-              class="app-btn app-btn-outline home-access-button"
-              >Đăng nhập vào EduManager<i
-                data-lucide="arrow-right"
-                aria-hidden="true"
-              ></i
-            ></a>
-          </section>
-        </aside>
-      </div>
+          </a>
+
+          <!-- Student -->
+          <a href="student.html" class="tms-stat-card" style="text-decoration: none; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <span class="tms-badge" style="background: #EFF6FF; color: #0974F1;">Student</span>
+                <i data-lucide="graduation-cap" style="width: 20px; height: 20px; color: #0974F1;"></i>
+              </div>
+              <h3 style="font-size: 16px; font-weight: 700; color: var(--color-navy-title); margin-bottom: 4px;">Học viên</h3>
+              <p style="font-size: 13px; color: var(--color-text-secondary); line-height: 1.4;">
+                Xem lịch học, nộp bài nhiều version, xem bảng điểm và tra cứu công nợ.
+              </p>
+            </div>
+            <div style="margin-top: 16px; font-size: 13px; font-weight: 700; color: #0974F1; display: flex; align-items: center; gap: 4px;">
+              Truy cập Học viên <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+            </div>
+          </a>
+
+          <!-- Admissions -->
+          <a href="admissions.html" class="tms-stat-card" style="text-decoration: none; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <span class="tms-badge" style="background: #FFF8EB; color: #B54708;">Admissions</span>
+                <i data-lucide="filter" style="width: 20px; height: 20px; color: #B54708;"></i>
+              </div>
+              <h3 style="font-size: 16px; font-weight: 700; color: var(--color-navy-title); margin-bottom: 4px;">Tư vấn tuyển sinh</h3>
+              <p style="font-size: 13px; color: var(--color-text-secondary); line-height: 1.4;">
+                Phễu Kanban chăm sóc lead, đặt lịch nhắc hẹn và chuyển đổi nhập học.
+              </p>
+            </div>
+            <div style="margin-top: 16px; font-size: 13px; font-weight: 700; color: #B54708; display: flex; align-items: center; gap: 4px;">
+              Truy cập Tuyển sinh <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+            </div>
+          </a>
+
+          <!-- Accountant -->
+          <a href="accountant.html" class="tms-stat-card" style="text-decoration: none; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                <span class="tms-badge" style="background: #FAF5FF; color: #7E22CE;">Accountant</span>
+                <i data-lucide="credit-card" style="width: 20px; height: 20px; color: #7E22CE;"></i>
+              </div>
+              <h3 style="font-size: 16px; font-weight: 700; color: var(--color-navy-title); margin-bottom: 4px;">Kế toán học phí</h3>
+              <p style="font-size: 13px; color: var(--color-text-secondary); line-height: 1.4;">
+                Biểu phí theo khóa, ghi nhận phiếu thu, in biên lai PDF và theo dõi công nợ.
+              </p>
+            </div>
+            <div style="margin-top: 16px; font-size: 13px; font-weight: 700; color: #7E22CE; display: flex; align-items: center; gap: 4px;">
+              Truy cập Kế toán <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+            </div>
+          </a>
+        </div>
+      </section>
     </main>
 
-    <footer class="guest-footer">
-      © 2026 EduManager · Hệ thống quản lý đào tạo
+    <!-- Modal Cảm ơn sau khi gửi đăng ký tư vấn (UI_UX/S2-08_Đăng ký tư vấn/Cảm ơn.png) -->
+    <div id="thank-you-modal" class="tms-modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="thank-title">
+      <div class="tms-modal-card" style="text-align: center; max-width: 440px;">
+        <div style="width: 60px; height: 60px; border-radius: var(--radius-full); background: var(--bg-success); color: var(--color-success); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 18px;">
+          <i data-lucide="check" style="width: 30px; height: 30px;"></i>
+        </div>
+        <h3 id="thank-title" style="font-size: 22px; font-weight: 800; color: var(--color-navy-title); margin-bottom: 8px;">
+          Đã nhận thông tin đăng ký!
+        </h3>
+        <p id="thank-desc" style="font-size: 14px; color: var(--color-text-secondary); line-height: 1.5; margin-bottom: 24px;">
+          Cảm ơn bạn đã để lại thông tin. Chuyên viên tư vấn của TMS sẽ liên hệ lại qua số điện thoại của bạn trong vòng 24 giờ.
+        </p>
+        <button type="button" id="close-thank-modal" class="tms-btn-primary" style="width: 100%;">
+          Đồng ý
+        </button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer style="background: #FFFFFF; border-top: 1px solid var(--color-border); padding: 24px 36px; text-align: center; font-size: 13px; color: var(--color-text-secondary); margin-top: auto;">
+      <div style="max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: gap: 12px;">
+        <div class="tms-brand" style="font-size: 16px;">
+          <div class="tms-logo-box" style="width: 28px; height: 28px; border-radius: 8px;">
+            <i data-lucide="graduation-cap" style="width: 16px; height: 16px;"></i>
+          </div>
+          <span>TMS.</span>
+        </div>
+        <p>© 2026 TMS Platform · Dự án Hệ thống Quản lý Đào tạo Nội bộ</p>
+        <div style="display: flex; gap: 16px;">
+          <a href="login.html" style="font-weight: 600;">Đăng nhập</a>
+          <a href="#tu-van">Đăng ký học</a>
+        </div>
+      </div>
     </footer>
 
     <script type="module" src="/app.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        if (window.lucide) window.lucide.createIcons();
+
+        // Xử lý gửi biểu mẫu tư vấn công khai (S2-08)
+        const leadForm = document.querySelector("#public-lead-form");
+        const thankModal = document.querySelector("#thank-you-modal");
+        const closeThankBtn = document.querySelector("#close-thank-modal");
+
+        if (leadForm) {
+          leadForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const name = document.querySelector("#lead-name").value.trim();
+            const phone = document.querySelector("#lead-phone").value.trim();
+            const prog = document.querySelector("#lead-program").value;
+
+            if (!name || !phone || !prog) {
+              alert("Vui lòng điền đủ họ tên, số điện thoại và chương trình quan tâm.");
+              return;
+            }
+
+            // Hiển thị modal cảm ơn
+            document.querySelector("#thank-desc").innerHTML = 
+              `Cảm ơn <strong>${name}</strong> đã để lại thông tin. Chuyên viên tư vấn của TMS sẽ liên hệ lại qua số điện thoại <strong>${phone}</strong> trong vòng 24 giờ.`;
+            thankModal.classList.remove("hidden");
+            leadForm.reset();
+            if (window.lucide) window.lucide.createIcons();
+          });
+        }
+
+        if (closeThankBtn && thankModal) {
+          closeThankBtn.addEventListener("click", () => {
+            thankModal.classList.add("hidden");
+          });
+        }
+      });
+    </script>
   </body>
 </html>
