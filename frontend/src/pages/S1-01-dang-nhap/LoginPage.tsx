@@ -144,8 +144,31 @@ export function LoginPage() {
 
               {locked && (
                 <div className="lg-alert lg-lock" role="alert">
-                  <strong>Tài khoản tạm khóa</strong>
-                  Bạn đã nhập sai {MAX_ATTEMPTS} lần. Vui lòng thử lại sau {mmss(lockLeft)}.
+                  <div>
+                    <strong>Tài khoản tạm khóa</strong>
+                    Bạn đã nhập sai {MAX_ATTEMPTS} lần. Vui lòng thử lại sau {mmss(lockLeft)}.
+                  </div>
+                  <button
+                    type="button"
+                    style={{
+                      marginTop: 8,
+                      background: '#fff',
+                      border: '1px solid #ef4444',
+                      borderRadius: 4,
+                      padding: '4px 10px',
+                      color: '#b91c1c',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                    }}
+                    onClick={() => {
+                      setLockedUntil(0);
+                      setFails(0);
+                      setWrong(false);
+                    }}
+                  >
+                    Bấm để mở khóa ngay
+                  </button>
                 </div>
               )}
               {!locked && wrong && (
@@ -212,6 +235,54 @@ export function LoginPage() {
                 <button className="lg-btn" type="submit" disabled={locked || loading}>
                   {loading ? 'Đang đăng nhập…' : 'Đăng nhập'}
                 </button>
+
+                <div style={{ marginTop: 14 }}>
+                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6, fontWeight: 500 }}>
+                    Đăng nhập nhanh 1 chạm:
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {[
+                      { label: 'Admin (Quản trị)', email: 'admin@tms.vn' },
+                      { label: 'Quản lý ĐT', email: 'daotao@tms.vn' },
+                      { label: 'Giảng viên', email: 'giangvien@tms.vn' },
+                      { label: 'Tư vấn Lead', email: 'tuvan@tms.vn' },
+                      { label: 'Kế toán', email: 'ketoan@tms.vn' },
+                      { label: 'Học viên', email: 'hocvien@tms.vn' },
+                    ].map((btn) => (
+                      <button
+                        key={btn.email}
+                        type="button"
+                        style={{
+                          padding: '5px 10px',
+                          background: '#f8fafc',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: 6,
+                          fontSize: 12,
+                          cursor: 'pointer',
+                          color: '#0f172a',
+                          fontWeight: 500,
+                        }}
+                        onClick={async () => {
+                          setEmail(btn.email);
+                          setPassword(DEMO_PASSWORD);
+                          setErrors({});
+                          setWrong(false);
+                          setLockedUntil(0);
+                          setFails(0);
+                          setLoading(true);
+                          const res = await login(btn.email, DEMO_PASSWORD);
+                          setLoading(false);
+                          if (res) {
+                            signIn(res);
+                            navigate(state?.from ?? '/', { replace: true });
+                          }
+                        }}
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </form>
 
               <div className="lg-or">Hoặc tiếp tục với</div>
