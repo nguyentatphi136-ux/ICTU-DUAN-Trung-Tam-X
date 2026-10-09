@@ -1,5 +1,4 @@
 {
   "liveServer.settings.port": 5501,
-  "claudeCode.useTerminal": true,
-  "java.configuration.updateBuildConfiguration": "automatic"
+  "claudeCode.useTerminal": true
 }
