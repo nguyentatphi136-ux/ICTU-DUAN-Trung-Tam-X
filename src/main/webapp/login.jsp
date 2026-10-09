@@ -82,13 +82,30 @@
         </form>
 
         <div class="demo-box">
-            <strong>Tài khoản thử nghiệm:</strong><br>
-            • Quản trị viên: <code>admin@edumanager.vn</code> / <code>123456</code><br>
-            • Giảng viên: <code>giangvien@edumanager.vn</code> / <code>123456</code><br>
-            • Học viên: <code>hocvien@edumanager.vn</code> / <code>123456</code>
+            <strong style="display:block; margin-bottom:8px;">Chọn nhanh tài khoản thử nghiệm:</strong>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+                <button type="button" class="btn-demo" onclick="fillLogin('admin@edumanager.vn', '123456')">Admin</button>
+                <button type="button" class="btn-demo" onclick="fillLogin('giangvien@edumanager.vn', '123456')">Giảng viên</button>
+                <button type="button" class="btn-demo" onclick="fillLogin('ketoan@edumanager.vn', '123456')">Kế toán</button>
+                <button type="button" class="btn-demo" onclick="fillLogin('daotao@edumanager.vn', '123456')">Quản lý ĐT</button>
+                <button type="button" class="btn-demo" onclick="fillLogin('hocvien@edumanager.vn', '123456')">Học viên</button>
+            </div>
+            <span style="font-size: 11px; color: #64748b;">Mật khẩu chung: <code>123456</code> hoặc <code>Admin@123</code></span>
         </div>
     </div>
 </div>
+
+<style>
+    .btn-demo { background: #e2e8f0; border: none; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; color: #1e293b; cursor: pointer; transition: background 0.15s; }
+    .btn-demo:hover { background: #cbd5e1; }
+</style>
+
+<script>
+    function fillLogin(email, pass) {
+        document.getElementById('email').value = email;
+        document.getElementById('password').value = pass;
+    }
+</script>
 
 </body>
 </html>

@@ -185,6 +185,21 @@ const DEMO_ACCOUNTS = [
 ];
 
 const SESSION_KEY = "edumanager-session";
+const LOGIN_FORM_KEY = "edumanager-login-form";
+const AUTH_TOKEN_KEY = "edumanager-auth-token";
+const ROLE_REVOCATION_KEY = "edumanager-role-revocations";
+const SESSION_TIMEOUT_MS = 60 * 60 * 1000;
+
+const getSessionData = () => {
+  try {
+    const data = JSON.parse(sessionStorage.getItem(SESSION_KEY) ?? "null");
+    if (!data) return null;
+
+    if (Number(data.expiresAt) && Date.now() > Number(data.expiresAt)) {
+      sessionStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(AUTH_TOKEN_KEY);
+      return null;
+    }
 
     return data;
   } catch {
@@ -352,10 +367,19 @@ const saveLoginFormState = (email = "", password = "") => {
     LOGIN_FORM_KEY,
     JSON.stringify({ email: email.trim(), password: password.trim() }),
   );
+};
 
-const getCurrentUser = () => {
+const restoreLoginFormState = () => {
+  const loginFormElement = document.querySelector("#login-form");
+  if (!loginFormElement) return;
+
   try {
-    return JSON.parse(sessionStorage.getItem(SESSION_KEY));
+    const saved = JSON.parse(localStorage.getItem(LOGIN_FORM_KEY) ?? "{}");
+    const emailInput = document.querySelector("#email");
+    const passwordInput = document.querySelector("#password");
+
+    if (emailInput && saved.email) emailInput.value = saved.email;
+    if (passwordInput && saved.password) passwordInput.value = saved.password;
   } catch {
     localStorage.removeItem(LOGIN_FORM_KEY);
   }
@@ -778,12 +802,54 @@ if (sidebar && currentUser && ROLES[pageRole]) {
   if (window.lucide) window.lucide.createIcons();
 
   const navLinks = sidebar.querySelectorAll(".app-nav a");
+
+  const updateNavForHash = (hash) => {
+    if (!hash) return;
+    navLinks.forEach((item) => {
+      const match = item.getAttribute("href") === hash;
+      item.classList.toggle("is-active", match);
+      if (match) {
+        const titleEl = document.querySelector("#user-display-name-header");
+        const label = item.querySelector("span")?.textContent.trim();
+        if (titleEl && label) titleEl.textContent = label;
+      }
+    });
+  };
+
   navLinks.forEach((link) => {
-    link.addEventListener("click", () => {
-      navLinks.forEach((item) => item.classList.remove("is-active"));
-      link.classList.add("is-active");
+    link.addEventListener("click", (e) => {
+      const href = link.getAttribute("href");
+      if (href && href.startsWith("#")) {
+        const target = document.querySelector(href);
+        if (target) {
+          e.preventDefault();
+          history.pushState(null, "", href);
+          updateNavForHash(href);
+          const topOffset = 75;
+          const elementPosition = target.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - topOffset;
+          window.scrollTo({ top: Math.max(0, offsetPosition), behavior: "smooth" });
+        }
+      }
       document.body.classList.remove("sidebar-open");
     });
+  });
+
+  if (window.location.hash) {
+    updateNavForHash(window.location.hash);
+    setTimeout(() => {
+      const target = document.querySelector(window.location.hash);
+      if (target) {
+        const topOffset = 75;
+        const elementPosition = target.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - topOffset;
+        window.scrollTo({ top: Math.max(0, offsetPosition), behavior: "smooth" });
+      }
+    }, 150);
+  }
+
+  window.addEventListener("hashchange", () => {
+    updateNavForHash(window.location.hash);
   });
 
   // Tô sáng mục menu theo phần đang hiển thị khi cuộn trang.
@@ -795,15 +861,18 @@ if (sidebar && currentUser && ROLES[pageRole]) {
       entries
         .filter((entry) => entry.isIntersecting)
         .forEach((entry) => {
-          navLinks.forEach((link) =>
-            link.classList.toggle(
-              "is-active",
-              link.getAttribute("href") === `#${entry.target.id}`,
-            ),
-          );
+          navLinks.forEach((link) => {
+            const isTarget = link.getAttribute("href") === `#${entry.target.id}`;
+            link.classList.toggle("is-active", isTarget);
+            if (isTarget) {
+              const titleEl = document.querySelector("#user-display-name-header");
+              const label = link.querySelector("span")?.textContent.trim();
+              if (titleEl && label) titleEl.textContent = label;
+            }
+          });
         });
     },
-    { rootMargin: "-30% 0px -60% 0px" },
+    { rootMargin: "-20% 0px -60% 0px" },
   );
   sections.forEach((section) => observer.observe(section));
 }
@@ -1003,6 +1072,21 @@ const setFieldError = (input, errorElement, message) => {
 // ---------------------------------------------------------------------
 const emailInput = document.querySelector("#email");
 const emailError = document.querySelector("#email-error");
+
+const VALID_ROLE_ALIASES = new Set([
+  "admin", "daotao", "quanlydaotao", "training",
+  "tuvan", "tuyensinh", "admissions",
+  "giangvien", "instructor",
+  "trogiang", "ta",
+  "ketoan", "accountant",
+  "hocvien", "student",
+  ...DEMO_ACCOUNTS.flatMap((acc) => [
+    acc.email.toLowerCase(),
+    acc.email.split("@")[0].toLowerCase(),
+    ...(acc.aliases || []).map((a) => a.toLowerCase()),
+    ...(acc.aliases || []).map((a) => a.split("@")[0].toLowerCase()),
+  ]),
+]);
 
 const validateEmail = () => {
   const value = emailInput.value.trim().toLowerCase();
@@ -2806,6 +2890,9 @@ if (accountTable) {
   let currentStatus = "ALL";
   let currentPage = 1;
   const PAGE_SIZE = 20;
+  let editingUserEmail = null;
+  let editSelectedRoles = [];
+  let createSelectedRoles = ["instructor"];
 
   // Lấy toàn bộ danh sách tài khoản (SEED_300 + người dùng mới tạo/sửa)
   const getAllAccounts = () => {
@@ -2865,6 +2952,174 @@ if (accountTable) {
     }
     return [];
   };
+
+  // -------------------------------------------------------------------
+  // Multi-role tag chips logic cho Create Drawer (Screenshot 2)
+  // -------------------------------------------------------------------
+  const renderCreateRoleChips = () => {
+    const chipsBox = document.querySelector("#create-selected-role-chips");
+    const dropdownMenu = document.querySelector("#create-role-dropdown-menu");
+    const hiddenSelect = document.querySelector("#new-user-role");
+
+    if (chipsBox) {
+      chipsBox.innerHTML = createSelectedRoles
+        .map((rId) => {
+          const rObj = ALL_SYSTEM_ROLES.find((x) => x.id === rId) || { name: rId };
+          return `
+            <span class="tms-role-chip">
+              <span>${escapeHtml(rObj.name)}</span>
+              <button type="button" class="tms-role-chip-remove" data-create-remove-role="${escapeHtml(rId)}" title="Bỏ vai trò">✕</button>
+            </span>
+          `;
+        })
+        .join("");
+    }
+
+    if (hiddenSelect && createSelectedRoles.length > 0) {
+      hiddenSelect.value = createSelectedRoles[0];
+    }
+
+    if (dropdownMenu) {
+      const available = ALL_SYSTEM_ROLES.filter((r) => !createSelectedRoles.includes(r.id));
+      if (available.length === 0) {
+        dropdownMenu.innerHTML = '<div class="p-2 text-xs text-slate-400 text-center">Đã chọn tất cả vai trò</div>';
+      } else {
+        dropdownMenu.innerHTML = available
+          .map((r) => `
+            <button type="button" class="tms-role-dropdown-item" data-create-add-role="${escapeHtml(r.id)}">
+              <span>${escapeHtml(r.name)}</span>
+            </button>
+          `)
+          .join("");
+      }
+    }
+  };
+
+  const createToggleRoleBtn = document.querySelector("#create-toggle-role-dropdown");
+  const createRoleDropdown = document.querySelector("#create-role-dropdown-menu");
+  if (createToggleRoleBtn && createRoleDropdown) {
+    createToggleRoleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      createRoleDropdown.classList.toggle("hidden");
+    });
+  }
+
+  const createChipsContainer = document.querySelector("#create-role-chips-container");
+  if (createChipsContainer) {
+    createChipsContainer.addEventListener("click", (e) => {
+      const addBtn = e.target.closest("[data-create-add-role]");
+      if (addBtn) {
+        const rId = addBtn.dataset.createAddRole;
+        if (!createSelectedRoles.includes(rId)) {
+          createSelectedRoles.push(rId);
+          renderCreateRoleChips();
+        }
+        createRoleDropdown?.classList.add("hidden");
+        return;
+      }
+
+      const removeBtn = e.target.closest("[data-create-remove-role]");
+      if (removeBtn) {
+        const rId = removeBtn.dataset.createRemoveRole;
+        if (createSelectedRoles.length > 1) {
+          createSelectedRoles = createSelectedRoles.filter((x) => x !== rId);
+          renderCreateRoleChips();
+        } else {
+          if (typeof showToast === "function") showToast("Tài khoản cần có ít nhất một vai trò.", "warning");
+        }
+      }
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // Multi-role tag chips logic cho Edit Drawer (Screenshot 3)
+  // -------------------------------------------------------------------
+  const renderEditRoleChips = () => {
+    const chipsBox = document.querySelector("#edit-selected-role-chips");
+    const dropdownMenu = document.querySelector("#edit-role-dropdown-menu");
+
+    if (chipsBox) {
+      chipsBox.innerHTML = editSelectedRoles
+        .map((rId) => {
+          const rObj = ALL_SYSTEM_ROLES.find((x) => x.id === rId) || { name: rId };
+          return `
+            <span class="tms-role-chip">
+              <span>${escapeHtml(rObj.name)}</span>
+              <button type="button" class="tms-role-chip-remove" data-edit-remove-role="${escapeHtml(rId)}" title="Bỏ vai trò">✕</button>
+            </span>
+          `;
+        })
+        .join("");
+    }
+
+    if (dropdownMenu) {
+      const available = ALL_SYSTEM_ROLES.filter((r) => !editSelectedRoles.includes(r.id));
+      if (available.length === 0) {
+        dropdownMenu.innerHTML = '<div class="p-2 text-xs text-slate-400 text-center">Đã chọn tất cả vai trò</div>';
+      } else {
+        dropdownMenu.innerHTML = available
+          .map((r) => `
+            <button type="button" class="tms-role-dropdown-item" data-edit-add-role="${escapeHtml(r.id)}">
+              <span>${escapeHtml(r.name)}</span>
+            </button>
+          `)
+          .join("");
+      }
+    }
+  };
+
+  const editToggleRoleBtn = document.querySelector("#edit-toggle-role-dropdown");
+  const editRoleDropdown = document.querySelector("#edit-role-dropdown-menu");
+  if (editToggleRoleBtn && editRoleDropdown) {
+    editToggleRoleBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      editRoleDropdown.classList.toggle("hidden");
+    });
+  }
+
+  const editChipsContainer = document.querySelector("#edit-role-chips-container");
+  if (editChipsContainer) {
+    editChipsContainer.addEventListener("click", (e) => {
+      const addBtn = e.target.closest("[data-edit-add-role]");
+      if (addBtn) {
+        const rId = addBtn.dataset.editAddRole;
+        if (!editSelectedRoles.includes(rId)) {
+          editSelectedRoles.push(rId);
+          renderEditRoleChips();
+        }
+        editRoleDropdown?.classList.add("hidden");
+        return;
+      }
+
+      const removeBtn = e.target.closest("[data-edit-remove-role]");
+      if (removeBtn) {
+        const rId = removeBtn.dataset.editRemoveRole;
+        // Chặn Admin tự thu hồi quyền quản trị của chính bản thân (S1-09 AC3)
+        if (editingUserEmail && editingUserEmail.toLowerCase() === (currentUser?.email || "").toLowerCase() && rId === "admin") {
+          if (typeof showToast === "function") {
+            showToast("Bạn không thể tự thu hồi vai trò Quản trị hệ thống của chính mình.", "error");
+          } else {
+            alert("Bạn không thể tự thu hồi vai trò Quản trị hệ thống của chính mình.");
+          }
+          return;
+        }
+
+        if (editSelectedRoles.length > 1) {
+          editSelectedRoles = editSelectedRoles.filter((x) => x !== rId);
+          renderEditRoleChips();
+        } else {
+          if (typeof showToast === "function") showToast("Tài khoản cần có ít nhất một vai trò.", "warning");
+        }
+      }
+    });
+  }
+
+  // Đóng dropdown khi click ra ngoài
+  document.addEventListener("click", () => {
+    createRoleDropdown?.classList.add("hidden");
+    editRoleDropdown?.classList.add("hidden");
+    document.querySelectorAll(".tms-action-menu").forEach((m) => m.classList.add("hidden"));
+  });
 
   const renderAccounts = () => {
     const all = getAllAccounts();
@@ -3476,6 +3731,188 @@ if (accountTable) {
 
     if (window.lucide) window.lucide.createIcons();
   };
+
+  const renderPreviewTable = (rowsToRender) => {
+    if (!importPreviewTbody) return;
+
+    if (rowsToRender.length === 0) {
+      importPreviewTbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Không có dòng nào phù hợp bộ lọc.</td></tr>`;
+      return;
+    }
+
+    const roleNameMap = {
+      student: "Học viên",
+      instructor: "Giảng viên",
+      ta: "Trợ giảng",
+      "training-manager": "Quản lý đào tạo",
+      admissions: "Tư vấn tuyển sinh",
+      accountant: "Kế toán",
+      admin: "Quản trị hệ thống",
+    };
+
+    importPreviewTbody.innerHTML = rowsToRender
+      .map((r) => {
+        const rowClass = r.isValid ? "preview-row-valid" : "preview-row-error";
+        const statusBadge = r.isValid
+          ? `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">✓ Hợp lệ</span>`
+          : `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">✗ Lỗi</span>`;
+
+        const errorNote = r.isValid
+          ? `<span class="text-emerald-700 font-medium">Sẵn sàng tạo tài khoản</span>`
+          : `<span class="text-rose-700 font-semibold">${escapeHtml(r.errors.join("; "))}</span>`;
+
+        return `
+          <tr class="${rowClass} border-b border-slate-100 hover:bg-slate-50/80 transition-colors" data-preview-valid="${r.isValid}">
+            <td class="p-2.5 text-center font-bold text-slate-500">${r.rowIndex}</td>
+            <td class="p-2.5 font-bold text-slate-900">${escapeHtml(r.fullName || "-")}</td>
+            <td class="p-2.5 font-mono text-slate-700">${escapeHtml(r.email || "-")}</td>
+            <td class="p-2.5 font-mono text-slate-700">${escapeHtml(r.phone || "-")}</td>
+            <td class="p-2.5 font-medium text-slate-800">${escapeHtml(roleNameMap[r.role] || r.role)}</td>
+            <td class="p-2.5 text-center">${statusBadge}</td>
+            <td class="p-2.5 text-xs leading-tight">${errorNote}</td>
+          </tr>
+        `;
+      })
+      .join("");
+
+    if (window.lucide) window.lucide.createIcons();
+  };
+
+  const setPreviewFilterActive = (activeBtn) => {
+    [filterPreviewAll, filterPreviewValid, filterPreviewError].forEach((btn) => {
+      if (!btn) return;
+      btn.className = btn === activeBtn
+        ? "px-2.5 py-1 rounded-md font-semibold bg-white text-slate-700 border border-slate-300 shadow-sm"
+        : "px-2.5 py-1 rounded-md font-semibold text-slate-600 hover:bg-white hover:text-slate-800";
+    });
+  };
+
+  if (filterPreviewAll) {
+    filterPreviewAll.addEventListener("click", () => {
+      setPreviewFilterActive(filterPreviewAll);
+      renderPreviewTable(evaluatedImportRows);
+    });
+  }
+  if (filterPreviewValid) {
+    filterPreviewValid.addEventListener("click", () => {
+      setPreviewFilterActive(filterPreviewValid);
+      renderPreviewTable(evaluatedImportRows.filter((r) => r.isValid));
+    });
+  }
+  if (filterPreviewError) {
+    filterPreviewError.addEventListener("click", () => {
+      setPreviewFilterActive(filterPreviewError);
+      renderPreviewTable(evaluatedImportRows.filter((r) => !r.isValid));
+    });
+  }
+
+  // Thực hiện nhập dữ liệu - Dòng lỗi bị bỏ qua, dòng hợp lệ vẫn được nhập (S2-01 AC3)
+  if (btnConfirmImportExcel) {
+    btnConfirmImportExcel.addEventListener("click", async () => {
+      const validRows = evaluatedImportRows.filter((r) => r.isValid);
+      const errorRows = evaluatedImportRows.filter((r) => !r.isValid);
+
+      if (validRows.length === 0) {
+        if (typeof showToast === "function") showToast("Không có dòng hợp lệ nào để nhập.", "warning");
+        return;
+      }
+
+      btnConfirmImportExcel.disabled = true;
+      btnConfirmImportExcel.innerHTML = `<span class="inline-block animate-spin mr-2">⏳</span> Đang nhập ${validRows.length} tài khoản...`;
+
+      // 1. Gửi lên endpoint API backend nếu có
+      try {
+        await fetch("/api/admin/users/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fileName: currentUploadedFileName || "danh_sach.xlsx",
+            rows: evaluatedImportRows,
+          }),
+        }).catch(() => null);
+      } catch (_) {}
+
+      // 2. Lưu các tài khoản hợp lệ vào localStorage (custom accounts)
+      const customAccounts = readStore("edumanager-custom-accounts") || [];
+      const newlyImported = [];
+
+      validRows.forEach((r) => {
+        const tempPass = "Edu@" + Math.random().toString(36).substring(2, 8) + "9";
+        const newAcc = {
+          fullName: r.fullName,
+          email: r.email,
+          phone: r.phone || "",
+          role: r.role,
+          roles: [r.role],
+          status: "ACTIVE",
+          password: tempPass,
+          passwords: [tempPass, "Admin@123", "Hocvien@123"],
+          isImported: true,
+          importedAt: new Date().toISOString(),
+        };
+
+        const existingIdx = customAccounts.findIndex((a) => (a.email || "").toLowerCase() === r.email.toLowerCase());
+        if (existingIdx >= 0) {
+          customAccounts[existingIdx] = { ...customAccounts[existingIdx], ...newAcc };
+        } else {
+          customAccounts.unshift(newAcc);
+        }
+        newlyImported.push(newAcc);
+      });
+
+      writeStore("edumanager-custom-accounts", customAccounts);
+      addAuditLog(`Nhập hàng loạt ${validRows.length} người dùng từ tệp ${currentUploadedFileName || "Excel"} (Bỏ qua ${errorRows.length} lỗi)`);
+
+      // 3. Chuyển sang View 3: Báo cáo tổng kết (S2-01 AC3)
+      importStepUpload?.classList.add("hidden");
+      importStepPreview?.classList.add("hidden");
+      importStepSummary?.classList.remove("hidden");
+      btnBackToUpload?.classList.add("hidden");
+      btnConfirmImportExcel?.classList.add("hidden");
+      btnFinishSummary?.classList.remove("hidden");
+
+      const batchCode = "IMP-" + Date.now();
+      if (importSummaryBatchLabel) {
+        importSummaryBatchLabel.textContent = `Mã đợt nhập: ${batchCode} · Tệp: ${currentUploadedFileName}`;
+      }
+      if (summaryTotalCount) summaryTotalCount.textContent = evaluatedImportRows.length;
+      if (summarySuccessCount) summarySuccessCount.textContent = validRows.length;
+      if (summaryErrorCount) summaryErrorCount.textContent = errorRows.length;
+
+      if (errorRows.length > 0 && summaryErrorDetailsBox && summaryErrorTbody) {
+        summaryErrorDetailsBox.classList.remove("hidden");
+        if (summaryErrorDetailsCount) summaryErrorDetailsCount.textContent = errorRows.length;
+        summaryErrorTbody.innerHTML = errorRows
+          .map(
+            (err) => `
+            <tr class="border-b border-slate-100 hover:bg-slate-50">
+              <td class="p-2 text-center font-bold text-slate-500">${err.rowIndex}</td>
+              <td class="p-2 font-semibold text-slate-800">${escapeHtml(err.fullName || "-")}</td>
+              <td class="p-2 font-mono text-slate-600">${escapeHtml(err.email || "-")}</td>
+              <td class="p-2 text-rose-600 font-medium">${escapeHtml(err.errors.join("; "))}</td>
+            </tr>
+          `
+          )
+          .join("");
+      } else {
+        summaryErrorDetailsBox?.classList.add("hidden");
+      }
+
+      if (window.lucide) window.lucide.createIcons();
+
+      if (typeof showToast === "function") {
+        showToast(`Đã nhập thành công ${validRows.length} tài khoản mới! (Bỏ qua ${errorRows.length} dòng lỗi)`, "success");
+      }
+    });
+  }
+
+  if (btnFinishSummary) {
+    btnFinishSummary.addEventListener("click", () => {
+      closeImportModal();
+      renderAccounts();
+      renderAuditLog();
+    });
+  }
 
   accountTable.addEventListener("click", (event) => {
     // Sửa thông tin tài khoản
