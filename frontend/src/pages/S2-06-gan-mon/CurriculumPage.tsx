@@ -3,21 +3,23 @@ import { useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { Search } from '../../components/ui';
-import { CURRICULUM, PROGRAMS, SUBJECTS, type CurriculumItem } from '../../data/training';
+import { loadCurriculum, loadPrograms, loadSubjects, saveCurriculum, type CurriculumItem } from '../../data/training';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
 import { MODULE, useCanEditTraining } from '../S2-04-chuong-trinh/ProgramListPage';
 import './curriculum.css';
 
-const subject = (code: string) => SUBJECTS.find((s) => s.code === code);
 const hhmm = () => new Date().toTimeString().slice(0, 5);
 
 // S2-06. Lộ trình môn của một chương trình: kéo thả đổi thứ tự (tự lưu), thêm bằng nút +, gỡ bằng ×.
 // Môn tiên quyết chỉ chọn được từ các môn đứng trước. Khi tích hợp: PUT /training/programs/:code/subjects.
 export function CurriculumPage() {
   const code = useParams().code ?? '';
-  const program = PROGRAMS.find((p) => p.code === code);
+  const programs = loadPrograms();
+  const program = programs.find((p) => p.code === code);
+  const subjects = loadSubjects();
+  const subject = (c: string) => subjects.find((s) => s.code === c);
   const canEdit = useCanEditTraining();
-  const [items, setItems] = useState<CurriculumItem[]>(() => CURRICULUM[code] ?? []);
+  const [items, setItems] = useState<CurriculumItem[]>(() => loadCurriculum()[code] ?? []);
   const [savedAt, setSavedAt] = useState('');
   const [dragging, setDragging] = useState<number | null>(null);
   const [q, setQ] = useState('');
@@ -27,7 +29,9 @@ export function CurriculumPage() {
   const commit = (list: CurriculumItem[]) => {
     // Môn tiên quyết phải đứng trước: bỏ những môn không còn đứng trước sau khi đổi thứ tự hoặc gỡ.
     const fixed = list.map((it, i) => ({ ...it, prereq: it.prereq.filter((p) => list.slice(0, i).some((x) => x.code === p)) }));
-    CURRICULUM[code] = fixed;
+    const all = loadCurriculum();
+    all[code] = fixed;
+    saveCurriculum(all);
     setItems(fixed);
     setSavedAt(hhmm());
   };
@@ -40,7 +44,7 @@ export function CurriculumPage() {
 
   const total = items.reduce((n, it) => n + (subject(it.code)?.sessions ?? 0), 0);
   const k = q.trim().toLowerCase();
-  const available = SUBJECTS.filter((s) => !items.some((it) => it.code === s.code) && (!k || s.code.toLowerCase().includes(k) || s.name.toLowerCase().includes(k)));
+  const available = subjects.filter((s) => !items.some((it) => it.code === s.code) && (!k || s.code.toLowerCase().includes(k) || s.name.toLowerCase().includes(k)));
 
   return (
     <AppLayout crumb={[MODULE, 'Chương trình', program.name]} module={MODULE}>
@@ -94,6 +98,7 @@ export function CurriculumPage() {
                 <Prereq
                   value={it.prereq}
                   options={items.slice(0, i).map((x) => x.code)}
+                  subjects={subjects}
                   disabled={!canEdit}
                   onChange={(prereq) => commit(items.map((x, j) => (j === i ? { ...x, prereq } : x)))}
                 />
@@ -133,7 +138,19 @@ export function CurriculumPage() {
 }
 
 /** Ô chọn nhiều môn tiên quyết, chỉ gồm các môn đứng trước. */
-function Prereq({ value, options, disabled, onChange }: { value: string[]; options: string[]; disabled: boolean; onChange: (v: string[]) => void }) {
+function Prereq({
+  value,
+  options,
+  subjects,
+  disabled,
+  onChange,
+}: {
+  value: string[];
+  options: string[];
+  subjects: ReturnType<typeof loadSubjects>;
+  disabled: boolean;
+  onChange: (v: string[]) => void;
+}) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -150,12 +167,15 @@ function Prereq({ value, options, disabled, onChange }: { value: string[]; optio
       </button>
       {open && (
         <div className="dropdown">
-          {options.map((o) => (
-            <label key={o} className="cu-check">
-              <input type="checkbox" checked={value.includes(o)} onChange={(e) => onChange(e.target.checked ? [...value, o] : value.filter((x) => x !== o))} />
-              {o} · {subject(o)?.name}
-            </label>
-          ))}
+          {options.map((o) => {
+            const found = subjects.find((s) => s.code === o);
+            return (
+              <label key={o} className="cu-check">
+                <input type="checkbox" checked={value.includes(o)} onChange={(e) => onChange(e.target.checked ? [...value, o] : value.filter((x) => x !== o))} />
+                {o} · {found?.name ?? o}
+              </label>
+            );
+          })}
         </div>
       )}
     </div>

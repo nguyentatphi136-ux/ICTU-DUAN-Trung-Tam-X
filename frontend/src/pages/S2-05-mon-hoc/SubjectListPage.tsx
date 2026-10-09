@@ -4,7 +4,7 @@ import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Box, Drawer, Filter, Pager, paginate, RowMenu, Search } from '../../components/ui';
-import { CURRICULUM, PROGRAMS, programsUsing, SUBJECTS, type Subject } from '../../data/training';
+import { loadCurriculum, loadPrograms, loadSubjects, programsUsing, saveSubjects, type Subject } from '../../data/training';
 import { MODULE, TrainingTabs, useCanEditTraining } from '../S2-04-chuong-trinh/ProgramListPage';
 
 // S2-05. Môn học dùng lại được ở nhiều chương trình (cột Dùng trong). Môn đã có lớp học thì không xoá được.
@@ -12,7 +12,9 @@ export function SubjectListPage() {
   const toast = useToast();
   const navigate = useNavigate();
   const canEdit = useCanEditTraining();
-  const [items, setItems] = useState(SUBJECTS);
+  const [items, setItems] = useState<Subject[]>(loadSubjects);
+  const [programs] = useState(loadPrograms);
+  const [curriculum] = useState(loadCurriculum);
   const [q, setQ] = useState('');
   const [program, setProgram] = useState('');
   const [page, setPage] = useState(1);
@@ -20,15 +22,15 @@ export function SubjectListPage() {
 
   const filtered = useMemo(() => {
     const k = q.trim().toLowerCase();
-    const inProgram = PROGRAMS.find((p) => p.name === program);
+    const inProgram = programs.find((p) => p.name === program);
     return items.filter(
-      (s) => (!k || s.code.toLowerCase().includes(k) || s.name.toLowerCase().includes(k)) && (!inProgram || CURRICULUM[inProgram.code]?.some((c) => c.code === s.code)),
+      (s) => (!k || s.code.toLowerCase().includes(k) || s.name.toLowerCase().includes(k)) && (!inProgram || curriculum[inProgram.code]?.some((c) => c.code === s.code)),
     );
-  }, [items, q, program]);
+  }, [items, q, program, programs, curriculum]);
   const view = paginate(filtered, page);
 
   const commit = (list: Subject[]) => {
-    SUBJECTS.splice(0, SUBJECTS.length, ...list);
+    saveSubjects(list);
     setItems(list);
   };
 
@@ -48,7 +50,7 @@ export function SubjectListPage() {
       <TrainingTabs />
       <div className="bar">
         <Search placeholder="Tìm theo mã hoặc tên môn" value={q} onChange={(v) => (setQ(v), setPage(1))} />
-        <Filter label="Chương trình" value={program} options={PROGRAMS.map((p) => p.name)} onChange={(v) => (setProgram(v), setPage(1))} width={260} />
+        <Filter label="Chương trình" value={program} options={programs.map((p) => p.name)} onChange={(v) => (setProgram(v), setPage(1))} width={260} />
       </div>
       <div className="panel">
         <div className="scroll">
@@ -71,7 +73,7 @@ export function SubjectListPage() {
                   <td>{s.name}</td>
                   <td>{s.sessions}</td>
                   <td>{s.weight}</td>
-                  <td>{programsUsing(s.code).length} chương trình</td>
+                  <td>{programsUsing(s.code, programs, curriculum).length} chương trình</td>
                   <td>{s.openedClasses}</td>
                   <td style={{ width: 56 }}>
                     <RowMenu
@@ -109,6 +111,8 @@ export function SubjectListPage() {
         <SubjectDrawer
           subject={editing === 'new' ? null : editing}
           items={items}
+          programs={programs}
+          curriculum={curriculum}
           onClose={() => setEditing(null)}
           onSave={(s) => {
             commit(editing === 'new' ? [...items, s] : items.map((x) => (x.code === editing.code ? s : x)));
@@ -121,7 +125,21 @@ export function SubjectListPage() {
   );
 }
 
-function SubjectDrawer({ subject, items, onClose, onSave }: { subject: Subject | null; items: Subject[]; onClose: () => void; onSave: (s: Subject) => void }) {
+function SubjectDrawer({
+  subject,
+  items,
+  programs,
+  curriculum,
+  onClose,
+  onSave,
+}: {
+  subject: Subject | null;
+  items: Subject[];
+  programs: ReturnType<typeof loadPrograms>;
+  curriculum: ReturnType<typeof loadCurriculum>;
+  onClose: () => void;
+  onSave: (s: Subject) => void;
+}) {
   const [f, setF] = useState({
     code: subject?.code ?? '',
     name: subject?.name ?? '',
@@ -130,7 +148,7 @@ function SubjectDrawer({ subject, items, onClose, onSave }: { subject: Subject |
     outcome: subject?.outcome ?? '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const used = subject ? programsUsing(subject.code) : [];
+  const used = subject ? programsUsing(subject.code, programs, curriculum) : [];
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => {
     setF((x) => ({ ...x, [k]: e.target.value }));
     setErrors((x) => ({ ...x, [k]: '' }));

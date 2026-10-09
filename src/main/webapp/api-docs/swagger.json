@@ -21,6 +21,18 @@
       "description": "Quản lý danh mục chương trình đào tạo (S2-04)"
     },
     {
+      "name": "Subjects",
+      "description": "Quản lý danh mục môn học (S2-05)"
+    },
+    {
+      "name": "Curriculum",
+      "description": "Gắn môn học vào chương trình và sắp thứ tự học (S2-06)"
+    },
+    {
+      "name": "Sessions",
+      "description": "Khai báo và nhân bản buổi học trong môn (S2-07)"
+    },
+    {
       "name": "Leads",
       "description": "Quản lý phễu khách hàng tiềm năng và thông tin liên hệ"
     }
@@ -693,6 +705,129 @@
           "400": {
             "$ref": "#/components/responses/BadRequestError"
           }
+        }
+      }
+    },
+    "/api/subjects": {
+      "get": {
+        "tags": ["Subjects"],
+        "summary": "Lấy danh sách môn học",
+        "description": "Lấy danh sách môn học có phân trang và tìm kiếm theo mã, tên.",
+        "responses": {
+          "200": { "description": "Lấy danh sách môn học thành công" }
+        }
+      },
+      "post": {
+        "tags": ["Subjects"],
+        "summary": "Tạo mới môn học (S2-05)",
+        "description": "Khai báo mã, tên, số buổi, trọng số, chuẩn đầu ra. Mã môn là duy nhất.",
+        "responses": {
+          "201": { "description": "Tạo môn học thành công" },
+          "409": { "description": "Mã môn học đã tồn tại" }
+        }
+      }
+    },
+    "/api/subjects/{id}": {
+      "get": {
+        "tags": ["Subjects"],
+        "summary": "Chi tiết môn học",
+        "responses": {
+          "200": { "description": "Thành công" },
+          "404": { "description": "Không tìm thấy môn học" }
+        }
+      },
+      "put": {
+        "tags": ["Subjects"],
+        "summary": "Cập nhật môn học",
+        "responses": {
+          "200": { "description": "Cập nhật thành công" }
+        }
+      },
+      "delete": {
+        "tags": ["Subjects"],
+        "summary": "Xoá môn học",
+        "description": "Môn đã có lớp học thì không xoá được (trả về 409 Conflict).",
+        "responses": {
+          "200": { "description": "Xoá thành công" },
+          "409": { "description": "Môn đã có lớp học nên không xoá được" }
+        }
+      }
+    },
+    "/api/programs/{programId}/subjects": {
+      "get": {
+        "tags": ["Curriculum"],
+        "summary": "Lấy lộ trình môn học của chương trình (S2-06)",
+        "responses": {
+          "200": { "description": "Thành công" }
+        }
+      },
+      "post": {
+        "tags": ["Curriculum"],
+        "summary": "Gắn môn học vào chương trình (S2-06)",
+        "responses": {
+          "201": { "description": "Gắn môn thành công" }
+        }
+      }
+    },
+    "/api/programs/{programId}/subjects/reorder": {
+      "put": {
+        "tags": ["Curriculum"],
+        "summary": "Kéo thả sắp xếp thứ tự môn học trong chương trình (S2-06)",
+        "description": "Thứ tự được lưu lại tự động.",
+        "responses": {
+          "200": { "description": "Lưu thứ tự môn học thành công" }
+        }
+      }
+    },
+    "/api/programs/{programId}/subjects/{subjectId}": {
+      "delete": {
+        "tags": ["Curriculum"],
+        "summary": "Gỡ môn học khỏi chương trình (S2-06)",
+        "responses": {
+          "200": { "description": "Gỡ môn thành công" }
+        }
+      }
+    },
+    "/api/subjects/{subjectId}/sessions": {
+      "get": {
+        "tags": ["Sessions"],
+        "summary": "Danh sách các buổi học của một môn (S2-07)",
+        "responses": {
+          "200": { "description": "Thành công" }
+        }
+      },
+      "post": {
+        "tags": ["Sessions"],
+        "summary": "Thêm buổi học trong môn (S2-07)",
+        "description": "Số buổi khai báo không vượt quá số buổi của môn học.",
+        "responses": {
+          "201": { "description": "Thêm buổi học thành công" },
+          "409": { "description": "Đã đủ số buổi của môn học, không thể thêm" }
+        }
+      }
+    },
+    "/api/subjects/{subjectId}/sessions/clone": {
+      "post": {
+        "tags": ["Sessions"],
+        "summary": "Nhân bản danh sách buổi từ môn khác (S2-07)",
+        "responses": {
+          "200": { "description": "Nhân bản thành công" }
+        }
+      }
+    },
+    "/api/subjects/{subjectId}/sessions/{sessionId}": {
+      "put": {
+        "tags": ["Sessions"],
+        "summary": "Sửa buổi học",
+        "responses": {
+          "200": { "description": "Cập nhật thành công" }
+        }
+      },
+      "delete": {
+        "tags": ["Sessions"],
+        "summary": "Xoá buổi học",
+        "responses": {
+          "200": { "description": "Xoá thành công" }
         }
       }
     }

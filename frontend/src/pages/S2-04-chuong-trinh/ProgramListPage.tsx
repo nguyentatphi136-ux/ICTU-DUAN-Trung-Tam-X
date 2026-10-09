@@ -6,7 +6,7 @@ import { useToast } from '../../components/Toast';
 import { Drawer, Filter, Pager, paginate, Pill, RowMenu, Search } from '../../components/ui';
 import { useAuth } from '../../data/auth';
 import { ADMIN_ROLE } from '../../data/permissions';
-import { money, PROGRAMS, type Program } from '../../data/training';
+import { money, loadPrograms, savePrograms, type Program } from '../../data/training';
 
 export const MODULE = 'Chương trình & môn học';
 const STATUS = ['Đang áp dụng', 'Ngừng áp dụng'];
@@ -35,7 +35,7 @@ export function ProgramListPage() {
   const toast = useToast();
   const navigate = useNavigate();
   const canEdit = useCanEditTraining();
-  const [items, setItems] = useState(PROGRAMS);
+  const [items, setItems] = useState<Program[]>(loadPrograms);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
@@ -48,7 +48,7 @@ export function ProgramListPage() {
   const view = paginate(filtered, page);
 
   const commit = (list: Program[]) => {
-    PROGRAMS.splice(0, PROGRAMS.length, ...list);
+    savePrograms(list);
     setItems(list);
   };
 

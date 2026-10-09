@@ -36,7 +36,7 @@ public final class PermissionPolicy {
         if ("PUT".equals(method) && path.matches("^/api/admin/users/\\d+$")) {
             return "USER_ROLE_ASSIGN";
         }
-        if (path.startsWith("/api/training-programs")) {
+        if (path.startsWith("/api/training-programs") || path.startsWith("/api/subjects") || path.matches("^/api/programs/\\d+/subjects.*")) {
             return "PROGRAM_MANAGE";
         }
         if ("GET".equals(method) && path.matches("^/api/leads/\\d+$")) {
