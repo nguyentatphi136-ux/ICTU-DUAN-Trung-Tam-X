@@ -51,3 +51,38 @@ export const USERS: UserRow[] = [...Array(300)].map((_, i) => {
 });
 
 export const statusTone = (s: Status): 'ok' | 'off' | 'wait' => (s === 'Hoạt động' ? 'ok' : s === 'Đã khoá' ? 'off' : 'wait');
+
+const STORAGE_KEY = 'tms.users';
+
+export function loadUsers(): UserRow[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch {
+    // fallback
+  }
+  return USERS;
+}
+
+export function saveUsers(list: UserRow[]): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  } catch {
+    // ignore
+  }
+}
+
+export function addUsers(newRows: Omit<UserRow, 'id'>[]): UserRow[] {
+  const current = loadUsers();
+  let maxId = current.reduce((m, u) => Math.max(m, u.id), 0);
+  const toAdd: UserRow[] = newRows.map((r) => {
+    maxId++;
+    return { ...r, id: maxId };
+  });
+  const updated = [...toAdd, ...current];
+  saveUsers(updated);
+  return updated;
+}

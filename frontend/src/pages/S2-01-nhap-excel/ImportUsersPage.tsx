@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { Box, Pill } from '../../components/ui';
-import { previewRows, type ImportRow } from './mockImport';
+import { addUsers, type UserRow } from '../../data/users';
+import { downloadExcelTemplate, parseExcelFile, type ImportRow } from './mockImport';
 import './import.css';
 
 const STEPS = ['Tải tệp lên', 'Xem trước và kiểm lỗi', 'Kết quả'];
@@ -21,9 +22,7 @@ function download(name: string, rows: string[][]) {
 }
 
 // S2-01. Nhập nhiều tài khoản từ Excel qua 3 bước: tải tệp, xem trước kèm lỗi theo dòng, tổng kết.
-// Khi tích hợp: POST /admin/users/import/preview (multipart) trả về các dòng đã kiểm, POST /admin/users/import để tạo.
-// ponytail: chưa có thư viện Excel nên tệp mẫu và báo cáo lỗi xuất CSV ở trình duyệt, và ô tải nhận cả .csv.
-// Khi có API: máy chủ sinh .xlsx và chỉ nhận .xlsx như thiết kế.
+// Đọc trực tiếp tệp Excel (.xlsx, .xls) và CSV thực tế do người dùng tải lên, kiểm tra từng dòng và lưu vào hệ thống.
 export function ImportUsersPage() {
   const [step, setStep] = useState(0);
   const [file, setFile] = useState('');
@@ -31,21 +30,50 @@ export function ImportUsersPage() {
   const [error, setError] = useState('');
   const [show, setShow] = useState(SHOW[0]);
   const [drag, setDrag] = useState(false);
+  const [loading, setLoading] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
   const bad = rows.filter((r) => r.error);
   const good = rows.length - bad.length;
   const visible = show === SHOW[1] ? bad : show === SHOW[2] ? rows.filter((r) => !r.error) : rows;
 
-  function pick(f?: File) {
+  async function pick(f?: File) {
     if (!f) return;
-    if (!/\.(xlsx|csv)$/i.test(f.name)) return setError('Chỉ nhận tệp .xlsx theo đúng mẫu.');
+    if (!/\.(xlsx|xls|csv)$/i.test(f.name)) return setError('Chỉ nhận tệp .xlsx, .xls hoặc .csv theo đúng mẫu.');
     setError('');
     setFile(f.name);
-    setRows(previewRows());
-    setShow(SHOW[0]);
-    setStep(1);
+    setLoading(true);
+    try {
+      const parsed = await parseExcelFile(f);
+      setLoading(false);
+      if (parsed.length === 0) {
+        setError('Tệp không có dữ liệu hoặc không đọc được. Vui lòng kiểm tra lại cấu trúc tệp.');
+        return;
+      }
+      setRows(parsed);
+      setShow(SHOW[0]);
+      setStep(1);
+    } catch (err: any) {
+      setLoading(false);
+      console.error(err);
+      setError('Lỗi khi đọc tệp: ' + (err?.message || 'Định dạng không hợp lệ'));
+    }
   }
+
+  function handleImport() {
+    const validRows = rows.filter((r) => !r.error);
+    if (!validRows.length) return;
+    const usersToCreate: Omit<UserRow, 'id'>[] = validRows.map((r) => ({
+      name: r.name.toUpperCase(),
+      email: r.email,
+      phone: r.phone,
+      roles: [r.roleIndex ?? 0],
+      status: 'Chờ kích hoạt',
+    }));
+    addUsers(usersToCreate);
+    setStep(2);
+  }
+
   const onDrop = (e: DragEvent) => {
     e.preventDefault();
     setDrag(false);
@@ -112,13 +140,13 @@ export function ImportUsersPage() {
             <span className="drop-ic">
               <Icon name="upload" size={28} />
             </span>
-            <b>Kéo tệp .xlsx vào đây</b>
-            <p>hoặc bấm để chọn tệp từ máy. Chỉ nhận tệp .xlsx theo đúng mẫu.</p>
+            <b>Kéo tệp .xlsx hoặc .csv vào đây</b>
+            <p>hoặc bấm để chọn tệp từ máy. Hỗ trợ tệp .xlsx, .xls và .csv theo đúng mẫu.</p>
             <button type="button" className="btn" style={{ width: 140 }}>
-              Chọn tệp
+              {loading ? 'Đang đọc tệp…' : 'Chọn tệp'}
             </button>
             {error && <p className="err">{error}</p>}
-            <input ref={input} type="file" accept=".xlsx,.csv" hidden onChange={(e) => pick(e.target.files?.[0])} />
+            <input ref={input} type="file" accept=".xlsx,.xls,.csv" hidden onChange={(e) => pick(e.target.files?.[0])} />
           </div>
           <div className="panel tpl">
             <span className="tpl-ic">
@@ -128,10 +156,16 @@ export function ImportUsersPage() {
               <b>Tệp mẫu mau-nhap-nguoi-dung.xlsx</b>
               <p>Cột bắt buộc: Họ tên, Email, Số điện thoại, Vai trò. Mỗi dòng là một tài khoản.</p>
             </div>
-            <button type="button" className="btn" style={{ width: 170 }} onClick={() => download('mau-nhap-nguoi-dung.csv', [COLUMNS])}>
-              <Icon name="dl" size={16} />
-              Tải tệp mẫu
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button type="button" className="btn" style={{ width: 180 }} onClick={downloadExcelTemplate}>
+                <Icon name="dl" size={16} />
+                Tải mẫu Excel (.xlsx)
+              </button>
+              <button type="button" className="btn" style={{ width: 130 }} onClick={() => download('mau-nhap-nguoi-dung.csv', [COLUMNS])}>
+                <Icon name="dl" size={16} />
+                Tải .csv
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -161,7 +195,7 @@ export function ImportUsersPage() {
             <button type="button" className="btn" style={{ width: 150 }} onClick={() => setStep(0)}>
               Chọn tệp khác
             </button>
-            <button type="button" className="btn primary" style={{ width: 220 }} disabled={!good} onClick={() => setStep(2)}>
+            <button type="button" className="btn primary" style={{ width: 220 }} disabled={!good} onClick={handleImport}>
               Nhập {good} dòng hợp lệ
             </button>
           </div>
