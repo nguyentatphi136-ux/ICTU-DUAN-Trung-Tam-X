@@ -105,13 +105,15 @@ public class SessionAuthFilter implements Filter {
             return true;
         }
         if ("/api/auth/login".equals(path) || "/api/auth/forgot-password".equals(path)
-                || "/api/auth/reset-password".equals(path) || "/api/health".equals(path)) {
+                || "/api/auth/reset-password".equals(path) || "/api/health".equals(path)
+                || path.startsWith("/api-docs") || path.startsWith("/api/docs")) {
             return true;
         }
         // Tài nguyên tĩnh
         return path.startsWith("/assets/") || path.startsWith("/css/") || path.startsWith("/js/")
                 || path.endsWith(".css") || path.endsWith(".js") || path.endsWith(".png")
-                || path.endsWith(".jpg") || path.endsWith(".svg") || path.endsWith(".ico");
+                || path.endsWith(".jpg") || path.endsWith(".svg") || path.endsWith(".ico")
+                || path.endsWith(".json") || path.endsWith(".html");
     }
 
     private void redirectToLogin(HttpServletRequest req, HttpServletResponse resp, String errorReason) throws IOException {
