@@ -7,6 +7,8 @@ import com.ems.exception.ApiException;
 import com.ems.security.ApiResponse;
 import com.ems.service.TrainingProgramService;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 
 import javax.servlet.ServletException;
@@ -38,6 +40,10 @@ public class TrainingProgramApiServlet extends HttpServlet {
 
     private static final Pattern ID_PATTERN = Pattern.compile("^/(\\d+)$");
     private static final Pattern DEACTIVATE_PATTERN = Pattern.compile("^/(\\d+)/deactivate$");
+    private static final Pattern RESTORE_PATTERN = Pattern.compile("^/(\\d+)/restore$");
+    private static final Pattern PURGE_PATTERN = Pattern.compile("^/(\\d+)/purge$");
+    /** Lộ trình môn theo id hoặc mã chương trình: /api/training-programs/WEB-FS/subjects */
+    private static final Pattern SUBJECTS_PATTERN = Pattern.compile("^/([A-Za-z0-9._-]+)/subjects$");
 
     private TrainingProgramService trainingProgramService;
 
@@ -59,6 +65,18 @@ public class TrainingProgramApiServlet extends HttpServlet {
         String pathInfo = getCleanPathInfo(request);
 
         try {
+            if ("/trash".equals(pathInfo)) {
+                ApiResponse.success(response, "PROGRAM_TRASH_SUCCESS", "Danh sách chương trình trong thùng rác.",
+                        trainingProgramService.listTrash());
+                return;
+            }
+            Matcher subjectsMatcher = SUBJECTS_PATTERN.matcher(pathInfo);
+            if (subjectsMatcher.matches()) {
+                ApiResponse.success(response, "CURRICULUM_SUCCESS", "Lộ trình môn của chương trình.",
+                        trainingProgramService.listSubjects(subjectsMatcher.group(1)));
+                return;
+            }
+
             // Case 1: GET /api/training-programs/{id}
             Matcher idMatcher = ID_PATTERN.matcher(pathInfo);
             if (idMatcher.matches()) {
@@ -130,6 +148,13 @@ public class TrainingProgramApiServlet extends HttpServlet {
                 return;
             }
 
+            Matcher restoreMatcher = RESTORE_PATTERN.matcher(pathInfo);
+            if (restoreMatcher.matches()) {
+                trainingProgramService.restore(Integer.parseInt(restoreMatcher.group(1)));
+                ApiResponse.success(response, "PROGRAM_RESTORED", "Đã khôi phục chương trình đào tạo.", null);
+                return;
+            }
+
             // POST /api/training-programs (Tạo mới)
             if (pathInfo.isEmpty() || "/".equals(pathInfo)) {
                 TrainingProgramRequest reqBody = parseRequestBody(request);
@@ -167,6 +192,19 @@ public class TrainingProgramApiServlet extends HttpServlet {
         String pathInfo = getCleanPathInfo(request);
 
         try {
+            Matcher subjectsMatcher = SUBJECTS_PATTERN.matcher(pathInfo);
+            if (subjectsMatcher.matches()) {
+                JsonObject body = GSON.fromJson(request.getReader(), JsonObject.class);
+                java.util.List<String> codes = null;
+                if (body != null && body.has("subjectCodes") && body.get("subjectCodes").isJsonArray()) {
+                    codes = new java.util.ArrayList<>();
+                    for (JsonElement el : body.getAsJsonArray("subjectCodes")) codes.add(el.getAsString());
+                }
+                ApiResponse.success(response, "CURRICULUM_REORDERED", "Đã lưu thứ tự môn.",
+                        trainingProgramService.reorderSubjects(subjectsMatcher.group(1), codes));
+                return;
+            }
+
             Matcher idMatcher = ID_PATTERN.matcher(pathInfo);
             if (idMatcher.matches()) {
                 int id = Integer.parseInt(idMatcher.group(1));
@@ -204,12 +242,24 @@ public class TrainingProgramApiServlet extends HttpServlet {
         String pathInfo = getCleanPathInfo(request);
 
         try {
+            Matcher purgeMatcher = PURGE_PATTERN.matcher(pathInfo);
+            if (purgeMatcher.matches()) {
+                if (!isAdmin(request)) {
+                    ApiResponse.error(response, HttpServletResponse.SC_FORBIDDEN, "AUTH_FORBIDDEN",
+                            "Chỉ Quản trị hệ thống được xoá vĩnh viễn.");
+                    return;
+                }
+                trainingProgramService.purge(Integer.parseInt(purgeMatcher.group(1)));
+                ApiResponse.success(response, "PROGRAM_PURGED", "Đã xoá vĩnh viễn chương trình đào tạo.", null);
+                return;
+            }
             Matcher idMatcher = ID_PATTERN.matcher(pathInfo);
             if (idMatcher.matches()) {
                 int id = Integer.parseInt(idMatcher.group(1));
-                trainingProgramService.delete(id);
-                ApiResponse.success(response, "PROGRAM_DELETED",
-                        "Xoá chương trình đào tạo thành công.", null);
+                Long actorId = request.getAttribute("authenticatedUserId") instanceof Long a ? a : null;
+                trainingProgramService.delete(id, actorId);
+                ApiResponse.success(response, "PROGRAM_TRASHED",
+                        "Đã chuyển chương trình đào tạo vào thùng rác.", null);
                 return;
             }
 
@@ -263,6 +313,12 @@ public class TrainingProgramApiServlet extends HttpServlet {
             ApiResponse.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
                     "INTERNAL_SERVER_ERROR", "Lỗi máy chủ: " + e.getMessage());
         }
+    }
+
+    private static boolean isAdmin(HttpServletRequest request) {
+        javax.servlet.http.HttpSession session = request.getSession(false);
+        return session != null && session.getAttribute("currentUser") instanceof com.ems.model.User user
+                && user.getRoles() != null && user.getRoles().contains("ADMIN");
     }
 
     private String getCleanPathInfo(HttpServletRequest request) {

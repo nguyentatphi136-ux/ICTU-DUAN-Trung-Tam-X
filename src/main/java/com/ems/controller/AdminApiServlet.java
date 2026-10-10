@@ -2,6 +2,8 @@ package com.ems.controller;
 
 import com.ems.dao.AdminDAO;
 import com.ems.dao.PermissionDAO;
+import com.ems.exception.ApiException;
+import com.ems.model.User;
 import com.ems.security.ApiResponse;
 import com.ems.service.EmailService;
 import com.google.gson.Gson;
@@ -13,6 +15,7 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -31,6 +34,8 @@ public class AdminApiServlet extends HttpServlet {
     private static final Pattern USER_ROLE_REVOKE_PATH = Pattern.compile("^/users/(\\d+)/roles/([A-Za-z0-9_]+)$");
     private static final Pattern USER_STATUS_PATH = Pattern.compile("^/users/(\\d+)/status$");
     private static final Pattern USER_DETAIL_PATH = Pattern.compile("^/users/(\\d+)$");
+    private static final Pattern USER_RESTORE_PATH = Pattern.compile("^/users/(\\d+)/restore$");
+    private static final Pattern USER_PURGE_PATH = Pattern.compile("^/users/(\\d+)/purge$");
     private final PermissionDAO permissionDAO = new PermissionDAO();
     private final AdminDAO adminDAO = new AdminDAO();
 
@@ -39,20 +44,11 @@ public class AdminApiServlet extends HttpServlet {
             throws IOException {
         try {
             String path = request.getPathInfo() == null ? "" : request.getPathInfo();
-            if ("/users/import/template".equals(path)) {
-                response.setContentType("text/csv; charset=UTF-8");
-                response.setHeader("Content-Disposition", "attachment; filename=\"mau_nhap_nguoi_dung_tms.csv\"");
-                String csv = "\uFEFFHọ và tên,Email,Số điện thoại,Vai trò,Ngày sinh,Giới tính,Địa chỉ\n"
-                        + "Nguyễn Văn An,an.nguyen@tms.vn,0912345678,HOC_VIEN,2003-05-15,Nam,Hà Nội\n"
-                        + "Trần Thị Bình,binh.tran@tms.vn,0987654321,HOC_VIEN,2002-11-20,Nữ,Thái Nguyên\n"
-                        + "Lê Hoàng Cường,cuong.le@tms.vn,0903112233,GIANG_VIEN,1990-08-10,Nam,Đà Nẵng\n";
-                response.getWriter().write(csv);
-                return;
-            }
             Object data = switch (path) {
                 case "/roles" -> permissionDAO.listRoles();
                 case "/permissions" -> permissionDAO.listPermissions();
                 case "/menus" -> permissionDAO.listMenus();
+                case "/users/trash" -> adminDAO.listTrashedUsers();
                 case "/users" -> {
                     String q = request.getParameter("q");
                     if (q == null) q = request.getParameter("keyword");
@@ -149,6 +145,16 @@ public class AdminApiServlet extends HttpServlet {
                 ApiResponse.success(response, "ROLE_PERMISSIONS_UPDATED", "Cập nhật quyền vai trò thành công.", updated);
                 return;
             }
+            Matcher restoreMatcher = USER_RESTORE_PATH.matcher(path);
+            if (restoreMatcher.matches()) {
+                Map<String, Object> restored = adminDAO.restoreUser(actorId(request), Long.parseLong(restoreMatcher.group(1)));
+                if (restored == null) {
+                    ApiResponse.error(response, 404, "USER_NOT_IN_TRASH", "Tài khoản không có trong thùng rác.");
+                    return;
+                }
+                ApiResponse.success(response, "USER_RESTORED", "Đã khôi phục tài khoản.", restored);
+                return;
+            }
             if (userMatcher.matches()) {
                 Object actor = request.getAttribute("authenticatedUserId");
                 if (!(actor instanceof Long actorId)) {
@@ -171,6 +177,8 @@ public class AdminApiServlet extends HttpServlet {
             }
             ApiResponse.error(response, 404, "API_NOT_FOUND", "Không tìm thấy chức năng.",
                     "Quay lại trang quản trị", "/admin.html");
+        } catch (ApiException exception) {
+            ApiResponse.error(response, exception.getStatusCode(), exception.getErrorCode(), exception.getMessage());
         } catch (IllegalArgumentException exception) {
             ApiResponse.error(response, 400, "REQUEST_VALIDATION_ERROR", exception.getMessage(),
                     "Kiểm tra lại lựa chọn", "/admin.html#vai-tro");
@@ -188,23 +196,6 @@ public class AdminApiServlet extends HttpServlet {
         String path = request.getPathInfo() == null ? "" : request.getPathInfo();
         Matcher userMatcher = USER_ROLE_PATH.matcher(path);
         try {
-            if ("/users/import/preview".equals(path)) {
-                JsonObject body = GSON.fromJson(request.getReader(), JsonObject.class);
-                List<Map<String, Object>> rows = parseRowsFromJson(body);
-                Map<String, Object> preview = adminDAO.previewUsersBatch(rows);
-                ApiResponse.success(response, "IMPORT_PREVIEW_SUCCESS", "Xem trước danh sách người dùng thành công.", preview);
-                return;
-            }
-            if ("/users/import".equals(path)) {
-                Object actor = request.getAttribute("authenticatedUserId");
-                long actorId = (actor instanceof Long l) ? l : 0;
-                JsonObject body = GSON.fromJson(request.getReader(), JsonObject.class);
-                String fileName = body != null && body.has("fileName") ? body.get("fileName").getAsString() : "import_users.xlsx";
-                List<Map<String, Object>> rows = parseRowsFromJson(body);
-                Map<String, Object> summary = adminDAO.importUsersBatch(actorId, fileName, rows);
-                ApiResponse.success(response, "IMPORT_BATCH_SUCCESS", "Nhập danh sách người dùng thành công.", summary);
-                return;
-            }
             if ("/users".equals(path) || "/users/".equals(path)) {
                 Object actor = request.getAttribute("authenticatedUserId");
                 if (!(actor instanceof Long actorId)) {
@@ -275,6 +266,8 @@ public class AdminApiServlet extends HttpServlet {
             }
             ApiResponse.error(response, 404, "API_NOT_FOUND", "Không tìm thấy chức năng.",
                     "Quay lại trang quản trị", "/admin.html");
+        } catch (ApiException exception) {
+            ApiResponse.error(response, exception.getStatusCode(), exception.getErrorCode(), exception.getMessage());
         } catch (IllegalStateException exception) {
             ApiResponse.error(response, 409, "ROLE_ALREADY_ASSIGNED", exception.getMessage(),
                     "Kiểm tra lại lựa chọn", "/admin.html#vai-tro");
@@ -294,7 +287,30 @@ public class AdminApiServlet extends HttpServlet {
             throws IOException, ServletException {
         String path = request.getPathInfo() == null ? "" : request.getPathInfo();
         Matcher revokeMatcher = USER_ROLE_REVOKE_PATH.matcher(path);
+        Matcher trashMatcher = USER_DETAIL_PATH.matcher(path);
+        Matcher purgeMatcher = USER_PURGE_PATH.matcher(path);
         try {
+            if (trashMatcher.matches()) {
+                Map<String, Object> trashed = adminDAO.trashUser(actorId(request), Long.parseLong(trashMatcher.group(1)));
+                if (trashed == null) {
+                    ApiResponse.error(response, 404, "USER_NOT_FOUND", "Không tìm thấy tài khoản.");
+                    return;
+                }
+                ApiResponse.success(response, "USER_TRASHED", "Đã chuyển tài khoản vào thùng rác.", trashed);
+                return;
+            }
+            if (purgeMatcher.matches()) {
+                if (!isAdmin(request)) {
+                    ApiResponse.error(response, 403, "AUTH_FORBIDDEN", "Chỉ Quản trị hệ thống được xoá vĩnh viễn.");
+                    return;
+                }
+                if (!adminDAO.purgeUser(actorId(request), Long.parseLong(purgeMatcher.group(1)))) {
+                    ApiResponse.error(response, 404, "USER_NOT_IN_TRASH", "Tài khoản không có trong thùng rác.");
+                    return;
+                }
+                ApiResponse.success(response, "USER_PURGED", "Đã xoá vĩnh viễn tài khoản.", null);
+                return;
+            }
             if (revokeMatcher.matches()) {
                 Object actor = request.getAttribute("authenticatedUserId");
                 if (!(actor instanceof Long actorId)) {
@@ -315,6 +331,8 @@ public class AdminApiServlet extends HttpServlet {
             }
             ApiResponse.error(response, 404, "API_NOT_FOUND", "Không tìm thấy chức năng.",
                     "Quay lại trang quản trị", "/admin.html");
+        } catch (ApiException exception) {
+            ApiResponse.error(response, exception.getStatusCode(), exception.getErrorCode(), exception.getMessage());
         } catch (IllegalStateException exception) {
             ApiResponse.error(response, 404, "ROLE_NOT_ASSIGNED", exception.getMessage(),
                     "Kiểm tra lại lựa chọn", "/admin.html#vai-tro");
@@ -324,29 +342,6 @@ public class AdminApiServlet extends HttpServlet {
         } catch (SQLException exception) {
             serviceUnavailable(response);
         }
-    }
-
-    private List<Map<String, Object>> parseRowsFromJson(JsonObject body) {
-        List<Map<String, Object>> rows = new ArrayList<>();
-        if (body != null && body.has("rows") && body.get("rows").isJsonArray()) {
-            JsonArray arr = body.getAsJsonArray("rows");
-            for (JsonElement el : arr) {
-                if (el.isJsonObject()) {
-                    JsonObject obj = el.getAsJsonObject();
-                    Map<String, Object> row = new LinkedHashMap<>();
-                    if (obj.has("fullName")) row.put("fullName", obj.get("fullName").getAsString());
-                    else if (obj.has("name")) row.put("fullName", obj.get("name").getAsString());
-                    if (obj.has("email")) row.put("email", obj.get("email").getAsString());
-                    if (obj.has("phone")) row.put("phone", obj.get("phone").getAsString());
-                    if (obj.has("role")) row.put("role", obj.get("role").getAsString());
-                    if (obj.has("dateOfBirth")) row.put("dateOfBirth", obj.get("dateOfBirth").getAsString());
-                    if (obj.has("gender")) row.put("gender", obj.get("gender").getAsString());
-                    if (obj.has("address")) row.put("address", obj.get("address").getAsString());
-                    rows.add(row);
-                }
-            }
-        }
-        return rows;
     }
 
     private List<String> stringArray(JsonObject body, String key) {
@@ -363,6 +358,16 @@ public class AdminApiServlet extends HttpServlet {
             values.add(item.getAsString());
         }
         return values;
+    }
+
+    private static long actorId(HttpServletRequest request) {
+        return request.getAttribute("authenticatedUserId") instanceof Long id ? id : 0;
+    }
+
+    private static boolean isAdmin(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        return session != null && session.getAttribute("currentUser") instanceof User user
+                && user.getRoles() != null && user.getRoles().contains("ADMIN");
     }
 
     private void serviceUnavailable(HttpServletResponse response) throws IOException {

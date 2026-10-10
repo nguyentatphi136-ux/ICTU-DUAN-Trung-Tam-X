@@ -91,7 +91,16 @@ public class TestDatabaseHelper {
                         password_hash VARCHAR(255) NOT NULL,
                         full_name VARCHAR(100) NOT NULL,
                         phone VARCHAR(20) NULL,
-                        status VARCHAR(20) DEFAULT 'ACTIVE'
+                        date_of_birth DATE NULL,
+                        gender VARCHAR(10) DEFAULT 'OTHER',
+                        address VARCHAR(255) NULL,
+                        avatar_url VARCHAR(255) NULL,
+                        status VARCHAR(20) DEFAULT 'ACTIVE',
+                        locked_reason VARCHAR(255) NULL,
+                        failed_login_attempts INT NOT NULL DEFAULT 0,
+                        locked_until TIMESTAMP NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )
                 """);
 
@@ -102,6 +111,40 @@ public class TestDatabaseHelper {
                         PRIMARY KEY (user_id, role_id)
                     )
                 """);
+
+                stmt.execute("""
+                    CREATE TABLE IF NOT EXISTS subjects (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        subject_code VARCHAR(50) NOT NULL UNIQUE,
+                        subject_name VARCHAR(150) NOT NULL,
+                        total_sessions INT NOT NULL DEFAULT 15
+                    )
+                """);
+
+                stmt.execute("""
+                    CREATE TABLE IF NOT EXISTS program_subjects (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        program_id INT NOT NULL,
+                        subject_id INT NOT NULL,
+                        order_index INT NOT NULL DEFAULT 1
+                    )
+                """);
+
+                stmt.execute("""
+                    CREATE TABLE IF NOT EXISTS audit_logs (
+                        id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                        user_id BIGINT NULL,
+                        action VARCHAR(100) NOT NULL,
+                        entity_type VARCHAR(50) NULL,
+                        entity_id VARCHAR(50) NULL,
+                        old_values TEXT NULL,
+                        new_values TEXT NULL,
+                        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    )
+                """);
+
+                // Cột xoá mềm deleted_at, deleted_by giống CSDL thật.
+                com.ems.config.DatabaseMigration.ensureSchema(conn);
 
                 initialized = true;
             } catch (SQLException e) {
@@ -114,6 +157,9 @@ public class TestDatabaseHelper {
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement()) {
             stmt.execute("DELETE FROM classes");
+            stmt.execute("DELETE FROM program_subjects");
+            stmt.execute("DELETE FROM subjects");
+            stmt.execute("DELETE FROM audit_logs");
             stmt.execute("DELETE FROM programs");
             stmt.execute("DELETE FROM role_permissions");
             stmt.execute("DELETE FROM user_roles");

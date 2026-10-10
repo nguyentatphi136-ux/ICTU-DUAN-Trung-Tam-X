@@ -2,6 +2,7 @@ package vn.edu.ictu.ems.controller;
 
 import com.ems.dao.AdminDAO;
 import com.ems.security.ApiResponse;
+import com.ems.service.UserImportParser;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -13,10 +14,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.Part;
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
+import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -24,13 +23,18 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Controller xử lý Chức năng S2-01 (IDTTX-31):
- * Nhập danh sách người dùng hàng loạt từ tệp Excel (Bulk User Import from Excel).
- * - AC1: Tải được tệp mẫu chuẩn
- * - AC2: Xem trước và báo lỗi theo từng dòng trước khi nhập
- * - AC3: Dòng lỗi bị bỏ qua, dòng hợp lệ vẫn được nhập, có báo cáo tổng kết
+ * S2-01 (IDTTX-31): Nhập người dùng hàng loạt từ tệp Excel hoặc CSV.
+ * - AC1: Tải tệp mẫu
+ * - AC2: Xem trước, tách ba nhóm hợp lệ / trùng / lỗi theo từng dòng
+ * - AC3: Nhập dòng hợp lệ, bỏ qua dòng trùng và dòng lỗi, có báo cáo tổng kết
+ *
+ * API cho giao diện React (quyền USER_CREATE, xem PermissionPolicy):
+ * - GET  /api/admin/users/import/template
+ * - POST /api/admin/users/import/preview   multipart "file" (.xlsx, .xls, .csv) hoặc JSON {rows}
+ * - POST /api/admin/users/import           JSON {fileName, rows}; không gửi rows thì nhập các dòng vừa xem trước
+ * Đường /admin/user-import giữ cho trang JSP cũ.
  */
-@WebServlet({"/admin/user-import", "/admin/users/import"})
+@WebServlet({"/admin/user-import", "/admin/users/import", "/api/admin/users/import/*"})
 @MultipartConfig(
         fileSizeThreshold = 1024 * 1024,
         maxFileSize = 1024 * 1024 * 10,
@@ -39,21 +43,45 @@ import java.util.Map;
 public class UserImportServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Gson GSON = new Gson();
+    private static final String PENDING_ROWS = "PENDING_IMPORT_ROWS";
+    private static final String PENDING_FILE = "PENDING_IMPORT_FILENAME";
     private final AdminDAO adminDAO = new AdminDAO();
+    private final com.ems.dao.PermissionDAO permissionDAO = new com.ems.dao.PermissionDAO();
+
+    /** Trang JSP cũ không đi qua kiểm tra quyền /api/ của SessionAuthFilter nên tự kiểm ở đây. */
+    private boolean mayImport(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session == null || !(session.getAttribute("currentUser") instanceof com.ems.model.User user)) return false;
+        try {
+            return permissionDAO.hasPermission(user.getId(), "USER_CREATE");
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    private static boolean isApi(HttpServletRequest request) {
+        return request.getServletPath().startsWith("/api/");
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String action = request.getParameter("action");
-        String pathInfo = request.getPathInfo();
-
-        // 1. Tải tệp mẫu (S2-01 AC1)
-        if ("template".equalsIgnoreCase(action) || (pathInfo != null && pathInfo.contains("template"))) {
-            downloadTemplate(response);
+        if (!isApi(request) && !mayImport(request)) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
-
-        // 2. Hiển thị trang JSP Nhập người dùng từ Excel
+        String pathInfo = request.getPathInfo();
+        if ("template".equalsIgnoreCase(request.getParameter("action"))
+                || (pathInfo != null && pathInfo.contains("template"))) {
+            response.setContentType("text/csv; charset=UTF-8");
+            response.setHeader("Content-Disposition", "attachment; filename=\"mau_nhap_nguoi_dung_tms.csv\"");
+            response.getWriter().write(UserImportParser.templateCsv());
+            return;
+        }
+        if (isApi(request)) {
+            ApiResponse.error(response, 404, "API_NOT_FOUND", "Không tìm thấy chức năng.");
+            return;
+        }
         request.getRequestDispatcher("/WEB-INF/views/admin/user-import.jsp").forward(request, response);
     }
 
@@ -62,209 +90,159 @@ public class UserImportServlet extends HttpServlet {
             throws ServletException, IOException {
         request.setCharacterEncoding("UTF-8");
         response.setCharacterEncoding("UTF-8");
-
-        String contentType = request.getContentType();
-        String action = request.getParameter("action");
-        HttpSession session = request.getSession();
-
-        // Hỗ trợ REST API JSON từ Frontend fetch
-        if (contentType != null && contentType.contains("application/json")) {
-            handleJsonApi(request, response);
-            return;
+        if (isApi(request)) {
+            handleApi(request, response);
+        } else if (mayImport(request)) {
+            handleJspForm(request, response);
+        } else {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
         }
+    }
 
-        // Hỗ trợ Form Web JSP (Multipart Form / Confirm Import)
+    private void handleApi(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        String path = request.getPathInfo() == null ? "" : request.getPathInfo();
+        HttpSession session = request.getSession();
         try {
-            if ("confirmImport".equalsIgnoreCase(action)) {
-                // AC3: Tiến hành nhập các dòng hợp lệ, bỏ qua các dòng lỗi
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> evaluatedRows = (List<Map<String, Object>>) session.getAttribute("PENDING_IMPORT_ROWS");
-                String fileName = request.getParameter("fileName");
-                if (fileName == null || fileName.isBlank()) {
-                    fileName = (String) session.getAttribute("PENDING_IMPORT_FILENAME");
+            if ("/preview".equals(path)) {
+                String fileName;
+                List<Map<String, Object>> rows;
+                if (isMultipart(request)) {
+                    Part part = request.getPart("file");
+                    if (part == null || part.getSize() == 0) {
+                        ApiResponse.error(response, 400, "IMPORT_FILE_REQUIRED", "Vui lòng chọn tệp .xlsx, .xls hoặc .csv.");
+                        return;
+                    }
+                    fileName = submittedFileName(part);
+                    try (InputStream in = part.getInputStream()) {
+                        rows = UserImportParser.parse(fileName, in);
+                    }
+                } else {
+                    JsonObject body = GSON.fromJson(request.getReader(), JsonObject.class);
+                    fileName = body != null && body.has("fileName") ? body.get("fileName").getAsString() : "import_users.csv";
+                    rows = rowsFromJson(body);
                 }
-                if (fileName == null || fileName.isBlank()) {
-                    fileName = "import_users.xlsx";
-                }
-
-                if (evaluatedRows == null || evaluatedRows.isEmpty()) {
-                    request.setAttribute("errorMessage", "Không tìm thấy dữ liệu xem trước cần nhập. Vui lòng tải lại tệp.");
-                    request.getRequestDispatcher("/WEB-INF/views/admin/user-import.jsp").forward(request, response);
+                if (rows.isEmpty()) {
+                    ApiResponse.error(response, 400, "IMPORT_EMPTY", "Tệp không có dòng dữ liệu nào.");
                     return;
                 }
-
-                long actorId = 1; // Default Admin
-                Object currentObj = session.getAttribute("currentUser");
-                if (currentObj instanceof com.ems.model.User u) {
-                    actorId = u.getId();
-                }
-
-                Map<String, Object> summary = adminDAO.importUsersBatch(actorId, fileName, evaluatedRows);
-                session.removeAttribute("PENDING_IMPORT_ROWS");
-                session.removeAttribute("PENDING_IMPORT_FILENAME");
-
-                request.setAttribute("summary", summary);
-                request.setAttribute("message", "Đã hoàn thành đợt nhập người dùng. Xem kết quả báo cáo chi tiết bên dưới.");
-                request.getRequestDispatcher("/WEB-INF/views/admin/user-import.jsp").forward(request, response);
-                return;
-            }
-
-            // AC2: Xem trước và báo lỗi theo từng dòng từ file tải lên
-            Part filePart = request.getPart("file");
-            if (filePart == null || filePart.getSize() == 0) {
-                request.setAttribute("errorMessage", "Vui lòng chọn tệp CSV hoặc Excel hợp lệ.");
-                request.getRequestDispatcher("/WEB-INF/views/admin/user-import.jsp").forward(request, response);
-                return;
-            }
-
-            String fileName = getSubmittedFileName(filePart);
-            List<Map<String, Object>> parsedRows = parseCsvStream(filePart);
-
-            if (parsedRows.isEmpty()) {
-                request.setAttribute("errorMessage", "Tệp tải lên không có dữ liệu người dùng nào.");
-                request.getRequestDispatcher("/WEB-INF/views/admin/user-import.jsp").forward(request, response);
-                return;
-            }
-
-            Map<String, Object> preview = adminDAO.previewUsersBatch(parsedRows);
-            session.setAttribute("PENDING_IMPORT_ROWS", parsedRows);
-            session.setAttribute("PENDING_IMPORT_FILENAME", fileName);
-
-            request.setAttribute("preview", preview);
-            request.setAttribute("uploadedFileName", fileName);
-            request.getRequestDispatcher("/WEB-INF/views/admin/user-import.jsp").forward(request, response);
-
-        } catch (SQLException e) {
-            request.setAttribute("errorMessage", "Lỗi cơ sở dữ liệu khi xử lý: " + e.getMessage());
-            request.getRequestDispatcher("/WEB-INF/views/admin/user-import.jsp").forward(request, response);
-        } catch (Exception e) {
-            request.setAttribute("errorMessage", "Đã xảy ra lỗi: " + e.getMessage());
-            request.getRequestDispatcher("/WEB-INF/views/admin/user-import.jsp").forward(request, response);
-        }
-    }
-
-    /**
-     * Tải tệp mẫu Excel/CSV chuẩn UTF-8 có BOM (AC1)
-     */
-    private void downloadTemplate(HttpServletResponse response) throws IOException {
-        response.setContentType("text/csv; charset=UTF-8");
-        response.setHeader("Content-Disposition", "attachment; filename=\"mau_nhap_nguoi_dung_tms.csv\"");
-        String csv = "\uFEFFHọ và tên,Email,Số điện thoại,Vai trò,Ngày sinh,Giới tính,Địa chỉ\r\n"
-                + "Nguyễn Văn An,an.nguyen@tms.vn,0912345678,student,2003-05-15,Nam,Thái Nguyên\r\n"
-                + "Trần Thị Bình,binh.tran@tms.vn,0987654321,student,2002-11-20,Nữ,Hà Nội\r\n"
-                + "Lê Hoàng Cường,cuong.le@tms.vn,0903112233,instructor,1990-08-10,Nam,Đà Nẵng\r\n"
-                + "Phạm Thu Dung,dung.pt@tms.vn,0356789123,ta,1998-04-25,Nữ,Bắc Ninh\r\n";
-        response.getWriter().write(csv);
-    }
-
-    /**
-     * Đọc tệp CSV và bóc tách các dòng thành danh sách Map
-     */
-    private List<Map<String, Object>> parseCsvStream(Part filePart) throws IOException {
-        List<Map<String, Object>> list = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(filePart.getInputStream(), StandardCharsets.UTF_8))) {
-            String headerLine = reader.readLine();
-            if (headerLine == null) return list;
-
-            String[] headers = splitCsvLine(headerLine);
-            int nameCol = -1, emailCol = -1, phoneCol = -1, roleCol = -1, dobCol = -1, genderCol = -1, addrCol = -1;
-
-            for (int i = 0; i < headers.length; i++) {
-                String h = headers[i].toLowerCase().replaceAll("[\\s_]", "");
-                if (h.contains("họ") || h.contains("name") || h.contains("tên")) nameCol = i;
-                else if (h.contains("email") || h.contains("mail")) emailCol = i;
-                else if (h.contains("thoại") || h.contains("phone") || h.contains("sđt") || h.contains("sdt")) phoneCol = i;
-                else if (h.contains("trò") || h.contains("role") || h.contains("vaitro")) roleCol = i;
-                else if (h.contains("sinh") || h.contains("dob") || h.contains("birth")) dobCol = i;
-                else if (h.contains("tính") || h.contains("gender")) genderCol = i;
-                else if (h.contains("chỉ") || h.contains("address") || h.contains("diachi")) addrCol = i;
-            }
-
-            String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.trim().isEmpty()) continue;
-                String[] cols = splitCsvLine(line);
-                if (cols.length == 0) continue;
-
-                Map<String, Object> map = new LinkedHashMap<>();
-                map.put("fullName", nameCol >= 0 && nameCol < cols.length ? cols[nameCol] : (cols.length > 0 ? cols[0] : ""));
-                map.put("email", emailCol >= 0 && emailCol < cols.length ? cols[emailCol] : (cols.length > 1 ? cols[1] : ""));
-                map.put("phone", phoneCol >= 0 && phoneCol < cols.length ? cols[phoneCol] : (cols.length > 2 ? cols[2] : ""));
-                map.put("role", roleCol >= 0 && roleCol < cols.length ? cols[roleCol] : (cols.length > 3 ? cols[3] : "student"));
-                map.put("dateOfBirth", dobCol >= 0 && dobCol < cols.length ? cols[dobCol] : (cols.length > 4 ? cols[4] : ""));
-                map.put("gender", genderCol >= 0 && genderCol < cols.length ? cols[genderCol] : (cols.length > 5 ? cols[5] : ""));
-                map.put("address", addrCol >= 0 && addrCol < cols.length ? cols[addrCol] : (cols.length > 6 ? cols[6] : ""));
-                list.add(map);
-            }
-        }
-        return list;
-    }
-
-    private String[] splitCsvLine(String line) {
-        List<String> tokens = new ArrayList<>();
-        StringBuilder sb = new StringBuilder();
-        boolean inQuotes = false;
-        char delimiter = line.contains(";") && !line.contains(",") ? ';' : ',';
-
-        for (int i = 0; i < line.length(); i++) {
-            char c = line.charAt(i);
-            if (c == '"') {
-                inQuotes = !inQuotes;
-            } else if (c == delimiter && !inQuotes) {
-                tokens.add(sb.toString().trim());
-                sb.setLength(0);
-            } else {
-                sb.append(c);
-            }
-        }
-        tokens.add(sb.toString().trim());
-        return tokens.toArray(new String[0]);
-    }
-
-    private String getSubmittedFileName(Part part) {
-        for (String cd : part.getHeader("content-disposition").split(";")) {
-            if (cd.trim().startsWith("filename")) {
-                String fileName = cd.substring(cd.indexOf('=') + 1).trim().replace("\"", "");
-                return fileName.substring(fileName.lastIndexOf('/') + 1).substring(fileName.lastIndexOf('\\') + 1);
-            }
-        }
-        return "import_users.xlsx";
-    }
-
-    private void handleJsonApi(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        try {
-            JsonObject body = GSON.fromJson(request.getReader(), JsonObject.class);
-            String path = request.getPathInfo() == null ? "" : request.getPathInfo();
-            if ("/preview".equals(path) || (body != null && body.has("previewOnly"))) {
-                List<Map<String, Object>> rows = parseRowsFromJson(body);
                 Map<String, Object> preview = adminDAO.previewUsersBatch(rows);
+                preview.put("fileName", fileName);
+                session.setAttribute(PENDING_ROWS, rows);
+                session.setAttribute(PENDING_FILE, fileName);
                 ApiResponse.success(response, "IMPORT_PREVIEW_SUCCESS", "Xem trước thành công.", preview);
                 return;
             }
-
-            long actorId = 1;
-            String fileName = body != null && body.has("fileName") ? body.get("fileName").getAsString() : "import_users.xlsx";
-            List<Map<String, Object>> rows = parseRowsFromJson(body);
-            Map<String, Object> summary = adminDAO.importUsersBatch(actorId, fileName, rows);
-            ApiResponse.success(response, "IMPORT_BATCH_SUCCESS", "Nhập danh sách thành công.", summary);
+            if (path.isEmpty() || "/".equals(path)) {
+                JsonObject body = GSON.fromJson(request.getReader(), JsonObject.class);
+                List<Map<String, Object>> rows = rowsFromJson(body);
+                String fileName = body != null && body.has("fileName") ? body.get("fileName").getAsString() : null;
+                if (rows.isEmpty()) {
+                    rows = pendingRows(session);
+                    if (fileName == null) fileName = (String) session.getAttribute(PENDING_FILE);
+                }
+                if (rows.isEmpty()) {
+                    ApiResponse.error(response, 400, "IMPORT_NOTHING_TO_IMPORT", "Chưa có dữ liệu xem trước. Vui lòng tải tệp lên lại.");
+                    return;
+                }
+                long actorId = request.getAttribute("authenticatedUserId") instanceof Long id ? id : 0;
+                Map<String, Object> summary = adminDAO.importUsersBatch(actorId, fileName, rows);
+                session.removeAttribute(PENDING_ROWS);
+                session.removeAttribute(PENDING_FILE);
+                ApiResponse.success(response, "IMPORT_BATCH_SUCCESS", "Đã nhập danh sách người dùng.", summary);
+                return;
+            }
+            ApiResponse.error(response, 404, "API_NOT_FOUND", "Không tìm thấy chức năng.");
+        } catch (IllegalArgumentException e) {
+            ApiResponse.error(response, 400, "IMPORT_INVALID", e.getMessage());
+        } catch (IllegalStateException e) {
+            ApiResponse.error(response, 413, "IMPORT_FILE_TOO_LARGE", "Tệp vượt quá 10MB.");
+        } catch (ServletException e) {
+            ApiResponse.error(response, 400, "IMPORT_INVALID", "Không đọc được tệp tải lên.");
         } catch (SQLException e) {
-            ApiResponse.error(response, 500, "DATABASE_ERROR", e.getMessage(), "Thử lại", "/admin/user-import");
+            ApiResponse.error(response, 500, "DATABASE_ERROR", "Lỗi cơ sở dữ liệu khi xử lý tệp nhập.");
         }
     }
 
-    private List<Map<String, Object>> parseRowsFromJson(JsonObject body) {
+    private void handleJspForm(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        HttpSession session = request.getSession();
+        String view = "/WEB-INF/views/admin/user-import.jsp";
+        try {
+            if ("confirmImport".equalsIgnoreCase(request.getParameter("action"))) {
+                List<Map<String, Object>> rows = pendingRows(session);
+                if (rows.isEmpty()) {
+                    request.setAttribute("errorMessage", "Không tìm thấy dữ liệu xem trước cần nhập. Vui lòng tải lại tệp.");
+                    request.getRequestDispatcher(view).forward(request, response);
+                    return;
+                }
+                long actorId = 1;
+                if (session.getAttribute("currentUser") instanceof com.ems.model.User u) actorId = u.getId();
+                Map<String, Object> summary = adminDAO.importUsersBatch(actorId, (String) session.getAttribute(PENDING_FILE), rows);
+                session.removeAttribute(PENDING_ROWS);
+                session.removeAttribute(PENDING_FILE);
+                request.setAttribute("summary", summary);
+                request.setAttribute("message", "Đã hoàn thành đợt nhập người dùng. Xem kết quả báo cáo chi tiết bên dưới.");
+                request.getRequestDispatcher(view).forward(request, response);
+                return;
+            }
+
+            Part filePart = request.getPart("file");
+            if (filePart == null || filePart.getSize() == 0) {
+                request.setAttribute("errorMessage", "Vui lòng chọn tệp CSV hoặc Excel hợp lệ.");
+                request.getRequestDispatcher(view).forward(request, response);
+                return;
+            }
+            String fileName = submittedFileName(filePart);
+            List<Map<String, Object>> rows;
+            try (InputStream in = filePart.getInputStream()) {
+                rows = UserImportParser.parse(fileName, in);
+            }
+            if (rows.isEmpty()) {
+                request.setAttribute("errorMessage", "Tệp tải lên không có dữ liệu người dùng nào.");
+                request.getRequestDispatcher(view).forward(request, response);
+                return;
+            }
+            session.setAttribute(PENDING_ROWS, rows);
+            session.setAttribute(PENDING_FILE, fileName);
+            request.setAttribute("preview", adminDAO.previewUsersBatch(rows));
+            request.setAttribute("uploadedFileName", fileName);
+            request.getRequestDispatcher(view).forward(request, response);
+        } catch (SQLException e) {
+            request.setAttribute("errorMessage", "Lỗi cơ sở dữ liệu khi xử lý: " + e.getMessage());
+            request.getRequestDispatcher(view).forward(request, response);
+        } catch (IllegalArgumentException e) {
+            request.setAttribute("errorMessage", e.getMessage());
+            request.getRequestDispatcher(view).forward(request, response);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> pendingRows(HttpSession session) {
+        Object rows = session.getAttribute(PENDING_ROWS);
+        return rows instanceof List<?> list ? (List<Map<String, Object>>) list : new ArrayList<>();
+    }
+
+    private static boolean isMultipart(HttpServletRequest request) {
+        String type = request.getContentType();
+        return type != null && type.toLowerCase(java.util.Locale.ROOT).startsWith("multipart/");
+    }
+
+    private static String submittedFileName(Part part) {
+        String name = part.getSubmittedFileName();
+        if (name == null || name.isBlank()) return "import_users.csv";
+        return name.substring(Math.max(name.lastIndexOf('/'), name.lastIndexOf('\\')) + 1);
+    }
+
+    private static List<Map<String, Object>> rowsFromJson(JsonObject body) {
         List<Map<String, Object>> list = new ArrayList<>();
         if (body == null || !body.has("rows") || !body.get("rows").isJsonArray()) return list;
         body.getAsJsonArray("rows").forEach(el -> {
             if (el.isJsonObject()) {
-                JsonObject obj = el.getAsJsonObject();
-                Map<String, Object> m = new LinkedHashMap<>();
-                obj.entrySet().forEach(entry -> {
-                    if (!entry.getValue().isJsonNull()) {
-                        m.put(entry.getKey(), entry.getValue().getAsString());
-                    }
+                Map<String, Object> row = new LinkedHashMap<>();
+                el.getAsJsonObject().entrySet().forEach(entry -> {
+                    if (entry.getValue().isJsonPrimitive()) row.put(entry.getKey(), entry.getValue().getAsString());
                 });
-                list.add(m);
+                list.add(row);
             }
         });
         return list;
