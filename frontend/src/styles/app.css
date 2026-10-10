@@ -45,7 +45,10 @@ button.role:hover{background:var(--chip)}
 .content{padding:24px 32px 40px}
 .h{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}.h>div:first-child{flex:1;min-width:200px}.h h2{font-size:26px;line-height:1.3}.h p{color:var(--muted)}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
-.dash{border:1px dashed var(--line);border-radius:var(--r);min-height:420px;display:grid;place-items:center;color:var(--faint);font-size:15px;text-align:center;padding:24px}
+.dash{border:1px dashed var(--line);border-radius:var(--r);min-height:160px;display:grid;place-items:center;color:var(--faint);font-size:15px;text-align:center;padding:24px}
+/* Trang có vùng giữ chỗ (.dash): vùng đó giãn vừa phần còn lại của màn hình thay vì cao cố định rồi phải cuộn. */
+.main:has(>.content>.dash){display:flex;flex-direction:column}
+.content:has(>.dash){flex:1;display:flex;flex-direction:column}.content>.dash{flex:1}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-bottom:24px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px}
 .stat span{color:var(--muted);font-size:13px}.stat b{display:block;font-size:36px;line-height:1.2;margin:14px 0 12px}
@@ -62,7 +65,7 @@ td .err{margin:0;font-size:13px}
 .tags{display:flex;gap:6px;flex-wrap:wrap}
 .pill.info{background:var(--soft);color:var(--blue)}
 .pager{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);flex-wrap:wrap}
-.pager div{display:flex;gap:8px}
+.pager div{display:flex;flex-wrap:wrap;gap:8px}
 .pager button{width:32px;height:32px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);font-size:13px;color:var(--ink)}
 .pager button.on{background:var(--soft);border-color:var(--soft);color:var(--blue);font-weight:600}
 .pager button:disabled{cursor:default;opacity:.5}
