@@ -4,6 +4,7 @@ import { useAuth } from '../data/auth';
 import { canAccess, menuFor, ROLES } from '../data/permissions';
 import { ErrorPage } from '../pages/S1-07-trang-loi/ErrorPage';
 import { Icon } from './Icon';
+import { ThemeToggle } from './ThemeToggle';
 
 type Props = {
   /** Đường dẫn trên thanh trên, phần tử cuối là trang hiện tại. */
@@ -119,6 +120,7 @@ export function AppLayout({ crumb, module, children }: Props) {
               </span>
             ))}
           </div>
+          <ThemeToggle />
           <Icon name="bell" />
           <div className="um" ref={menuRef}>
             <button type="button" className="um-btn" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
