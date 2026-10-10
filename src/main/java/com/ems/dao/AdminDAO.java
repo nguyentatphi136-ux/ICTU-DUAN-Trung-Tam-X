@@ -718,23 +718,38 @@ public class AdminDAO {
         int errorCount = 0;
 
         try (Connection connection = DBConnection.getConnection()) {
+            // Pha 1: kiểm mọi dòng (giống bước xem trước), tách dòng trùng và dòng lỗi.
+            List<Map<String, Object>> okRows = new ArrayList<>();
             for (int i = 0; i < rows.size(); i++) {
-                int rowIdx = i + 1;
-                Map<String, Object> eval = evaluateImportRow(connection, rows.get(i), rowIdx, seenEmails, seenPhones);
+                Map<String, Object> eval = evaluateImportRow(connection, rows.get(i), i + 1, seenEmails, seenPhones);
                 String status = (String) eval.get("status");
-                if (!"ok".equals(status)) {
+                if ("ok".equals(status)) {
+                    okRows.add(eval);
+                } else {
                     if ("duplicate".equals(status)) duplicateCount++; else errorCount++;
                     skipped.add(skippedRow(eval, "duplicate".equals(status) ? "DUPLICATE" : "INVALID",
                             (String) eval.get("errorMessage")));
-                    continue;
                 }
+            }
 
+            // Pha 2: BCrypt mỗi mật khẩu mất khoảng 80ms; băm song song trên các nhân CPU để tệp vài nghìn dòng
+            // xong trong vài giây thay vì vài phút. Độ khó băm giữ nguyên.
+            String[] tempPasswords = new String[okRows.size()];
+            String[] hashes = new String[okRows.size()];
+            java.util.stream.IntStream.range(0, okRows.size()).parallel().forEach(k -> {
+                tempPasswords[k] = generateTempPassword();
+                hashes[k] = BCrypt.hashpw(tempPasswords[k], BCrypt.gensalt(10));
+            });
+
+            // Pha 3: ghi từng tài khoản; dòng nào lỗi khi lưu thì chỉ bỏ dòng đó.
+            for (int k = 0; k < okRows.size(); k++) {
+                Map<String, Object> eval = okRows.get(k);
+                int rowIdx = (int) eval.get("rowIndex");
                 String email = (String) eval.get("email");
                 String phone = (String) eval.get("phone");
                 String dob = (String) eval.get("dateOfBirth");
                 // Mã tài khoản theo lô và số dòng nên không trùng giữa các dòng cùng lô.
                 String userCode = "U" + (stamp % 100000000L) + "-" + rowIdx;
-                String tempPass = generateTempPassword();
                 try {
                     connection.setAutoCommit(false);
                     long newUserId = 0;
@@ -743,7 +758,7 @@ public class AdminDAO {
                                     + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', NOW(), NOW())", PreparedStatement.RETURN_GENERATED_KEYS)) {
                         stmt.setString(1, userCode);
                         stmt.setString(2, email);
-                        stmt.setString(3, BCrypt.hashpw(tempPass, BCrypt.gensalt(10)));
+                        stmt.setString(3, hashes[k]);
                         stmt.setString(4, (String) eval.get("fullName"));
                         stmt.setString(5, phone.isEmpty() ? null : phone);
                         stmt.setDate(6, dob.isEmpty() ? null : java.sql.Date.valueOf(dob));
@@ -773,7 +788,7 @@ public class AdminDAO {
                     succ.put("email", email);
                     succ.put("phone", phone);
                     succ.put("role", eval.get("role"));
-                    succ.put("tempPassword", tempPass);
+                    succ.put("tempPassword", tempPasswords[k]);
                     successUsers.add(succ);
                 } catch (SQLException | RuntimeException ex) {
                     connection.rollback();
@@ -783,6 +798,8 @@ public class AdminDAO {
                     connection.setAutoCommit(true);
                 }
             }
+            // Báo cáo theo thứ tự dòng trong tệp.
+            skipped.sort(java.util.Comparator.comparingInt(e -> (int) e.get("rowIndex")));
 
             try {
                 long batchId = 0;
