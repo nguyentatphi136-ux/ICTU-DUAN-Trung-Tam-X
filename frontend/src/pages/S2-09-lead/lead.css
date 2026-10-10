@@ -1,6 +1,6 @@
 /* S2-09, S2-11. Danh sách lead, tìm kiếm, bộ lọc, ngăn thêm và sửa. */
 .ld-table tbody tr{cursor:pointer}
-.ld-table tbody tr:hover td{background:#f7f9fc}
+.ld-table tbody tr:hover td{background:var(--hover)}
 .ld-none{color:var(--red);font-size:13px}
 .ld-fields{border:0;margin:0;padding:0;min-width:0}
 .inp.warn input{border-color:#fdb022}
