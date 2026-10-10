@@ -1,11 +1,11 @@
 /* Trang dạng thẻ giữa màn hình: S1-03, S1-04. */
 .page{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px}
-.card{width:100%;max-width:560px;background:#fff;border-radius:var(--r);box-shadow:0 24px 60px rgba(9,116,241,.14);padding:24px 40px 32px}
+.card{width:100%;max-width:560px;background:var(--surface);border-radius:var(--r);box-shadow:0 24px 60px var(--card-glow);padding:24px 40px 32px}
 .card-top{display:flex;justify-content:space-between;align-items:center;margin:0 -16px 16px;color:var(--muted);font-size:13px}
-.x{width:32px;height:32px;border:1px solid var(--line);border-radius:var(--r);background:#fff;color:var(--muted);display:grid;place-items:center}
+.x{width:32px;height:32px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--muted);display:grid;place-items:center}
 .x svg{width:16px;height:16px}
 .sec{display:flex;gap:6px;align-items:center}.sec svg{color:var(--blue);width:16px;height:16px}
-.badge{width:64px;height:64px;border-radius:var(--r);margin:0 auto 20px;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--blue),var(--mint));box-shadow:0 10px 22px rgba(0,150,150,.25)}
+.badge{width:64px;height:64px;border-radius:var(--r);margin:0 auto 20px;display:grid;place-items:center;color:#fff;background:var(--grad);box-shadow:0 10px 22px rgba(0,150,150,.25)}
 .badge svg{width:28px;height:28px}.badge.amber{background:linear-gradient(135deg,#f79009,#fdb022)}
 .eyebrow{text-align:center;font-size:12px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--blue);margin-bottom:4px}
 .card h1{text-align:center;font-size:28px;line-height:1.25}
@@ -16,7 +16,7 @@
 .rules b{display:block;margin-bottom:6px}
 .rules ul{list-style:none;margin:0;padding:0}
 .rules li{list-style:none;display:flex;gap:10px;align-items:center;color:var(--muted);padding:2px 0}
-.rules li svg{width:16px;height:16px;color:#a4abba}
+.rules li svg{width:16px;height:16px;color:var(--faint)}
 .rules li.ok{color:var(--green);font-weight:500}.rules li.ok svg{color:var(--green)}
 .stack>*+*{margin-top:12px}
 @media(max-width:520px){.card{padding:20px 20px 28px}.card-top{margin:0 0 16px}.card h1{font-size:24px}}
