@@ -135,6 +135,33 @@ CREATE TABLE IF NOT EXISTS `audit_logs` (
     INDEX `idx_audit_user` (`user_id`, `created_at`)
 ) ENGINE=InnoDB COMMENT='Bảng nhật ký kiểm toán hệ thống';
 
+-- 1.9 Bảng Lô nhập người dùng hàng loạt từ Excel (Sprint 2 S2-01)
+CREATE TABLE IF NOT EXISTS `user_import_batches` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `batch_code` VARCHAR(64) NOT NULL UNIQUE COMMENT 'Mã lô nhập, VD: IMP-20261006-001',
+    `actor_id` BIGINT NULL COMMENT 'Người thực hiện nhập (Admin)',
+    `file_name` VARCHAR(255) NOT NULL COMMENT 'Tên tệp Excel/CSV đã tải lên',
+    `total_rows` INT NOT NULL DEFAULT 0,
+    `success_rows` INT NOT NULL DEFAULT 0,
+    `failed_rows` INT NOT NULL DEFAULT 0,
+    `summary_note` TEXT NULL COMMENT 'Báo cáo tổng kết đợt nhập',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_import_batches_actor` FOREIGN KEY (`actor_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+    INDEX `idx_import_batch_created` (`created_at`)
+) ENGINE=InnoDB COMMENT='Bảng lưu lịch sử các đợt nhập người dùng hàng loạt từ Excel';
+
+-- 1.10 Bảng Chi tiết lỗi từng dòng khi nhập Excel (Sprint 2 S2-01)
+CREATE TABLE IF NOT EXISTS `user_import_errors` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `batch_id` BIGINT NOT NULL,
+    `row_index` INT NOT NULL COMMENT 'Thứ tự dòng trong tệp Excel/CSV',
+    `raw_data` JSON NULL COMMENT 'Dữ liệu thô của dòng bị lỗi',
+    `error_reason` VARCHAR(255) NOT NULL COMMENT 'Nguyên nhân từ chối / lỗi',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_import_errors_batch` FOREIGN KEY (`batch_id`) REFERENCES `user_import_batches` (`id`) ON DELETE CASCADE,
+    INDEX `idx_import_errors_batch` (`batch_id`)
+) ENGINE=InnoDB COMMENT='Bảng lưu chi tiết các dòng bị từ chối / lỗi khi nhập Excel';
+
 
 -- =============================================================================
 -- PHÂN HỆ 2: CHƯƠNG TRÌNH ĐÀO TẠO & MÔN HỌC (Sprint 2)

@@ -24,3 +24,8 @@ hs_err_pid*
 replay_pid*
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
+
+# Maven target directory
+target/
+.idea/
+*.iml
