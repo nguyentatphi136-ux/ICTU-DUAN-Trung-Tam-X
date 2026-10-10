@@ -5,8 +5,11 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -69,5 +72,48 @@ public class DatabaseMigration {
 
             LOGGER.info("Đã kiểm tra và đảm bảo cấu trúc bảng programs và classes thành công.");
         }
+
+        // schema.sql cũ đặt tên cột là duration_months, còn DAO và migration S2-04 dùng duration.
+        if (hasColumn(conn, "programs", "duration_months") && !hasColumn(conn, "programs", "duration")) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("ALTER TABLE programs RENAME COLUMN duration_months TO duration");
+            }
+        }
+
+        // Xoá mềm: bản ghi bị xoá chỉ được gán deleted_at, nằm trong thùng rác cho tới khi khôi phục hoặc xoá vĩnh viễn.
+        for (String table : new String[] {"users", "programs", "subjects", "leads"}) {
+            ensureColumn(conn, table, "deleted_at", "DATETIME NULL");
+            ensureColumn(conn, table, "deleted_by", "BIGINT NULL");
+        }
+    }
+
+    /** Thêm cột nếu bảng có mà cột chưa có. Bảng chưa tồn tại thì bỏ qua. */
+    static void ensureColumn(Connection conn, String table, String column, String definition) throws SQLException {
+        if (!hasTable(conn, table) || hasColumn(conn, table, column)) return;
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
+        }
+    }
+
+    static boolean hasTable(Connection conn, String table) throws SQLException {
+        DatabaseMetaData meta = conn.getMetaData();
+        for (String name : new String[] {table, table.toUpperCase(Locale.ROOT)}) {
+            try (ResultSet rs = meta.getTables(conn.getCatalog(), null, name, new String[] {"TABLE"})) {
+                if (rs.next()) return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean hasColumn(Connection conn, String table, String column) throws SQLException {
+        DatabaseMetaData meta = conn.getMetaData();
+        for (String t : new String[] {table, table.toUpperCase(Locale.ROOT)}) {
+            for (String c : new String[] {column, column.toUpperCase(Locale.ROOT)}) {
+                try (ResultSet rs = meta.getColumns(conn.getCatalog(), null, t, c)) {
+                    if (rs.next()) return true;
+                }
+            }
+        }
+        return false;
     }
 }
