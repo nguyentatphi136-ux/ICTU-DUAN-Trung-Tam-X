@@ -10,9 +10,9 @@
 .pf-lock{display:flex;gap:8px;align-items:center;font-size:13px}
 .crop-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}.crop-head h3{margin:0}
 .crop{display:flex;gap:24px}
-.crop-box{position:relative;width:320px;height:320px;flex:none;border-radius:var(--r);overflow:hidden;background:linear-gradient(135deg,#9FCCFA,#0974F1);display:grid;place-items:center}
+.crop-box{position:relative;width:320px;height:320px;flex:none;border-radius:var(--r);overflow:hidden;background:var(--logo);display:grid;place-items:center}
 .crop-box img{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:none}
-.crop-frame{position:absolute;inset:50px;border:2px solid #fff;box-shadow:0 0 0 999px rgba(6,36,77,.45)}
+.crop-frame{position:absolute;inset:50px;border:2px solid #fff;box-shadow:0 0 0 999px var(--scrim)}
 .crop-side b{font-size:13px;font-weight:600}
 .crop-prev{display:flex;align-items:flex-end;gap:16px;margin:12px 0 8px}
 .crop-prev span{border-radius:50%;background-position:center;background-repeat:no-repeat;background-color:var(--soft)}
