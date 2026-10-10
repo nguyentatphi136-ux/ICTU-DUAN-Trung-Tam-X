@@ -9,8 +9,8 @@
 .ct-right{padding:56px 64px;display:flex;flex-direction:column;justify-content:center}
 .ct-right h2{font-size:32px;margin:6px 0 24px}
 .ct-right .inp input,.ct-right .inp select{height:44px}.ct-right .inp select{padding:0 14px}
-.ct-right select.ph{color:#a4abba}
-.ct-captcha{display:flex;align-items:center;gap:12px;width:300px;max-width:100%;height:60px;padding:0 16px;border:1px solid var(--line);border-radius:var(--r);background:#f7f9fc;cursor:pointer;margin-top:4px}
+.ct-right select.ph{color:var(--faint)}
+.ct-captcha{display:flex;align-items:center;gap:12px;width:300px;max-width:100%;height:60px;padding:0 16px;border:1px solid var(--line);border-radius:var(--r);background:var(--hover);cursor:pointer;margin-top:4px}
 .ct-captcha input{width:22px;height:22px;accent-color:var(--blue)}
 .ct-captcha svg{margin-left:auto;color:var(--muted)}
 .ct-captcha.bad{border-color:var(--red)}
