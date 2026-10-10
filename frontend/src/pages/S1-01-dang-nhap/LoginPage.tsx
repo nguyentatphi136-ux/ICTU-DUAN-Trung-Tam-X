@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../data/auth';
 import { ROLES } from '../../data/permissions';
 import { Icon } from '../../components/Icon';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { DEMO_ACCOUNTS, DEMO_PASSWORD, LOCK_SECONDS, MAX_ATTEMPTS, login } from './mockAuth';
 import './login.css';
 
@@ -97,6 +98,7 @@ export function LoginPage() {
   return (
     <div className="lg-page">
       <main className="lg-card">
+        <ThemeToggle className="theme-in" />
         <section className="lg-left">
           <div className="lg-logo">
             <span>
