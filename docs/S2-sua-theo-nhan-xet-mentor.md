@@ -48,6 +48,18 @@ Nhánh: `fix/s2-nhan-xet-mentor_NPPL`, tách từ `feature/frontend-theo-figma_N
 
 Nếu xoá vĩnh viễn một tài khoản đang có dữ liệu liên quan, máy chủ trả 409 `USER_HAS_RELATED_DATA`.
 
+## Sửa giao diện thêm (11/10/2026)
+
+| Commit | Vấn đề | Đã sửa |
+|---|---|---|
+| `6fdef9d` | Màu sáng/tối được nhớ mãi theo tài khoản, mở web không theo trình duyệt | Mỗi lần mở web theo màu của trình duyệt, đổi theo khi trình duyệt đổi. Bấm nút đổi màu chỉ giữ trong tab đang mở. Không còn loé nền sáng khi trình duyệt để tối |
+| `6fdef9d` | Đăng nhập và đăng ký tư vấn phải cuộn trên laptop 768–900px | Thu khoảng cách theo chiều cao màn hình để cả khung nằm gọn. Ở 768px ẩn dòng mô tả phụ của ba thẻ tính năng |
+| `6fdef9d` | Trang chủ có vùng nội dung cao cố định 420px nên bị tràn | Vùng nội dung giãn vừa phần còn lại của màn hình |
+| `6fdef9d` | Trang Tài khoản và Lead tràn ngang trên điện thoại | Thanh phân trang tự xuống dòng |
+| `535ee68` | Menu ba chấm ở dòng cuối bảng bị khung cuộn che, phải kéo mới thấy | Khi phía dưới không đủ chỗ thì menu mở lên trên. Áp dụng cho mọi bảng dùng `RowMenu` |
+
+Đã đo trên các khung 1366×657, 1536×730, 1920×947 (cửa sổ trình duyệt của màn hình 768, 864, 1080) và điện thoại 390px.
+
 ## Chạy và kiểm tra
 
 - Backend: `mvn test` chạy 74 test, tất cả đều qua (trong đó `S2MentorFixesTest` có 9 test).
@@ -63,3 +75,4 @@ Nếu xoá vĩnh viễn một tài khoản đang có dữ liệu liên quan, má
 - Chưa chạy thử trên MySQL thật, mới chạy trên H2 ở chế độ MySQL.
 - Danh sách môn học, buổi học và lead chưa có API backend; các trang này vẫn dùng dữ liệu mẫu, kể cả khi đã cấu hình API.
 - Mục 13 cần nhóm thống nhất bộ giao diện chung trước khi sửa tiếp.
+- Trang Hồ sơ còn dư khoảng 37px trên màn hình 768px. Các danh sách dài (Tài khoản, Môn học, Lead) vẫn cuộn dọc, đây là bình thường.
