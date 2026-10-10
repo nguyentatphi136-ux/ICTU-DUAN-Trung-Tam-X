@@ -1,18 +1,18 @@
 /* S1-02. Trang minh hoạ phiên: thanh trên dạng tab, form thêm học viên, hộp thoại cảnh báo. */
 .ss-page{min-height:100vh}
-.ss-top{height:64px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 32px;gap:24px;position:sticky;top:0;z-index:5}
+.ss-top{height:64px;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;padding:0 32px;gap:24px;position:sticky;top:0;z-index:5}
 .ss-top .logo{padding:0;width:130px}
-.ss-top .logo span{background:linear-gradient(135deg,#9FCCFA,#0974F1)}
+.ss-top .logo span{background:var(--logo)}
 .ss-top nav{flex:1;display:flex;gap:46px}
 .ss-top nav a{color:var(--muted);font-weight:400;font-size:15px}
 .ss-top nav a.on{color:var(--blue);font-weight:600}
 .ss-menu{width:240px;top:58px}
 .ss-menu .sep-top{border-top:1px solid var(--line)}
-.ss-menu .danger{background:#fef3f2}
+.ss-menu .danger{background:var(--bad-bg)}
 .ss-form{max-width:960px;margin:40px auto;padding:0 0 32px}
 .ss-head{display:flex;align-items:center;gap:12px;padding:23px 31px;border-bottom:1px solid var(--line);margin-bottom:20px}
 .ss-head h1{font-size:28px}
-.ss-ic{width:40px;height:40px;border-radius:var(--r);display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--blue),var(--mint))}
+.ss-ic{width:40px;height:40px;border-radius:var(--r);display:grid;place-items:center;color:#fff;background:var(--grad)}
 .ss-form form{padding:0 31px}
 .ss-form .grid2{gap:0 32px}
 .ss-form .field label{font-size:14px}

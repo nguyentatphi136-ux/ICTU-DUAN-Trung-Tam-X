@@ -3,7 +3,7 @@
 .ld-bulk b{flex:1;color:var(--blue);font-weight:600}
 .ld-bulk .btn{height:36px}
 .ld-table tbody tr{cursor:pointer}
-.ld-table tbody tr:hover td{background:#f7f9fc}
+.ld-table tbody tr:hover td{background:var(--hover)}
 .ld-table input[type=checkbox]{width:18px;height:18px;accent-color:var(--blue);cursor:pointer}
 .ld-none{color:var(--red);font-size:13px}
 .ld-options{display:flex;flex-direction:column;gap:8px}
