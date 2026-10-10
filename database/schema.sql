@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS `users` (
     `locked_reason` VARCHAR(255) NULL COMMENT 'Lý do khóa tài khoản',
     `failed_login_attempts` INT NOT NULL DEFAULT 0,
     `locked_until` DATETIME NULL,
+    `deleted_at` DATETIME NULL COMMENT 'Xoá mềm: thời điểm chuyển vào thùng rác, NULL là đang dùng',
+    `deleted_by` BIGINT NULL COMMENT 'Người chuyển vào thùng rác',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_users_email` (`email`),
@@ -173,9 +175,11 @@ CREATE TABLE IF NOT EXISTS `programs` (
     `program_code` VARCHAR(50) NOT NULL UNIQUE,
     `program_name` VARCHAR(150) NOT NULL,
     `description` TEXT NULL,
-    `duration_months` INT NOT NULL DEFAULT 6,
+    `duration` INT NOT NULL DEFAULT 60 COMMENT 'Tổng thời lượng (giờ hoặc buổi > 0)',
     `standard_tuition` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `status` ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE',
+    `deleted_at` DATETIME NULL COMMENT 'Xoá mềm: thời điểm chuyển vào thùng rác, NULL là đang dùng',
+    `deleted_by` BIGINT NULL COMMENT 'Người chuyển vào thùng rác',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB COMMENT='Bảng danh mục chương trình đào tạo';
@@ -190,6 +194,8 @@ CREATE TABLE IF NOT EXISTS `subjects` (
     `min_pass_score` DECIMAL(4, 2) NOT NULL DEFAULT 5.00 COMMENT 'Điểm đạt tối thiểu',
     `learning_outcomes` TEXT NULL COMMENT 'Chuẩn đầu ra môn học',
     `status` ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE',
+    `deleted_at` DATETIME NULL COMMENT 'Xoá mềm: thời điểm chuyển vào thùng rác, NULL là đang dùng',
+    `deleted_by` BIGINT NULL COMMENT 'Người chuyển vào thùng rác',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB COMMENT='Bảng danh mục môn học';
@@ -236,6 +242,8 @@ CREATE TABLE IF NOT EXISTS `leads` (
     `reject_reason` VARCHAR(255) NULL,
     `notes` TEXT NULL,
     `converted_student_id` BIGINT NULL COMMENT 'Liên kết sang học viên khi chốt nhập học',
+    `deleted_at` DATETIME NULL COMMENT 'Xoá mềm: thời điểm chuyển vào thùng rác, NULL là đang dùng',
+    `deleted_by` BIGINT NULL COMMENT 'Người chuyển vào thùng rác',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_leads_program` FOREIGN KEY (`interested_program_id`) REFERENCES `programs` (`id`) ON DELETE SET NULL,
