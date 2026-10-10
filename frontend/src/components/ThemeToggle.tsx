@@ -44,12 +44,12 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
     const apply = () => flushSync(() => setTheme(next));
     if (!('startViewTransition' in document) || matchMedia('(prefers-reduced-motion: reduce)').matches) return apply();
 
-    // Giao diện mới lan ra theo hình tròn tâm là nút, bán kính tới góc xa nhất, 600ms ease-in-out.
+    // Giao diện mới lan ra theo hình tròn tâm là nút, bán kính tới góc xa nhất, 450ms ease-in-out.
     const b = e.currentTarget.getBoundingClientRect();
     const x = b.left + b.width / 2;
     const y = b.top + b.height / 2;
     const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
-    const opt = { duration: 600, easing: 'ease-in-out' };
+    const opt = { duration: 450, easing: 'ease-in-out' };
     document.startViewTransition(apply).ready.then(() => {
       document.documentElement.animate({ clipPath: [`circle(0 at ${x}px ${y}px)`, `circle(${r}px at ${x}px ${y}px)`] }, { ...opt, pseudoElement: '::view-transition-new(root)' });
       const ring = document.body.appendChild(document.createElement('div'));
@@ -57,7 +57,7 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
       ring.style.left = x + 'px';
       ring.style.top = y + 'px';
       // Mép vòng tròn mờ dần ở 80ms cuối.
-      ring.animate([{ width: 0, height: 0, opacity: 1 }, { opacity: 1, offset: 520 / 600 }, { width: 2 * r + 'px', height: 2 * r + 'px', opacity: 0 }], opt).finished.then(() => ring.remove());
+      ring.animate([{ width: 0, height: 0, opacity: 1 }, { opacity: 1, offset: 370 / 450 }, { width: 2 * r + 'px', height: 2 * r + 'px', opacity: 0 }], opt).finished.then(() => ring.remove());
     });
   };
 

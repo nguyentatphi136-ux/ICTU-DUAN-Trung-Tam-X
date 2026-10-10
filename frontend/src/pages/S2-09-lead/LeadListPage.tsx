@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
@@ -77,6 +78,14 @@ export function LeadListPage() {
       </div>
       <div className="bar">
         <Search placeholder="Tìm theo tên hoặc số điện thoại" value={q} onChange={filter(setQ)} width={280} />
+        <div className="seg" role="tablist" aria-label="Chế độ xem">
+          <Link to="/tuyen-sinh/pheu" role="tab" aria-selected="false">
+            Bảng phễu
+          </Link>
+          <span className="on" role="tab" aria-selected="true">
+            Danh sách
+          </span>
+        </div>
         <Filter label="Trạng thái" value={status} options={LEAD_STATUSES} onChange={filter(setStatus)} width={198} />
         <Filter label="Nguồn" value={source} options={SOURCES} onChange={filter(setSource)} width={198} />
         {!counselor && <Filter label="Phụ trách" value={owner} options={[UNASSIGNED, ...COUNSELORS]} onChange={filter(setOwner)} width={198} />}

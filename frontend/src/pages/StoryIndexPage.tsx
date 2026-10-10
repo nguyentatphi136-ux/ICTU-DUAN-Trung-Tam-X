@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 // Mục lục màn hình theo backlog, để nhóm kiểm thử mở nhanh từng story. Đường dẫn khớp tên khung trong Figma.
 const STORIES: [string, string, string][] = [
@@ -23,12 +24,15 @@ const STORIES: [string, string, string][] = [
   ['S2-08', 'Đăng ký tư vấn (công khai)', '/dang-ky-tu-van'],
   ['S2-09', 'Lead (S2-11 tìm kiếm và bộ lọc)', '/tuyen-sinh/lead'],
   ['S2-10', 'Phân công lead (chọn lead rồi bấm Phân công)', '/tuyen-sinh/lead'],
+  ['S3-01', 'Phễu lead dạng Kanban, lý do từ chối', '/tuyen-sinh/pheu'],
+  ['S3-02', 'Nhật ký chăm sóc (bấm vào thẻ lead trong phễu)', '/tuyen-sinh/pheu?lead=12'],
 ];
 
 export function StoryIndexPage() {
   return (
     <div className="page">
       <div className="card" style={{ maxWidth: 720 }}>
+        <ThemeToggle className="theme-in" />
         <h1 style={{ textAlign: 'left', marginBottom: 6 }}>Màn hình TMS</h1>
         <p className="hint" style={{ marginBottom: 16 }}>
           Trang sau đăng nhập cần tài khoản mẫu (xem mục "Tài khoản mẫu để thử" ở trang đăng nhập). Quản trị hệ thống thấy đủ 12 module.
