@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
+import { ThemeToggle } from './ThemeToggle';
 
-// Khung trang dạng thẻ giữa màn hình: nút đóng góc trái, nhãn "Bảo mật" góc phải.
+// Khung trang dạng thẻ giữa màn hình: nút đóng góc trái, nhãn "Bảo mật" và nút đổi giao diện góc phải.
 export function CardPage({ closeTo, children, footer }: { closeTo: string; children: ReactNode; footer?: ReactNode }) {
   return (
     <div className="page">
@@ -14,6 +15,7 @@ export function CardPage({ closeTo, children, footer }: { closeTo: string; child
           <span className="sec">
             <Icon name="lock" />
             Bảo mật
+            <ThemeToggle className="theme-in" />
           </span>
         </div>
         {children}
