@@ -1,5 +1,5 @@
 import { useMemo, useState, type DragEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
@@ -8,6 +8,7 @@ import { useAuth } from '../../data/auth';
 import { addLog, ddmm, FUNNEL, overdueDays, STAGES, stageTone, TODAY, type FunnelLead, type Stage } from '../../data/funnel';
 import { LEADS } from '../../data/leads';
 import { LeadDrawer } from '../S2-09-lead/LeadDrawer';
+import { LeadPanel } from '../S3-02-nhat-ky-cham-soc/LeadPanel';
 import { RejectDialog } from './RejectDialog';
 import './funnel.css';
 
@@ -16,7 +17,7 @@ const MODULE = 'Tuyển sinh & lead';
 const SHOWN = 3;
 
 // S3-01. Phễu lead dạng bảng Kanban sáu cột. Kéo thẻ sang cột khác để đổi giai đoạn; thả vào Từ chối thì phải chọn lý do.
-// Mỗi lần đổi giai đoạn đều được ghi vào nhật ký chăm sóc (S3-02 hiển thị nhật ký khi bấm vào thẻ).
+// S3-02. Bấm vào thẻ để mở ngăn nhật ký chăm sóc. Mỗi lần đổi giai đoạn đều được ghi vào nhật ký.
 export function FunnelPage() {
   const { user } = useAuth();
   const toast = useToast();
@@ -28,6 +29,9 @@ export function FunnelPage() {
   const [over, setOver] = useState<Stage | null>(null);
   const [rejecting, setRejecting] = useState<FunnelLead | null>(null);
   const [adding, setAdding] = useState(false);
+  const [params] = useSearchParams();
+  // ?lead=<id> mở sẵn ngăn của lead đó (dùng cho liên kết từ trang khác và mục lục màn hình).
+  const [openId, setOpenId] = useState<number | null>(Number(params.get('lead')) || null);
 
   const role = user?.active ?? -1;
   const canWrite = role === 3 || role === 5 || role === 6;
@@ -59,6 +63,7 @@ export function FunnelPage() {
     commit(leads.map((x) => (x.id === l.id ? { ...x, stage: to, reason: undefined } : x)));
     toast('Đã chuyển giai đoạn', `${l.name}: ${l.stage} → ${to}`);
   }
+  const panel = leads.find((l) => l.id === openId);
 
   const drop = (to: Stage) => (e: DragEvent) => {
     e.preventDefault();
@@ -123,7 +128,7 @@ export function FunnelPage() {
                 <Pill tone={stageTone(s)}>{col.length}</Pill>
               </header>
               {cards.map((l) => (
-                <LeadCard key={l.id} lead={l} draggable={canWrite} onDragStart={() => setDragging(l.id)} onDragEnd={() => setDragging(null)} />
+                <LeadCard key={l.id} lead={l} draggable={canWrite} onOpen={() => setOpenId(l.id)} onDragStart={() => setDragging(l.id)} onDragEnd={() => setDragging(null)} />
               ))}
               {cards.length < col.length && (
                 <button type="button" className="kb-more" onClick={() => setOpen((o) => [...o, s])}>
@@ -144,6 +149,21 @@ export function FunnelPage() {
             commit(leads.map((x) => (x.id === rejecting.id ? { ...x, stage: 'Từ chối', reason } : x)));
             toast('Đã chuyển sang Từ chối', `${rejecting.name}: ${reason}`);
             setRejecting(null);
+          }}
+        />
+      )}
+      {panel && (
+        <LeadPanel
+          key={panel.id}
+          lead={panel}
+          canWrite={canWrite}
+          me={user!.name}
+          onClose={() => setOpenId(null)}
+          onMove={(to) => move(panel, to)}
+          onLog={(log, callback) => {
+            addLog(panel, log);
+            commit(leads.map((x) => (x.id === panel.id ? { ...x, callback } : x)));
+            toast('Đã lưu nhật ký', callback ? `Nhắc gọi lại ngày ${ddmm(callback)}.` : panel.name);
           }}
         />
       )}
@@ -169,14 +189,15 @@ export function FunnelPage() {
   );
 }
 
-type CardProps = { lead: FunnelLead; draggable: boolean; onDragStart: () => void; onDragEnd: () => void };
+type CardProps = { lead: FunnelLead; draggable: boolean; onOpen: () => void; onDragStart: () => void; onDragEnd: () => void };
 
-function LeadCard({ lead: l, draggable, onDragStart, onDragEnd }: CardProps) {
+function LeadCard({ lead: l, draggable, onOpen, onDragStart, onDragEnd }: CardProps) {
   const late = overdueDays(l);
   return (
     <button
       type="button"
       className={'kb-card' + (late ? ' late' : '')}
+      onClick={onOpen}
       draggable={draggable}
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = 'move';
