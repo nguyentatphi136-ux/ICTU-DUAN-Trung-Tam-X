@@ -84,6 +84,7 @@ td .err{margin:0;font-size:13px}
 .icon-btn:hover{background:var(--chip);color:var(--ink)}
 .rowmenu{position:relative;display:inline-block}
 .rowmenu .menu,.dropdown{position:absolute;right:0;top:36px;min-width:230px;background:var(--raised);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 12px 30px rgba(5,36,77,.14);padding:6px;z-index:15}
+.rowmenu .menu.up{top:auto;bottom:36px}
 .rowmenu .menu button,.dropdown button{display:block;width:100%;text-align:left;padding:9px 12px;border:0;background:none;border-radius:var(--r);color:var(--ink);font-size:14px}
 .rowmenu .menu button:hover:not(:disabled),.dropdown button:hover{background:var(--chip)}
 .rowmenu .menu button:disabled{color:var(--faint);cursor:not-allowed}
