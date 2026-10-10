@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Box, Modal, Pill } from '../../components/ui';
 import { COUNSELORS, type Lead } from '../../data/leads';
+import './assign.css';
 
-// S2-10. Phân công một hoặc nhiều lead cho một tư vấn viên. Số lead đang giữ giúp chia việc đều.
+// S2-10. Phân công một hoặc nhiều lead cho một tư vấn viên, mở từ thanh thao tác hàng loạt của danh sách lead (S2-09). Số lead đang giữ giúp chia việc đều.
 // Khi tích hợp: POST /admissions/leads/assign { ids, counselorId, note }; máy chủ ghi lịch sử chuyển giao.
 export function AssignDialog({ leads, load, onClose, onAssign }: { leads: Lead[]; load: (c: string) => number; onClose: () => void; onAssign: (c: string) => void }) {
   const [pick, setPick] = useState('');
