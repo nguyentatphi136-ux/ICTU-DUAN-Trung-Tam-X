@@ -1,0 +1,19 @@
+/* S3-01 đến S3-03. Bảng Kanban phễu lead, hộp chọn lý do từ chối. */
+.kb{display:grid;grid-template-columns:repeat(6,minmax(180px,1fr));gap:10px;overflow-x:auto;padding-bottom:8px}
+.kb-col{background:#e9edf5;border-radius:var(--r);padding:8px;min-height:640px;display:flex;flex-direction:column;gap:8px;transition:box-shadow .15s}
+.kb-col.over{box-shadow:inset 0 0 0 2px var(--blue);background:#e2ebf8}
+.kb-col header{display:flex;justify-content:space-between;align-items:center;padding:2px 4px 6px}
+.kb-col header b{font-size:13px}
+.kb-card{position:relative;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:9px 11px 12px;min-height:110px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;cursor:grab;text-align:left;width:100%;font:inherit;color:inherit}
+.kb-card:active{cursor:grabbing}
+.kb-card b{font-size:12px;font-weight:600}
+.kb-card span{font-size:12px;color:var(--muted)}
+.kb-card small{font-size:11px;color:var(--muted);margin-bottom:auto}
+.kb-card .pill{margin-top:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.kb-card.late{border-color:var(--red);box-shadow:inset 3px 0 0 var(--red)}
+.kb-more{border:0;background:none;color:var(--muted);font-size:12px;text-align:left;padding:6px 4px}
+.kb-more:hover{color:var(--blue)}
+.kb-reasons{border:0;padding:0;margin:0 0 12px;display:flex;flex-direction:column;gap:6px}
+.kb-reasons legend{font-size:13px;font-weight:600;margin-bottom:8px;display:flex;gap:10px;align-items:center}
+.kb-reasons .ld-option{height:40px}
+@media(max-width:900px){.kb{grid-template-columns:repeat(6,240px)}}
