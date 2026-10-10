@@ -1,5 +1,6 @@
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Icon, type IconName } from '../../components/Icon';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import './error.css';
 
 type Code = '403' | '404' | '500';
@@ -32,12 +33,15 @@ export function ErrorPage({ code: fixed }: { code?: Code }) {
 
   return (
     <div className="er-page">
-      <Link to="/" className="logo">
-        <span>
-          <Icon name="cap" />
-        </span>
-        TMS.
-      </Link>
+      <header className="er-head">
+        <Link to="/" className="logo">
+          <span>
+            <Icon name="cap" />
+          </span>
+          TMS.
+        </Link>
+        <ThemeToggle />
+      </header>
       <main className="er-main">
         <div className="er-num" aria-hidden="true">
           {code}
