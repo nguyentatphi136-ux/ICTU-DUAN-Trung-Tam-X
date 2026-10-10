@@ -1,23 +1,35 @@
 /* Token màu, nút, ô nhập, hộp thông báo: dùng chung cho mọi trang. */
-:root{--ink:#1b2437;--muted:#6b7488;--line:#e3e7ef;--bg:#f3f5fb;--blue:#0575E6;--mint:#00F260;--navy:#06244d;--soft:#eaf3fe;--red:#d92d20;--green:#067647;--r:6px}
+:root{--ink:#1b2437;--muted:#6b7488;--line:#e3e7ef;--bg:#f3f5fb;--blue:#0575E6;--mint:#00F260;--navy:#06244d;--navy-soft:#1d3f6e;--soft:#eaf3fe;--red:#d92d20;--green:#067647;--r:6px;
+  --surface:#fff;--raised:#fff;--hover:#f7f9fc;--chip:#f0f1f5;--faint:#a4abba;
+  --ok-bg:#ecfdf3;--ok-line:#abefc6;--warn:#93370d;--warn-bg:#fffaeb;--warn-line:#fedf89;
+  --bad:#b42318;--bad-bg:#fef3f2;--bad-line:#fecdca;--info:#0b4a99;--info-bg:#eff6ff;--info-line:#b3d4fb;
+  --grad:linear-gradient(135deg,#0575E6,#00F260);--logo:linear-gradient(135deg,#9FCCFA,#0974F1);--hero:var(--logo);--side:var(--surface);
+  --glow:rgba(0,190,130,.25);--scrim:rgba(6,36,77,.45);--er-num:linear-gradient(180deg,#cfe4fd,#b3d4fb);--card-glow:rgba(9,116,241,.15)}
+/* Giao diện tối theo bảng "Giao diện tối" trong Figma: nền đen ngả xám, điểm nhấn gradient hồng sang cam. */
+:root[data-theme=dark]{color-scheme:dark;--ink:#ECECEF;--muted:#A1A1AA;--line:#3A3A40;--bg:#18181B;--blue:#F7708F;--navy:#ECECEF;--navy-soft:#E4E4E7;--soft:#3D1A28;--red:#FF6B5F;--green:#4ADE80;
+  --surface:#232327;--raised:#2A2A2E;--hover:#2A2A2E;--chip:#3A3A40;--faint:#71717A;
+  --ok-bg:#0F2E22;--ok-line:#1E5A3C;--warn:#FBBF5C;--warn-bg:#33270D;--warn-line:#5C4719;
+  --bad:#FF6B5F;--bad-bg:#3A1616;--bad-line:#6A2A26;--info:#F7708F;--info-bg:#3D1A28;--info-line:#7A2943;
+  --grad:linear-gradient(135deg,#D4145A,#FBB03B);--logo:var(--grad);--hero:linear-gradient(135deg,#42378F,#F53844);--side:#232327;
+  --glow:rgba(212,20,90,.3);--scrim:rgba(0,0,0,.6);--er-num:linear-gradient(180deg,#3A3A40,#2A2A2E);--card-glow:rgba(0,0,0,.4)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Be Vietnam Pro',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
 [hidden]{display:none!important}
 a{color:var(--blue);text-decoration:none;font-weight:500}
 button{font:inherit;cursor:pointer}
 svg.ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:var(--r);border:1px solid var(--line);background:#fff;color:var(--ink);font-weight:600;white-space:nowrap}
-.btn.primary{border:0;color:#fff;background:linear-gradient(135deg,var(--blue),var(--mint));box-shadow:0 10px 22px rgba(0,190,130,.25)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:600;white-space:nowrap}
+.btn.primary{border:0;color:#fff;background:var(--grad);box-shadow:0 10px 22px var(--glow)}
 .btn.danger{border:0;color:#fff;background:var(--red)}
 .btn.block{width:100%;height:52px;font-size:16px}
 .btn:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
 .field{margin-bottom:16px}
 .field label{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
 .inp{position:relative}
-.inp input,.inp textarea,.inp select{width:100%;height:46px;border:1px solid var(--line);border-radius:var(--r);padding:0 14px;font:inherit;color:var(--ink);background:#fff;outline:none}
+.inp input,.inp textarea,.inp select{width:100%;height:46px;border:1px solid var(--line);border-radius:var(--r);padding:0 14px;font:inherit;color:var(--ink);background:var(--surface);outline:none}
 .inp textarea{height:76px;padding:10px 14px;resize:vertical}
-.inp input:disabled{background:#f5f6f9;color:var(--muted)}
-.inp.lead input{padding-left:42px}.inp.lead>svg{position:absolute;left:13px;top:14px;color:#a4abba}
+.inp input:disabled{background:var(--hover);color:var(--muted)}
+.inp.lead input{padding-left:42px}.inp.lead>svg{position:absolute;left:13px;top:14px;color:var(--faint)}
 .inp input:focus,.inp textarea:focus,.inp select:focus{border-color:var(--blue);box-shadow:0 0 0 4px rgba(5,117,230,.12)}
 .inp.bad input,.inp.bad textarea{border-color:var(--red)}
 .eye{position:absolute;right:8px;top:7px;width:32px;height:32px;border:0;background:none;color:var(--muted);display:grid;place-items:center}
@@ -25,14 +37,32 @@ svg.ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-wid
 .box{display:flex;gap:12px;padding:12px 14px;border-radius:var(--r);background:var(--bg);margin-bottom:18px;font-size:13px;color:var(--muted)}
 .box>svg{margin-top:2px;color:var(--blue)}
 .box b{display:block;color:var(--ink);font-size:14px}
-.box.ok{background:#ecfdf3;border:1px solid #abefc6;color:var(--green)}.box.ok b,.box.ok>svg{color:var(--green)}
-.box.warn{background:#fffaeb;border:1px solid #fedf89;color:#93370d}.box.warn b,.box.warn>svg{color:#93370d}
-.box.bad{background:#fef3f2;border:1px solid #fecdca;color:#b42318}.box.bad b,.box.bad>svg{color:#b42318}
-.box.info{background:#eff6ff;border:1px solid #b3d4fb;color:#0b4a99}.box.info b,.box.info>svg{color:#0b4a99}
-.pill{display:inline-block;padding:3px 10px;border-radius:var(--r);font-size:12px;font-weight:500;background:#f0f1f5;color:var(--ink);white-space:nowrap}
-.pill.ok{background:#ecfdf3;color:var(--green)}.pill.wait{background:#fffaeb;color:#93370d}.pill.off{background:#fef3f2;color:#b42318}
+.box.ok{background:var(--ok-bg);border:1px solid var(--ok-line);color:var(--green)}.box.ok b,.box.ok>svg{color:var(--green)}
+.box.warn{background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn)}.box.warn b,.box.warn>svg{color:var(--warn)}
+.box.bad{background:var(--bad-bg);border:1px solid var(--bad-line);color:var(--bad)}.box.bad b,.box.bad>svg{color:var(--bad)}
+.box.info{background:var(--info-bg);border:1px solid var(--info-line);color:var(--info)}.box.info b,.box.info>svg{color:var(--info)}
+.pill{display:inline-block;padding:3px 10px;border-radius:var(--r);font-size:12px;font-weight:500;background:var(--chip);color:var(--ink);white-space:nowrap}
+.pill.ok{background:var(--ok-bg);color:var(--green)}.pill.wait{background:var(--warn-bg);color:var(--warn)}.pill.off{background:var(--bad-bg);color:var(--bad)}
 .demo{margin:18px auto 0;max-width:560px;width:100%;font-size:13px;color:var(--muted)}.demo summary{cursor:pointer;color:var(--blue);font-weight:500}
 .demo .btn{height:34px;font-size:13px;margin:8px 8px 0 0}
-.toast{position:fixed;top:84px;right:32px;z-index:40;background:#fff;border:1px solid #abefc6;border-left:4px solid #00c46a;border-radius:var(--r);padding:12px 18px;box-shadow:0 12px 30px rgba(5,36,77,.14);max-width:min(420px,calc(100vw - 32px))}
+.toast{position:fixed;top:84px;right:32px;z-index:40;background:var(--raised);border:1px solid var(--ok-line);border-left:4px solid var(--green);border-radius:var(--r);padding:12px 18px;box-shadow:0 12px 30px rgba(5,36,77,.14);max-width:min(420px,calc(100vw - 32px))}
 .toast b{display:block}.toast span{color:var(--muted);font-size:13px}
 @media(max-width:600px){.toast{right:16px;top:72px}}
+/* Nút đổi giao diện: nút tròn 40px, biểu tượng xoay 180° và đổi mặt trời/mặt trăng trong 350ms. */
+.theme-btn{--tb:#fff;--tb-ring:linear-gradient(135deg,#D4145A,#FBB03B);width:40px;height:40px;flex:none;border-radius:50%;border:2px solid transparent;padding:0;display:grid;place-items:center;background:linear-gradient(var(--tb),var(--tb)) padding-box,var(--tb-ring) border-box}
+.theme-btn:hover{--tb:#EAF3FE}
+[data-theme=dark] .theme-btn{--tb:#2A2A2E;--tb-ring:linear-gradient(135deg,#0575E6,#00F260)}
+[data-theme=dark] .theme-btn:hover{--tb:#3A3A40}
+.theme-btn svg{grid-area:1/1;width:20px;height:20px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .35s ease-in-out,opacity .35s ease-in-out}
+.theme-btn .moon{opacity:0;transform:rotate(-180deg)}
+[data-theme=dark] .theme-btn .sun{opacity:0;transform:rotate(180deg)}
+[data-theme=dark] .theme-btn .moon{opacity:1;transform:none}
+.theme-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+/* Trang dạng box (đăng nhập, tư vấn, thẻ giữa màn hình): nút nằm trong box, góc trên bên phải. */
+.lg-card,.card{position:relative}
+.theme-in{position:absolute;top:16px;right:16px;z-index:2}
+.card-top .theme-in{position:static;margin-left:6px}.sec .theme-btn svg{width:20px;height:20px}
+/* Hiệu ứng chuyển: giao diện mới lan ra theo hình tròn từ nút (View Transitions), mép là vòng gradient 6px. */
+::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+.theme-ring{position:fixed;z-index:100;pointer-events:none;border-radius:50%;translate:-50% -50%;background:linear-gradient(135deg,#D4145A,#FBB03B);-webkit-mask:radial-gradient(closest-side,transparent calc(100% - 6px),#000 calc(100% - 6px));mask:radial-gradient(closest-side,transparent calc(100% - 6px),#000 calc(100% - 6px))}
+@media(prefers-reduced-motion:reduce){.theme-btn svg{transition:none}}
