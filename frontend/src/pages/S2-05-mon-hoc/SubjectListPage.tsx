@@ -1,13 +1,16 @@
 import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Box, Drawer, Filter, Pager, paginate, RowMenu, Search } from '../../components/ui';
-import { CURRICULUM, PROGRAMS, programsUsing, SUBJECTS, type Subject } from '../../data/training';
+import { Box, ConfirmDialog, Drawer, Filter, Pager, paginate, RowMenu, Search, usePaging } from '../../components/ui';
+import { useAuth } from '../../data/auth';
+import { CURRICULUM, LESSONS, PROGRAMS, programsUsing, SUBJECTS, type Subject } from '../../data/training';
+import { moveToTrash, restore } from '../../data/trash';
 import { MODULE, TrainingTabs, useCanEditTraining } from '../../components/TrainingTabs';
 
-// S2-05. Môn học dùng lại được ở nhiều chương trình (cột Dùng trong). Môn đã có lớp học thì không xoá được.
+// S2-05. Môn học dùng lại được ở nhiều chương trình: cột Dùng trong ghi tên chương trình, gán chương trình ngay trong form.
+// Môn đã có lớp học thì không có nút xoá. Xoá là chuyển vào thùng rác, gỡ môn khỏi các lộ trình (khôi phục thì gắn lại).
 export function SubjectListPage() {
   const toast = useToast();
   const navigate = useNavigate();
@@ -15,8 +18,10 @@ export function SubjectListPage() {
   const [items, setItems] = useState(SUBJECTS);
   const [q, setQ] = useState('');
   const [program, setProgram] = useState('');
-  const [page, setPage] = useState(1);
+  const { page, setPage, size, setSize } = usePaging();
   const [editing, setEditing] = useState<Subject | 'new' | null>(null);
+  const [deleting, setDeleting] = useState<Subject | null>(null);
+  const { user } = useAuth();
 
   const filtered = useMemo(() => {
     const k = q.trim().toLowerCase();
@@ -25,18 +30,30 @@ export function SubjectListPage() {
       (s) => (!k || s.code.toLowerCase().includes(k) || s.name.toLowerCase().includes(k)) && (!inProgram || CURRICULUM[inProgram.code]?.some((c) => c.code === s.code)),
     );
   }, [items, q, program]);
-  const view = paginate(filtered, page);
+  const view = paginate(filtered, page, size);
 
   const commit = (list: Subject[]) => {
     SUBJECTS.splice(0, SUBJECTS.length, ...list);
     setItems(list);
+  };
+  const trash = (s: Subject) => {
+    const id = moveToTrash({ kind: 'subject', item: s, usedIn: [] }, s.name, user?.name ?? '');
+    setItems([...SUBJECTS]);
+    setDeleting(null);
+    toast('Đã chuyển vào thùng rác', s.name, {
+      label: 'Hoàn tác',
+      onClick: () => {
+        restore(id);
+        setItems([...SUBJECTS]);
+      },
+    });
   };
 
   return (
     <AppLayout crumb={[MODULE, 'Môn học']} module={MODULE}>
       <div className="h">
         <div>
-          <h2>{MODULE}</h2>
+          <h2>Môn học</h2>
         </div>
         {canEdit && (
           <button type="button" className="btn primary" style={{ width: 170 }} onClick={() => setEditing('new')}>
@@ -71,7 +88,9 @@ export function SubjectListPage() {
                   <td>{s.name}</td>
                   <td>{s.sessions}</td>
                   <td>{s.weight}</td>
-                  <td>{programsUsing(s.code).length} chương trình</td>
+                  <td>
+                    <ProgramChips code={s.code} />
+                  </td>
                   <td>{s.openedClasses}</td>
                   <td style={{ width: 56 }}>
                     <RowMenu
@@ -80,16 +99,8 @@ export function SubjectListPage() {
                         ...(canEdit
                           ? [
                               { label: 'Sửa môn học', onClick: () => setEditing(s) },
-                              {
-                                label: 'Xoá',
-                                danger: true,
-                                disabled: s.openedClasses ? `Môn đã có ${s.openedClasses} lớp học nên không xoá được` : false,
-                                onClick: () => {
-                                  if (!window.confirm(`Xoá môn ${s.name}?`)) return;
-                                  commit(items.filter((x) => x.code !== s.code));
-                                  toast('Đã xoá môn học', s.name);
-                                },
-                              },
+                              // Đã có lớp học thì không có mục xoá; lý do ghi trong ngăn Sửa (hộp "Không xoá được môn này").
+                              ...(s.openedClasses ? [] : [{ label: 'Chuyển vào thùng rác', danger: true, onClick: () => setDeleting(s) }]),
                             ]
                           : []),
                       ]}
@@ -100,17 +111,25 @@ export function SubjectListPage() {
             </tbody>
           </table>
         </div>
-        <Pager page={view.page} pages={view.pages} onPage={setPage}>
+        <Pager page={view.page} pages={view.pages} onPage={setPage} size={size} onSize={setSize}>
           Hiển thị {view.from}–{view.to} trong {filtered.length} môn học
         </Pager>
       </div>
 
+      {deleting && (
+        <ConfirmDialog title="Chuyển môn học vào thùng rác?" onClose={() => setDeleting(null)} onConfirm={() => trash(deleting)}>
+          Môn <b>{deleting.name}</b> ({deleting.code}) sẽ ẩn khỏi danh sách
+          {programsUsing(deleting.code).length > 0 && <> và được gỡ khỏi lộ trình {programsUsing(deleting.code).map((p) => p.name).join(', ')}</>}.
+        </ConfirmDialog>
+      )}
       {editing && (
         <SubjectDrawer
           subject={editing === 'new' ? null : editing}
           items={items}
           onClose={() => setEditing(null)}
-          onSave={(s) => {
+          onSave={(s, programs) => {
+            if (editing !== 'new' && editing.code !== s.code) renameSubject(editing.code, s.code);
+            assignPrograms(s.code, programs);
             commit(editing === 'new' ? [...items, s] : items.map((x) => (x.code === editing.code ? s : x)));
             toast('Đã lưu môn học', s.name);
             setEditing(null);
@@ -121,7 +140,54 @@ export function SubjectListPage() {
   );
 }
 
-function SubjectDrawer({ subject, items, onClose, onSave }: { subject: Subject | null; items: Subject[]; onClose: () => void; onSave: (s: Subject) => void }) {
+/** Tên chương trình đang dùng môn (tối đa 2, còn lại "+n"); bấm để mở lộ trình của chương trình đó. */
+function ProgramChips({ code }: { code: string }) {
+  const used = programsUsing(code);
+  if (!used.length) return <span className="hint">Chưa thuộc chương trình nào</span>;
+  return (
+    <span className="tags">
+      {used.slice(0, 2).map((p) => (
+        <Link key={p.code} to={'/dao-tao/chuong-trinh/' + p.code} className="pill info" title={'Mở lộ trình ' + p.name}>
+          {p.name}
+        </Link>
+      ))}
+      {used.length > 2 && (
+        <span className="pill" title={used.slice(2).map((p) => p.name).join(', ')}>
+          +{used.length - 2}
+        </span>
+      )}
+    </span>
+  );
+}
+
+/** Gắn môn vào cuối lộ trình các chương trình được chọn, gỡ khỏi chương trình bỏ chọn. */
+function assignPrograms(code: string, programs: string[]) {
+  for (const p of PROGRAMS) {
+    const list = (CURRICULUM[p.code] ??= []);
+    const has = list.some((c) => c.code === code);
+    if (programs.includes(p.code) && !has) list.push({ code, prereq: [] });
+    if (!programs.includes(p.code) && has) {
+      list.splice(list.findIndex((c) => c.code === code), 1);
+      list.forEach((c) => (c.prereq = c.prereq.filter((x) => x !== code)));
+    }
+  }
+}
+
+/** Đổi mã môn thì đổi luôn trong lộ trình, môn tiên quyết và danh sách buổi học. */
+function renameSubject(from: string, to: string) {
+  for (const list of Object.values(CURRICULUM)) {
+    for (const c of list) {
+      if (c.code === from) c.code = to;
+      c.prereq = c.prereq.map((x) => (x === from ? to : x));
+    }
+  }
+  if (LESSONS[from]) {
+    LESSONS[to] = LESSONS[from];
+    delete LESSONS[from];
+  }
+}
+
+function SubjectDrawer({ subject, items, onClose, onSave }: { subject: Subject | null; items: Subject[]; onClose: () => void; onSave: (s: Subject, programs: string[]) => void }) {
   const [f, setF] = useState({
     code: subject?.code ?? '',
     name: subject?.name ?? '',
@@ -131,6 +197,7 @@ function SubjectDrawer({ subject, items, onClose, onSave }: { subject: Subject |
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const used = subject ? programsUsing(subject.code) : [];
+  const [programs, setPrograms] = useState(used.map((p) => p.code));
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => {
     setF((x) => ({ ...x, [k]: e.target.value }));
     setErrors((x) => ({ ...x, [k]: '' }));
@@ -147,7 +214,7 @@ function SubjectDrawer({ subject, items, onClose, onSave }: { subject: Subject |
     if (!(Number(f.weight) > 0)) e.weight = 'Trọng số phải lớn hơn 0';
     setErrors(e);
     if (Object.keys(e).length) return;
-    onSave({ code, name: f.name.trim(), sessions: Number(f.sessions), weight: Number(f.weight), outcome: f.outcome.trim(), openedClasses: subject?.openedClasses ?? 0 });
+    onSave({ code, name: f.name.trim(), sessions: Number(f.sessions), weight: Number(f.weight), outcome: f.outcome.trim(), openedClasses: subject?.openedClasses ?? 0 }, programs);
   }
 
   const input = (k: 'code' | 'name' | 'sessions' | 'weight', label: string, hint?: string) => (
@@ -189,11 +256,21 @@ function SubjectDrawer({ subject, items, onClose, onSave }: { subject: Subject |
           <textarea id="sj-outcome" rows={4} style={{ height: 110 }} value={f.outcome} onChange={set('outcome')} />
         </div>
       </div>
-      {used.length > 0 && (
-        <Box icon="book" title={`Đang dùng trong ${used.length} chương trình`}>
-          {used.map((p) => p.name).join(', ')}
-        </Box>
-      )}
+      <fieldset className="field check-list">
+        <legend>Thuộc chương trình</legend>
+        {PROGRAMS.map((p) => (
+          <label key={p.code}>
+            <input
+              type="checkbox"
+              checked={programs.includes(p.code)}
+              onChange={(e) => setPrograms((x) => (e.target.checked ? [...x, p.code] : x.filter((c) => c !== p.code)))}
+            />
+            {p.name}
+            {!p.active && <small> (ngừng áp dụng)</small>}
+          </label>
+        ))}
+        <p className="hint">Chương trình mới chọn được thêm môn vào cuối lộ trình; sắp xếp lại ở trang lộ trình.</p>
+      </fieldset>
       {!!subject?.openedClasses && (
         <Box icon="lock" tone="warn" title="Không xoá được môn này">
           Môn đã có {subject.openedClasses} lớp học. Bạn vẫn sửa được tên và mô tả.
