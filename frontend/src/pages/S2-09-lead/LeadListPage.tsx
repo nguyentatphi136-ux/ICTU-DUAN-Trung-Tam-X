@@ -6,7 +6,7 @@ import { Filter, Pager, paginate, Pill, Search } from '../../components/ui';
 import { useAuth } from '../../data/auth';
 import { ADMIN_ROLE } from '../../data/permissions';
 import { COUNSELORS, LEAD_STATUSES, leadTone, LEADS, SOURCES, viDate, type Lead } from '../../data/leads';
-import { AssignDialog } from './AssignDialog';
+import { AssignDialog } from '../S2-10-phan-cong-lead/AssignDialog';
 import { LeadDrawer } from './LeadDrawer';
 import './lead.css';
 
@@ -14,7 +14,7 @@ const MODULE = 'Tuyển sinh & lead';
 const RANGES: Record<string, string> = { '2026-09': '01/09 – 30/09/2026', '2026-08': '01/08 – 31/08/2026' };
 const UNASSIGNED = 'Chưa phân công';
 
-// S2-09 danh sách lead, thêm và sửa; S2-10 phân công một hoặc nhiều lead; S2-11 tìm theo tên, số điện thoại và bộ lọc.
+// S2-09 danh sách lead, thêm và sửa; S2-10 phân công một hoặc nhiều lead (thư mục S2-10-phan-cong-lead); S2-11 tìm theo tên, số điện thoại và bộ lọc.
 // Tư vấn viên chỉ thấy lead được giao cho mình, không có ô chọn và nút Phân công. Chỉ Quản lý đào tạo xoá được lead.
 export function LeadListPage() {
   const { user } = useAuth();
