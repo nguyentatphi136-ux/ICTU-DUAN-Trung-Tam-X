@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
 import { pageNumbers } from './paging';
 
@@ -151,7 +151,19 @@ export type MenuAction = { label: string; onClick?: () => void; disabled?: strin
 /** Nút ba chấm cuối dòng, mở danh sách thao tác. disabled là chuỗi thì hiện làm lý do bên dưới. */
 export function RowMenu({ actions }: { actions: MenuAction[] }) {
   const [open, setOpen] = useState(false);
+  const [up, setUp] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  // Dòng cuối bảng: menu mở xuống sẽ bị khung cuộn của bảng cắt và đẩy ra thanh cuộn, nên mở lên trên khi phía dưới không đủ chỗ.
+  useLayoutEffect(() => {
+    const menu = ref.current?.querySelector<HTMLElement>('.menu');
+    if (!open || !menu) return setUp(false);
+    let box = ref.current!.parentElement;
+    while (box && getComputedStyle(box).overflowY === 'visible') box = box.parentElement;
+    const bound = box ? box.getBoundingClientRect() : { top: 0, bottom: innerHeight };
+    const btn = ref.current!.getBoundingClientRect();
+    const h = menu.offsetHeight + 4;
+    setUp(btn.bottom + h > Math.min(bound.bottom, innerHeight) && btn.top - h >= Math.max(bound.top, 0));
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     const f = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
@@ -164,7 +176,7 @@ export function RowMenu({ actions }: { actions: MenuAction[] }) {
         <Icon name="dots" />
       </button>
       {open && (
-        <div className="menu" role="menu">
+        <div className={up ? 'menu up' : 'menu'} role="menu">
           {actions.map((a) => (
             <button
               key={a.label}
