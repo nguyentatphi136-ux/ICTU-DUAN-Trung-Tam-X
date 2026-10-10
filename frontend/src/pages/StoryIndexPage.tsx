@@ -24,6 +24,7 @@ const STORIES: [string, string, string][] = [
   ['S2-09', 'Lead (S2-11 tìm kiếm và bộ lọc)', '/tuyen-sinh/lead'],
   ['S2-10', 'Phân công lead (chọn lead rồi bấm Phân công)', '/tuyen-sinh/lead'],
   ['S3-01', 'Phễu lead dạng Kanban, lý do từ chối', '/tuyen-sinh/pheu'],
+  ['S3-02', 'Nhật ký chăm sóc (bấm vào thẻ lead trong phễu)', '/tuyen-sinh/pheu?lead=12'],
 ];
 
 export function StoryIndexPage() {

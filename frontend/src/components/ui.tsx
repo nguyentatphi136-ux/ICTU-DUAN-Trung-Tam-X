@@ -3,7 +3,7 @@ import { Icon, type IconName } from './Icon';
 
 // Các mảnh giao diện dùng lại ở nhiều trang: ngăn bên, hộp thoại, nhãn trạng thái, phân trang, menu dòng, hộp thông tin.
 
-export function Drawer({ title, onClose, children, footer }: { title: string; onClose: () => void; children: ReactNode; footer: ReactNode }) {
+export function Drawer({ title, onClose, children, footer }: { title: string; onClose: () => void; children: ReactNode; footer?: ReactNode }) {
   useEscape(onClose);
   return (
     <>
@@ -16,7 +16,7 @@ export function Drawer({ title, onClose, children, footer }: { title: string; on
           </button>
         </header>
         <div className="body">{children}</div>
-        <footer>{footer}</footer>
+        {footer && <footer>{footer}</footer>}
       </aside>
     </>
   );
