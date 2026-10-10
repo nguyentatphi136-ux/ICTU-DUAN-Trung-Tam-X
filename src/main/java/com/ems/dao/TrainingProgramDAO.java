@@ -46,7 +46,7 @@ public class TrainingProgramDAO {
      */
     public TrainingProgram findById(int id) throws SQLException {
         String sql = "SELECT id, program_code, program_name, description, duration, standard_tuition, status, created_at, updated_at "
-                + "FROM programs WHERE id = ?";
+                + "FROM programs WHERE id = ? AND deleted_at IS NULL";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
@@ -65,7 +65,7 @@ public class TrainingProgramDAO {
     public TrainingProgram findByCode(String code) throws SQLException {
         if (code == null) return null;
         String sql = "SELECT id, program_code, program_name, description, duration, standard_tuition, status, created_at, updated_at "
-                + "FROM programs WHERE UPPER(program_code) = UPPER(?)";
+                + "FROM programs WHERE UPPER(program_code) = UPPER(?) AND deleted_at IS NULL";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, code.trim());
@@ -116,7 +116,7 @@ public class TrainingProgramDAO {
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 10;
 
-        StringBuilder whereSql = new StringBuilder(" WHERE 1=1 ");
+        StringBuilder whereSql = new StringBuilder(" WHERE deleted_at IS NULL ");
         List<Object> params = new ArrayList<>();
 
         if (keyword != null && !keyword.trim().isEmpty()) {
@@ -209,14 +209,156 @@ public class TrainingProgramDAO {
     }
 
     /**
-     * Xoá chương trình đào tạo khỏi cơ sở dữ liệu
+     * Chuyển chương trình vào thùng rác (xoá mềm). Dữ liệu và lộ trình môn vẫn còn, khôi phục được.
      */
     public boolean delete(int id) throws SQLException {
-        String sql = "DELETE FROM programs WHERE id = ?";
+        return delete(id, null);
+    }
+
+    public boolean delete(int id, Long actorId) throws SQLException {
+        String sql = "UPDATE programs SET deleted_at = CURRENT_TIMESTAMP, deleted_by = ? WHERE id = ? AND deleted_at IS NULL";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setObject(1, actorId);
+            stmt.setInt(2, id);
+            return stmt.executeUpdate() > 0;
+        }
+    }
+
+    /** Mã đang thuộc một chương trình trong thùng rác (vẫn chiếm ràng buộc UNIQUE nên không tạo trùng được). */
+    public boolean isCodeInTrash(String code) throws SQLException {
+        if (code == null) return false;
+        String sql = "SELECT 1 FROM programs WHERE UPPER(program_code) = UPPER(?) AND deleted_at IS NOT NULL LIMIT 1";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, code.trim());
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    /** Chương trình trong thùng rác, mới xoá trước. */
+    public List<Map<String, Object>> listTrashed() throws SQLException {
+        String sql = "SELECT p.id, p.program_code, p.program_name, p.deleted_at, u.full_name AS deleted_by_name "
+                + "FROM programs p LEFT JOIN users u ON u.id = p.deleted_by "
+                + "WHERE p.deleted_at IS NOT NULL ORDER BY p.deleted_at DESC";
+        List<Map<String, Object>> items = new ArrayList<>();
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                Map<String, Object> item = new LinkedHashMap<>();
+                item.put("id", rs.getInt("id"));
+                item.put("code", rs.getString("program_code"));
+                item.put("name", rs.getString("program_name"));
+                item.put("deletedAt", rs.getTimestamp("deleted_at").toInstant().toString());
+                item.put("deletedBy", rs.getString("deleted_by_name"));
+                items.add(item);
+            }
+        }
+        return items;
+    }
+
+    public boolean restore(int id) throws SQLException {
+        String sql = "UPDATE programs SET deleted_at = NULL, deleted_by = NULL WHERE id = ? AND deleted_at IS NOT NULL";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, id);
             return stmt.executeUpdate() > 0;
+        }
+    }
+
+    /**
+     * Xoá vĩnh viễn chương trình đang trong thùng rác. Lộ trình môn bị xoá theo (ON DELETE CASCADE);
+     * còn lớp học tham chiếu thì CSDL chặn và ném SQLIntegrityConstraintViolationException.
+     */
+    public boolean purge(int id) throws SQLException {
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement check = conn.prepareStatement(
+                        "SELECT 1 FROM programs WHERE id = ? AND deleted_at IS NOT NULL")) {
+                    check.setInt(1, id);
+                    try (ResultSet rs = check.executeQuery()) {
+                        if (!rs.next()) {
+                            conn.rollback();
+                            return false;
+                        }
+                    }
+                }
+                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM programs WHERE id = ?")) {
+                    stmt.setInt(1, id);
+                    stmt.executeUpdate();
+                }
+                conn.commit();
+                return true;
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /** Lộ trình môn của chương trình theo order_index (S2-06). */
+    public List<Map<String, Object>> listSubjects(int programId) throws SQLException {
+        String sql = "SELECT s.subject_code, s.subject_name, s.total_sessions, ps.order_index "
+                + "FROM program_subjects ps JOIN subjects s ON s.id = ps.subject_id "
+                + "WHERE ps.program_id = ? AND s.deleted_at IS NULL ORDER BY ps.order_index, ps.id";
+        List<Map<String, Object>> items = new ArrayList<>();
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, programId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("code", rs.getString("subject_code"));
+                    item.put("name", rs.getString("subject_name"));
+                    item.put("sessions", rs.getInt("total_sessions"));
+                    item.put("order", rs.getInt("order_index"));
+                    items.add(item);
+                }
+            }
+        }
+        return items;
+    }
+
+    /**
+     * Lưu thứ tự môn mới (S2-06, kéo thả). subjectCodes phải gồm đúng các môn đang có trong lộ trình,
+     * không thiếu không thừa, để hai người sửa cùng lúc không làm mất môn của nhau.
+     *
+     * @throws IllegalArgumentException danh sách không khớp lộ trình hiện tại
+     */
+    public void reorderSubjects(int programId, List<String> subjectCodes) throws SQLException {
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                Map<String, Integer> current = new LinkedHashMap<>();
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "SELECT ps.id, s.subject_code FROM program_subjects ps JOIN subjects s ON s.id = ps.subject_id "
+                                + "WHERE ps.program_id = ? FOR UPDATE")) {
+                    stmt.setInt(1, programId);
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        while (rs.next()) current.put(rs.getString("subject_code").toUpperCase(java.util.Locale.ROOT), rs.getInt("id"));
+                    }
+                }
+                List<String> codes = subjectCodes.stream().map(c -> c.trim().toUpperCase(java.util.Locale.ROOT)).toList();
+                if (codes.size() != current.size() || !current.keySet().equals(new java.util.HashSet<>(codes))) {
+                    throw new IllegalArgumentException("Danh sách môn không khớp lộ trình hiện tại. Hãy tải lại trang rồi thử lại.");
+                }
+                try (PreparedStatement stmt = conn.prepareStatement("UPDATE program_subjects SET order_index = ? WHERE id = ?")) {
+                    for (int i = 0; i < codes.size(); i++) {
+                        stmt.setInt(1, i + 1);
+                        stmt.setInt(2, current.get(codes.get(i)));
+                        stmt.addBatch();
+                    }
+                    stmt.executeBatch();
+                }
+                conn.commit();
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            }
         }
     }
 

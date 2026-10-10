@@ -10,7 +10,11 @@ public final class PermissionPolicy {
             Map.entry("POST /api/admin/users", "USER_CREATE"),
             Map.entry("GET /api/admin/roles", "ROLE_PERMISSION_READ"),
             Map.entry("GET /api/admin/permissions", "ROLE_PERMISSION_READ"),
-            Map.entry("GET /api/admin/menus", "ROLE_PERMISSION_READ")
+            Map.entry("GET /api/admin/menus", "ROLE_PERMISSION_READ"),
+            Map.entry("GET /api/admin/users/trash", "USER_READ"),
+            Map.entry("GET /api/admin/users/import/template", "USER_CREATE"),
+            Map.entry("POST /api/admin/users/import/preview", "USER_CREATE"),
+            Map.entry("POST /api/admin/users/import", "USER_CREATE")
     );
 
     private PermissionPolicy() {}
@@ -32,6 +36,18 @@ public final class PermissionPolicy {
         }
         if ("PUT".equals(method) && path.matches("^/api/admin/users/\\d+$")) {
             return "USER_ROLE_ASSIGN";
+        }
+        // Thùng rác tài khoản: chuyển vào, khôi phục, xoá vĩnh viễn (xoá vĩnh viễn còn kiểm vai trò ADMIN trong servlet).
+        if ("DELETE".equals(method) && path.matches("^/api/admin/users/\\d+(/purge)?$")) {
+            return "USER_ROLE_ASSIGN";
+        }
+        if ("POST".equals(method) && path.matches("^/api/admin/users/\\d+/restore$")) {
+            return "USER_ROLE_ASSIGN";
+        }
+        // Hồ sơ cá nhân: ai đăng nhập cũng xem và sửa được hồ sơ của chính mình.
+        if (("GET".equals(method) || "PUT".equals(method) || "POST".equals(method))
+                && ("/api/profile".equals(path) || "/api/user/profile".equals(path))) {
+            return "@authenticated";
         }
         if (path.startsWith("/api/training-programs")) {
             return "PROGRAM_MANAGE";
