@@ -13,9 +13,18 @@
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="#">
+            <a class="navbar-brand fw-bold" href="${pageContext.request.contextPath}/dashboard.jsp">
                 <i class="bi bi-mortarboard-fill text-warning me-2"></i>EMS ĐÀO TẠO
             </a>
+            <div class="navbar-nav me-auto">
+                <a class="nav-link" href="${pageContext.request.contextPath}/dashboard.jsp">Trang tổng quan</a>
+                <a class="nav-link" href="${pageContext.request.contextPath}/grade/list">Điểm số</a>
+                <a class="nav-link active" href="${pageContext.request.contextPath}/tuition/list">Học phí</a>
+                <a class="nav-link" href="${pageContext.request.contextPath}/training-programs">Chương trình học</a>
+                <c:if test="${sessionScope.currentUser.hasRole('Admin')}">
+                    <a class="nav-link" href="${pageContext.request.contextPath}/admin/users/roles">Phân quyền vai trò</a>
+                </c:if>
+            </div>
             <div class="d-flex align-items-center text-white">
                 <span class="me-3">Xin chào, <strong>${sessionScope.currentUser.name}</strong> 
                     <span class="badge bg-success ms-1">${sessionScope.currentUser.roles[0]}</span>

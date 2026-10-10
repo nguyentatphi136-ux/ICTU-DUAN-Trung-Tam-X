@@ -1,0 +1,7 @@
+Họ và tên,Email,Số điện thoại,Vai trò,Ngày sinh,Giới tính,Địa chỉ
+Vũ Văn Thành,thanh.vu.test@tms.vn,0912888999,student,2003-01-10,Nam,Thái Nguyên
+Trần Thị Hoa,hoa.tran.test@tms.vn,0987654321,student,2002-05-15,Nữ,Hà Nội
+,missing.name@tms.vn,0903112233,student,2000-01-01,Nam,Hải Phòng
+Hoàng Minh Đức,invalid-email-format,0934555666,instructor,1995-09-09,Nam,Đà Nẵng
+Lê Thu Trang,trang.le.test@tms.vn,0123456789,ta,1998-12-12,Nữ,Bắc Ninh
+Nguyễn Hải Nam,nam.nguyen.test@tms.vn,0977112233,unknown_role,2001-03-03,Nam,Nam Định

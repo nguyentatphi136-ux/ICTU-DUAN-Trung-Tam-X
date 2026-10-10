@@ -1,21 +1,25 @@
 {
   "name": "ictu-duan-trung-tam-x",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "ICTU - Hệ thống Quản lý Đào tạo Trung tâm (EMS) - Java Servlet & JSP",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "frontend": "npm --prefix frontend run dev",
+    "mock-api": "npm --prefix legacy_or_mock/mock-node-api run dev",
+    "test": "echo \"Chạy kiểm thử Java Backend bằng lệnh: mvn test\""
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nguyentatphi136-ux/ICTU-DUAN-Trung-Tam-X.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "bugs": {
-    "url": "https://github.com/nguyentatphi136-ux/ICTU-DUAN-Trung-Tam-X/issues"
-  },
-  "homepage": "https://github.com/nguyentatphi136-ux/ICTU-DUAN-Trung-Tam-X#readme"
+  "keywords": [
+    "ictu",
+    "ems",
+    "java",
+    "servlet",
+    "jsp"
+  ],
+  "author": "ICTU K15C6 Team",
+  "license": "ISC"
 }
