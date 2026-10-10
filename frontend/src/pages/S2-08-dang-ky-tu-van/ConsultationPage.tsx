@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '../../components/CardPage';
 import { Icon, type IconName } from '../../components/Icon';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { Box } from '../../components/ui';
 import { LEADS } from '../../data/leads';
 import { PROGRAMS } from '../../data/training';
@@ -60,6 +61,7 @@ export function ConsultationPage() {
     return (
       <div className="page">
         <div className="card ct-thanks">
+          <ThemeToggle className="theme-in" />
           <Badge icon="check" />
           <div className="eyebrow">Đã nhận đăng ký</div>
           <h1>Cảm ơn bạn, {first}!</h1>
@@ -89,6 +91,7 @@ export function ConsultationPage() {
   return (
     <div className="lg-page">
       <main className="lg-card ct-card">
+        <ThemeToggle className="theme-in" />
         <section className="lg-left">
           <div className="lg-logo">
             <span>
