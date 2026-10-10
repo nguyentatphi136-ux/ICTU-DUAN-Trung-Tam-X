@@ -1,6 +1,6 @@
 # S2: sửa theo nhận xét mentor (10/10/2026)
 
-Nhánh: `fix/s2-nhan-xet-mentor`, tách từ `feature/frontend-theo-figma_NPPL` và gộp thêm backend S2 từ `feature/frontend-theo-figma`.
+Nhánh: `fix/s2-nhan-xet-mentor_NPPL`, tách từ `feature/frontend-theo-figma_NPPL` và gộp thêm backend S2 từ `feature/frontend-theo-figma`.
 
 ## Đối chiếu 14 mục
 
