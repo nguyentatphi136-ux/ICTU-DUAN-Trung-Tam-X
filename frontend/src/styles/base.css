@@ -6,11 +6,11 @@
   --grad:linear-gradient(135deg,#0575E6,#00F260);--logo:linear-gradient(135deg,#9FCCFA,#0974F1);--hero:var(--logo);--side:var(--surface);
   --glow:rgba(0,190,130,.25);--scrim:rgba(6,36,77,.45);--er-num:linear-gradient(180deg,#cfe4fd,#b3d4fb);--card-glow:rgba(9,116,241,.15)}
 /* Giao diện tối theo bảng "Giao diện tối" trong Figma: nền đen ngả xám, điểm nhấn gradient hồng sang cam. */
-:root[data-theme=dark]{color-scheme:dark;--ink:#ECECEF;--muted:#A1A1AA;--line:#3A3A40;--bg:#18181B;--blue:#F7708F;--navy:#ECECEF;--navy-soft:#A1A1AA;--soft:#3D1A28;--red:#FF6B5F;--green:#4ADE80;
+:root[data-theme=dark]{color-scheme:dark;--ink:#ECECEF;--muted:#A1A1AA;--line:#3A3A40;--bg:#18181B;--blue:#F7708F;--navy:#ECECEF;--navy-soft:#E4E4E7;--soft:#3D1A28;--red:#FF6B5F;--green:#4ADE80;
   --surface:#232327;--raised:#2A2A2E;--hover:#2A2A2E;--chip:#3A3A40;--faint:#71717A;
   --ok-bg:#0F2E22;--ok-line:#1E5A3C;--warn:#FBBF5C;--warn-bg:#33270D;--warn-line:#5C4719;
   --bad:#FF6B5F;--bad-bg:#3A1616;--bad-line:#6A2A26;--info:#F7708F;--info-bg:#3D1A28;--info-line:#7A2943;
-  --grad:linear-gradient(135deg,#D4145A,#FBB03B);--logo:var(--grad);--hero:linear-gradient(135deg,#18181B,#3A3A40);--side:#232327;
+  --grad:linear-gradient(135deg,#D4145A,#FBB03B);--logo:var(--grad);--hero:linear-gradient(135deg,#42378F,#F53844);--side:#232327;
   --glow:rgba(212,20,90,.3);--scrim:rgba(0,0,0,.6);--er-num:linear-gradient(180deg,#3A3A40,#2A2A2E);--card-glow:rgba(0,0,0,.4)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Be Vietnam Pro',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
@@ -48,19 +48,20 @@ svg.ic{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-wid
 .toast{position:fixed;top:84px;right:32px;z-index:40;background:var(--raised);border:1px solid var(--ok-line);border-left:4px solid var(--green);border-radius:var(--r);padding:12px 18px;box-shadow:0 12px 30px rgba(5,36,77,.14);max-width:min(420px,calc(100vw - 32px))}
 .toast b{display:block}.toast span{color:var(--muted);font-size:13px}
 @media(max-width:600px){.toast{right:16px;top:72px}}
-/* Nút đổi giao diện: nút tròn 40px, biểu tượng xoay 180° và đổi mặt trời/mặt trăng trong 500ms. */
+/* Nút đổi giao diện: nút tròn 40px, biểu tượng xoay 180° và đổi mặt trời/mặt trăng trong 350ms. */
 .theme-btn{--tb:#fff;--tb-ring:linear-gradient(135deg,#D4145A,#FBB03B);width:40px;height:40px;flex:none;border-radius:50%;border:2px solid transparent;padding:0;display:grid;place-items:center;background:linear-gradient(var(--tb),var(--tb)) padding-box,var(--tb-ring) border-box}
 .theme-btn:hover{--tb:#EAF3FE}
 [data-theme=dark] .theme-btn{--tb:#2A2A2E;--tb-ring:linear-gradient(135deg,#0575E6,#00F260)}
 [data-theme=dark] .theme-btn:hover{--tb:#3A3A40}
-.theme-btn svg{grid-area:1/1;width:20px;height:20px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .5s ease-in-out,opacity .5s ease-in-out}
+.theme-btn svg{grid-area:1/1;width:20px;height:20px;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .35s ease-in-out,opacity .35s ease-in-out}
 .theme-btn .moon{opacity:0;transform:rotate(-180deg)}
 [data-theme=dark] .theme-btn .sun{opacity:0;transform:rotate(180deg)}
 [data-theme=dark] .theme-btn .moon{opacity:1;transform:none}
 .theme-btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-/* Trang không có thanh trên (đăng nhập, lỗi, thẻ giữa màn hình): nút nổi góc phải. */
-.theme-float{position:fixed;top:16px;right:16px;z-index:35}
-body:has(.top,.ss-top) .theme-float{display:none}
+/* Trang dạng box (đăng nhập, tư vấn, thẻ giữa màn hình): nút nằm trong box, góc trên bên phải. */
+.lg-card,.card{position:relative}
+.theme-in{position:absolute;top:16px;right:16px;z-index:2}
+.card-top .theme-in{position:static;margin-left:6px}.sec .theme-btn svg{width:20px;height:20px}
 /* Hiệu ứng chuyển: giao diện mới lan ra theo hình tròn từ nút (View Transitions), mép là vòng gradient 6px. */
 ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
 .theme-ring{position:fixed;z-index:100;pointer-events:none;border-radius:50%;translate:-50% -50%;background:linear-gradient(135deg,#D4145A,#FBB03B);-webkit-mask:radial-gradient(closest-side,transparent calc(100% - 6px),#000 calc(100% - 6px));mask:radial-gradient(closest-side,transparent calc(100% - 6px),#000 calc(100% - 6px))}

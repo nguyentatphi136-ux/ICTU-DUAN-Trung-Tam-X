@@ -1,5 +1,6 @@
 /* S1-07. Trang lỗi 403, 404, 500. */
 .er-page{min-height:100vh;background:var(--surface);padding:28px 40px;display:flex;flex-direction:column}
+.er-head{display:flex;justify-content:space-between;align-items:center}
 .er-page .logo{padding:0}
 .er-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 0 80px}
 .er-num{font-size:220px;font-weight:700;line-height:1;letter-spacing:-4px;margin-bottom:-58px;background:var(--er-num);-webkit-background-clip:text;background-clip:text;color:transparent;user-select:none}
