@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../data/auth';
 import { ROLES } from '../../data/permissions';
@@ -100,6 +101,7 @@ export function SessionDemoPage() {
           <a href="#">Lớp học</a>
           <a href="#">Báo cáo</a>
         </nav>
+        <ThemeToggle />
         <div className="um">
           <button type="button" className="um-btn" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
             <span className="who">
