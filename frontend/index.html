@@ -6,6 +6,10 @@
     <meta name="theme-color" content="#0575e6" />
     <meta name="description" content="TMS - hệ thống quản lý đào tạo nội bộ, theo dõi học viên từ lead đến tốt nghiệp." />
     <title>TMS - Quản lý đào tạo</title>
+    <!-- Đặt màu theo trình duyệt trước khi React chạy để không loé nền sáng khi trình duyệt đang để tối. -->
+    <script>
+      try { document.documentElement.dataset.theme = sessionStorage.getItem('tms.theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet" />

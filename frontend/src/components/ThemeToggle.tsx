@@ -1,27 +1,33 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useState, type MouseEvent, type ReactNode } from 'react';
 import { flushSync } from 'react-dom';
-import { useAuth } from '../data/auth';
 
-// Giao diện sáng/tối. Lưu theo tài khoản (tms.theme.<email>), chưa đăng nhập thì theo máy (tms.theme).
-// Lần đầu theo cài đặt hệ điều hành (prefers-color-scheme).
+// Giao diện sáng/tối. Mỗi lần mở web theo màu của trình duyệt (prefers-color-scheme) và đổi theo khi trình duyệt đổi.
+// Bấm nút đổi màu thì giữ lựa chọn đó trong tab đang mở (sessionStorage), đóng tab mở lại lại theo trình duyệt.
 type Theme = 'light' | 'dark';
 
-const key = (email?: string) => 'tms.theme' + (email ? '.' + email : '');
+const KEY = 'tms.theme';
+const media = matchMedia('(prefers-color-scheme: dark)');
+const browser = (): Theme => (media.matches ? 'dark' : 'light');
 
-function stored(email?: string): Theme {
+function stored(): Theme | null {
   try {
-    const t = (email && localStorage.getItem(key(email))) || localStorage.getItem(key());
+    const t = sessionStorage.getItem(KEY);
     if (t === 'light' || t === 'dark') return t;
   } catch {}
-  return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  return null;
 }
 
 const ThemeContext = createContext<[Theme, (t: Theme) => void]>(null!);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const email = useAuth().user?.email;
-  const [theme, setTheme] = useState(() => stored(email));
-  useEffect(() => setTheme(stored(email)), [email]);
+  const [theme, setTheme] = useState(() => stored() ?? browser());
+  useEffect(() => {
+    const follow = () => {
+      if (!stored()) setTheme(browser());
+    };
+    media.addEventListener('change', follow);
+    return () => media.removeEventListener('change', follow);
+  }, []);
   // Layout effect để thuộc tính đổi ngay trong flushSync, kịp cho View Transitions chụp trạng thái mới.
   useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -31,15 +37,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function ThemeToggle({ className = '' }: { className?: string }) {
   const [theme, setTheme] = useContext(ThemeContext);
-  const email = useAuth().user?.email;
   const dark = theme === 'dark';
   const label = dark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối';
 
   const flip = (e: MouseEvent<HTMLButtonElement>) => {
     const next: Theme = dark ? 'light' : 'dark';
     try {
-      localStorage.setItem(key(), next);
-      if (email) localStorage.setItem(key(email), next);
+      sessionStorage.setItem(KEY, next);
     } catch {}
     const apply = () => flushSync(() => setTheme(next));
     if (!('startViewTransition' in document) || matchMedia('(prefers-reduced-motion: reduce)').matches) return apply();
