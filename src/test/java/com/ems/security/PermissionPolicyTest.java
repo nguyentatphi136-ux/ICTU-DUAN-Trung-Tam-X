@@ -30,7 +30,22 @@ class PermissionPolicyTest {
         assertEquals("USER_ROLE_ASSIGN",
                 PermissionPolicy.requiredPermission("PUT", "/api/admin/users/8/roles"));
         assertEquals("MENU_VIEW", PermissionPolicy.requiredPermission("GET", "/api/me/menu"));
-        assertEquals(null, PermissionPolicy.requiredPermission("DELETE", "/api/admin/users/8"));
+        assertEquals(null, PermissionPolicy.requiredPermission("DELETE", "/api/admin/roles/INSTRUCTOR"));
+        assertEquals(null, PermissionPolicy.requiredPermission("PATCH", "/api/admin/users/8"));
+    }
+
+    @Test
+    void profileImportAndTrashRoutesHaveRules() {
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/profile"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("PUT", "/api/profile"));
+        assertEquals("USER_CREATE", PermissionPolicy.requiredPermission("POST", "/api/admin/users/import/preview"));
+        assertEquals("USER_CREATE", PermissionPolicy.requiredPermission("POST", "/api/admin/users/import"));
+        assertEquals("USER_CREATE", PermissionPolicy.requiredPermission("GET", "/api/admin/users/import/template"));
+        assertEquals("USER_READ", PermissionPolicy.requiredPermission("GET", "/api/admin/users/trash"));
+        assertEquals("USER_ROLE_ASSIGN", PermissionPolicy.requiredPermission("DELETE", "/api/admin/users/8"));
+        assertEquals("USER_ROLE_ASSIGN", PermissionPolicy.requiredPermission("DELETE", "/api/admin/users/8/purge"));
+        assertEquals("USER_ROLE_ASSIGN", PermissionPolicy.requiredPermission("POST", "/api/admin/users/8/restore"));
+        assertEquals("PROGRAM_MANAGE", PermissionPolicy.requiredPermission("PUT", "/api/training-programs/WEB-FS/subjects"));
     }
 
     @Test

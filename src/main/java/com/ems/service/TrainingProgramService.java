@@ -41,7 +41,9 @@ public class TrainingProgramService {
 
         String code = request.getCode().trim().toUpperCase(java.util.Locale.ROOT);
         if (trainingProgramDAO.existsByCode(code)) {
-            throw new ConflictException("PROGRAM_CODE_CONFLICT", "Mã chương trình đào tạo '" + code + "' đã tồn tại.");
+            throw new ConflictException("PROGRAM_CODE_CONFLICT", trainingProgramDAO.isCodeInTrash(code)
+                    ? "Mã chương trình đào tạo '" + code + "' thuộc một chương trình trong thùng rác. Hãy khôi phục chương trình đó."
+                    : "Mã chương trình đào tạo '" + code + "' đã tồn tại.");
         }
 
         TrainingProgram program = new TrainingProgram();
@@ -122,6 +124,11 @@ public class TrainingProgramService {
      * RULE 6: Chương trình đang có lớp đang chạy (IN_PROGRESS, RUNNING, ACTIVE) KHÔNG ĐƯỢC XOÁ.
      */
     public void delete(int id) throws SQLException {
+        delete(id, null);
+    }
+
+    /** Chuyển vào thùng rác; actorId là người xoá (null khi chạy kiểm thử). */
+    public void delete(int id, Long actorId) throws SQLException {
         TrainingProgram existing = trainingProgramDAO.findById(id);
         if (existing == null) {
             throw new ResourceNotFoundException("Không tìm thấy chương trình đào tạo với ID: " + id);
@@ -133,7 +140,64 @@ public class TrainingProgramService {
                     "Không thể xoá chương trình đào tạo vì đang có lớp học đang chạy.");
         }
 
-        trainingProgramDAO.delete(id);
+        trainingProgramDAO.delete(id, actorId);
+    }
+
+    public java.util.List<java.util.Map<String, Object>> listTrash() throws SQLException {
+        return trainingProgramDAO.listTrashed();
+    }
+
+    public void restore(int id) throws SQLException {
+        if (!trainingProgramDAO.restore(id)) {
+            throw new ResourceNotFoundException("Chương trình không có trong thùng rác.");
+        }
+    }
+
+    /** Xoá vĩnh viễn, không hoàn tác được. Còn lớp học gắn với chương trình thì giữ lại trong thùng rác. */
+    public void purge(int id) throws SQLException {
+        if (trainingProgramDAO.countTotalClassesByProgramId(id) > 0) {
+            throw new ConflictException("PROGRAM_HAS_CLASSES",
+                    "Không xoá vĩnh viễn được vì chương trình đã có lớp học. Hãy để trong thùng rác.");
+        }
+        try {
+            if (!trainingProgramDAO.purge(id)) {
+                throw new ResourceNotFoundException("Chương trình không có trong thùng rác.");
+            }
+        } catch (java.sql.SQLIntegrityConstraintViolationException e) {
+            throw new ConflictException("PROGRAM_HAS_RELATED_DATA",
+                    "Không xoá vĩnh viễn được vì chương trình còn dữ liệu liên quan. Hãy để trong thùng rác.");
+        }
+    }
+
+    /** Chương trình theo id (số) hoặc mã. */
+    private TrainingProgram resolve(String idOrCode) throws SQLException {
+        TrainingProgram program = idOrCode.matches("\\d+")
+                ? trainingProgramDAO.findById(Integer.parseInt(idOrCode))
+                : trainingProgramDAO.findByCode(idOrCode);
+        if (program == null) {
+            throw new ResourceNotFoundException("Không tìm thấy chương trình đào tạo: " + idOrCode);
+        }
+        return program;
+    }
+
+    /** Lộ trình môn của chương trình (S2-06). */
+    public java.util.List<java.util.Map<String, Object>> listSubjects(String idOrCode) throws SQLException {
+        return trainingProgramDAO.listSubjects(resolve(idOrCode).getId());
+    }
+
+    /** Lưu thứ tự môn mới sau khi kéo thả (S2-06). */
+    public java.util.List<java.util.Map<String, Object>> reorderSubjects(String idOrCode, java.util.List<String> subjectCodes)
+            throws SQLException {
+        if (subjectCodes == null) {
+            throw new ValidationException("Thiếu danh sách mã môn theo thứ tự mới (subjectCodes).");
+        }
+        TrainingProgram program = resolve(idOrCode);
+        try {
+            trainingProgramDAO.reorderSubjects(program.getId(), subjectCodes);
+        } catch (IllegalArgumentException e) {
+            throw new ConflictException("CURRICULUM_CHANGED", e.getMessage());
+        }
+        return trainingProgramDAO.listSubjects(program.getId());
     }
 
     /**
