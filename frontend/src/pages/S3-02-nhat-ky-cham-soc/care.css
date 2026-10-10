@@ -1,7 +1,7 @@
 /* S3-02. Ngăn lead: nhãn giai đoạn, form ghi tương tác, dòng thời gian nhật ký. */
 .cr-tags{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .cr-stage{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
-.cr-stage select{height:32px;border:1px solid var(--line);border-radius:var(--r);padding:0 8px;font:inherit;color:var(--ink);background:#fff}
+.cr-stage select{height:32px;border:1px solid var(--line);border-radius:var(--r);padding:0 8px;font:inherit;color:var(--ink);background:var(--surface)}
 .cr-sub{color:var(--muted);margin:12px 0 0;padding-bottom:16px;border-bottom:1px solid var(--line)}
 .drawer h4{font-size:15px;font-weight:600;margin:16px 0 12px}
 .cr-new{border-bottom:1px solid var(--line);padding-bottom:4px}
@@ -10,7 +10,7 @@
 .cr-row .field:last-child:not(:first-child){flex:1;min-width:160px}
 .lbl{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
 .cr-kinds{display:flex;gap:8px}
-.cr-kinds button{display:flex;align-items:center;gap:8px;height:44px;width:96px;padding:0 14px;border:1px solid var(--line);border-radius:var(--r);background:#fff;color:var(--ink);font-size:13px}
+.cr-kinds button{display:flex;align-items:center;gap:8px;height:44px;width:96px;padding:0 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--ink);font-size:13px}
 .cr-kinds button svg{color:var(--muted)}
 .cr-kinds .on{background:var(--soft);border-color:var(--blue);color:var(--blue);font-weight:600}.cr-kinds .on svg{color:var(--blue)}
 .cr-log{list-style:none;position:relative;padding:0;margin:0}
@@ -19,4 +19,4 @@
 .cr-log .dot{width:28px;height:28px;border-radius:50%;background:var(--soft);color:var(--blue);display:grid;place-items:center;flex:none;position:relative}
 .cr-log b{display:block;font-size:13px;font-weight:600}
 .cr-log p{color:var(--muted);font-size:14px}
-.cr-log .bad .dot{background:#fef3f2;color:var(--red)}.cr-log .bad b{color:#b42318}
+.cr-log .bad .dot{background:var(--bad-bg);color:var(--red)}.cr-log .bad b{color:var(--bad)}
