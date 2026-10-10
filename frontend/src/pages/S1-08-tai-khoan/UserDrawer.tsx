@@ -3,7 +3,8 @@ import { Icon } from '../../components/Icon';
 import { Box, Drawer, initial, Pill } from '../../components/ui';
 import { useAuth } from '../../data/auth';
 import { ADMIN_ROLE, ROLES } from '../../data/permissions';
-import { EMAIL_RE, PHONE_RE } from '../../data/validate';
+import { phoneOwner } from '../../data/users';
+import { EMAIL_RE, isPhone, PHONE_MSG } from '../../data/validate';
 import { statusTone, type UserRow } from '../../data/users';
 
 
@@ -36,7 +37,9 @@ export function UserDrawer({ user, users, onClose, onSave, onLock }: Props) {
     if (!name.trim()) e.name = 'Vui lòng nhập họ và tên';
     if (isNew && !EMAIL_RE.test(email.trim())) e.email = 'Email không đúng định dạng';
     if (duplicate) e.email = `Email này đã được dùng cho tài khoản ${duplicate.name}`;
-    if (!PHONE_RE.test(phone.replace(/\s/g, ''))) e.phone = 'Số điện thoại Việt Nam gồm 10 chữ số, bắt đầu bằng 0';
+    const owner = phoneOwner(phone, user?.id);
+    if (!isPhone(phone)) e.phone = PHONE_MSG;
+    else if (owner) e.phone = `Số điện thoại đã được dùng cho tài khoản ${owner.name}`;
     if (!roles.length) e.roles = 'Chọn ít nhất một vai trò';
     setErrors(e);
     if (Object.keys(e).length) return;

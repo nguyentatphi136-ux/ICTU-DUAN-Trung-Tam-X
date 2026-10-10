@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
+import { pageNumbers } from './paging';
+
+export { pageNumbers, paginate } from './paging';
 
 // Các mảnh giao diện dùng lại ở nhiều trang: ngăn bên, hộp thoại, nhãn trạng thái, phân trang, menu dòng, hộp thông tin.
 
@@ -25,7 +28,7 @@ export function Drawer({ title, onClose, children, footer }: { title: string; on
 export function Modal({ onClose, children, label, wide }: { onClose: () => void; children: ReactNode; label: string; wide?: boolean }) {
   useEscape(onClose);
   return (
-    <div className="overlay" onClick={onClose}>
+    <div className="overlay modal-overlay" onClick={onClose}>
       <div className={'modal' + (wide ? ' wide' : '')} role="dialog" aria-modal="true" aria-label={label} onClick={(e) => e.stopPropagation()}>
         {children}
       </div>
@@ -59,16 +62,45 @@ export function Box({ icon, tone, title, children }: { icon: IconName; tone?: 'o
   );
 }
 
-/** Chân bảng: "Hiển thị a–b trong n …" và các nút trang. */
-export function Pager({ page, pages, onPage, children }: { page: number; pages: number; onPage: (p: number) => void; children: ReactNode }) {
-  const nums = pages <= 5 ? [...Array(pages)].map((_, i) => i + 1) : [1, 2, 3, 0, pages];
+export const PAGE_SIZES = [10, 20, 50];
+
+/** Trang hiện tại và số dòng mỗi trang; đổi số dòng thì về trang 1. */
+export function usePaging(initialSize = 20) {
+  const [page, setPage] = useState(1);
+  const [size, setSizeState] = useState(initialSize);
+  const setSize = (s: number) => {
+    setSizeState(s);
+    setPage(1);
+  };
+  return { page, setPage, size, setSize };
+}
+
+
+/** Chân bảng: "Hiển thị a–b trong n …", số dòng mỗi trang, nút Trước/Sau và các số trang. */
+export function Pager({ page, pages, onPage, size, onSize, children }: { page: number; pages: number; onPage: (p: number) => void; size?: number; onSize?: (s: number) => void; children: ReactNode }) {
+  const nums = pageNumbers(page, pages);
   return (
     <div className="pager">
       <span>{children}</span>
       <div>
+        {onSize && (
+          <label className="pager-size">
+            Mỗi trang
+            <select value={size} onChange={(e) => onSize(Number(e.target.value))} aria-label="Số dòng mỗi trang">
+              {PAGE_SIZES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        <button type="button" className="step" disabled={page <= 1} onClick={() => onPage(page - 1)}>
+          Trước
+        </button>
         {nums.map((n, i) =>
           n ? (
-            <button key={i} type="button" className={n === page ? 'on' : undefined} onClick={() => onPage(n)}>
+            <button key={i} type="button" className={n === page ? 'on' : undefined} aria-current={n === page ? 'page' : undefined} onClick={() => onPage(n)}>
               {n}
             </button>
           ) : (
@@ -77,8 +109,40 @@ export function Pager({ page, pages, onPage, children }: { page: number; pages: 
             </button>
           ),
         )}
+        <button type="button" className="step" disabled={page >= pages} onClick={() => onPage(page + 1)}>
+          Sau
+        </button>
       </div>
     </div>
+  );
+}
+
+/**
+ * Hộp xác nhận thay cho window.confirm. Mặc định là chuyển vào thùng rác (khôi phục được);
+ * permanent=true là xoá vĩnh viễn, ghi rõ không hoàn tác được.
+ */
+export function ConfirmDialog({ title, children, confirmLabel, permanent, onConfirm, onClose }: { title: string; children: ReactNode; confirmLabel?: string; permanent?: boolean; onConfirm: () => void; onClose: () => void }) {
+  return (
+    <Modal onClose={onClose} label={title}>
+      <div className="modal-head">
+        <span className="danger-ic">
+          <Icon name="trash" />
+        </span>
+        <div>
+          <h3>{title}</h3>
+          <p>{permanent ? 'Thao tác này không hoàn tác được.' : 'Bạn khôi phục được trong Thùng rác.'}</p>
+        </div>
+      </div>
+      <div className="confirm-body">{children}</div>
+      <div className="acts">
+        <button type="button" className="btn" style={{ width: 100 }} onClick={onClose}>
+          Huỷ
+        </button>
+        <button type="button" className="btn danger" autoFocus onClick={onConfirm}>
+          {confirmLabel ?? (permanent ? 'Xoá vĩnh viễn' : 'Chuyển vào thùng rác')}
+        </button>
+      </div>
+    </Modal>
   );
 }
 
@@ -153,10 +217,3 @@ export function Search({ placeholder, value, onChange, width }: { placeholder: s
 /** Chữ cái đầu của tên gọi (chữ cuối họ tên), dùng cho ảnh đại diện tròn. */
 export const initial = (name: string) => (name.trim().split(/\s+/).pop() ?? '?')[0];
 
-/** Chia trang danh sách phía máy khách. Khi có API: dùng ?page=&size= của máy chủ. */
-export function paginate<T>(rows: T[], page: number, size = 20) {
-  const pages = Math.max(1, Math.ceil(rows.length / size));
-  const p = Math.min(page, pages);
-  const from = (p - 1) * size;
-  return { page: p, pages, items: rows.slice(from, from + size), from: rows.length ? from + 1 : 0, to: Math.min(from + size, rows.length) };
-}

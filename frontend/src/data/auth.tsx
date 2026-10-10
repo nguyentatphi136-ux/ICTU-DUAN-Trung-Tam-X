@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
+import { api, apiEnabled } from './api';
 
 // Người đang đăng nhập và vai trò đang dùng (S1-01, S1-02, S1-06).
 // Lưu trong sessionStorage để tải lại trang không mất phiên. Khi có backend: thay bằng token và GET /auth/me.
@@ -11,6 +12,8 @@ type Auth = {
   signIn: (a: Account) => void;
   signOut: () => void;
   switchRole: (role: number) => void;
+  /** Cập nhật tên hiển thị sau khi lưu hồ sơ (S2-02). */
+  updateUser: (patch: Partial<Pick<User, 'name'>>) => void;
 };
 
 const KEY = 'tms.user';
@@ -38,8 +41,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         signIn: (a) => save({ ...a, active: a.roles[0] }),
-        signOut: () => save(null),
+        signOut: () => {
+          // Báo máy chủ huỷ phiên; lỗi mạng không chặn việc đăng xuất ở trình duyệt.
+          if (apiEnabled && user) api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+          save(null);
+        },
         switchRole: (role) => user && save({ ...user, active: role }),
+        updateUser: (patch) => user && save({ ...user, ...patch }),
       }}
     >
       {children}

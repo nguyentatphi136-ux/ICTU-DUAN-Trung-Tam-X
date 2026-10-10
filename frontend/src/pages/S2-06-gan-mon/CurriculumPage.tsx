@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { Search } from '../../components/ui';
+import { api, ApiError, apiEnabled, json } from '../../data/api';
+import { saveAll } from '../../data/store';
 import { CURRICULUM, PROGRAMS, SUBJECTS, type CurriculumItem } from '../../data/training';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
 import { MODULE, useCanEditTraining } from '../../components/TrainingTabs';
@@ -11,31 +13,50 @@ import './curriculum.css';
 const subject = (code: string) => SUBJECTS.find((s) => s.code === code);
 const hhmm = () => new Date().toTimeString().slice(0, 5);
 
-// S2-06. Lộ trình môn của một chương trình: kéo thả đổi thứ tự (tự lưu), thêm bằng nút +, gỡ bằng ×.
-// Môn tiên quyết chỉ chọn được từ các môn đứng trước. Khi tích hợp: PUT /training/programs/:code/subjects.
+type SaveState = { kind: 'saving' | 'saved' | 'error'; text: string } | null;
+
+// S2-06. Lộ trình môn của một chương trình: kéo thả hoặc bấm mũi tên lên/xuống để đổi thứ tự (dùng được cả
+// bàn phím và màn cảm ứng), thêm bằng nút +, gỡ bằng ×. Môn tiên quyết chỉ chọn được từ các môn đứng trước.
+// Có backend: đổi thứ tự gọi PUT /api/training-programs/:code/subjects, chỉ báo "Đã lưu" khi máy chủ nhận.
+// Chưa có backend: lưu vào dữ liệu mẫu, giữ qua tải trang.
 export function CurriculumPage() {
   const code = useParams().code ?? '';
   const program = PROGRAMS.find((p) => p.code === code);
   const canEdit = useCanEditTraining();
   const [items, setItems] = useState<CurriculumItem[]>(() => CURRICULUM[code] ?? []);
-  const [savedAt, setSavedAt] = useState('');
+  const [save, setSave] = useState<SaveState>(null);
   const [dragging, setDragging] = useState<number | null>(null);
+  const [over, setOver] = useState<number | null>(null);
   const [q, setQ] = useState('');
 
   if (!program) return <ErrorPage code="404" />;
 
-  const commit = (list: CurriculumItem[]) => {
+  const commit = (list: CurriculumItem[], reorder = false) => {
+    const prev = items;
     // Môn tiên quyết phải đứng trước: bỏ những môn không còn đứng trước sau khi đổi thứ tự hoặc gỡ.
     const fixed = list.map((it, i) => ({ ...it, prereq: it.prereq.filter((p) => list.slice(0, i).some((x) => x.code === p)) }));
     CURRICULUM[code] = fixed;
     setItems(fixed);
-    setSavedAt(hhmm());
+    saveAll();
+    if (!apiEnabled || !reorder) return setSave({ kind: 'saved', text: 'Đã lưu lúc ' + hhmm() });
+    setSave({ kind: 'saving', text: 'Đang lưu thứ tự…' });
+    api(`/api/training-programs/${encodeURIComponent(code)}/subjects`, json('PUT', { subjectCodes: fixed.map((x) => x.code) }))
+      .then(() => setSave({ kind: 'saved', text: 'Đã lưu thứ tự lúc ' + hhmm() }))
+      .catch((e: ApiError) => {
+        CURRICULUM[code] = prev;
+        setItems(prev);
+        setSave({ kind: 'error', text: 'Chưa lưu được thứ tự: ' + e.message });
+      });
   };
   const move = (from: number, to: number) => {
-    if (from === to) return;
+    if (from === to || to < 0 || to >= items.length) return;
     const list = [...items];
     list.splice(to, 0, list.splice(from, 1)[0]);
-    commit(list);
+    commit(list, true);
+  };
+  const endDrag = () => {
+    setDragging(null);
+    setOver(null);
   };
 
   const total = items.reduce((n, it) => n + (subject(it.code)?.sessions ?? 0), 0);
@@ -47,12 +68,12 @@ export function CurriculumPage() {
       <div className="h">
         <div>
           <h2>{program.name}</h2>
-          <p>{canEdit ? 'Kéo thả để đổi thứ tự học. Thứ tự được lưu tự động.' : 'Lộ trình học của chương trình.'}</p>
+          <p>{canEdit ? 'Kéo thả hoặc bấm mũi tên để đổi thứ tự học. Thứ tự được lưu tự động.' : 'Lộ trình học của chương trình.'}</p>
         </div>
-        {savedAt && (
-          <span className="cu-saved">
-            <Icon name="check" size={16} />
-            Đã lưu thứ tự lúc {savedAt}
+        {save && (
+          <span className={'cu-saved ' + save.kind} role="status">
+            <Icon name={save.kind === 'error' ? 'alert' : save.kind === 'saving' ? 'clock' : 'check'} size={16} />
+            {save.text}
           </span>
         )}
       </div>
@@ -67,20 +88,25 @@ export function CurriculumPage() {
           </div>
           {items.map((it, i) => {
             const s = subject(it.code);
+            // Đường kẻ chỉ chỗ thả: kéo xuống thì môn rơi dưới hàng đích, kéo lên thì rơi trên.
+            const drop = dragging !== null && over === i && dragging !== i ? (dragging < i ? ' drop-after' : ' drop-before') : '';
             return (
               <div
                 key={it.code}
-                className={'cu-row' + (dragging === i ? ' drag' : '')}
+                className={'cu-row' + (dragging === i ? ' drag' : '') + drop}
                 draggable={canEdit}
                 onDragStart={(e) => {
                   setDragging(i);
                   e.dataTransfer.effectAllowed = 'move';
                 }}
-                onDragEnd={() => setDragging(null)}
-                onDragOver={(e) => e.preventDefault()}
+                onDragEnd={endDrag}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (over !== i) setOver(i);
+                }}
                 onDrop={() => {
                   if (dragging !== null) move(dragging, i);
-                  setDragging(null);
+                  endDrag();
                 }}
               >
                 {canEdit && <Icon name="grip" />}
@@ -98,9 +124,17 @@ export function CurriculumPage() {
                   onChange={(prereq) => commit(items.map((x, j) => (j === i ? { ...x, prereq } : x)))}
                 />
                 {canEdit && (
-                  <button type="button" className="icon-btn" aria-label={'Gỡ ' + (s?.name ?? it.code)} onClick={() => commit(items.filter((_, j) => j !== i))}>
-                    <Icon name="x" />
-                  </button>
+                  <span className="cu-moves">
+                    <button type="button" className="icon-btn up" aria-label={'Đưa ' + (s?.name ?? it.code) + ' lên trên'} disabled={i === 0} onClick={() => move(i, i - 1)}>
+                      <Icon name="down" />
+                    </button>
+                    <button type="button" className="icon-btn" aria-label={'Đưa ' + (s?.name ?? it.code) + ' xuống dưới'} disabled={i === items.length - 1} onClick={() => move(i, i + 1)}>
+                      <Icon name="down" />
+                    </button>
+                    <button type="button" className="icon-btn" aria-label={'Gỡ ' + (s?.name ?? it.code)} onClick={() => commit(items.filter((_, j) => j !== i))}>
+                      <Icon name="x" />
+                    </button>
+                  </span>
                 )}
               </div>
             );

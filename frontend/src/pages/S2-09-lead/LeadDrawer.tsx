@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
-import { Drawer } from '../../components/ui';
+import { ConfirmDialog, Drawer } from '../../components/ui';
 import { LEAD_STATUSES, samePhone, SOURCES, type Lead, type LeadStatus } from '../../data/leads';
 import { PROGRAMS } from '../../data/training';
-import { PHONE_RE } from '../../data/validate';
+import { isPhone, PHONE_MSG } from '../../data/validate';
 
 type Props = {
   lead: Lead | null;
@@ -28,6 +28,7 @@ export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, 
     note: lead?.note ?? '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [confirming, setConfirming] = useState(false);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => {
     setF((x) => ({ ...x, [k]: e.target.value }));
     setErrors((x) => ({ ...x, [k]: '' }));
@@ -37,7 +38,7 @@ export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, 
   function save() {
     const e: Record<string, string> = {};
     if (!f.name.trim()) e.name = 'Vui lòng nhập họ và tên';
-    if (!PHONE_RE.test(f.phone.replace(/\s/g, ''))) e.phone = 'Số điện thoại gồm 10 chữ số, bắt đầu bằng 0';
+    if (!isPhone(f.phone)) e.phone = PHONE_MSG;
     if (!f.program) e.program = 'Chọn chương trình quan tâm';
     setErrors(e);
     if (Object.keys(e).length) return;
@@ -71,15 +72,21 @@ export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, 
   );
 
   return (
+    <>
+    {confirming && lead && (
+      <ConfirmDialog title="Chuyển lead vào thùng rác?" onClose={() => setConfirming(false)} onConfirm={() => onDelete(lead)}>
+        Lead <b>{lead.name}</b> ({lead.phone}) sẽ ẩn khỏi danh sách và phễu.
+      </ConfirmDialog>
+    )}
     <Drawer
       title={lead ? (readOnly ? 'Thông tin lead' : 'Sửa lead') : 'Thêm lead'}
       onClose={onClose}
       footer={
         <>
           {lead && canDelete && (
-            <button type="button" className="btn outline-danger" style={{ marginRight: 'auto' }} onClick={() => window.confirm(`Xoá lead ${lead.name}?`) && onDelete(lead)}>
+            <button type="button" className="btn outline-danger" style={{ marginRight: 'auto' }} onClick={() => setConfirming(true)}>
               <Icon name="trash" size={16} />
-              Xoá lead
+              Chuyển vào thùng rác
             </button>
           )}
           <button type="button" className="btn" style={{ width: 100 }} onClick={onClose}>
@@ -141,5 +148,6 @@ export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, 
         </div>
       </fieldset>
     </Drawer>
+    </>
   );
 }

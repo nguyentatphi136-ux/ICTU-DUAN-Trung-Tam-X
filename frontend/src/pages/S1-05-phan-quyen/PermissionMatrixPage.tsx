@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { MODULES, ROLES, type Permission } from '../../data/permissions';
+import { MODULES, ROLES, USERS_MODULE, type Permission } from '../../data/permissions';
 import './matrix.css';
 
 const OPTIONS: Permission[] = ['F', 'W', 'W*', 'R', 'R*', '–'];
@@ -26,7 +26,7 @@ export function PermissionMatrixPage() {
   const set = (m: number, r: number, v: Permission) => setPerms((p) => p.map((row, i) => (i === m ? row.map((x, j) => (j === r ? v : x)) : row)));
 
   return (
-    <AppLayout crumb={['Người dùng & nhật ký', 'Phân quyền']} module="Người dùng & nhật ký">
+    <AppLayout crumb={[USERS_MODULE, 'Phân quyền']} module={USERS_MODULE}>
       <div className="h">
         <div>
           <h2>Ma trận phân quyền</h2>

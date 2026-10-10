@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Filter, initial, Pager, paginate, Pill, RowMenu, Search } from '../../components/ui';
-import { ROLES } from '../../data/permissions';
+import { ConfirmDialog, Filter, initial, Pager, paginate, Pill, RowMenu, Search, usePaging } from '../../components/ui';
+import { useAuth } from '../../data/auth';
+import { moveToTrash, restore } from '../../data/trash';
+import { ROLES, USERS_MODULE } from '../../data/permissions';
 import { statusTone, USERS, type Status, type UserRow } from '../../data/users';
 import { LockDialog } from './LockDialog';
 import { UserDrawer } from './UserDrawer';
@@ -19,9 +21,11 @@ export function UserListPage() {
   const [q, setQ] = useState('');
   const [role, setRole] = useState('');
   const [status, setStatus] = useState('');
-  const [page, setPage] = useState(1);
+  const { page, setPage, size, setSize } = usePaging();
   const [editing, setEditing] = useState<UserRow | 'new' | null>(null);
   const [locking, setLocking] = useState<UserRow | null>(null);
+  const [deleting, setDeleting] = useState<UserRow | null>(null);
+  const { user: me } = useAuth();
 
   const filtered = useMemo(() => {
     const k = q.trim().toLowerCase().replace(/\s/g, '');
@@ -32,21 +36,37 @@ export function UserListPage() {
         (!status || u.status === status),
     );
   }, [users, q, role, status]);
-  const view = paginate(filtered, page);
+  const view = paginate(filtered, page, size);
 
   const update = (u: UserRow) => setUsers((list) => list.map((x) => (x.id === u.id ? u : x)));
+  const trash = (u: UserRow) => {
+    const id = moveToTrash({ kind: 'user', item: u }, `${u.name} · ${u.email}`, me?.name ?? '');
+    setUsers([...USERS]);
+    setDeleting(null);
+    toast('Đã chuyển vào thùng rác', u.name, {
+      label: 'Hoàn tác',
+      onClick: () => {
+        restore(id);
+        setUsers([...USERS]);
+      },
+    });
+  };
   const resetPage = <T,>(f: (v: T) => void) => (v: T) => {
     f(v);
     setPage(1);
   };
 
   return (
-    <AppLayout crumb={['Người dùng & nhật ký', 'Tài khoản']} module="Người dùng & nhật ký">
+    <AppLayout crumb={[USERS_MODULE, 'Tài khoản']} module={USERS_MODULE}>
       <div className="h">
         <div>
           <h2>Tài khoản người dùng</h2>
           <p>{users.length} tài khoản</p>
         </div>
+        <Link to="/quan-tri/thung-rac" className="btn">
+          <Icon name="trash" size={16} />
+          Thùng rác
+        </Link>
         <Link to="/quan-tri/nhap-excel" className="btn">
           <Icon name="upload" size={16} />
           Nhập từ Excel
@@ -100,6 +120,8 @@ export function UserListPage() {
                       actions={[
                         { label: 'Sửa', onClick: () => setEditing(u) },
                         u.status === 'Đã khoá' ? { label: 'Mở khoá', onClick: () => setLocking(u) } : { label: 'Khoá', danger: true, onClick: () => setLocking(u) },
+                        // Không tự chuyển tài khoản của mình vào thùng rác (máy chủ cũng chặn).
+                        ...(u.email === me?.email ? [] : [{ label: 'Chuyển vào thùng rác', danger: true, onClick: () => setDeleting(u) }]),
                       ]}
                     />
                   </td>
@@ -115,7 +137,7 @@ export function UserListPage() {
             </tbody>
           </table>
         </div>
-        <Pager page={view.page} pages={view.pages} onPage={setPage}>
+        <Pager page={view.page} pages={view.pages} onPage={setPage} size={size} onSize={setSize}>
           Hiển thị {view.from}–{view.to} trong {filtered.length} tài khoản
         </Pager>
       </div>
@@ -152,6 +174,11 @@ export function UserListPage() {
             setLocking(null);
           }}
         />
+      )}
+      {deleting && (
+        <ConfirmDialog title="Chuyển tài khoản vào thùng rác?" onClose={() => setDeleting(null)} onConfirm={() => trash(deleting)}>
+          Tài khoản <b>{deleting.name}</b> ({deleting.email}) sẽ không đăng nhập được và ẩn khỏi danh sách.
+        </ConfirmDialog>
       )}
     </AppLayout>
   );

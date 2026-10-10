@@ -3,8 +3,10 @@ import { useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Box, Modal, Pill } from '../../components/ui';
+import { Box, ConfirmDialog, Modal, Pill } from '../../components/ui';
+import { useAuth } from '../../data/auth';
 import { LESSONS, SUBJECTS, type Lesson } from '../../data/training';
+import { moveToTrash, restore } from '../../data/trash';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
 import { MODULE, useCanEditTraining } from '../../components/TrainingTabs';
 
@@ -18,12 +20,27 @@ export function SessionsPage() {
   const [lessons, setLessons] = useState<Lesson[]>(() => LESSONS[code] ?? []);
   const [editing, setEditing] = useState<number | 'new' | null>(null);
   const [cloning, setCloning] = useState(false);
+  const [deleting, setDeleting] = useState<number | null>(null);
+  const { user } = useAuth();
 
   if (!subject) return <ErrorPage code="404" />;
 
   const commit = (list: Lesson[]) => {
     LESSONS[code] = list;
     setLessons(list);
+  };
+  const trash = (i: number) => {
+    const l = lessons[i];
+    const id = moveToTrash({ kind: 'lesson', item: l, subject: code, index: i }, `${subject.name} · Buổi ${i + 1}: ${l.topic}`, user?.name ?? '');
+    setLessons([...(LESSONS[code] ?? [])]);
+    setDeleting(null);
+    toast('Đã chuyển vào thùng rác', `Buổi ${i + 1}: ${l.topic}`, {
+      label: 'Hoàn tác',
+      onClick: () => {
+        restore(id);
+        setLessons([...(LESSONS[code] ?? [])]);
+      },
+    });
   };
   const full = lessons.length >= subject.sessions;
   const left = subject.sessions - lessons.length;
@@ -78,7 +95,7 @@ export function SessionsPage() {
                       type="button"
                       className="icon-btn"
                       aria-label={`Xoá buổi ${i + 1}`}
-                      onClick={() => window.confirm(`Xoá buổi ${i + 1}: ${l.topic}?`) && commit(lessons.filter((_, j) => j !== i))}
+                      onClick={() => setDeleting(i)}
                     >
                       <Icon name="trash" />
                     </button>
@@ -125,6 +142,11 @@ export function SessionsPage() {
             toast('Đã nhân bản danh sách buổi', `${Math.min(list.length, subject.sessions)} buổi`);
           }}
         />
+      )}
+      {deleting !== null && lessons[deleting] && (
+        <ConfirmDialog title="Chuyển buổi học vào thùng rác?" onClose={() => setDeleting(null)} onConfirm={() => trash(deleting)}>
+          Buổi <b>{deleting + 1}: {lessons[deleting].topic}</b> sẽ bị gỡ, các buổi sau được đánh số lại.
+        </ConfirmDialog>
       )}
     </AppLayout>
   );

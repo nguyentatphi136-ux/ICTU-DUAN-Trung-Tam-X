@@ -6,7 +6,7 @@ import { ThemeToggle } from '../../components/ThemeToggle';
 import { Box } from '../../components/ui';
 import { LEADS } from '../../data/leads';
 import { PROGRAMS } from '../../data/training';
-import { EMAIL_RE, PHONE_RE } from '../../data/validate';
+import { EMAIL_RE, isPhone, PHONE_MSG } from '../../data/validate';
 import '../S1-01-dang-nhap/login.css';
 import './consult.css';
 
@@ -33,7 +33,7 @@ export function ConsultationPage() {
     e.preventDefault();
     const err: typeof errors = {};
     if (!f.name.trim()) err.name = 'Vui lòng nhập họ và tên';
-    if (!PHONE_RE.test(f.phone.replace(/\s/g, ''))) err.phone = 'Số điện thoại gồm 10 chữ số, bắt đầu bằng 0';
+    if (!isPhone(f.phone)) err.phone = PHONE_MSG;
     if (f.email.trim() && !EMAIL_RE.test(f.email.trim())) err.email = 'Email không đúng định dạng';
     if (!f.program) err.program = 'Chọn chương trình bạn quan tâm';
     if (!human) err.human = 'Vui lòng xác nhận bạn không phải người máy';

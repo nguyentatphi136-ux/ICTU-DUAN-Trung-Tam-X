@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Filter, Pager, paginate, Pill, Search } from '../../components/ui';
+import { Filter, Pager, paginate, Pill, Search, usePaging } from '../../components/ui';
 import { useAuth } from '../../data/auth';
 import { ADMIN_ROLE } from '../../data/permissions';
 import { COUNSELORS, LEAD_STATUSES, leadTone, LEADS, SOURCES, viDate, type Lead } from '../../data/leads';
+import { moveToTrash, restore } from '../../data/trash';
 import { AssignDialog } from '../S2-10-phan-cong-lead/AssignDialog';
 import { LeadDrawer } from './LeadDrawer';
 import './lead.css';
@@ -26,7 +27,7 @@ export function LeadListPage() {
   const [source, setSource] = useState('');
   const [owner, setOwner] = useState('');
   const [range, setRange] = useState('');
-  const [page, setPage] = useState(1);
+  const { page, setPage, size, setSize } = usePaging();
   const [picked, setPicked] = useState<number[]>([]);
   const [editing, setEditing] = useState<Lead | 'new' | null>(null);
   const [assigning, setAssigning] = useState(false);
@@ -49,7 +50,7 @@ export function LeadListPage() {
         (!range || l.createdAt.startsWith(range)),
     );
   }, [leads, q, status, source, owner, range, counselor, user]);
-  const view = paginate(filtered, page);
+  const view = paginate(filtered, page, size);
 
   const commit = (list: Lead[]) => {
     LEADS.splice(0, LEADS.length, ...list);
@@ -69,6 +70,12 @@ export function LeadListPage() {
           <h2>Lead</h2>
           <p>{filtered.length} khách hàng tiềm năng</p>
         </div>
+        {manager && (
+          <Link to="/tuyen-sinh/thung-rac" className="btn">
+            <Icon name="trash" size={16} />
+            Thùng rác
+          </Link>
+        )}
         {canWrite && (
           <button type="button" className="btn primary" style={{ width: 140 }} onClick={() => setEditing('new')}>
             <Icon name="plus" size={16} />
@@ -169,7 +176,7 @@ export function LeadListPage() {
             </tbody>
           </table>
         </div>
-        <Pager page={view.page} pages={view.pages} onPage={setPage}>
+        <Pager page={view.page} pages={view.pages} onPage={setPage} size={size} onSize={setSize}>
           Hiển thị {view.from}–{view.to} trong {filtered.length} lead
         </Pager>
       </div>
@@ -184,9 +191,16 @@ export function LeadListPage() {
           onOpen={(l) => setEditing(l)}
           onClose={() => setEditing(null)}
           onDelete={(l) => {
-            commit(leads.filter((x) => x.id !== l.id));
-            toast('Đã xoá lead', l.name);
+            const id = moveToTrash({ kind: 'lead', item: l }, l.name, user?.name ?? '');
+            setLeads([...LEADS]);
             setEditing(null);
+            toast('Đã chuyển vào thùng rác', l.name, {
+              label: 'Hoàn tác',
+              onClick: () => {
+                restore(id);
+                setLeads([...LEADS]);
+              },
+            });
           }}
           onSave={(l) => {
             if (editing === 'new') commit([{ ...l, id: Math.max(...leads.map((x) => x.id)) + 1, owner: counselor ? user!.name : '' }, ...leads]);
