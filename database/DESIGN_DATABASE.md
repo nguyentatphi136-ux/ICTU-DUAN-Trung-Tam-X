@@ -231,3 +231,29 @@ Mô hình dữ liệu được thiết kế tuân thủ nghiêm ngặt chuẩn h
 - **Ràng buộc Foreign Keys:**
   - `ON DELETE CASCADE` cho quan hệ phụ thuộc chặt chẽ (`user_roles`, `role_permissions`).
   - `ON DELETE RESTRICT` cho quan hệ lịch sử/dữ liệu nghiệp vụ (`grades.updated_by`, `tuition_fees.updated_by`) để đảm bảo tính minh bạch kiểm toán (Audit Trail), ngăn chặn việc xóa tài khoản làm hỏng dữ liệu điểm số và tài chính.
+
+---
+
+## 7. Thiết kế CSDL Phân hệ Phòng học (Classrooms / Rooms - User Story S3-09)
+- **Bảng `classrooms` (Danh mục phòng học):**
+  - `id` (INT, PK, Auto Increment): Khóa chính phòng học.
+  - `room_code` (VARCHAR(50), UNIQUE, NOT NULL): Mã phòng duy nhất (VD: `PH-101`, `OL-MEET-01`).
+  - `room_name` (VARCHAR(100), NOT NULL): Tên phòng học.
+  - `room_type` (ENUM('PHYSICAL', 'ONLINE'), NOT NULL, DEFAULT 'PHYSICAL'): Loại phòng.
+  - `capacity` (INT, NULL, DEFAULT 30): Sức chứa tối đa (Bắt buộc > 0 đối với phòng PHYSICAL; không bắt buộc đối với phòng ONLINE).
+  - `location` (VARCHAR(255), NULL): Vị trí địa lý phòng vật lý (Tòa nhà, tầng...).
+  - `meeting_url` (VARCHAR(255), NULL): Đường dẫn học trực tuyến (Google Meet, Zoom, MS Teams...) đối với phòng ONLINE.
+  - `description` (TEXT, NULL): Mô tả cơ sở vật chất, trang thiết bị phòng.
+  - `is_active` (BOOLEAN, NOT NULL, DEFAULT TRUE): Trạng thái hoạt động (Dùng cho Soft Delete / Vô hiệu hóa phòng).
+  - `status` (ENUM('AVAILABLE', 'MAINTENANCE'), DEFAULT 'AVAILABLE'): Trạng thái sẵn sàng.
+  - `created_at` (DATETIME, DEFAULT CURRENT_TIMESTAMP): Thời điểm tạo phòng.
+  - `updated_at` (DATETIME, DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP): Thời điểm cập nhật cuối.
+
+- **Quan hệ dữ liệu:**
+  - `classes.default_classroom_id` -> `classrooms.id` (FK `ON DELETE SET NULL`): Phòng học mặc định cho lớp.
+  - `class_sessions.classroom_id` -> `classrooms.id` (FK `ON DELETE RESTRICT`): Phòng học cho từng buổi thời khóa biểu.
+
+- **Ràng buộc nghiệp vụ toàn vẹn:**
+  - Unique Constraint: `room_code` không được phép trùng lặp.
+  - Capacity Safety: Không cho phép giảm `capacity` phòng xuống thấp hơn quy mô của lớp học hoặc số lượng học viên thực tế đang được xếp vào phòng.
+  - Safe Deletion: Nếu phòng học đang được liên kết trong lớp (`classes`) hoặc buổi học (`class_sessions`), hệ thống tự động áp dụng Soft Delete (`is_active = FALSE`) thay vì xóa vật lý nhằm bảo vệ toàn vẹn dữ liệu lịch sử và khóa ngoại.

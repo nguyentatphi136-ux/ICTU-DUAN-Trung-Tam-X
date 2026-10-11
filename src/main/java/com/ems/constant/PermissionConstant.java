@@ -22,6 +22,8 @@ public class PermissionConstant {
     public static final String CLASS_MANAGE = "CLASS_MANAGE";
     public static final String LEAD_MANAGE = "LEAD_MANAGE";
     public static final String PUBLIC_VIEW = "PUBLIC_VIEW";
+    public static final String ROOM_VIEW = "ROOM_VIEW";
+    public static final String ROOM_MANAGE = "ROOM_MANAGE";
 
     // Ma trận phân quyền theo vai trò
     private static final Map<String, Set<String>> ROLE_PERMISSIONS = new HashMap<>();
@@ -30,12 +32,13 @@ public class PermissionConstant {
         // 1. Quản trị hệ thống (Admin): Có toàn quyền
         ROLE_PERMISSIONS.put(RoleConstant.ADMIN, new HashSet<>(Arrays.asList(
                 USER_MANAGE, ROLE_MANAGE, CLASS_MANAGE, LEAD_MANAGE,
+                ROOM_VIEW, ROOM_MANAGE,
                 GRADE_VIEW, GRADE_EDIT, TUITION_VIEW, TUITION_EDIT, PUBLIC_VIEW
         )));
 
-        // 2. Quản lý đào tạo (TrainingManager): Quản lý lớp, xem và sửa điểm
+        // 2. Quản lý đào tạo (TrainingManager): Quản lý lớp, phòng học, xem và sửa điểm
         ROLE_PERMISSIONS.put(RoleConstant.TRAINING_MANAGER, new HashSet<>(Arrays.asList(
-                CLASS_MANAGE, GRADE_VIEW, GRADE_EDIT, PUBLIC_VIEW
+                CLASS_MANAGE, ROOM_VIEW, ROOM_MANAGE, GRADE_VIEW, GRADE_EDIT, PUBLIC_VIEW
         )));
 
         // 3. Tư vấn tuyển sinh (Admissions): Quản lý lead

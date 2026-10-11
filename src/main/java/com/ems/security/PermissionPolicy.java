@@ -10,7 +10,9 @@ public final class PermissionPolicy {
             Map.entry("POST /api/admin/users", "USER_CREATE"),
             Map.entry("GET /api/admin/roles", "ROLE_PERMISSION_READ"),
             Map.entry("GET /api/admin/permissions", "ROLE_PERMISSION_READ"),
-            Map.entry("GET /api/admin/menus", "ROLE_PERMISSION_READ")
+            Map.entry("GET /api/admin/menus", "ROLE_PERMISSION_READ"),
+            Map.entry("GET /api/rooms", "ROOM_VIEW"),
+            Map.entry("POST /api/rooms", "ROOM_MANAGE")
     );
 
     private PermissionPolicy() {}
@@ -18,6 +20,21 @@ public final class PermissionPolicy {
     public static String requiredPermission(String method, String path) {
         String exact = API_PERMISSIONS.get(method + " " + path);
         if (exact != null) return exact;
+        if ("GET".equals(method) && path.matches("^/api/rooms/\\d+$")) {
+            return "ROOM_VIEW";
+        }
+        if ("GET".equals(method) && path.matches("^/api/rooms/\\d+/validate-capacity$")) {
+            return "ROOM_VIEW";
+        }
+        if ("POST".equals(method) && path.matches("^/api/rooms/\\d+/validate-capacity$")) {
+            return "ROOM_VIEW";
+        }
+        if ("PUT".equals(method) && path.matches("^/api/rooms/\\d+$")) {
+            return "ROOM_MANAGE";
+        }
+        if ("DELETE".equals(method) && path.matches("^/api/rooms/\\d+$")) {
+            return "ROOM_MANAGE";
+        }
         if ("PUT".equals(method) && path.matches("^/api/admin/roles/[A-Z_]+/permissions$")) {
             return "ROLE_PERMISSION_UPDATE";
         }
@@ -40,7 +57,13 @@ public final class PermissionPolicy {
     }
 
     public static boolean allows(Collection<String> permissions, String required) {
-        return permissions != null && required != null && permissions.contains(required);
+        if (permissions == null || required == null) return false;
+        if (permissions.contains(required)) return true;
+        if (("ROOM_VIEW".equals(required) || "ROOM_MANAGE".equals(required))
+                && (permissions.contains("CLASS_MANAGE") || permissions.contains("ADMIN"))) {
+            return true;
+        }
+        return false;
     }
 
     public static boolean mayReplaceRoles(
