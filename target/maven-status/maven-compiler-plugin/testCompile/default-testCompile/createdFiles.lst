@@ -1,3 +1,7 @@
+com\ems\test\ClassApiServletSecurityTest.class
 com\ems\security\PermissionPolicyTest.class
 com\ems\security\LoginAttemptPolicyTest.class
 com\ems\model\PasswordResetTokenTest.class
+com\ems\test\ClassServiceIntegrationTest$1.class
+com\ems\test\TestDbHelper.class
+com\ems\test\ClassServiceIntegrationTest.class

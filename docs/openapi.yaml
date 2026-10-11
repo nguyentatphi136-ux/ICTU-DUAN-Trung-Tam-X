@@ -1,0 +1,426 @@
+openapi: 3.0.3
+info:
+  title: Hệ thống Quản lý Đào tạo (EMS) - API Mở lớp học
+  description: >
+    API Quản lý lớp học theo User Story S3-05 (Epic EP-03):
+    "Là Quản lý đào tạo, tôi muốn mở lớp học mới từ một chương trình đào tạo, để khai giảng đúng hạn mà không phải khai báo lại danh sách môn học."
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local Tomcat Server
+
+tags:
+  - name: Classes
+    description: Quản lý lớp học & mở lớp từ chương trình đào tạo
+  - name: Programs
+    description: Danh mục chương trình đào tạo & môn học
+
+paths:
+  /api/classes:
+    post:
+      tags:
+        - Classes
+      summary: Mở lớp học mới từ một chương trình đào tạo
+      description: >
+        Tạo lớp học mới với trạng thái ban đầu là Chuẩn bị (PLANNING).
+        Hệ thống tự động sao chép danh sách môn học của chương trình vào lớp mới trong cùng một Database Transaction.
+        Yêu cầu vai trò: Training Manager (Quản lý đào tạo) hoặc Admin.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateClassRequest'
+            example:
+              classCode: "CNTT-K23-01"
+              className: "Lớp Fullstack Java K23 - Lớp 01"
+              programId: 1
+              expectedStartDate: "2026-11-01"
+              maxStudents: 30
+              studyMode: "Offline"
+      responses:
+        '201':
+          description: Mở lớp học thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassSuccessResponse'
+              example:
+                success: true
+                code: "CLASS_OPENED_SUCCESS"
+                message: "Mở lớp học thành công."
+                data:
+                  id: 1
+                  classCode: "CNTT-K23-01"
+                  className: "Lớp Fullstack Java K23 - Lớp 01"
+                  programId: 1
+                  programName: "Lập trình viên Fullstack Java Web"
+                  expectedStartDate: "2026-11-01"
+                  maxStudents: 30
+                  studyMode: "OFFLINE"
+                  status: "PLANNING"
+                  statusLabel: "Chuẩn bị"
+                  subjectCount: 4
+                  subjects:
+                    - id: 1
+                      subjectId: 1
+                      subjectCode: "CS101"
+                      subjectName: "Nhập môn Lập trình và Thuật toán"
+                      orderIndex: 1
+                      status: "NOT_STARTED"
+                    - id: 2
+                      subjectId: 2
+                      subjectCode: "DB101"
+                      subjectName: "Cơ sở dữ liệu Quan hệ & MySQL"
+                      orderIndex: 2
+                      status: "NOT_STARTED"
+                    - id: 3
+                      subjectId: 3
+                      subjectCode: "JAVA101"
+                      subjectName: "Lập trình Java Căn bản & OOP"
+                      orderIndex: 3
+                      status: "NOT_STARTED"
+                    - id: 4
+                      subjectId: 4
+                      subjectCode: "WEB101"
+                      subjectName: "Phát triển Ứng dụng Web với Servlet & JSP"
+                      orderIndex: 4
+                      status: "NOT_STARTED"
+                  createdAt: "2026-10-11 16:20:00"
+        '400':
+          description: Dữ liệu gửi lên không hợp lệ hoặc chương trình chưa có môn học
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "Sĩ số tối đa phải là số nguyên dương lớn hơn 0."
+        '401':
+          description: Chưa đăng nhập hoặc phiên làm việc đã hết hạn
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: "AUTH_UNAUTHORIZED"
+                  message: "Vui lòng đăng nhập để thực hiện chức năng."
+        '403':
+          description: Người dùng không có quyền mở lớp (không phải Training Manager)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: "AUTH_FORBIDDEN"
+                  message: "Chỉ người dùng có vai trò Quản lý đào tạo (Training Manager) mới được phép mở lớp."
+        '404':
+          description: Không tìm thấy chương trình đào tạo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: "PROGRAM_NOT_FOUND"
+                  message: "Chương trình đào tạo không tồn tại hoặc đã ngừng hoạt động (ID: 999)."
+        '409':
+          description: Mã lớp học đã tồn tại
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                error:
+                  code: "CLASS_CODE_ALREADY_EXISTS"
+                  message: "Mã lớp 'CNTT-K23-01' đã tồn tại trong hệ thống."
+        '500':
+          description: Lỗi máy chủ nội bộ hoặc lỗi CSDL (đã được rollback an toàn)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+    get:
+      tags:
+        - Classes
+      summary: Lấy danh sách các lớp học
+      description: Trả về danh sách tất cả các lớp học trong hệ thống
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Danh sách lớp học
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  code:
+                    type: string
+                  message:
+                    type: string
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ClassItem'
+
+  /api/classes/{id}:
+    get:
+      tags:
+        - Classes
+      summary: Tra cứu chi tiết một lớp học
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID của lớp học
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Chi tiết lớp học kèm danh sách môn học
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassSuccessResponse'
+        '404':
+          description: Không tìm thấy lớp học
+
+  /api/programs:
+    get:
+      tags:
+        - Programs
+      summary: Danh sách chương trình đào tạo đang hoạt động
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Danh sách chương trình
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ProgramItem'
+
+  /api/programs/{id}/subjects:
+    get:
+      tags:
+        - Programs
+      summary: Danh sách môn học thuộc chương trình đào tạo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Danh sách môn học theo thứ tự lộ trình
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SubjectItem'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+
+  schemas:
+    CreateClassRequest:
+      type: object
+      required:
+        - classCode
+        - programId
+        - expectedStartDate
+        - maxStudents
+        - studyMode
+      properties:
+        classCode:
+          type: string
+          description: Mã lớp duy nhất (tối đa 50 ký tự, chữ cái, số, gạch ngang, gạch dưới)
+          example: "CNTT-K23-01"
+        className:
+          type: string
+          description: Tên lớp học (tùy chọn, nếu bỏ trống hệ thống tự sinh từ chương trình và mã lớp)
+          example: "Lớp Fullstack Java K23 - Lớp 01"
+        programId:
+          type: integer
+          description: ID chương trình đào tạo
+          example: 1
+        expectedStartDate:
+          type: string
+          format: date
+          description: Ngày khai giảng dự kiến (YYYY-MM-DD)
+          example: "2026-11-01"
+        maxStudents:
+          type: integer
+          minimum: 1
+          maximum: 500
+          description: Sĩ số tối đa của lớp (số nguyên > 0)
+          example: 30
+        studyMode:
+          type: string
+          enum: [Offline, Online, Hybrid, OFFLINE, ONLINE, HYBRID]
+          description: Hình thức học
+          example: "Offline"
+
+    ClassSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        code:
+          type: string
+          example: "CLASS_OPENED_SUCCESS"
+        message:
+          type: string
+          example: "Mở lớp học thành công."
+        data:
+          $ref: '#/components/schemas/ClassItem'
+
+    ClassItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        classCode:
+          type: string
+          example: "CNTT-K23-01"
+        className:
+          type: string
+          example: "Lớp Fullstack Java K23 - Lớp 01"
+        programId:
+          type: integer
+          example: 1
+        programName:
+          type: string
+          example: "Lập trình viên Fullstack Java Web"
+        expectedStartDate:
+          type: string
+          example: "2026-11-01"
+        maxStudents:
+          type: integer
+          example: 30
+        studyMode:
+          type: string
+          example: "OFFLINE"
+        status:
+          type: string
+          enum: [PLANNING, IN_PROGRESS, FINISHED, CANCELLED]
+          example: "PLANNING"
+        statusLabel:
+          type: string
+          example: "Chuẩn bị"
+        subjectCount:
+          type: integer
+          example: 4
+        subjects:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClassSubjectItem'
+        createdAt:
+          type: string
+          example: "2026-10-11 16:20:00"
+
+    ClassSubjectItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        subjectId:
+          type: integer
+          example: 1
+        subjectCode:
+          type: string
+          example: "CS101"
+        subjectName:
+          type: string
+          example: "Nhập môn Lập trình và Thuật toán"
+        orderIndex:
+          type: integer
+          example: 1
+        status:
+          type: string
+          example: "NOT_STARTED"
+
+    ProgramItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        programCode:
+          type: string
+        programName:
+          type: string
+        durationMonths:
+          type: integer
+        standardTuition:
+          type: number
+        status:
+          type: string
+
+    SubjectItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        subjectCode:
+          type: string
+        subjectName:
+          type: string
+        totalSessions:
+          type: integer
+        orderIndex:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              example: "Sĩ số tối đa phải lớn hơn 0."

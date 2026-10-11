@@ -283,12 +283,13 @@ CREATE TABLE IF NOT EXISTS `class_subjects` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `class_id` BIGINT NOT NULL,
     `subject_id` INT NOT NULL,
-    `primary_instructor_id` BIGINT NOT NULL COMMENT 'Giảng viên chính phụ trách môn',
+    `order_index` INT NOT NULL DEFAULT 1 COMMENT 'Thứ tự môn trong lộ trình học của lớp',
+    `primary_instructor_id` BIGINT NULL COMMENT 'Giảng viên chính phụ trách môn (NULL khi mới mở lớp)',
     `status` ENUM('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED') DEFAULT 'NOT_STARTED',
     UNIQUE KEY `uk_class_subject` (`class_id`, `subject_id`),
     CONSTRAINT `fk_cs_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_cs_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE RESTRICT,
-    CONSTRAINT `fk_cs_instructor` FOREIGN KEY (`primary_instructor_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
+    CONSTRAINT `fk_cs_instructor` FOREIGN KEY (`primary_instructor_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB COMMENT='Bảng phân công giảng viên chính theo môn của lớp';
 
 -- 4.4 Bảng Trợ giảng hỗ trợ Môn của Lớp (Class Subject Teaching Assistants)
