@@ -198,6 +198,41 @@ public class UserDAO {
         }
     }
 
+    public User findById(long userId) throws SQLException {
+        try (Connection connection = DBConnection.getConnection()) {
+            String sql = "SELECT id, user_code, email, full_name, phone, status FROM users WHERE id = ?";
+            User user = null;
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setLong(1, userId);
+                try (ResultSet result = statement.executeQuery()) {
+                    if (result.next()) {
+                        user = new User();
+                        user.setId(result.getLong("id"));
+                        user.setUserCode(result.getString("user_code"));
+                        user.setEmail(result.getString("email"));
+                        user.setFullName(result.getString("full_name"));
+                        user.setPhone(result.getString("phone"));
+                        user.setStatus(result.getString("status"));
+                    }
+                }
+            }
+            if (user == null) return null;
+
+            List<String> roles = new ArrayList<>();
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "SELECT r.role_code FROM user_roles ur JOIN roles r ON r.id = ur.role_id "
+                            + "WHERE ur.user_id = ? ORDER BY CASE r.role_code WHEN 'ADMIN' THEN 0 ELSE 1 END, r.id")) {
+                statement.setLong(1, userId);
+                try (ResultSet result = statement.executeQuery()) {
+                    while (result.next()) roles.add(result.getString("role_code"));
+                }
+            }
+            user.setRoles(roles);
+            if (!roles.isEmpty()) user.setPrimaryRole(roles.get(0));
+            return user;
+        }
+    }
+
     private boolean isValidBcryptHash(String hash) {
         if (hash == null || !hash.matches("^\\$2[aby]\\$\\d{2}\\$.{53}$")) return false;
         return true;

@@ -1,3 +1,13 @@
+com\ems\controller\RoomApiServletTest$FakeResponse.class
 com\ems\security\PermissionPolicyTest.class
 com\ems\security\LoginAttemptPolicyTest.class
+com\ems\controller\RoomApiServletTest.class
 com\ems\model\PasswordResetTokenTest.class
+com\ems\controller\RoomApiServletTest$1.class
+com\ems\service\RoomServiceTest.class
+com\ems\controller\RoomApiServletTest$FakeRequest.class
+com\ems\security\RoomAuthorizationSecurityTest.class
+com\ems\test\RoleAuthorizationTest.class
+com\ems\test\PasswordResetTest.class
+com\ems\test\SessionManagementTest.class
+com\ems\test\MockRoomDAO.class

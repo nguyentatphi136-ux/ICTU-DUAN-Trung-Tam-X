@@ -1,0 +1,217 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Room Management API - Education Management System (EMS)",
+    "description": "REST API phục vụ User Story S3-09 (Epic EP-04: Lớp học & Thời khóa biểu). Quản lý phòng học vật lý, trực tuyến và kiểm tra sức chứa khi xếp lớp.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/ems",
+      "description": "Local Development Server"
+    }
+  ],
+  "paths": {
+    "/api/rooms": {
+      "get": {
+        "summary": "Lấy danh sách phòng học",
+        "description": "Hỗ trợ tìm kiếm theo từ khóa, lọc theo loại phòng (PHYSICAL / ONLINE), trạng thái hoạt động (isActive) và phân trang.",
+        "security": [{ "SessionAuth": [] }],
+        "parameters": [
+          { "name": "q", "in": "query", "schema": { "type": "string" }, "description": "Từ khóa tìm kiếm (mã phòng, tên, vị trí)" },
+          { "name": "roomType", "in": "query", "schema": { "type": "string", "enum": ["PHYSICAL", "ONLINE"] }, "description": "Lọc theo loại phòng" },
+          { "name": "isActive", "in": "query", "schema": { "type": "boolean" }, "description": "Lọc theo trạng thái hoạt động" },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 }, "description": "Số trang" },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 20 }, "description": "Số bản ghi mỗi trang" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lấy danh sách phòng học thành công",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "code": "ROOM_LIST_SUCCESS",
+                  "message": "Lấy danh sách phòng học thành công.",
+                  "data": {
+                    "items": [
+                      {
+                        "id": 1,
+                        "roomCode": "PH-101",
+                        "roomName": "Phòng lý thuyết 101",
+                        "roomType": "PHYSICAL",
+                        "capacity": 20,
+                        "location": "Tầng 1 - Tòa A",
+                        "onlineMeetingUrl": null,
+                        "description": "Trang bị máy chiếu, điều hòa",
+                        "isActive": true,
+                        "status": "AVAILABLE",
+                        "createdAt": "2026-10-11T12:00:00Z",
+                        "updatedAt": "2026-10-11T12:00:00Z"
+                      }
+                    ],
+                    "totalCount": 1,
+                    "page": 1,
+                    "pageSize": 20,
+                    "totalPages": 1
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Chưa đăng nhập" },
+          "403": { "description": "Không đủ quyền truy cập (Yêu cầu TrainingManager hoặc Admin)" }
+        }
+      },
+      "post": {
+        "summary": "Tạo phòng học mới",
+        "description": "Tạo phòng học vật lý hoặc trực tuyến. Kiểm tra trùng mã phòng và ràng buộc theo loại phòng.",
+        "security": [{ "SessionAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "examples": {
+                "physicalRoom": {
+                  "summary": "Phòng học vật lý",
+                  "value": {
+                    "roomCode": "PH-101",
+                    "roomName": "Phòng học 101",
+                    "roomType": "PHYSICAL",
+                    "capacity": 20,
+                    "location": "Tầng 1 - Tòa A",
+                    "description": "Trang bị máy chiếu",
+                    "isActive": true
+                  }
+                },
+                "onlineRoom": {
+                  "summary": "Phòng học trực tuyến",
+                  "value": {
+                    "roomCode": "OL-101",
+                    "roomName": "Phòng học trực tuyến Google Meet 101",
+                    "roomType": "ONLINE",
+                    "onlineMeetingUrl": "https://meet.google.com/abc-defg-hij",
+                    "description": "Phòng học đào tạo từ xa",
+                    "isActive": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Tạo phòng học thành công" },
+          "400": { "description": "Dữ liệu không hợp lệ (thiếu tên, capacity <= 0 cho phòng vật lý, URL không hợp lệ cho phòng online)" },
+          "401": { "description": "Chưa đăng nhập" },
+          "403": { "description": "Không đủ quyền (Yêu cầu TrainingManager hoặc Admin)" },
+          "409": { "description": "Mã phòng học đã tồn tại" }
+        }
+      }
+    },
+    "/api/rooms/{id}": {
+      "get": {
+        "summary": "Lấy chi tiết phòng học",
+        "security": [{ "SessionAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Chi tiết phòng học" },
+          "404": { "description": "Không tìm thấy phòng học" }
+        }
+      },
+      "put": {
+        "summary": "Cập nhật phòng học",
+        "security": [{ "SessionAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "roomCode": "PH-101",
+                "roomName": "Phòng học 101 - Đã nâng cấp",
+                "roomType": "PHYSICAL",
+                "capacity": 25,
+                "location": "Tầng 1 - Tòa A",
+                "isActive": true
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Cập nhật thành công" },
+          "400": { "description": "Dữ liệu không hợp lệ" },
+          "404": { "description": "Phòng học không tồn tại" },
+          "409": { "description": "Trùng mã phòng khác HOẶC giảm sức chứa thấp hơn sĩ số lớp đang xếp vào phòng (ROOM_CAPACITY_EXCEEDED)" }
+        }
+      },
+      "delete": {
+        "summary": "Xóa hoặc ngừng hoạt động phòng học",
+        "description": "Xóa vật lý nếu phòng chưa từng được tham chiếu. Soft-delete (chuyển isActive=false) nếu phòng đang được sử dụng trong lớp hoặc lịch học.",
+        "security": [{ "SessionAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Xóa hoặc soft-delete thành công" },
+          "404": { "description": "Phòng học không tồn tại" }
+        }
+      }
+    },
+    "/api/rooms/{id}/validate-capacity": {
+      "get": {
+        "summary": "Kiểm tra sức chứa phòng khi xếp lớp (Query Param)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } },
+          { "name": "studentCount", "in": "query", "required": true, "schema": { "type": "integer" }, "description": "Sĩ số lớp dự kiến" }
+        ],
+        "responses": {
+          "200": { "description": "Sức chứa hợp lệ (ROOM_CAPACITY_VALID)" },
+          "400": {
+            "description": "Sĩ số lớp vượt quá sức chứa phòng (ROOM_CAPACITY_EXCEEDED)",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": false,
+                  "error": {
+                    "code": "ROOM_CAPACITY_EXCEEDED",
+                    "message": "Sĩ số lớp vượt quá sức chứa của phòng học.",
+                    "details": {
+                      "studentCount": 30,
+                      "roomCapacity": 20,
+                      "roomCode": "PH-101",
+                      "roomType": "PHYSICAL"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Kiểm tra sức chứa phòng khi xếp lớp (JSON Body)",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "example": {
+                "studentCount": 30
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Sức chứa hợp lệ" },
+          "400": { "description": "Sĩ số lớp vượt quá sức chứa phòng" }
+        }
+      }
+    }
+  }
+}
