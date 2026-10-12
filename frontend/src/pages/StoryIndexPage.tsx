@@ -72,6 +72,7 @@ const STORIES: [string, string, string][] = [
   ['S6-10', 'Danh sách thông báo đầy đủ', '/thong-bao'],
   ['S6-11', 'Nhật ký thao tác trên điểm, học phí, vai trò', '/quan-tri/nhat-ky'],
   ['S7-01', 'Biểu phí theo chương trình, phiên bản mới', '/hoc-phi/bieu-phi'],
+  ['S7-02', 'Kế hoạch thanh toán theo đợt, sinh hàng loạt', '/hoc-phi/ke-hoach'],
 ];
 
 export function StoryIndexPage() {
