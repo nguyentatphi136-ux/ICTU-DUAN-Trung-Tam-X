@@ -5,6 +5,7 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Box, Pill } from '../../components/ui';
 import { approvedFor } from '../../data/leaves';
+import { audit } from '../../data/audit';
 import { flagCheck } from '../../data/attendance';
 import { ATT_LOGS, countMarks, isToday, MARKS, markTone, SHEETS, sheetOf, SHORT, summary, type Mark } from '../../data/attendance';
 import { useAuth } from '../../data/auth';
@@ -164,7 +165,11 @@ export function TakeAttendancePage() {
     const by = user!.name;
     const roleName = ROLES[role];
     if (saved) {
-      for (const st of changes) ATT_LOGS.unshift({ session: s!.id, at, by, role: roleName, text: `${st.name}: ${saved.marks[st.code] ?? 'chưa có'} → ${marks[st.code]}${reason.trim() ? '. Lý do: ' + reason.trim() : ''}` });
+      for (const st of changes) {
+        ATT_LOGS.unshift({ session: s!.id, at, by, role: roleName, text: `${st.name}: ${saved.marks[st.code] ?? 'chưa có'} → ${marks[st.code]}${reason.trim() ? '. Lý do: ' + reason.trim() : ''}` });
+        // S6-11
+        audit({ at, by, role: roleName, entity: 'Điểm danh', action: 'Sửa điểm danh', target: `${st.code} · ${s!.cls} buổi ${s!.no}`, changes: [{ field: 'Trạng thái', before: saved.marks[st.code] ?? 'chưa có', after: marks[st.code] }], note: reason.trim() || undefined });
+      }
     } else {
       ATT_LOGS.unshift({ session: s!.id, at, by, role: roleName, text: `Lưu điểm danh lần đầu: ${summary({ savedAt: at, savedBy: by, marks, notes })}.` });
     }
