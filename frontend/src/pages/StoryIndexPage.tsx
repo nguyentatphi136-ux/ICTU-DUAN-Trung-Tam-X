@@ -66,6 +66,8 @@ const STORIES: [string, string, string][] = [
   ['S6-06', 'Học viên xem và tải học liệu', '/hoc-lieu-cua-toi'],
   ['S6-07', 'Soạn thông báo tới lớp', '/thong-bao-lop/soan'],
   ['S6-07', 'Thông báo đã gửi và số đã đọc', '/thong-bao-lop'],
+  ['S6-08', 'Mốc nhắc lịch và mẫu email (Quản lý đào tạo)', '/nhac-lich'],
+  ['S6-08', 'Cài đặt cá nhân: tắt nhắc lịch học', '/cai-dat'],
 ];
 
 export function StoryIndexPage() {

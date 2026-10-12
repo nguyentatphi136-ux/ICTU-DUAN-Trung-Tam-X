@@ -146,6 +146,7 @@ export function AppLayout({ crumb, module, children }: Props) {
                 <div className="um-links">
                   <Link to="/ho-so">Hồ sơ cá nhân</Link>
                   <Link to="/doi-mat-khau">Đổi mật khẩu</Link>
+                  <Link to="/cai-dat">Cài đặt thông báo</Link>
                   <button type="button" className="danger" onClick={logout}>
                     Đăng xuất
                     <small>Kết thúc phiên trên máy chủ ngay</small>

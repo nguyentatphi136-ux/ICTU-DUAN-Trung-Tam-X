@@ -64,6 +64,12 @@ export function MaterialsPage() {
           <h2>Học liệu lớp {k.code}</h2>
           <p>Chỉ học viên của lớp {k.code} tải được tài liệu</p>
         </div>
+        {/* S6-08 */}
+        {(role === 5 || role === 6) && (
+          <Link to="/nhac-lich" className="btn">
+            Nhắc lịch học
+          </Link>
+        )}
         {/* S6-07 */}
         <Link to="/thong-bao-lop" className="btn">
           Thông báo lớp
