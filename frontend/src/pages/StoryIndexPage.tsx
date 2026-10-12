@@ -54,6 +54,8 @@ const STORIES: [string, string, string][] = [
   ['S5-06', 'Bài tập của tôi (học viên)', '/bai-tap-cua-toi'],
   ['S5-07', 'Nộp bài: tệp và liên kết repo (Bài 14)', '/bai-tap-cua-toi/7'],
   ['S5-10', 'Danh sách bài nộp của một bài tập (giảng viên)', '/bai-tap/6'],
+  ['S5-08', 'Phiên bản đã nộp và nộp lại (học viên, Bài 13)', '/bai-tap-cua-toi/6'],
+  ['S5-08', 'Bài đã chấm bị khoá nộp lại (học viên, Bài 11)', '/bai-tap-cua-toi/4'],
 ];
 
 export function StoryIndexPage() {

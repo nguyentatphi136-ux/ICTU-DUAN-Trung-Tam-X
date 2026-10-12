@@ -11,6 +11,7 @@ import { notify } from '../../data/notifications';
 import { findSession } from '../../data/schedule';
 import { saveAll } from '../../data/store';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
+import { VersionList } from '../S5-08-phien-ban/Versions';
 import { useMe } from '../S4-05-lich-cua-toi/MySchedulePage';
 import { MODULE } from '../S5-05-bai-tap/AssignmentPages';
 import { dueOf, nowIso, remaining } from '../S5-06-bai-tap-cua-toi/MyAssignmentsPage';
@@ -55,6 +56,8 @@ export function SubmitPage() {
   const teacher = findClass(a.cls)?.subjects.find((x) => x.code === a.subject)?.teacher ?? a.by;
   const refresh = () => setTick((t) => t + 1);
   const canSubmit = !sub || sub.state === 'Cần làm lại' || editing;
+  // S5-08: bài đã chấm khoá nộp lại, trừ khi giảng viên mở lại.
+  const locked = sub?.state === 'Đã chấm' && !sub.reopened;
 
   const big = files.filter((f) => f.tooBig);
   const repoBad = repo.trim() !== '' && !REPO_RE.test(repo.trim());
@@ -81,6 +84,12 @@ export function SubmitPage() {
     toast('Đã nộp bài', `${a!.title.split(':')[0]} · ${vdt(at)}`);
   }
 
+  function askReopen() {
+    notify({ at: nowIso(), kind: 'Bài tập', title: `${me!.name} xin mở lại ${a!.title.split(':')[0]}`, body: `Học viên muốn nộp lại bài đã chấm của lớp ${a!.cls}.`, link: '/bai-tap/' + a!.id, to: { users: [teacher] } });
+    saveAll();
+    toast('Đã gửi yêu cầu tới giảng viên');
+  }
+
   return (
     <AppLayout crumb={[MODULE, a.title.split(':')[0]]} module={MODULE}>
       <Link to="/bai-tap-cua-toi" className="back">
@@ -94,7 +103,7 @@ export function SubmitPage() {
             {a.subject}
             {s ? ` · Buổi ${s.no}` : ''} · {teacher} · Điểm tối đa {a.max}
           </p>
-          <div className={'sb-due ' + (tone ?? '')}>
+          <div className={'sb-due ' + (nowIso() > due || (sub && sub.state !== 'Cần làm lại') ? '' : (tone ?? ''))}>
             <Icon name="clock" size={16} />
             {nowIso() > due ? `Hạn nộp ${vdt(due)}, đã qua` : `Hạn nộp ${vdt(due)}, ${left.toLowerCase()}`}
           </div>
@@ -193,12 +202,30 @@ export function SubmitPage() {
               </div>
             </>
           )}
-          {sub && !canSubmit && sub.state !== 'Đã chấm' && (
-            <div className="sb-foot">
-              <button type="button" className="btn" onClick={() => setEditing(true)}>
-                Nộp lại
-              </button>
-            </div>
+          {sub && !canSubmit && locked && (
+            <Box icon="lock" tone="warn" title="Bài đã chấm xong nên không nộp lại được">
+              Nếu cần nộp lại, hãy nhờ giảng viên mở lại bài này.
+            </Box>
+          )}
+          {sub && !canSubmit && (
+            <>
+              <h4 className="vs-h">Các phiên bản đã nộp</h4>
+              <VersionList a={a} sub={sub} />
+              <div className="sb-foot">
+                <span className="hint" style={{ flex: 1 }}>
+                  {locked ? '' : `Nộp lại sẽ tạo bản ${sub.versions[0].no + 1}, ${sub.versions.length > 1 ? sub.versions.length + ' bản cũ' : 'bản cũ'} vẫn được giữ.`}
+                  {!locked && nowIso() > due && a.late === 'Cho nộp' && <span className="warn-t"> Nộp lại sau hạn sẽ bị gắn nhãn Nộp muộn.</span>}
+                </span>
+                {locked && (
+                  <button type="button" className="btn" onClick={askReopen}>
+                    Xin giảng viên mở lại bài
+                  </button>
+                )}
+                <button type="button" className="btn" disabled={locked || closed} onClick={() => setEditing(true)}>
+                  Nộp lại
+                </button>
+              </div>
+            </>
           )}
         </section>
       </div>
