@@ -16,6 +16,7 @@ import { debtOf, discountAmount, discountLabel, feeOf, fromTemplate, paidOn, PLA
 import { parseVnd, typingVnd, vnd } from '../../data/vnd';
 import { canEditFees, FeeTabs, MODULE } from '../S7-01-bieu-phi/FeeTablePage';
 import '../S7-01-bieu-phi/fees.css';
+import { DiscountDialog, PendingDiscount } from '../S7-04-giam-gia/DiscountDialog';
 
 const now = () => new Date().toTimeString().slice(0, 5);
 const pct = (a: number, b: number) => (b ? ((100 * a) / b).toLocaleString('vi-VN', { maximumFractionDigits: 1 }) + '%' : '–');
@@ -139,6 +140,8 @@ function PlanEditor({ s }: { s: Student }) {
   const [tpl, setTpl] = useState(1);
   const [rows, setRows] = useState<Row[]>(() => (plan ? toRows(s.code, plan.items) : toRows(s.code, fromTemplate(TEMPLATES[1], payable, dues(TEMPLATES[1].gaps)))));
   const [error, setError] = useState('');
+  const [disc, setDisc] = useState(false);
+  const reload = () => (setDisc(false), setError(''), setRows(toRows(s.code, PLANS[s.code].items)));
   const total = rows.reduce((n, r) => n + (parseVnd(r.amount) || 0), 0);
   const diff = payable - total;
   const anyPaid = rows.some((r) => r.paid > 0);
@@ -184,6 +187,11 @@ function PlanEditor({ s }: { s: Student }) {
         <div className="stat ok">
           <b>{plan?.discount ? '− ' + vnd(base - payable) : '0 ₫'}</b>
           <span>{discountLabel(plan?.discount)}</span>
+          {edit && plan && (
+            <button type="button" className="link fe-edit" onClick={() => setDisc(true)}>
+              Sửa
+            </button>
+          )}
         </div>
         <div className="stat info">
           <b>{vnd(payable)}</b>
@@ -194,6 +202,7 @@ function PlanEditor({ s }: { s: Student }) {
           <span>Đã thu</span>
         </div>
       </div>
+      <PendingDiscount s={s} onDone={reload} />
       <div className="panel">
         <div className="fe-head">
           <h3>Các đợt thanh toán</h3>
@@ -288,6 +297,10 @@ function PlanEditor({ s }: { s: Student }) {
       {error && <p className="err">{error}</p>}
       {edit && (
         <div className="fe-actions">
+          <button type="button" className="btn fe-left" disabled={!plan} title={plan ? undefined : 'Lưu kế hoạch trước khi áp dụng giảm giá'} onClick={() => setDisc(true)}>
+            <Icon name="award" size={16} />
+            Học bổng, giảm giá
+          </button>
           <Link className="btn" to="/hoc-phi/ke-hoach">
             Huỷ
           </Link>
@@ -296,6 +309,7 @@ function PlanEditor({ s }: { s: Student }) {
           </button>
         </div>
       )}
+      {disc && <DiscountDialog s={s} onClose={() => setDisc(false)} onDone={reload} />}
     </AppLayout>
   );
 }

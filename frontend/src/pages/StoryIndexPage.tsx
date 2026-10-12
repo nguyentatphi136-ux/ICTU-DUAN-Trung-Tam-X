@@ -74,6 +74,7 @@ const STORIES: [string, string, string][] = [
   ['S7-01', 'Biểu phí theo chương trình, phiên bản mới', '/hoc-phi/bieu-phi'],
   ['S7-02', 'Kế hoạch thanh toán theo đợt, sinh hàng loạt', '/hoc-phi/ke-hoach'],
   ['S7-03', 'Ghi nhận thanh toán, biên lai, bút toán điều chỉnh', '/hoc-phi/cong-no/HV260142'],
+  ['S7-04', 'Học bổng, giảm giá; vượt 30% cần phê duyệt', '/hoc-phi/ke-hoach/HV260142'],
 ];
 
 export function StoryIndexPage() {

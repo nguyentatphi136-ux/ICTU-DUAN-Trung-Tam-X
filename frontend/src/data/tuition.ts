@@ -5,6 +5,7 @@ import { TODAY } from './funnel';
 import { addDays } from './schedule';
 import { persisted } from './store';
 import { STUDENTS, type Student } from './students';
+import { vnd } from './vnd';
 
 export type Installment = { no: number; label: string; amount: number; due: string };
 export type Discount = { kind: '%' | 'đ'; value: number; reason: string };
@@ -129,4 +130,21 @@ export function debtOf(code: string, today = TODAY) {
   const late = items.find((it) => it.owed > 0 && it.due < today);
   const next = items.find((it) => it.owed > 0);
   return { plan, base, discount, items, due, paid, owed: Math.max(0, due - paid), overdue: late ? daysBetween(late.due, today) : 0, next };
+}
+
+/** Áp dụng giảm giá (S7-04): đợt đã thu giữ nguyên, các đợt chưa thu chia lại phần còn lại theo tỷ lệ cũ. Trả về lỗi nếu không chia được. */
+export function applyDiscount(code: string, d: Discount | undefined): string | undefined {
+  const s = STUDENTS.find((x) => x.code === code);
+  const plan = PLANS[code];
+  if (!s || !plan) return 'Học viên chưa có kế hoạch thanh toán';
+  const base = feeOf(s)?.amount ?? 0;
+  const payable = base - discountAmount(base, d);
+  const locked = plan.items.filter((it) => paidOn(code, it.no) > 0);
+  const open = plan.items.filter((it) => !locked.includes(it));
+  const rest = payable - locked.reduce((n, it) => n + it.amount, 0);
+  if (rest < 0 || (!open.length && rest)) return `Các đợt đã thu ${vnd(payable - rest)} vượt số phải đóng mới ${vnd(payable)}`;
+  const amounts = open.length ? split(rest, open.map((it) => it.amount || 1)) : [];
+  open.forEach((it, i) => (it.amount = amounts[i]));
+  plan.discount = d;
+  plan.pending = undefined;
 }
