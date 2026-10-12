@@ -41,6 +41,7 @@ const STORIES: [string, string, string][] = [
   ['S4-04', 'Thời khoá biểu dạng lịch tuần và tháng', '/thoi-khoa-bieu'],
   ['S4-03', 'Sửa, dời, huỷ một buổi (bấm vào buổi sắp tới trên lịch)', '/thoi-khoa-bieu?buoi=WEB-K15-40'],
   ['S4-05', 'Lịch học của tôi (đăng nhập bằng tài khoản Học viên)', '/lich-hoc'],
+  ['S4-06', 'Bảo lưu, chuyển lớp, thôi học (nút trên hồ sơ học viên)', '/hoc-vien/HV260101'],
 ];
 
 export function StoryIndexPage() {

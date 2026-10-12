@@ -7,6 +7,10 @@ export type StudentNote = { at: string; by: string; text: string };
 /** Một lớp đã học xong hoặc đã rời. result ví dụ "Hoàn thành · 8,2", "Bảo lưu". */
 export type PastClass = { cls: string; program: string; period: string; result: string };
 
+/** Bảo lưu, chuyển lớp, thôi học (S4-06). at là ngày hiệu lực; recorded là ngày ghi nhận. */
+export type StatusChangeType = 'Bảo lưu' | 'Chuyển lớp' | 'Thôi học';
+export type StatusChange = { type: StatusChangeType; at: string; reason: string; by: string; from?: string; to?: string; recorded: string };
+
 export type Student = {
   code: string;
   name: string;
@@ -32,6 +36,8 @@ export type Student = {
   history: PastClass[];
   /** Lead gốc nếu học viên được chuyển từ phễu tuyển sinh (S3-03). */
   leadId?: number;
+  /** Lịch sử bảo lưu, chuyển lớp, thôi học, mới nhất ở đầu (S4-06). */
+  changes?: StatusChange[];
 };
 
 export const STUDENT_STATUSES: StudentStatus[] = ['Mới nhập học', 'Đang học', 'Bảo lưu', 'Đã tốt nghiệp', 'Thôi học'];
@@ -145,3 +151,14 @@ export function nextStudentCode() {
 }
 
 export const findStudent = (code: string) => STUDENTS.find((s) => s.code === code);
+
+/** Danh sách lớp vào một ngày (dùng cho điểm danh): ai đã rời lớp từ ngày hiệu lực thì không còn, ai chuyển đến thì có từ ngày hiệu lực. */
+export function rosterOn(cls: string, date: string) {
+  return STUDENTS.filter((s) => {
+    const left = s.changes?.find((c) => c.from === cls);
+    if (left) return date < left.at;
+    if (s.cls !== cls || s.status === 'Bảo lưu' || s.status === 'Thôi học') return false;
+    const joined = s.changes?.find((c) => c.to === cls);
+    return !joined || date >= joined.at;
+  });
+}

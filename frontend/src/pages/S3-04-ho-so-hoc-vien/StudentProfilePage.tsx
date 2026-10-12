@@ -12,6 +12,7 @@ import { saveAll } from '../../data/store';
 import { findStudent, studentTone, type Student } from '../../data/students';
 import { isPhone, PHONE_MSG } from '../../data/validate';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
+import { StatusDialog } from '../S4-06-tinh-trang-hoc/StatusDialog';
 import { MODULE } from './StudentListPage';
 import './student.css';
 
@@ -39,6 +40,7 @@ export function StudentProfilePage({ actions }: Props) {
   const toast = useToast();
   const [, setTick] = useState(0);
   const [editing, setEditing] = useState(false);
+  const [changing, setChanging] = useState(false);
   const s = findStudent(code);
   const role = user?.active ?? -1;
   if (!s) return <ErrorPage code="404" />;
@@ -66,6 +68,11 @@ export function StudentProfilePage({ actions }: Props) {
           </p>
         </div>
         {actions?.(s, refresh)}
+        {(role === 5 || role === 6) && s.cls && (
+          <button type="button" className="btn" onClick={() => setChanging(true)}>
+            Bảo lưu, chuyển lớp, thôi học
+          </button>
+        )}
         {canEdit && (
           <button type="button" className="btn" style={{ width: 140 }} onClick={() => setEditing(true)}>
             Sửa hồ sơ
@@ -174,6 +181,35 @@ export function StudentProfilePage({ actions }: Props) {
         </div>
       </div>
 
+      {s.changes?.length ? (
+        <section className="panel sp-card" style={{ marginTop: 16 }}>
+          <h3>Lịch sử thay đổi tình trạng</h3>
+          <ul className="st-log">
+            {s.changes.map((c, i) => (
+              <li key={i}>
+                <b>
+                  {c.type === 'Chuyển lớp' ? `Chuyển lớp ${c.from} → ${c.to}` : `${c.type}${c.from ? ' khỏi lớp ' + c.from : ''}`} · hiệu lực {viDate(c.at)}
+                </b>
+                <small>
+                  Lý do: {c.reason} · ghi nhận {viDate(c.recorded)} bởi {c.by}
+                </small>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {changing && (
+        <StatusDialog
+          s={s}
+          me={user!.name}
+          onClose={() => setChanging(false)}
+          onDone={(msg) => {
+            setChanging(false);
+            refresh();
+            toast(msg);
+          }}
+        />
+      )}
       {editing && (
         <EditDrawer
           s={s}
