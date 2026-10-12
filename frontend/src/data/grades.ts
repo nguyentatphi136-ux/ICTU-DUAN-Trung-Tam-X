@@ -1,7 +1,10 @@
 // Cách tính điểm tổng kết (S8-01) và điểm tổng kết môn (S8-02 trở đi).
 // Khi tích hợp: GET/PUT /programs/:code/grade-config, GET/PUT/DELETE /classes/:code/grade-config.
-import { findClass } from './classes';
+import { ASSIGNMENTS, isPublished, subOf } from './assignments';
+import { heldSessions, sheetOf } from './attendance';
+import { CLASSES, findClass, type Klass } from './classes';
 import { persisted } from './store';
+import { STUDENTS } from './students';
 
 export type Source = 'Điểm danh' | 'Bài tập' | 'Nhập tay' | 'Rubric';
 export const SOURCES: Record<Source, string> = {
@@ -64,4 +67,104 @@ export function validateConfig(c: GradeConfig) {
   if (!(c.pass > 0 && c.pass <= 10)) return 'Điểm đạt từ 0 đến 10';
   if (!(c.fail >= 0 && c.fail < c.pass)) return 'Điểm liệt phải thấp hơn điểm đạt';
   return '';
+}
+
+// ---------- S8-02. Điểm thành phần, điểm tổng kết môn, chốt điểm ----------
+export const gkey = (cls: string, subject: string) => `${cls}|${subject}`;
+/** Điểm nhập tay: "WEB-K15|WEB-02" → mã học viên → mã thành phần → điểm. Cũng là điểm mẫu khi nguồn tự tính chưa có dữ liệu. */
+export type ScoreBook = Record<string, Record<string, Record<string, number>>>;
+export type Lock = { at: string; by: string; config: GradeConfig; values?: Record<string, Record<string, number | null>> };
+export type LockLog = { key: string; at: string; by: string; text: string };
+
+const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
+const r1 = (n: number) => Math.round(Math.min(10, Math.max(0, n)) * 10) / 10;
+
+/** Môn đã học xong và môn đang học của lớp, theo số buổi đã dạy. */
+export function subjectProgress(k: Klass) {
+  let start = 0;
+  return k.subjects.map((s) => {
+    const from = start;
+    start += s.sessions;
+    const state = k.status === 'Kết thúc' || k.done >= start ? 'Đã học xong' : k.done > from ? 'Đang học' : 'Chưa học';
+    return { ...s, state };
+  });
+}
+
+function seed(): [ScoreBook, Record<string, Lock>] {
+  const book: ScoreBook = {};
+  const locks: Record<string, Lock> = {};
+  for (const k of CLASSES) {
+    if (k.status !== 'Đang học' && k.status !== 'Kết thúc') continue;
+    const roster = STUDENTS.filter((s) => s.cls === k.code);
+    const cfg = configOf(k.code);
+    for (const sub of subjectProgress(k)) {
+      if (sub.state === 'Chưa học') continue;
+      const key = gkey(k.code, sub.code);
+      book[key] = {};
+      roster.forEach((st, i) => {
+        const ability = 4 + (hash(st.code) % 60) / 10;
+        const row: Record<string, number> = {};
+        for (const c of cfg.comps) row[c.key] = r1(ability + ((hash(st.code + c.key + sub.code) % 31) - 15) / 10 + (c.key === 'cc' ? 1.5 : 0));
+        // Môn đang học: một học viên thiếu điểm giữa môn để minh hoạ "Chưa đủ điều kiện tính".
+        if (sub.state === 'Đang học' && i === roster.length - 1) delete row.gk;
+        book[key][st.code] = row;
+      });
+      if (sub.state === 'Đã học xong') locks[key] = { at: '2026-09-30T16:20', by: sub.teacher ?? 'LE HOANG NAM', config: cfg };
+    }
+  }
+  return [book, locks];
+}
+const [BOOK0, LOCKS0] = seed();
+export const SCORES: ScoreBook = persisted('scores', BOOK0);
+export const LOCKS: Record<string, Lock> = persisted('grade-locks', LOCKS0);
+export const LOCK_LOGS: LockLog[] = persisted('grade-lock-logs', []);
+
+/** Giá trị một thành phần và ghi chú nguồn. Điểm danh và bài tập tự tính nếu có dữ liệu, không có thì dùng điểm đã nhập. */
+export function compValue(cls: string, subject: string, code: string, c: Comp): { v: number | null; note?: string } {
+  const typed = SCORES[gkey(cls, subject)]?.[code]?.[c.key];
+  if (c.source === 'Điểm danh') {
+    let held = 0;
+    let absent = 0;
+    for (const s of heldSessions(cls)) {
+      if (s.subject !== subject) continue;
+      const m = sheetOf(s)?.marks[code];
+      if (!m) continue;
+      held++;
+      if (m === 'Vắng có phép' || m === 'Vắng không phép') absent++;
+    }
+    if (held) {
+      const rate = Math.round((100 * (held - absent)) / held);
+      return { v: rate / 10, note: `${c.name} ${num(rate / 10)} từ tỷ lệ ${rate}%.` };
+    }
+  }
+  if (c.source === 'Bài tập') {
+    const graded = ASSIGNMENTS.filter((a) => a.cls === cls && a.subject === subject && a.status === 'Đã giao')
+      .map((a) => ({ a, g: subOf(a.id, code)?.grade }))
+      .filter((x) => x.g && isPublished(x.g));
+    if (graded.length) {
+      const avg = graded.reduce((n, x) => n + (10 * x.g!.score) / x.a.max, 0) / graded.length;
+      return { v: r1(avg), note: `${c.name} ${num(r1(avg))} là trung bình ${graded.length} bài đã chấm.` };
+    }
+  }
+  return { v: typed ?? null };
+}
+
+export type Result = 'Đạt' | 'Không đạt' | 'Không đạt · điểm liệt' | 'Chưa đủ điều kiện tính';
+export const resultTone = (r: Result) => (r === 'Đạt' ? 'ok' : r === 'Chưa đủ điều kiện tính' ? 'wait' : 'off');
+
+/** Điểm tổng kết của một học viên trong một môn. Môn đã chốt dùng cấu hình và điểm tại lúc chốt. */
+export function finalOf(cls: string, subject: string, code: string) {
+  const lock = LOCKS[gkey(cls, subject)];
+  const cfg = lock?.config ?? configOf(cls);
+  const parts = cfg.comps.map((c) => {
+    const frozen = lock?.values?.[code];
+    const { v, note } = frozen && c.key in frozen ? { v: frozen[c.key], note: undefined } : compValue(cls, subject, code, c);
+    return { c, v, note, weighted: v == null ? 0 : (v * c.weight) / 100 };
+  });
+  const missing = parts.filter((p) => p.v == null);
+  const raw = parts.reduce((n, p) => n + p.weighted, 0);
+  const total = missing.length ? null : Math.round(raw * 10) / 10;
+  const failed = parts.filter((p) => cfg.failOn.includes(p.c.key) && p.v != null && p.v < cfg.fail);
+  const result: Result = total == null ? 'Chưa đủ điều kiện tính' : failed.length ? 'Không đạt · điểm liệt' : total >= cfg.pass ? 'Đạt' : 'Không đạt';
+  return { cfg, parts, missing, raw, total, failed, result, locked: !!lock };
 }
