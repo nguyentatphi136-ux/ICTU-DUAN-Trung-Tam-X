@@ -1,0 +1,18 @@
+/* S8-01. Cấu hình cách tính điểm: bảng thành phần bên trái, ngưỡng và lớp ghi đè bên phải. */
+.gc-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+.gc-side{display:flex;flex-direction:column;gap:16px}.gc-side h3{font-size:15px;margin-bottom:12px}
+.gc-head{display:flex;align-items:center;gap:12px;padding:16px}.gc-head h3{font-size:15px}
+.gc-badge{background:var(--warn-bg);color:var(--warn);border-radius:999px;padding:2px 10px;font-size:12px;font-weight:600}
+.gc-row{display:flex;align-items:center;gap:12px;padding:10px 16px;border-top:1px solid var(--line)}
+.gc-row>div:first-child{flex:1;display:flex;flex-direction:column;gap:2px}
+.gc-name{border:1px solid transparent;border-radius:var(--r);padding:4px 8px;margin-left:-8px;font:inherit;font-weight:600;background:none;color:var(--ink);max-width:320px}
+.gc-name:hover,.gc-name:focus{border-color:var(--line);background:var(--surface)}
+.gc-row select{border:0;background:none;color:var(--muted);font:inherit;font-size:13px;padding:0}
+.gc-orig{color:var(--warn);font-size:12px;white-space:nowrap}
+.gc-w{position:relative;display:flex;align-items:center;width:110px}.inp.gc-w input{text-align:right;padding-right:48px}.gc-w span{position:absolute;right:12px;color:var(--muted);font-size:13px}
+.gc-add{margin:4px 16px 12px}
+.gc-note{padding:0 16px;margin-top:12px}.gc-acts{padding:16px;display:flex;justify-content:flex-end;gap:12px}
+.gc-sub{font-size:13px;margin:14px 0 6px}.gc-check{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:14px}
+.gc-cls{display:flex;flex-direction:column;padding:6px 0}.gc-cls .link{margin:0}.gc-inline{display:inline!important;margin:0!important}
+.gc-reset{width:100%}
+@media(max-width:1000px){.gc-grid{grid-template-columns:1fr}}
