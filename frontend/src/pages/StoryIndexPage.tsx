@@ -86,6 +86,7 @@ const STORIES: [string, string, string][] = [
   ['S8-05', 'Khảo sát: khai báo, mở theo lớp, học viên trả lời', '/khao-sat'],
   ['S8-06', 'Kết quả khảo sát theo lớp, giảng viên', '/khao-sat/ket-qua'],
   ['S8-07', 'Dashboard Quản lý đào tạo', '/'],
+  ['S8-08', 'Dashboard Giảng viên', '/'],
 ];
 
 export function StoryIndexPage() {
