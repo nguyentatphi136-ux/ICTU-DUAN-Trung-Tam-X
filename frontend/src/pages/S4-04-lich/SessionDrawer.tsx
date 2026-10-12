@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useToast } from '../../components/Toast';
 import { Box, Drawer, Pill } from '../../components/ui';
 import { useAuth } from '../../data/auth';
+import { sheetOf, summary } from '../../data/attendance';
 import { clashes, clashText, isPast, longDate, type ClassSession } from '../../data/schedule';
 import { CancelSessionDialog, EditSessionDialog } from '../S4-03-sua-buoi/SessionDialogs';
 import { canManageClasses } from '../S3-07-danh-sach-lop/ClassListPage';
@@ -11,10 +12,10 @@ type Props = { s: ClassSession; onClose: () => void; onChange: () => void };
 
 /** Trạng thái hiển thị của một buổi. */
 export const sessionState = (s: ClassSession): [string, 'ok' | 'off' | 'info' | 'wait' | undefined] =>
-  s.cancelled ? ['Đã huỷ', 'off'] : isPast(s) ? ['Đã diễn ra', undefined] : ['Sắp tới', 'info'];
+  s.cancelled ? ['Đã huỷ', 'off'] : sheetOf(s) ? ['Đã điểm danh', 'ok'] : isPast(s) ? ['Chưa điểm danh', 'wait'] : ['Sắp tới', 'info'];
 
-/** Buổi đã diễn ra (đã điểm danh) thì khoá ngày, giờ, phòng, giảng viên và không huỷ được. */
-export const isLocked = (s: ClassSession) => isPast(s);
+/** Buổi đã điểm danh (S4-07) thì khoá ngày, giờ, phòng, giảng viên và không huỷ được. */
+export const isLocked = (s: ClassSession) => !!sheetOf(s);
 
 // S4-04. Bấm vào một buổi trên lịch để xem chi tiết: thời gian, phòng, giảng viên, bài học, xung đột nếu có.
 // S4-03. Quản lý đào tạo sửa, dời hoặc huỷ buổi ngay trong ngăn này; buổi đã điểm danh thì hai nút bị tắt kèm lý do.
@@ -36,6 +37,7 @@ export function SessionDrawer({ s, onClose, onChange }: Props) {
     ['Phòng', s.room ?? 'Chưa xếp phòng'],
     ['Giảng viên', s.teacher ?? 'Chưa có giảng viên'],
     ['Bài học', `${s.subject} · Bài ${s.lesson}: ${s.topic}`],
+    ...(sheetOf(s) ? [['Điểm danh', <Link key="a" to={'/diem-danh/' + s.id}>{summary(sheetOf(s))}</Link>] as [string, ReactNode]] : []),
   ];
   return (
     <Drawer
