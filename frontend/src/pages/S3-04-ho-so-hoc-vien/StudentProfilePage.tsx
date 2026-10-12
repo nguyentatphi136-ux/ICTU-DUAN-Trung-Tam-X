@@ -116,7 +116,7 @@ export function StudentProfilePage({ actions }: Props) {
           <section className="panel sp-card">
             <h3>Lớp đang học</h3>
             {k ? (
-              <div className="sp-class">
+              <Link to={'/lop-hoc/' + k.code} className="sp-class">
                 <div>
                   <b>{k.code}</b>
                   <Pill tone="ok">{s.status === 'Bảo lưu' ? 'Bảo lưu' : k.status}</Pill>
@@ -132,7 +132,7 @@ export function StudentProfilePage({ actions }: Props) {
                   </b>
                   <i style={{ '--p': `${(100 * k.done) / Math.max(1, totalSessions(k))}%` } as CSSProperties} />
                 </div>
-              </div>
+              </Link>
             ) : (
               <p className="hint">Chưa xếp lớp. Quản lý đào tạo ghi danh học viên vào lớp ở màn hình Lớp học.</p>
             )}
