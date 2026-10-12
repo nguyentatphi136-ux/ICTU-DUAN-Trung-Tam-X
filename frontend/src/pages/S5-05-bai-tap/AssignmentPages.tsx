@@ -6,6 +6,7 @@ import { Markdown } from '../../components/Markdown';
 import { useToast } from '../../components/Toast';
 import { Box, Filter, Modal, Pill } from '../../components/ui';
 import { ASSIGNMENTS, fileSize, findAssignment, SUBMISSIONS, vdt, type Assignment, type FileRef } from '../../data/assignments';
+import { RUBRICS } from '../../data/rubrics';
 import { useAuth } from '../../data/auth';
 import { classesOf, classSize, CLASSES, findClass, isOpen } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
@@ -44,6 +45,9 @@ export function AssignmentListPage() {
             {list.filter((a) => a.status === 'Đã giao').length} bài đã giao · {list.filter((a) => a.status === 'Nháp').length} bản nháp
           </p>
         </div>
+        <Link to="/bai-tap/rubric" className="btn">
+          Mẫu rubric
+        </Link>
         {mine.length > 0 && (
           <Link to={'/bai-tap/moi?lop=' + (cls || mine[0].code)} className="btn primary">
             <Icon name="plus" size={16} />
@@ -95,7 +99,10 @@ export function AssignmentListPage() {
   );
 }
 
-type Draft = Pick<Assignment, 'cls' | 'subject' | 'session' | 'title' | 'description' | 'due' | 'max' | 'files' | 'late'>;
+type Draft = Pick<Assignment, 'cls' | 'subject' | 'session' | 'title' | 'description' | 'due' | 'max' | 'files' | 'late' | 'rubric'>;
+
+/** Mẫu rubric trùng với tiêu chí đang gắn (theo tên từng tiêu chí). */
+const sameAs = (r: { criteria: { name: string }[] }, list?: { name: string }[]) => !!list && r.criteria.length === list.length && r.criteria.every((c, i) => c.name === list[i].name);
 
 // S5-05. Tạo bài tập: tiêu đề, mô tả có định dạng, tệp đính kèm, môn và buổi học, hạn nộp (không được ở quá khứ), điểm tối đa.
 // Lưu nháp trước, giao cho lớp sau; khi giao có bước xác nhận và toàn bộ học viên của lớp nhận thông báo.
@@ -297,6 +304,28 @@ export function AssignmentEditorPage() {
               </div>
               {errors.max && <p className="err">{errors.max}</p>}
             </div>
+          </div>
+          {/* S6-02 */}
+          <div className="field">
+            <label htmlFor="as-rubric">Rubric</label>
+            <div className="inp">
+              <select
+                id="as-rubric"
+                value={RUBRICS.find((r) => sameAs(r, d.rubric))?.id ?? (d.rubric ? 'own' : '')}
+                onChange={(e) => set({ rubric: e.target.value ? RUBRICS.find((r) => String(r.id) === e.target.value)?.criteria.map((c) => ({ ...c })) : undefined })}
+              >
+                <option value="">Không dùng rubric, chấm một điểm tổng</option>
+                {d.rubric && !RUBRICS.some((r) => sameAs(r, d.rubric)) && <option value="own">Rubric riêng của bài này</option>}
+                {RUBRICS.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} · {r.criteria.length} tiêu chí
+                  </option>
+                ))}
+              </select>
+            </div>
+            <p className="hint">
+              <Link to="/bai-tap/rubric">Quản lý mẫu rubric</Link>
+            </p>
           </div>
           {/* S5-09 */}
           <fieldset className="check-list as-late">

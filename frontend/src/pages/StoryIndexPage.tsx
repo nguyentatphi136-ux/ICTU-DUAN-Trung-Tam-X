@@ -58,6 +58,8 @@ const STORIES: [string, string, string][] = [
   ['S5-08', 'Bài đã chấm bị khoá nộp lại (học viên, Bài 11)', '/bai-tap-cua-toi/4'],
   ['S5-09', 'Cấu hình nộp muộn khi soạn bài tập; nhãn trễ ở danh sách bài nộp', '/bai-tap/9/sua'],
   ['S6-01', 'Chấm điểm, công bố, sang bài kế tiếp (giảng viên)', '/bai-tap/6/cham/HV260101'],
+  ['S6-02', 'Tạo mẫu rubric', '/bai-tap/rubric'],
+  ['S6-02', 'Chấm theo rubric (bài tập cuối môn, cần có bài nộp)', '/bai-tap/9'],
 ];
 
 export function StoryIndexPage() {

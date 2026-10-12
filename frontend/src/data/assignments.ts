@@ -94,6 +94,12 @@ const SEED: Seed[] = [
 
       Nộp liên kết repo GitHub và tệp nén mã nguồn.`),
     due: at(11),
+    rubric: [
+      { name: 'Đủ chức năng theo yêu cầu', weight: 40, hint: 'Làm đúng và đủ các chức năng trong đề bài' },
+      { name: 'Chất lượng mã nguồn', weight: 30, hint: 'Đặt tên rõ, chia hàm hợp lý, không lặp mã' },
+      { name: 'Giao diện và trải nghiệm', weight: 20, hint: 'Bố cục gọn, có trạng thái tải và báo lỗi' },
+      { name: 'Báo cáo và trình bày', weight: 10, hint: 'Báo cáo nêu rõ cách làm và hạn chế' },
+    ],
     files: [
       { name: 'de-bai-chi-tiet.pdf', size: 253952 },
       { name: 'api-mau.postman_collection.json', size: 12288 },
