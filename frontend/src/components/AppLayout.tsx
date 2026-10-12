@@ -96,7 +96,7 @@ export function AppLayout({ crumb, module, children }: Props) {
         {multi && <div className="me-roles">{roleList}</div>}
         <nav className="nav">
           {items.map((m) => (
-            <NavLink key={m.name} to={moduleHref(m.name, m.to)} end={m.to === '/'} className={({ isActive }) => (isActive || isUnder(location.pathname, m.to) ? 'on' : undefined)}>
+            <NavLink key={m.name} to={moduleHref(m.name, m.to)} end={m.to === '/'} className={({ isActive }) => (isActive || isUnder(location.pathname, m.to) || (!!module && m.name === module) ? 'on' : undefined)}>
               <Icon name={m.icon} />
               {m.name}
             </NavLink>

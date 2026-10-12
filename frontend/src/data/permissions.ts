@@ -14,7 +14,7 @@ export const ROLES = [
 export const ADMIN_ROLE = 6;
 
 /** Module quản lý tài khoản. Tên dùng cả trên menu lẫn làm khoá phân quyền ở các trang S1-05, S1-08, S2-01. */
-export const USERS_MODULE = 'Danh sách người dùng';
+export const USERS_MODULE = 'Người dùng & nhật ký';
 
 export type Permission = 'F' | 'W' | 'W*' | 'R' | 'R*' | '–';
 
@@ -43,13 +43,27 @@ export const MODULES: AppModule[] = [
   { name: USERS_MODULE, icon: 'shield', perms: ['–', '–', '–', '–', '–', 'R'], to: '/quan-tri/tai-khoan' },
 ];
 
+/** Vai trò có màn hình riêng thì menu dẫn thẳng tới đó (học viên xem "của tôi"), khỏi chuyển hướng qua trang chung. */
+const ROLE_LINKS: Record<number, Record<string, string>> = {
+  0: {
+    'Lớp học & thời khoá biểu': '/lich-hoc',
+    'Điểm danh': '/diem-danh-cua-toi',
+    'Học liệu & thông báo lớp': '/hoc-lieu-cua-toi',
+    'Bài tập & chấm điểm': '/bai-tap-cua-toi',
+    'Điểm tổng kết & tốt nghiệp': '/bang-diem',
+    'Học phí & công nợ': '/hoc-phi-cua-toi',
+  },
+  2: { 'Khảo sát chất lượng': '/khao-sat/ket-qua' },
+  4: { 'Học phí & công nợ': '/hoc-phi/cong-no', 'Báo cáo & dashboard': '/hoc-phi/bao-cao' },
+};
+
 export type MenuItem = { name: string; icon: IconName; to?: string };
 
 /** Menu của một vai trò: chỉ gồm module có quyền khác "–". */
 export function menuFor(roleIndex: number): MenuItem[] {
   const home: MenuItem = { name: 'Trang chủ', icon: 'home', to: '/' };
   const mods = MODULES.filter((m) => roleIndex === ADMIN_ROLE || m.perms[roleIndex] !== '–');
-  return [home, ...mods.map((m) => ({ name: m.name, icon: m.icon, to: m.to }))];
+  return [home, ...mods.map((m) => ({ name: m.name, icon: m.icon, to: ROLE_LINKS[roleIndex]?.[m.name] ?? m.to }))];
 }
 
 /** Vai trò có được dùng module không (dùng để chặn trang, trả về 403). Quyền thật phải kiểm ở máy chủ. */
