@@ -16,16 +16,16 @@ def assert_test(name, condition, detail=""):
         failed += 1
         print(f"[FAIL] {name}: {detail}")
 
-with open("src/main/java/com/ems/filter/AuthorizationFilter.java", "r", encoding="utf-8") as f:
+with open("backend/src/main/java/com/ems/filter/AuthorizationFilter.java", "r", encoding="utf-8") as f:
     auth_filter = f.read()
 
-with open("src/main/java/com/ems/filter/SessionAuthFilter.java", "r", encoding="utf-8") as f:
+with open("backend/src/main/java/com/ems/filter/SessionAuthFilter.java", "r", encoding="utf-8") as f:
     session_filter = f.read()
 
-with open("src/main/webapp/WEB-INF/views/common/403.jsp", "r", encoding="utf-8") as f:
+with open("backend/src/main/webapp/WEB-INF/views/common/403.jsp", "r", encoding="utf-8") as f:
     jsp_403 = f.read()
 
-with open("src/main/java/com/ems/security/ApiResponse.java", "r", encoding="utf-8") as f:
+with open("backend/src/main/java/com/ems/security/ApiResponse.java", "r", encoding="utf-8") as f:
     api_resp = f.read()
 
 with open("legacy_or_mock/mock-node-api/src/middleware/auth.js", "r", encoding="utf-8") as f:

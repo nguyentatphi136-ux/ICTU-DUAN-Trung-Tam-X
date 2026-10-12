@@ -33,9 +33,9 @@ def test_s1_10():
     print("TEST SUITE: S1-10 KHÓA VÀ MỞ KHÓA TÀI KHOẢN")
     print("=" * 70)
 
-    admin_dao = check_file("src/main/java/com/ems/dao/AdminDAO.java")
-    admin_servlet = check_file("src/main/java/com/ems/controller/AdminApiServlet.java")
-    permission_policy = check_file("src/main/java/com/ems/security/PermissionPolicy.java")
+    admin_dao = check_file("backend/src/main/java/com/ems/dao/AdminDAO.java")
+    admin_servlet = check_file("backend/src/main/java/com/ems/controller/AdminApiServlet.java")
+    permission_policy = check_file("backend/src/main/java/com/ems/security/PermissionPolicy.java")
     mock_routes = check_file("legacy_or_mock/mock-node-api/src/routes/admin.routes.js")
     admin_html = check_file("frontend/admin.html")
     app_js = check_file("frontend/app.js")

@@ -17,16 +17,16 @@ def assert_test(name, condition, detail=""):
         print(f"[FAIL] {name}: {detail}")
 
 # Đọc các file liên quan
-with open("src/main/java/com/ems/controller/ChangePasswordServlet.java", "r", encoding="utf-8") as f:
+with open("backend/src/main/java/com/ems/controller/ChangePasswordServlet.java", "r", encoding="utf-8") as f:
     servlet_code = f.read()
 
-with open("src/main/java/com/ems/dao/UserDAO.java", "r", encoding="utf-8") as f:
+with open("backend/src/main/java/com/ems/dao/UserDAO.java", "r", encoding="utf-8") as f:
     dao_code = f.read()
 
-with open("src/main/java/com/ems/config/SessionBlacklist.java", "r", encoding="utf-8") as f:
+with open("backend/src/main/java/com/ems/config/SessionBlacklist.java", "r", encoding="utf-8") as f:
     blacklist_code = f.read()
 
-with open("src/main/java/com/ems/security/PermissionPolicy.java", "r", encoding="utf-8") as f:
+with open("backend/src/main/java/com/ems/security/PermissionPolicy.java", "r", encoding="utf-8") as f:
     policy_code = f.read()
 
 with open("frontend/admin.html", "r", encoding="utf-8") as f:

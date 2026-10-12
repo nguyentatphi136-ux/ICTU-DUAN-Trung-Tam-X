@@ -23,13 +23,13 @@ def assert_test(name, condition, detail=""):
 print("\n--- Nhiệm vụ 1: [BE] API POST /admin/users/:id/roles (Gán vai trò) ---")
 
 # Kiểm tra Java AdminApiServlet và PermissionPolicy
-with open("src/main/java/com/ems/controller/AdminApiServlet.java", "r", encoding="utf-8") as f:
+with open("backend/src/main/java/com/ems/controller/AdminApiServlet.java", "r", encoding="utf-8") as f:
     admin_servlet = f.read()
 
-with open("src/main/java/com/ems/security/PermissionPolicy.java", "r", encoding="utf-8") as f:
+with open("backend/src/main/java/com/ems/security/PermissionPolicy.java", "r", encoding="utf-8") as f:
     permission_policy = f.read()
 
-with open("src/main/java/com/ems/dao/AdminDAO.java", "r", encoding="utf-8") as f:
+with open("backend/src/main/java/com/ems/dao/AdminDAO.java", "r", encoding="utf-8") as f:
     admin_dao = f.read()
 
 assert_test("PermissionPolicy khai báo USER_ROLE_ASSIGN cho POST /api/admin/users/:id/roles",
@@ -76,13 +76,13 @@ with open("database/schema.sql", "r", encoding="utf-8") as f:
 assert_test("Database CSDL: Bảng user_roles hỗ trợ quan hệ N-N (1 người nhiều vai trò)",
             "CREATE TABLE IF NOT EXISTS `user_roles`" in schema_sql and "PRIMARY KEY (`user_id`, `role_id`)" in schema_sql)
 
-with open("src/main/java/com/ems/model/User.java", "r", encoding="utf-8") as f:
+with open("backend/src/main/java/com/ems/model/User.java", "r", encoding="utf-8") as f:
     user_model = f.read()
 
 assert_test("User model hỗ trợ danh sách nhiều roles: List<String> roles",
             "List<String> roles" in user_model and "getRoles()" in user_model)
 
-with open("src/main/java/com/ems/dao/PermissionDAO.java", "r", encoding="utf-8") as f:
+with open("backend/src/main/java/com/ems/dao/PermissionDAO.java", "r", encoding="utf-8") as f:
     permission_dao = f.read()
 
 assert_test("PermissionDAO.hasPermission truy vấn hợp nhất (JOIN) quyền hạn từ tất cả các vai trò của user",
@@ -93,7 +93,7 @@ assert_test("PermissionDAO.hasPermission truy vấn hợp nhất (JOIN) quyền 
 # ----------------------------------------------------------------------
 print("\n--- Nhiệm vụ 4: [BE] Cập nhật quyền có hiệu lực ngay ---")
 
-with open("src/main/java/com/ems/filter/SessionAuthFilter.java", "r", encoding="utf-8") as f:
+with open("backend/src/main/java/com/ems/filter/SessionAuthFilter.java", "r", encoding="utf-8") as f:
     session_filter = f.read()
 
 assert_test("SessionAuthFilter kiểm tra permissionDAO.hasPermission trong DB ở mỗi request (Real-time DB query)",
