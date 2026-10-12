@@ -1,0 +1,13 @@
+/* S5-06. Bài tập của học viên: thẻ theo nhóm, thời gian còn lại, bài sắp hết hạn viền đỏ. */
+.ma-tabs{margin-bottom:20px;flex-wrap:wrap;height:auto;min-height:44px}.ma-tabs button{border:0;background:none;font:inherit;padding:8px 14px}
+.ma-group{margin-bottom:22px}.ma-group h3.bad-t{color:var(--red)}
+.ma-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:12px}
+.ma-card{display:flex;flex-direction:column;gap:4px;padding:16px 18px;color:var(--ink);font-weight:400}
+.ma-card:hover{border-color:var(--blue)}
+.ma-card.urgent{border-color:var(--bad-line);box-shadow:inset 3px 0 0 var(--red)}
+.ma-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}.ma-top b{font-size:15px}
+.ma-card small{color:var(--muted)}
+.ma-foot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px;color:var(--muted)}
+.ma-foot em{font-style:normal;color:var(--blue);font-weight:600}
+.ma-done a{color:var(--muted);font-weight:400}.ma-done a:hover{color:var(--blue)}
+@media(max-width:600px){.ma-cards{grid-template-columns:1fr}}

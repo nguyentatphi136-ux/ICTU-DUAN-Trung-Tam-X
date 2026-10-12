@@ -51,6 +51,7 @@ const STORIES: [string, string, string][] = [
   ['S5-03', 'Lịch sử điểm danh của học viên', '/diem-danh-cua-toi'],
   ['S5-04', 'Xuất bảng chuyên cần ra Excel (nút Xuất Excel)', '/chuyen-can/WEB-K15'],
   ['S5-05', 'Tạo bài tập, lưu nháp, giao cho lớp', '/bai-tap/moi?lop=WEB-K15'],
+  ['S5-06', 'Bài tập của tôi (học viên)', '/bai-tap-cua-toi'],
 ];
 
 export function StoryIndexPage() {
