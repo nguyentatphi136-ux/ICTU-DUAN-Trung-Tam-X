@@ -39,6 +39,7 @@ const STORIES: [string, string, string][] = [
   ['S4-01', 'Sinh thời khoá biểu theo mẫu lặp (lớp WEB-K16)', '/lop-hoc/WEB-K16/sinh-lich'],
   ['S4-02', 'Cảnh báo trùng giảng viên, trùng phòng (bấm Xem trước ở S4-01)', '/lop-hoc/WEB-K16/sinh-lich'],
   ['S4-04', 'Thời khoá biểu dạng lịch tuần và tháng', '/thoi-khoa-bieu'],
+  ['S4-03', 'Sửa, dời, huỷ một buổi (bấm vào buổi sắp tới trên lịch)', '/thoi-khoa-bieu?buoi=WEB-K15-25'],
 ];
 
 export function StoryIndexPage() {
