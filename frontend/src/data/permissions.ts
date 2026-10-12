@@ -13,6 +13,9 @@ export const ROLES = [
 
 export const ADMIN_ROLE = 6;
 
+/** Module quản lý tài khoản. Tên dùng cả trên menu lẫn làm khoá phân quyền ở các trang S1-05, S1-08, S2-01. */
+export const USERS_MODULE = 'Danh sách người dùng';
+
 export type Permission = 'F' | 'W' | 'W*' | 'R' | 'R*' | '–';
 
 export type AppModule = {
@@ -37,7 +40,7 @@ export const MODULES: AppModule[] = [
   { name: 'Học phí & công nợ', icon: 'wallet', perms: ['R*', '–', '–', 'R', 'F', 'R'] },
   { name: 'Khảo sát chất lượng', icon: 'chat', perms: ['W*', '–', 'R*', '–', '–', 'F'] },
   { name: 'Báo cáo & dashboard', icon: 'chart', perms: ['–', '–', 'R*', 'R*', 'R*', 'F'] },
-  { name: 'Người dùng & nhật ký', icon: 'shield', perms: ['–', '–', '–', '–', '–', 'R'], to: '/quan-tri/tai-khoan' },
+  { name: USERS_MODULE, icon: 'shield', perms: ['–', '–', '–', '–', '–', 'R'], to: '/quan-tri/tai-khoan' },
 ];
 
 export type MenuItem = { name: string; icon: IconName; to?: string };
