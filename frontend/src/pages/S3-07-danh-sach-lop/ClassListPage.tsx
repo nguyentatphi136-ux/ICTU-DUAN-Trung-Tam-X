@@ -1,4 +1,5 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
+import { Navigate } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Filter, Pager, paginate, Pill, RowMenu, Search, usePaging, type MenuAction } from '../../components/ui';
 import { useAuth } from '../../data/auth';
@@ -35,6 +36,8 @@ export function ClassListPage({ head, rowActions, onOpen }: Props) {
   const [to, setTo] = useState('');
   const { page, setPage, size, setSize } = usePaging();
 
+  // S4-05: học viên dùng trang Lịch học của tôi.
+  if (role === 0) return <Navigate to="/lich-hoc" replace />;
   const mine = role === 1 || role === 2;
   const base = mine ? classesOf(user!.name) : CLASSES;
   const k = q.trim().toLowerCase();
