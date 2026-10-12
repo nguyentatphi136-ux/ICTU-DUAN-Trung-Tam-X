@@ -34,7 +34,7 @@ export const MODULES: AppModule[] = [
   { name: 'Hồ sơ học viên', icon: 'users', perms: ['W*', 'R', 'R', 'W', 'R', 'F'], to: '/hoc-vien' },
   { name: 'Lớp học & thời khoá biểu', icon: 'cal', perms: ['R*', 'R', 'R', 'R', '–', 'F'], to: '/lop-hoc' },
   { name: 'Điểm danh', icon: 'check', perms: ['R*', 'W', 'W', '–', '–', 'F'], to: '/diem-danh' },
-  { name: 'Học liệu & thông báo lớp', icon: 'folder', perms: ['R*', 'W*', 'W*', '–', '–', 'F'] },
+  { name: 'Học liệu & thông báo lớp', icon: 'folder', perms: ['R*', 'W*', 'W*', '–', '–', 'F'], to: '/hoc-lieu' },
   { name: 'Bài tập & chấm điểm', icon: 'edit', perms: ['W*', 'W', 'F', '–', '–', 'R'], to: '/bai-tap' },
   { name: 'Điểm tổng kết & tốt nghiệp', icon: 'award', perms: ['R*', 'R', 'W', '–', '–', 'F'] },
   { name: 'Học phí & công nợ', icon: 'wallet', perms: ['R*', '–', '–', 'R', 'F', 'R'] },
