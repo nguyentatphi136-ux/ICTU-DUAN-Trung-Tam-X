@@ -1,6 +1,6 @@
 // Đọc trang tính đầu tiên của tệp .xlsx hoặc tệp .csv thành bảng chuỗi, chạy hoàn toàn trong trình duyệt.
 // .xlsx là tệp zip chứa XML: giải nén bằng DecompressionStream, đọc XML bằng DOMParser, không cần thư viện.
-// ponytail: chỉ đọc giá trị ô (không đọc định dạng); ô ngày là số sê-ri Excel, mockImport đổi sang YYYY-MM-DD.
+// Lưu ý: chỉ đọc giá trị ô (không đọc định dạng); ô ngày là số sê-ri Excel, mockImport đổi sang YYYY-MM-DD.
 
 export async function readSheet(file: File): Promise<string[][]> {
   if (/\.csv$/i.test(file.name)) return parseCsv(await file.text());
