@@ -52,6 +52,13 @@ export function FinalListPage() {
             {pairs.length} môn · {pairs.filter((p) => !LOCKS[p.key]).length} môn chưa chốt điểm
           </p>
         </div>
+        {isManager(user?.active) && (
+          // S8-04
+          <Link to="/tot-nghiep" className="btn">
+            <Icon name="award" size={16} />
+            Xét hoàn thành khoá
+          </Link>
+        )}
       </div>
       <div className="bar">
         <Filter label="Lớp" value={cls} options={[...new Set(pairs.map((p) => p.k.code))]} onChange={setCls} width={180} />
