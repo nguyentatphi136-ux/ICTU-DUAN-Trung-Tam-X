@@ -63,6 +63,7 @@ const STORIES: [string, string, string][] = [
   ['S6-03', 'Yêu cầu làm lại (nút trong màn hình chấm)', '/bai-tap/6/cham/HV260101'],
   ['S6-04', 'Học viên xem điểm và nhận xét (Bài 11)', '/bai-tap-cua-toi/4'],
   ['S6-05', 'Giảng viên tải học liệu theo buổi', '/hoc-lieu/WEB-K15'],
+  ['S6-06', 'Học viên xem và tải học liệu', '/hoc-lieu-cua-toi'],
 ];
 
 export function StoryIndexPage() {
