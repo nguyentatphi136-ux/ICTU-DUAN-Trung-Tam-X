@@ -78,6 +78,7 @@ const STORIES: [string, string, string][] = [
   ['S7-05', 'Bảng công nợ, lọc quá hạn, xuất Excel', '/hoc-phi/cong-no'],
   ['S7-06', 'Nhắc học phí trước hạn và khi quá hạn', '/hoc-phi/nhac-hoc-phi'],
   ['S7-07', 'Học phí của tôi và tải lại biên lai', '/hoc-phi-cua-toi'],
+  ['S7-08', 'Báo cáo doanh thu theo lớp, chương trình', '/hoc-phi/bao-cao'],
 ];
 
 export function StoryIndexPage() {
