@@ -62,6 +62,7 @@ export function AssignmentListPage() {
                 <th>Bài tập</th>
                 <th>Lớp · môn</th>
                 <th>Hạn nộp</th>
+                <th>Nộp muộn</th>
                 <th>Đã nộp</th>
                 <th>Trạng thái</th>
               </tr>
@@ -74,13 +75,14 @@ export function AssignmentListPage() {
                     {a.cls} · {a.subject}
                   </td>
                   <td className={a.due.slice(0, 10) === TODAY ? 'bad-t' : undefined}>{vdt(a.due)}</td>
+                  <td>{a.late === 'Chặn' ? 'Chặn' : 'Cho nộp, có nhãn'}</td>
                   <td>{a.status === 'Nháp' ? '–' : `${SUBMISSIONS.filter((s) => s.assignment === a.id).length}/${classSize(a.cls)}`}</td>
                   <td>{a.status === 'Nháp' ? <Pill>Bản nháp</Pill> : <Pill tone="ok">Đã giao</Pill>}</td>
                 </tr>
               ))}
               {!list.length && (
                 <tr>
-                  <td colSpan={5} className="empty">
+                  <td colSpan={6} className="empty">
                     Chưa có bài tập. Bấm Tạo bài tập để giao bài cho lớp.
                   </td>
                 </tr>
@@ -296,6 +298,24 @@ export function AssignmentEditorPage() {
               {errors.max && <p className="err">{errors.max}</p>}
             </div>
           </div>
+          {/* S5-09 */}
+          <fieldset className="check-list as-late">
+            <legend>Nộp muộn</legend>
+            <label>
+              <input type="radio" name="late" checked={d.late === 'Chặn'} onChange={() => set({ late: 'Chặn' })} />
+              <span>
+                Chặn nộp muộn
+                <small>Hết hạn là khoá nộp bài</small>
+              </span>
+            </label>
+            <label>
+              <input type="radio" name="late" checked={d.late === 'Cho nộp'} onChange={() => set({ late: 'Cho nộp' })} />
+              <span>
+                Cho nộp, đánh dấu Nộp muộn
+                <small>Bài nộp sau hạn hiện nhãn và số giờ trễ</small>
+              </span>
+            </label>
+          </fieldset>
           <p className="hint">
             {assigned ? 'Bài đã giao vẫn sửa được mô tả và hạn nộp, không quay về bản nháp được.' : `Khi giao, ${classSize(k.code)} học viên của lớp ${k.code} sẽ nhận thông báo.`}
           </p>
@@ -329,6 +349,10 @@ export function AssignmentEditorPage() {
             <div>
               <dt>Điểm tối đa</dt>
               <dd>{d.max}</dd>
+            </div>
+            <div>
+              <dt>Nộp muộn</dt>
+              <dd>{d.late === 'Chặn' ? 'Chặn sau hạn' : 'Cho nộp, có nhãn'}</dd>
             </div>
           </dl>
           <Box icon="bell" tone="info" title={`${classSize(k.code)} học viên của lớp sẽ nhận thông báo`}>
