@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { Navigate, NavLink } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
@@ -64,6 +64,9 @@ export function FeeTablePage() {
   const [, setTick] = useState(0);
   const edit = canEditFees(user?.active ?? -1);
   const list = [...(FEES[sel] ?? [])].sort((a, b) => b.v - a.v);
+
+  // S7-07: học viên vào mục Học phí thì xem trang Học phí của tôi.
+  if (user?.active === 0) return <Navigate to="/hoc-phi-cua-toi" replace />;
 
   return (
     <AppLayout crumb={[MODULE, 'Biểu phí']} module={MODULE}>
