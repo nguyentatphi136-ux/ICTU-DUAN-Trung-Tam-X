@@ -50,6 +50,10 @@ export function ClassesPage() {
       <ClassListPage
         head={
           <>
+            {/* S4-04 */}
+            <Link to="/thoi-khoa-bieu" className="btn">
+              Thời khoá biểu
+            </Link>
             {/* S3-09 */}
             <Link to="/phong-hoc" className="btn">
               Phòng học
