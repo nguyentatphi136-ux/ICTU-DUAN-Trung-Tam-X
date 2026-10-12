@@ -132,3 +132,20 @@ export const SESSIONS: ClassSession[] = persisted('sessions', seed());
 export const sessionsOf = (cls: string) => SESSIONS.filter((s) => s.cls === cls).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
 export const findSession = (id: string) => SESSIONS.find((s) => s.id === id);
 export const isPast = (s: ClassSession) => s.date < TODAY;
+
+/** Xung đột của một buổi với buổi của lớp khác (S4-02): cùng ngày, khung giờ chồng nhau, cùng giảng viên hoặc cùng phòng. */
+export type Clash = { kind: 'Trùng giảng viên' | 'Trùng phòng'; other: ClassSession };
+
+export function clashes(s: ClassSession, pool: ClassSession[] = SESSIONS): Clash[] {
+  if (s.cancelled) return [];
+  const out: Clash[] = [];
+  for (const o of pool) {
+    if (o.cls === s.cls || o.cancelled || o.date !== s.date || o.start >= s.end || s.start >= o.end) continue;
+    if (s.teacher && o.teacher === s.teacher) out.push({ kind: 'Trùng giảng viên', other: o });
+    if (s.room && o.room === s.room) out.push({ kind: 'Trùng phòng', other: o });
+  }
+  return out;
+}
+
+export const clashText = ({ kind, other: o }: Clash) =>
+  kind === 'Trùng giảng viên' ? `${o.teacher} đang dạy ${o.cls} buổi ${o.no}, ${o.start} – ${o.end}${o.room ? ', ' + o.room : ''}` : `${o.room} đang dùng cho ${o.cls} buổi ${o.no}, ${o.start} – ${o.end}`;
