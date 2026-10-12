@@ -5,6 +5,7 @@ import { heldSessions, sheetOf } from './attendance';
 import { CLASSES, findClass, type Klass } from './classes';
 import { persisted } from './store';
 import { STUDENTS } from './students';
+import { SUBJECTS } from './training';
 
 export type Source = 'Điểm danh' | 'Bài tập' | 'Nhập tay' | 'Rubric';
 export const SOURCES: Record<Source, string> = {
@@ -168,3 +169,28 @@ export function finalOf(cls: string, subject: string, code: string) {
   const result: Result = total == null ? 'Chưa đủ điều kiện tính' : failed.length ? 'Không đạt · điểm liệt' : total >= cfg.pass ? 'Đạt' : 'Không đạt';
   return { cfg, parts, missing, raw, total, failed, result, locked: !!lock };
 }
+
+// ---------- S8-03. Bảng điểm toàn khoá ----------
+/** Bảng điểm của học viên ở lớp hiện tại: chỉ gồm môn đã chốt điểm; điểm trung bình tính theo trọng số môn. */
+export function transcriptOf(code: string) {
+  const st = STUDENTS.find((s) => s.code === code);
+  const k = findClass(st?.cls);
+  if (!st || !k) return null;
+  const progress = subjectProgress(k);
+  const rows = progress
+    .filter((s) => LOCKS[gkey(k.code, s.code)])
+    .map((s) => ({ s, weight: SUBJECTS.find((x) => x.code === s.code)?.weight ?? 1, f: finalOf(k.code, s.code, code) }));
+  const scored = rows.filter((r) => r.f.total != null);
+  const wsum = scored.reduce((n, r) => n + r.weight, 0);
+  const gpa = wsum ? Math.round((10 * scored.reduce((n, r) => n + r.f.total! * r.weight, 0)) / wsum) / 10 : null;
+  const passed = rows.filter((r) => r.f.result === 'Đạt').length;
+  const total = k.subjects.reduce((n, s) => n + s.sessions, 0);
+  // Tỷ lệ chuyên cần: trung bình điểm chuyên cần các môn đã học, quy về phần trăm.
+  const cc = progress
+    .filter((s) => s.state !== 'Chưa học')
+    .map((s) => finalOf(k.code, s.code, code).parts.find((p) => p.c.source === 'Điểm danh')?.v)
+    .filter((v): v is number => v != null);
+  const attendance = cc.length ? Math.round((10 * cc.reduce((a, b) => a + b, 0)) / cc.length) : null;
+  return { st, k, rows, gpa, passed, subjects: k.subjects.length, done: Math.min(k.done, total), total, attendance, complete: passed === k.subjects.length };
+}
+export const transcriptNo = (code: string, year: string) => `BD-${year}-${String(hash(code) % 1e6).padStart(6, '0')}`;
