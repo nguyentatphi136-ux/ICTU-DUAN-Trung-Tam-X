@@ -55,6 +55,8 @@ export type Submission = {
   grade?: Grade;
   /** S6-03: yêu cầu làm lại kèm nhận xét và hạn nộp lại. */
   redo?: { note: string; due: string; by: string; at: string };
+  /** S6-03: mọi lần yêu cầu làm lại, cũ nhất ở đầu. */
+  redos?: { note: string; due: string; by: string; at: string }[];
   /** S5-08: giảng viên mở lại bài đã chấm để học viên nộp lại. */
   reopened?: boolean;
 };

@@ -60,6 +60,7 @@ const STORIES: [string, string, string][] = [
   ['S6-01', 'Chấm điểm, công bố, sang bài kế tiếp (giảng viên)', '/bai-tap/6/cham/HV260101'],
   ['S6-02', 'Tạo mẫu rubric', '/bai-tap/rubric'],
   ['S6-02', 'Chấm theo rubric (bài tập cuối môn, cần có bài nộp)', '/bai-tap/9'],
+  ['S6-03', 'Yêu cầu làm lại (nút trong màn hình chấm)', '/bai-tap/6/cham/HV260101'],
 ];
 
 export function StoryIndexPage() {
