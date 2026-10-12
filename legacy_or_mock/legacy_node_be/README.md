@@ -103,10 +103,85 @@ Mã phản hồi:
 
 ## Tài khoản demo mặc định
 
-| Vai trò | Email | Mật khẩu |
-| --- | --- | --- |
-| Admin | `admin@example.com` | `admin123` |
-| Instructor | `instructor@example.com` | `instructor123` |
-| Student | `student@example.com` | `student123` |
+| Vai trò | Email | Mật khẩu | Ghi chú |
+| --- | --- | --- | --- |
+| Admin | `admin@example.com` | `admin123` | Quản trị hệ thống |
+| TrainingManager | `manager@example.com` | `manager123` | Quản lý đào tạo (phân công lead) |
+| Instructor | `instructor@example.com` | `instructor123` | Giảng viên |
+| Student | `student@example.com` | `student123` | Học viên |
+| Admissions | `admissions@example.com` | `admissions123` | Tư vấn viên 1 (Lê Thị Thu Hà) |
+| Admissions | `tuvan@example.com` | `tuvan123` | Tư vấn viên 2 (Hoàng Văn Tư) |
 
-Danh sách người dùng hiện được lưu trong bộ nhớ và dùng để demo; dữ liệu cập nhật sẽ mất khi tiến trình khởi động lại. Trước khi triển khai thực tế, cần thay bằng kho người dùng thật và đặt `JWT_SECRET` mạnh trong môi trường chạy.
+## API Tìm kiếm & Lọc Lead đa điều kiện (Story S2-11 - IDTTX-166 / Subtask IDTTX-198)
+
+Áp dụng cho nhánh: **`s2-11-minhngoc(BE)`**
+
+### Yêu cầu nghiệp vụ Story S2-11:
+> **User Story:** Là Tư vấn tuyển sinh, tôi muốn tìm kiếm và lọc lead theo nhiều điều kiện, để tìm lại được cuộc trao đổi từ tháng trước khi khách gọi lại.
+
+1. **Lọc theo nhiều điều kiện:**
+   - Trạng thái lead (`status`): `NEW`, `CONTACTED`, `CONSULTING`, `TRIAL_SCHEDULED`, `WON`, `REJECTED` (hỗ trợ cả alias tiếng Việt như `mới`, `đang tư vấn`, `đã đăng ký`).
+   - Nguồn lead (`source`): `WEBSITE`, `FACEBOOK`, `REFERRAL`, `HOTLINE`, `TIKTOK`, `EVENT`.
+   - Người phụ trách (`counselorId`): Lọc theo ID tư vấn viên hoặc `unassigned` cho lead chưa phân công.
+   - Khoảng thời gian: Lọc theo khoảng ngày (`createdFrom`, `createdTo`) hoặc theo mốc định sẵn (`datePreset`: `today`, `yesterday`, `this-week`, `this-month`, `last-month` để tìm lại cuộc trao đổi từ tháng trước).
+2. **Tìm nhanh theo tên hoặc số điện thoại:**
+   - Hỗ trợ tham số `search` hoặc `q`: tìm kiếm không phân biệt hoa thường theo tên khách hàng, số điện thoại (hỗ trợ partial match đầu số như `0988`), email hoặc khoá học quan tâm.
+3. **Tra cứu lịch sử cuộc trao đổi từ tháng trước:**
+   - Bảng `lead_interactions` và dòng thời gian `timeline` trong chi tiết lead lưu lại toàn bộ các cuộc gọi, ghi chú trao đổi, thời lượng cuộc gọi và người thực hiện.
+4. **Phân trang và sắp xếp:**
+   - Hỗ trợ `page`, `limit`, `sortBy`, `sortOrder`.
+
+### Danh sách API Story S2-11:
+
+| Phương thức | Đường dẫn | Vai trò được phép | Mô tả |
+| --- | --- | --- | --- |
+| `GET` | `/api/leads` | `Admissions`, `TrainingManager`, `Admin` | Tìm kiếm và lọc danh sách lead theo nhiều tiêu chí (hỗ trợ datePreset `last-month`) |
+| `GET` | `/api/leads/stats` | `Admissions`, `TrainingManager`, `Admin` | Thống kê số lượng lead theo phễu tuyển sinh phục vụ Dashboard / Thẻ KPI |
+| `GET` | `/api/leads/:id` | `Admissions`, `TrainingManager`, `Admin` | Xem chi tiết thông tin và dòng thời gian cuộc trao đổi (timeline) của lead |
+| `POST` | `/api/leads/:id/interactions` | `Admissions`, `TrainingManager`, `Admin` | Ghi nhận cuộc gọi tư vấn, ghi chú chăm sóc khách hàng vào lịch sử |
+| `PATCH` | `/api/leads/:id/status` | `Admissions`, `TrainingManager`, `Admin` | Cập nhật trạng thái xử lý lead |
+
+#### Chi tiết tham số `GET /api/leads`:
+```
+GET /api/leads?search=0988&status=CONSULTING&source=FACEBOOK&datePreset=last-month&page=1&limit=20&sortBy=createdAt&sortOrder=desc
+```
+- **Phản hồi mẫu (`200 OK`):**
+  ```json
+  {
+    "success": true,
+    "data": [
+      {
+        "id": "1",
+        "fullName": "Vũ Minh Anh",
+        "phone": "0988123456",
+        "email": "minhanh.vu@gmail.com",
+        "source": "FACEBOOK",
+        "course": "Lập trình Web Fullstack",
+        "status": "CONSULTING",
+        "statusLabel": "Đang tư vấn",
+        "assignedCounselorId": "5",
+        "assignedCounselorName": "Lê Thị Thu Hà (Tư vấn viên)",
+        "createdAt": "2026-09-01T10:30:00.000Z",
+        "timeline": [
+          {
+            "id": "1",
+            "type": "CALL",
+            "title": "Cuộc gọi tư vấn học phí tháng trước",
+            "content": "Khách hàng hỏi chi tiết về chính sách chia nhỏ đợt đóng học phí 3 lần...",
+            "durationSeconds": 240,
+            "author": "Lê Thị Thu Hà (Tư vấn viên)"
+          }
+        ]
+      }
+    ],
+    "pagination": {
+      "total": 1,
+      "page": 1,
+      "limit": 20,
+      "totalPages": 1
+    }
+  }
+  ```
+
+
+
