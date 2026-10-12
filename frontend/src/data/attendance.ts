@@ -1,6 +1,7 @@
 // Điểm danh cho S4-07 trở đi. Khi tích hợp: GET/PUT /sessions/:id/attendance, GET /sessions/:id/attendance/logs.
 // Buổi đã qua chưa có bản ghi thì sinh sẵn một bảng điểm danh mẫu cố định (giống dữ liệu đã lưu từ trước).
 import { TODAY } from './funnel';
+import { approvedFor } from './leaves';
 import { isPast, SESSIONS, type ClassSession } from './schedule';
 import { persisted } from './store';
 import { rosterOn } from './students';
@@ -30,6 +31,7 @@ function sample(s: ClassSession): Sheet {
     marks[st.code] = h < (risky ? 22 : 3) ? 'Vắng không phép' : h < (risky ? 28 : 6) ? 'Vắng có phép' : h < 10 ? 'Đi muộn' : 'Có mặt';
     if (marks[st.code] === 'Đi muộn') notes[st.code] = 'Đến ' + s.start.slice(0, 3) + String(10 + (h % 30)).padStart(2, '0');
   }
+  for (const code of approvedFor(s.id)) if (marks[code]) [marks[code], notes[code]] = ['Vắng có phép', 'Đơn xin phép đã duyệt'];
   const [hh, mm] = s.start.split(':').map(Number);
   const t = hh * 60 + mm + 42;
   return { savedAt: `${s.date}T${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`, savedBy: s.teacher ?? 'LE HOANG NAM', marks, notes };

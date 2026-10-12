@@ -4,6 +4,7 @@ import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Box, Pill } from '../../components/ui';
+import { approvedFor } from '../../data/leaves';
 import { ATT_LOGS, countMarks, isToday, MARKS, markTone, SHEETS, sheetOf, SHORT, summary, type Mark } from '../../data/attendance';
 import { useAuth } from '../../data/auth';
 import { classesOf } from '../../data/classes';
@@ -14,6 +15,7 @@ import { addDays, dm, findSession, longDate, SESSIONS, type ClassSession } from 
 import { saveAll } from '../../data/store';
 import { rosterOn } from '../../data/students';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
+import { pendingFor } from '../S4-08-xin-phep/LeavePages';
 import '../S3-04-ho-so-hoc-vien/student.css';
 import './attendance.css';
 
@@ -32,7 +34,7 @@ function visible(role: number, name: string) {
 export function AttendanceListPage() {
   const { user } = useAuth();
   const role = user?.active ?? -1;
-  if (role === 0) return <Navigate to="/lich-hoc" replace />;
+  if (role === 0) return <Navigate to="/xin-phep" replace />;
   const list = visible(role, user!.name).filter((s) => !s.cancelled && s.date <= TODAY && s.date >= addDays(TODAY, -14));
   const today = list.filter(isToday).sort((a, b) => a.start.localeCompare(b.start));
   const recent = list.filter((s) => !isToday(s)).sort((a, b) => (b.date + b.start).localeCompare(a.date + a.start));
@@ -46,6 +48,10 @@ export function AttendanceListPage() {
           </p>
         </div>
       </div>
+      {/* S4-08 */}
+      <Link to="/duyet-phep" className="btn at-leaves">
+        Duyệt đơn xin phép ({pendingFor(user!.name, role)})
+      </Link>
       <h3 className="section-t">Hôm nay</h3>
       <div className="at-today">
         {today.map((s) => (
@@ -119,8 +125,10 @@ export function TakeAttendancePage() {
   const navigate = useNavigate();
   const s = findSession(id);
   const saved = s && sheetOf(s);
-  const [marks, setMarks] = useState<Record<string, Mark>>(() => ({ ...(saved?.marks ?? {}) }));
-  const [notes, setNotes] = useState<Record<string, string>>(() => ({ ...(saved?.notes ?? {}) }));
+  // S4-08: đơn xin phép đã duyệt tự đặt Vắng có phép khi mở điểm danh lần đầu.
+  const leave = saved || !s ? [] : approvedFor(s.id);
+  const [marks, setMarks] = useState<Record<string, Mark>>(() => ({ ...(saved?.marks ?? Object.fromEntries(leave.map((c) => [c, 'Vắng có phép' as Mark]))) }));
+  const [notes, setNotes] = useState<Record<string, string>>(() => ({ ...(saved?.notes ?? Object.fromEntries(leave.map((c) => [c, 'Đơn xin phép đã duyệt']))) }));
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
   const [all, setAll] = useState(false);
