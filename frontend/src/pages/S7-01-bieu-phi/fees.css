@@ -38,3 +38,7 @@ input.fe-cell{width:100%;max-width:200px}.fe-money.fe-cell{position:relative;dis
 textarea.inp{width:100%;padding:10px 14px;font:inherit;resize:vertical;height:auto}
 .fe-seg{display:flex;width:100%}.fe-seg>*{flex:1;white-space:nowrap;padding:0 10px}
 .fe-pays td{white-space:nowrap}.fe-pays td.hint{white-space:normal;min-width:160px}
+.stat{position:relative}.fe-edit{position:absolute;top:16px;right:16px}
+.fe-left{margin-right:auto}
+.fe-calc{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:end;padding-bottom:18px}.fe-calc span{display:block;color:var(--muted);font-size:12px}.fe-calc b{font-size:16px;white-space:nowrap}
+.fe-pending{margin-bottom:16px}.fe-decide{display:flex;gap:8px;margin-top:10px}
