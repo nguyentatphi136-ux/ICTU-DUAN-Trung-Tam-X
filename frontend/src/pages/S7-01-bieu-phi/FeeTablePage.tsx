@@ -23,6 +23,7 @@ export function FeeTabs() {
     ['/hoc-phi/ke-hoach', 'Kế hoạch thanh toán'],
     ['/hoc-phi/cong-no', 'Công nợ'],
     ['/hoc-phi/bao-cao', 'Báo cáo doanh thu'],
+    ['/hoc-phi/nhac-hoc-phi', 'Nhắc học phí'],
   ];
   return (
     <nav className="tabs">

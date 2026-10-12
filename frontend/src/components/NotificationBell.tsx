@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../data/auth';
 import { ago, inboxOf, isRead, markRead } from '../data/inbox';
 import { onNotice, type Notice } from '../data/notifications';
+import { runFeeReminders } from '../data/feeReminders';
 import { runReminders } from '../data/prefs';
 import { Icon, type IconName } from './Icon';
 import './bell.css';
@@ -27,6 +28,7 @@ export function NotificationBell() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     runReminders();
+    runFeeReminders();
   }, []);
   useEffect(() => {
     if (!open) return;
