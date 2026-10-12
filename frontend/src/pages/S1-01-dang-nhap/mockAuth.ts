@@ -29,7 +29,7 @@ type LoginData = { user: { email: string; fullName: string; roles: string[] } };
 /** Trả về tài khoản nếu đúng, null nếu sai. Không cho biết email có tồn tại hay không. */
 export async function login(email: string, password: string): Promise<Account | null> {
   if (apiEnabled) {
-    // ponytail: mọi lỗi (sai mật khẩu, bị khoá, mất mạng) đều coi là đăng nhập không được; trang đăng nhập tự đếm lần sai.
+    // Lưu ý: mọi lỗi (sai mật khẩu, bị khoá, mất mạng) đều coi là đăng nhập không được; trang đăng nhập tự đếm lần sai.
     try {
       const { user } = await api<LoginData>('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
       const roles = user.roles.map((r) => ROLE_SLUGS.indexOf(r)).filter((r) => r >= 0).sort((a, b) => b - a);
