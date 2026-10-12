@@ -1,0 +1,13 @@
+/* S3-07 trở đi. Danh sách lớp: thẻ chỉ số, ô khoảng ngày, cột sĩ số và thanh tiến độ. */
+.cl-stats{grid-template-columns:repeat(4,1fr);gap:16px}
+.cl-stats .stat b{font-size:28px;margin:0 0 4px}
+.stat.bad b{color:var(--red)}
+.cl-range{display:flex;align-items:center;gap:6px;height:44px;padding:0 10px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
+.cl-range input{border:0;background:none;font:inherit;color:var(--ink);height:40px;width:132px}
+.cl-range span{color:var(--muted)}
+td.bad-t{color:var(--red);font-weight:500}
+td.cl-size{color:var(--ink);font-weight:500}td.cl-size.near{color:var(--warn)}td.cl-size.full{color:var(--red)}
+.cl-bar{display:inline-flex;align-items:center;gap:10px;color:var(--ink);white-space:nowrap}
+.cl-bar i{display:block;width:72px;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--blue) var(--p),var(--chip) var(--p))}
+@media(max-width:1100px){.cl-stats{grid-template-columns:1fr 1fr}}
+@media(max-width:900px){.cl-range{width:100%}.cl-range input{flex:1}}
