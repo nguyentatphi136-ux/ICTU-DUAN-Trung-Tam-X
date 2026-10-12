@@ -90,7 +90,7 @@ const SEED: Seed[] = [
   { code: 'HV260102', name: 'HOANG YEN NHI', phone: '0934 118 205', email: 'nhi.hy@gmail.com', program: 'Lập trình web Full-stack', status: 'Đang học', enrolledAt: '2026-08-12', cls: 'WEB-K15' },
   { code: 'HV260088', name: 'TRAN GIA HUY', phone: '0988 402 117', email: 'huy.tg@gmail.com', program: 'Phân tích dữ liệu', status: 'Đang học', enrolledAt: '2026-07-20', cls: 'DATA-K07' },
   { code: 'HV260075', name: 'LE THANH TAM', phone: '0906 731 554', email: 'tam.lt@gmail.com', program: 'Thiết kế UI/UX', status: 'Bảo lưu', enrolledAt: '2026-07-02', cls: 'UIUX-K09' },
-  { code: 'HV250311', name: 'PHAM QUOC VIET', phone: '0979 266 840', email: 'viet.pq@gmail.com', program: 'Lập trình Java Backend', status: 'Đã tốt nghiệp', enrolledAt: '2025-11-15', cls: 'JAVA-K11' },
+  { code: 'HV250311', name: 'PHAM QUOC VIET', phone: '0979 266 840', email: 'viet.pq@gmail.com', program: 'Lập trình Java Backend', status: 'Đang học', enrolledAt: '2025-11-15', cls: 'JAVA-K11' },
   { code: 'HV250298', name: 'BUI QUANG KHAI', phone: '0915 090 433', email: 'khai.bq@gmail.com', program: 'Kiểm thử phần mềm', status: 'Thôi học', enrolledAt: '2025-11-03', cls: 'TEST-K05' },
   { code: 'HV250260', name: 'NGO KHANH LINH', phone: '0961 577 208', email: 'linh.nk@gmail.com', program: 'Thiết kế UI/UX', status: 'Đã tốt nghiệp', enrolledAt: '2025-09-18', cls: 'UIUX-K08' },
 ];
@@ -103,7 +103,8 @@ const FILL: [cls: string, program: string, count: number, status: StudentStatus,
   ['JAVA-K12', 'Lập trình Java Backend', 12, 'Đang học', '2026-09-'],
   ['WEB-K16', 'Lập trình web Full-stack', 7, 'Đang học', '2026-09-'],
   ['TEST-K06', 'Kiểm thử phần mềm', 2, 'Đang học', '2026-09-'],
-  ['JAVA-K11', 'Lập trình Java Backend', 23, 'Đã tốt nghiệp', '2026-02-'],
+  // Lớp JAVA-K11 đã kết thúc, học viên chờ xét hoàn thành khoá (S8-04).
+  ['JAVA-K11', 'Lập trình Java Backend', 23, 'Đang học', '2026-02-'],
   ['TEST-K05', 'Kiểm thử phần mềm', 5, 'Thôi học', '2026-04-'],
   ['', 'Phân tích dữ liệu', 17, 'Mới nhập học', '2026-09-'],
 ];

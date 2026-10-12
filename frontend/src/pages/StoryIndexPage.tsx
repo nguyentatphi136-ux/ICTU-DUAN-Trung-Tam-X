@@ -82,6 +82,7 @@ const STORIES: [string, string, string][] = [
   ['S8-01', 'Cách tính điểm theo chương trình, ghi đè ở cấp lớp', '/dao-tao/cach-tinh-diem'],
   ['S8-02', 'Điểm tổng kết môn, cách tính chi tiết, chốt điểm', '/diem-tong-ket/WEB-K15/WEB-02'],
   ['S8-03', 'Bảng điểm toàn khoá và mẫu PDF', '/bang-diem/HV260101'],
+  ['S8-04', 'Xét hoàn thành khoá, xác nhận tốt nghiệp', '/tot-nghiep'],
 ];
 
 export function StoryIndexPage() {

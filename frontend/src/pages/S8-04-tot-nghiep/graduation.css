@@ -1,0 +1,9 @@
+/* S8-04. Xét hoàn thành khoá. */
+.gr-conds{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.gr-conds>div{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.gr-conds>div span{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:12px 14px;font-weight:600;font-size:14px}
+.gr-tabs{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}.gr-tabs .tabs{margin-bottom:0;border:0}.gr-tabs{border-bottom:1px solid var(--line);margin-bottom:16px}
+.gr-inline{display:inline!important;margin:0!important;padding:0!important}
+.gr-names{border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin-bottom:16px}.gr-names p{margin-bottom:6px}.ok-t{color:var(--green);font-size:13px}
+.gr-after{margin:6px 0 16px 18px;color:var(--muted);font-size:14px;line-height:1.8}
+@media(max-width:900px){.gr-conds>div{grid-template-columns:1fr}}

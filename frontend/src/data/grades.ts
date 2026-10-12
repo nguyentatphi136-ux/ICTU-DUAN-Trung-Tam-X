@@ -105,7 +105,11 @@ function seed(): [ScoreBook, Record<string, Lock>] {
       roster.forEach((st, i) => {
         const ability = 4 + (hash(st.code) % 60) / 10;
         const row: Record<string, number> = {};
-        for (const c of cfg.comps) row[c.key] = r1(ability + ((hash(st.code + c.key + sub.code) % 31) - 15) / 10 + (c.key === 'cc' ? 1.5 : 0));
+        for (const c of cfg.comps) {
+          const h = hash(st.code + c.key + sub.code);
+          // Chuyên cần phần lớn từ 8 trở lên; mã kết thúc bằng 7 vắng nhiều như dữ liệu điểm danh mẫu (S5-02).
+          row[c.key] = c.source === 'Điểm danh' ? r1(8.2 + (h % 19) / 10 - (st.code.endsWith('7') ? 2.6 : 0)) : r1(ability + ((h % 31) - 15) / 10);
+        }
         // Môn đang học: một học viên thiếu điểm giữa môn để minh hoạ "Chưa đủ điều kiện tính".
         if (sub.state === 'Đang học' && i === roster.length - 1) delete row.gk;
         book[key][st.code] = row;
