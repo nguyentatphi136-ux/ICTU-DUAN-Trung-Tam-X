@@ -1,4 +1,4 @@
 import type { RouteObject } from 'react-router-dom';
-import { ClassListPage } from './ClassListPage';
+import { ClassesPage } from '../S3-05-mo-lop/ClassesPage';
 
-export default [{ path: '/lop-hoc', element: <ClassListPage /> }] satisfies RouteObject[];
+export default [{ path: '/lop-hoc', element: <ClassesPage /> }] satisfies RouteObject[];
