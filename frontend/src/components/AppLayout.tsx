@@ -4,6 +4,7 @@ import { useAuth } from '../data/auth';
 import { canAccess, menuFor, ROLES } from '../data/permissions';
 import { ErrorPage } from '../pages/S1-07-trang-loi/ErrorPage';
 import { Icon } from './Icon';
+import { NotificationBell } from './NotificationBell';
 import { ThemeToggle } from './ThemeToggle';
 
 type Props = {
@@ -121,7 +122,7 @@ export function AppLayout({ crumb, module, children }: Props) {
             ))}
           </div>
           <ThemeToggle />
-          <Icon name="bell" />
+          <NotificationBell />
           <div className="um" ref={menuRef}>
             <button type="button" className="um-btn" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
               <span className="who">
