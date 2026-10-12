@@ -9,7 +9,7 @@ import { findClass, totalSessions, type Klass } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
 import { viDate } from '../../data/leads';
 import { capacityText, ROOMS } from '../../data/rooms';
-import { dm, dow, generate, HOLIDAYS, longDate, SESSIONS, shiftOf, shortDate, SHIFTS, WEEKDAYS, WEEKDAY_NAMES, type ClassSession, type Pattern, type Shift, type Skipped } from '../../data/schedule';
+import { clashes, clashText, dm, dow, generate, HOLIDAYS, longDate, SESSIONS, shiftOf, shortDate, SHIFTS, WEEKDAYS, WEEKDAY_NAMES, type ClassSession, type Pattern, type Shift, type Skipped } from '../../data/schedule';
 import { saveAll } from '../../data/store';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
 import '../S3-04-ho-so-hoc-vien/student.css';
@@ -21,6 +21,7 @@ type Step = 1 | 2 | 3;
 
 // S4-01. Sinh thời khoá biểu theo mẫu lặp: các thứ trong tuần, ca học, ngày bắt đầu, số buổi.
 // Hệ thống sinh đủ buổi, bỏ qua ngày nghỉ lễ đã khai báo, gắn mỗi buổi với một bài học, cho xem trước rồi mới lưu.
+// S4-02. Khi xem trước, buổi trùng giảng viên hoặc trùng phòng với lớp khác bị đánh dấu và chặn lưu, trừ khi xác nhận ghi đè.
 export function GeneratePage() {
   const { code = '' } = useParams();
   const { user } = useAuth();
@@ -275,11 +276,15 @@ type Row = { s?: ClassSession; skip?: Skipped };
 
 function Preview({ k, result, onBack, onSaved }: PreviewProps) {
   const toast = useToast();
-  const [tab, setTab] = useState<'all' | 'skip'>('all');
+  const [tab, setTab] = useState<'all' | 'clash' | 'skip'>('all');
+  const [override, setOverride] = useState(false);
+  // Chỉ so với buổi của lớp khác còn giữ lại sau khi lưu (các buổi cũ từ hôm nay của lớp này sẽ bị thay).
+  const found = new Map(result.sessions.map((s) => [s.id, clashes(s)]));
+  const bad = result.sessions.filter((s) => found.get(s.id)!.length).length;
   const { page, setPage, size, setSize } = usePaging(20);
   const day = (r: Row) => r.s?.date ?? r.skip!.date;
   const all = [...result.sessions.map((s): Row => ({ s })), ...result.skipped.map((skip): Row => ({ skip }))].sort((a, b) => day(a).localeCompare(day(b)));
-  const rows = tab === 'skip' ? all.filter((r) => r.skip) : all;
+  const rows = tab === 'skip' ? all.filter((r) => r.skip) : tab === 'clash' ? all.filter((r) => r.s && found.get(r.s.id)!.length) : all;
   const view = paginate(rows, page, size);
 
   function save() {
@@ -296,9 +301,25 @@ function Preview({ k, result, onBack, onSaved }: PreviewProps) {
 
   return (
     <>
+      {bad > 0 && (
+        <div className="box bad gt-clash">
+          <Icon name="alert" size={20} />
+          <div>
+            <b>{bad} buổi bị trùng lịch, chưa lưu được</b>
+            Sửa từng buổi bị trùng sau khi lưu, đổi mẫu lặp, hoặc xác nhận ghi đè nếu bạn chủ động để trùng.
+            <label className="check-list">
+              <input type="checkbox" checked={override} onChange={(e) => setOverride(e.target.checked)} />
+              Tôi xác nhận ghi đè: vẫn lưu cả {bad} buổi đang trùng
+            </label>
+          </div>
+        </div>
+      )}
       <div className="seg gt-tabs" role="tablist">
         <button type="button" role="tab" aria-selected={tab === 'all'} className={tab === 'all' ? 'on' : undefined} onClick={() => (setTab('all'), setPage(1))}>
           Tất cả ({result.sessions.length})
+        </button>
+        <button type="button" role="tab" aria-selected={tab === 'clash'} className={tab === 'clash' ? 'on' : undefined} onClick={() => (setTab('clash'), setPage(1))}>
+          Chỉ buổi trùng ({bad})
         </button>
         <button type="button" role="tab" aria-selected={tab === 'skip'} className={tab === 'skip' ? 'on' : undefined} onClick={() => (setTab('skip'), setPage(1))}>
           Ngày bị bỏ qua ({result.skipped.length})
@@ -335,7 +356,18 @@ function Preview({ k, result, onBack, onSaved }: PreviewProps) {
                     <td className={r.s.teacher ? 'strong' : 'bad-t'}>{r.s.teacher ?? 'Chưa có'}</td>
                     <td>{r.s.room ?? '–'}</td>
                     <td>
-                      <Pill tone="ok">Hợp lệ</Pill>
+                      {found.get(r.s.id)!.length ? (
+                        <div className="gt-bad">
+                          {found.get(r.s.id)!.map((c, i) => (
+                            <div key={i}>
+                              <Pill tone="off">{c.kind}</Pill>
+                              <small>{clashText(c)}</small>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <Pill tone="ok">Hợp lệ</Pill>
+                      )}
                     </td>
                   </tr>
                 ) : (
@@ -362,7 +394,7 @@ function Preview({ k, result, onBack, onSaved }: PreviewProps) {
         <button type="button" className="btn" onClick={onBack}>
           Sửa mẫu lặp
         </button>
-        <button type="button" className="btn primary" onClick={save}>
+        <button type="button" className="btn primary" disabled={bad > 0 && !override} onClick={save}>
           Lưu thời khoá biểu
         </button>
       </div>
