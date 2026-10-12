@@ -1,0 +1,17 @@
+/* S7-01 trở đi. Module Học phí & công nợ: danh sách chương trình, bảng phiên bản, ô nhập tiền, thẻ số tiền. */
+.fe-grid{display:grid;grid-template-columns:320px minmax(0,1fr);gap:16px;align-items:start}
+.fe-grid>section{display:flex;flex-direction:column;gap:12px}
+.fe-programs{padding:6px}
+.fe-programs button{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:none;border-radius:var(--r);padding:10px 12px;font:inherit;color:var(--ink)}
+.fe-programs button:hover{background:var(--hover)}.fe-programs .on{background:var(--soft)}
+.fe-programs small{display:block;color:var(--muted);font-size:12px}.fe-programs .on small{color:var(--blue)}
+.fe-programs b{font-size:14px;font-weight:600}.fe-programs em{font-style:normal;font-weight:600;white-space:nowrap}
+.fe-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px}.fe-head h3{font-size:16px}
+.fe-used{text-align:right;white-space:nowrap}
+.fe-money{display:flex;align-items:center}.fe-money input{padding-right:36px;text-align:right;font-variant-numeric:tabular-nums}
+.fe-money span{position:absolute;right:14px;color:var(--muted)}
+.fe-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:20px}
+.fe-stats .stat b{font-size:24px;margin:0 0 4px}.fe-stats .ok b{color:var(--green)}.fe-stats .bad b{color:var(--red)}.fe-stats .info b{color:var(--blue)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.bad-t.num{color:var(--bad)}
+@media(max-width:1000px){.fe-grid{grid-template-columns:1fr}.fe-stats{grid-template-columns:1fr 1fr}}
