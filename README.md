@@ -52,14 +52,14 @@ Hệ thống Quản lý Đào tạo Trung tâm là nền tảng quản trị s�
 | STT | Họ và tên | Mã SV | Vai trò Scrum | Phân công nhiệm vụ kỹ thuật |
 |:---:|:---|:---:|:---|:---|
 | 1 | Nguyễn Tất Phi | [Mã SV] | Team Leader / Dev | Quản trị dự án, thiết kế kiến trúc hệ thống, BE Core Auth (Sprint 1) |
-| 2 | Nguyễn Minh Ngọc | [Mã SV] | Scrum Master / Backend Dev | Điều phối Scrum, thiết kế CSDL & API tìm kiếm, lọc lead đa điều kiện (S2-11 - IDTTX-166 / IDTTX-198) |
+| 2 | Nguyễn Minh Ngọc | [Mã SV] | Scrum Master | Điều phối Daily Scrum, Planning, gỡ blocker, hỗ trợ kiểm thử |
 | 3 | Nông Hùng Nguyên | [Mã SV] | Backend Dev | Thiết kế CSDL, API quản lý tài khoản, mã hóa mật khẩu |
-| 4 | Nguyễn Trung Kiên | DTC245200736 | Backend Dev | Xây dựng bộ lọc Authorization Filter, gán và thu hồi Role (Jira: IDTTX-24) |
+| 4 | Nguyễn Trung Kiên | [Mã SV] | Backend Dev | Xây dựng bộ lọc Authorization Filter, gán và thu hồi Role |
 | 5 | Nguyễn Văn Kỳ | [Mã SV] | Backend Dev | Xử lý Session, Forgot Password qua Email, API hồ sơ người dùng |
 | 6 | Vũ Trọng Nghĩa  | [Mã SV] | Frontend Dev | Thiết kế Layout Master, Dynamic Sidebar Menu theo Role |
 | 7 | Nguyễn Thanh Ngọc | [Mã SV] | Frontend Dev | Xây dựng giao diện Login, Forgot Password, Reset Password |
-| 8 | Nguyễn Hữu Lợi | [Mã SV] | Frontend Dev | Xây dựng trang Quản trị danh sách người dùng, UI Lead CRM (S2-11) |
-| 9 | Nguyễn Phạm Phương Lan | [Mã SV] | QA / Tester | Viết Test Cases cho Sprint 1 & Sprint 2 |
+| 8 | Nguyễn Hữu Lợi | [Mã SV] | Frontend Dev | Xây dựng trang Quản trị danh sách người dùng, Modal Thêm/Sửa |
+| 9 | Nguyễn Phạm Phương Lan | [Mã SV] | QA / Tester | Viết Test Cases cho Sprint 1 (Đăng nhập, phân quyền, CRUD user) |
 | 10 | Nguyễn Duy Kiên | [Mã SV] | QA / Tester | Thực hiện Manual Test, kiểm thử biên (Edge Cases), theo dõi Bug trên Jira |
 
 ---
@@ -80,125 +80,27 @@ Hệ thống Quản lý Đào tạo Trung tâm là nền tảng quản trị s�
 
 ---
 
-## 6. Cấu trúc thư mục dự án sau khi sắp xếp chuẩn mực
+## 6. Hướng dẫn cài đặt môi trường cho nhà phát triển
 
-```text
-ICTU-DUAN-Trung-Tam-X/
-├── package.json                                # Quản lý script npm (Proxy 'npm run dev' vào frontend)
-├── README.md                                   # Tài liệu hướng dẫn toàn diện dự án
-├── backend/                                    # TOÀN BỘ MÃ NGUỒN BACKEND
-│   ├── pom.xml                                 # Cấu hình Maven (Java 17, Servlet 4.0, JSP, JSTL, MySQL)
-│   ├── legacy_node_be/                         # Backend Node.js/Express cũ (auth, phân quyền, API lead S2-10/S2-11)
-│   └── src/                                    # BỘ NGUỒN CHÍNH THỨC: JAVA SERVLET & JSP (MVC)
-│       ├── main/
-│       │   ├── java/com/ems/
-│       │   │   ├── config/                     # DBConnection, SessionBlacklist, Migration
-│       │   │   ├── constant/                   # RoleConstant (8 vai trò), PermissionConstant (Ma trận quyền)
-│       │   │   ├── controller/                 # Servlets điều hướng: Login, Logout, UserRole, Grade, Tuition, Program
-│       │   │   ├── dao/                        # Data Access Objects (UserDAO, AdminDAO, PermissionDAO, TrainingProgramDAO)
-│       │   │   ├── dto/                        # Data Transfer Objects
-│       │   │   ├── filter/                     # AuthorizationFilter (RBAC), SessionAuthFilter (Sliding session)
-│       │   │   ├── model/                      # Entities: User, Grade, TuitionFee, TrainingProgram
-│       │   │   ├── security/                   # ApiResponse, Password policies
-│       │   │   └── service/                    # EmailService, TrainingProgramService, UserStore (In-memory store & fallback)
-│       │   └── webapp/                         # Giao diện JSP, JSTL và cấu hình Web Descriptor
-│       │       ├── index.jsp                   # Điều hướng trang chủ
-│       │       ├── login.jsp                   # Giao diện đăng nhập (có nút chọn nhanh tài khoản test)
-│       │       ├── dashboard.jsp               # Bảng điều khiển phân hệ nghiệp vụ theo vai trò
-│       │       ├── admin.jsp                   # Quản lý tài khoản người dùng
-│       │       ├── change-password.jsp         # Đổi mật khẩu
-│       │       ├── forgot-password.jsp         # Quên mật khẩu qua email
-│       │       ├── reset-password.jsp          # Đặt lại mật khẩu từ liên kết bảo mật
-│       │       └── WEB-INF/
-│       │           ├── web.xml                 # Cấu hình Deployment Descriptor, session-timeout 8h, error pages
-│       │           └── views/
-│       │               ├── common/             # 403.jsp, 404.jsp, 500.jsp (Thông báo tiếng Việt thân thiện)
-│       │               ├── admin/              # user-roles.jsp (Gán & thu hồi vai trò Jira IDTTX-24)
-│       │               ├── grades/             # list-grade.jsp, edit-grade.jsp (Giảng viên sửa điểm, Kế toán chỉ xem)
-│       │               ├── tuition/            # list-tuition.jsp, edit-tuition.jsp (Kế toán sửa học phí, Giảng viên chỉ xem)
-│       │               └── programs/           # list-programs.jsp (Danh mục chương trình đào tạo S2-04)
-│       └── test/java/com/ems/                  # Bộ kiểm thử tự động JUnit 5 cho RBAC, IDTTX-24, Session, Auth
-├── database/                                   # CSDL MySQL (schema.sql, DESIGN_DATABASE.md)
-├── frontend/                                   # Giao diện web client (Vite, HTML5, CSS3, JS)
-├── legacy_or_mock/                             # Lưu trữ prototype cũ Node.js & mock data để đối chiếu
-└── UI_UX/                                      # Bản vẽ thiết kế, wireframes và screenshots nghiệm thu
-```
+### 6.1. Yêu cầu hệ thống
+* JDK: Phiên bản 17 hoặc 21 LTS.
+* Apache Tomcat: Phiên bản 9.0 hoặc 10.1.
+* Hệ quản trị CSDL: MySQL 8.0+.
+* IDE khuyên dùng: IntelliJ IDEA Ultimate hoặc Eclipse EE.
 
----
-
-## 7. Danh sách tài khoản thử nghiệm (Demo Accounts)
-
-Hệ thống hỗ trợ cơ chế xác thực kép: tự động truy vấn MySQL `UserDAO` nếu CSDL đang chạy, hoặc chuyển sang `UserStore` in-memory fallback nếu chưa cấu hình CSDL, đảm bảo luôn đăng nhập được 100%:
-
-| STT | Vai trò nghiệp vụ | Email đăng nhập | Mật khẩu chuẩn | Mật khẩu phụ (chấp nhận) | Phân hệ được truy cập |
-|:---:|:---|:---|:---:|:---:|:---|
-| 1 | **Quản trị hệ thống (Admin)** | `admin@edumanager.vn` | `Admin@123` | `123456` | Toàn quyền, Phân quyền vai trò (`/admin/users/roles`), Quản lý tài khoản |
-| 2 | **Giảng viên (Instructor)** | `giangvien@edumanager.vn` | `Giangvien@123` | `123456` | Bảng điểm học viên, Sửa điểm (`/grade/list`) — *Bị chặn sửa học phí (403)* |
-| 3 | **Kế toán (Accountant)** | `ketoan@edumanager.vn` | `Ketoan@123` | `123456` | Bảng học phí, Sửa học phí (`/tuition/list`) — *Bị chặn sửa điểm (403)* |
-| 4 | **Quản lý đào tạo (Training Manager)** | `daotao@edumanager.vn` | `Daotao@123` | `123456` | Danh mục chương trình đào tạo (`/training-programs`), Bảng điểm |
-| 5 | **Học viên (Student)** | `hocvien@edumanager.vn` | `Hocvien@123` | `123456` | Xem bảng điểm cá nhân, xem học phí cá nhân |
-| 6 | **Tư vấn tuyển sinh (Admissions)** | `tuvan@edumanager.vn` | `Tuyensinh@123` | `123456` | Xem thông tin chương trình học, quản lý tuyển sinh |
-| 7 | **Trợ giảng (Teaching Assistant)** | `trogiang@edumanager.vn` | `Trogiang@123` | `123456` | Hỗ trợ lớp học, xem điểm |
-
----
-
-## 8. Hướng dẫn chạy dự án
-
-### Cách 1: Chạy toàn bộ ứng dụng Java Servlet / JSP trên Apache Tomcat (Khuyên dùng)
-1. Mở dự án trên **IntelliJ IDEA** hoặc **Eclipse**: Chọn thư mục `ICTU-DUAN-Trung-Tam-X/backend`.
-2. IntelliJ sẽ tự động nhận diện file `pom.xml` làm dự án Maven.
-3. Thêm cấu hình chạy **Tomcat Server (Local)**:
-   - Deployment: Thêm Artifact `education-management-system:war exploded` (hoặc thư mục `backend/src/main/webapp`).
-   - Application context: `/` hoặc `/ems`.
-4. Nhấn **Run** (Shift + F10).
-5. Mở trình duyệt tại: `http://localhost:8080/` (hệ thống sẽ tự động chuyển hướng đến `login.jsp`).
-6. Bấm nút chọn nhanh tài khoản thử nghiệm trên giao diện để đăng nhập ngay!
-
-### Cách 2: Chạy giao diện Web Frontend độc lập (Vite)
-Nếu bạn muốn phát triển hoặc kiểm thử nhanh giao diện HTML/CSS/JS:
+### 6.2. Các bước khởi chạy dự án
 ```bash
-# Ở bất kỳ thư mục nào (thư mục gốc hoặc thư mục frontend/):
-npm run dev
+# 1. Clone mã nguồn dự án
+git clone [https://github.com/nguyentatphi136-ux/ICTU-DUAN-Trung-Tam-X.git](https://github.com/nguyentatphi136-ux/ICTU-DUAN-Trung-Tam-X.git)
 
-# Trình duyệt mở:
-http://localhost:5173/login.html
-```
+# 2. Di chuyển vào thư mục dự án
+cd ICTU-DUAN-Trung-Tam-X
 
----
+# 3. Chuyển sang nhánh làm việc develop
+git checkout develop
 
-## 9. Tiến độ Sprint 2: Tìm kiếm và lọc lead đa điều kiện (Story S2-11 - Nhánh `s2-11-minhngoc(BE)`)
+# 4. Cấu hình kết nối cơ sở dữ liệu:
+# Mở file backend/src/main/resources/database.properties và cập nhật DB_URL, DB_USER, DB_PASSWORD
 
-Nhánh **`s2-11-minhngoc(BE)`** hoàn thành toàn diện hạng mục Backend cho **Story S2-11 (IDTTX-166 / Subtask IDTTX-198)**:
-
-> **User Story S2-11:** Là Tư vấn tuyển sinh, tôi muốn tìm kiếm và lọc lead theo nhiều điều kiện, để tìm lại được cuộc trao đổi từ tháng trước khi khách gọi lại.
-
-### 9.1. Các tiêu chí nghiệm thu hoàn thành:
-1. **Lọc theo nhiều điều kiện:**
-   - Trạng thái lead (`status`): `NEW`, `CONTACTED`, `CONSULTING`, `TRIAL_SCHEDULED`, `WON`, `REJECTED` (hỗ trợ chuẩn hóa alias từ Frontend như `mới`, `đang tư vấn`, `đã đăng ký`).
-   - Nguồn lead (`source`): `WEBSITE`, `FACEBOOK`, `REFERRAL`, `HOTLINE`, `TIKTOK`, `EVENT`.
-   - Người phụ trách (`counselorId`): Lọc theo ID tư vấn viên hoặc `unassigned` cho lead chưa phân công.
-   - Khoảng thời gian: Lọc theo khoảng ngày (`createdFrom`, `createdTo`) hoặc theo mốc định sẵn (`datePreset`: `today`, `yesterday`, `this-week`, `this-month`, `last-month` để tìm lại cuộc trao đổi từ tháng trước).
-2. **Tìm nhanh theo tên hoặc số điện thoại:**
-   - Tìm kiếm không phân biệt hoa thường theo tên, số điện thoại (hỗ trợ partial match đầu số như `0988`), email hoặc khóa học quan tâm.
-3. **Tra cứu và ghi nhận lịch sử cuộc trao đổi (Timeline):**
-   - Bảng `lead_interactions` và timeline lưu lại toàn bộ các cuộc gọi, ghi chú trao đổi, thời lượng cuộc gọi và người thực hiện, giúp tư vấn viên tra cứu ngay cuộc trao đổi cũ khi khách gọi lại.
-4. **Phân trang và sắp xếp:**
-   - Hỗ trợ đầy đủ `page`, `limit`, `sortBy`, `sortOrder`.
-5. **Thống kê phễu tuyển sinh:**
-   - Cung cấp số liệu tổng quan (tổng lead, mới, đang tư vấn, đã chốt, chưa phân công) phục vụ thẻ KPI / Dashboard.
-
-### 9.2. Danh mục RESTful APIs triển khai:
-- `GET /api/leads`: Tìm kiếm và lọc danh sách lead đa điều kiện.
-- `GET /api/leads/stats`: Thống kê số lượng lead theo trạng thái phễu.
-- `GET /api/leads/:id`: Xem chi tiết thông tin và toàn bộ timeline cuộc trao đổi của lead.
-- `POST /api/leads/:id/interactions`: Ghi nhận cuộc gọi tư vấn / ghi chú trao đổi vào hồ sơ khách hàng.
-- `PATCH /api/leads/:id/status`: Cập nhật trạng thái xử lý lead.
-
-### 9.3. Cơ sở dữ liệu & Kiểm thử tự động:
-- **Migration SQL:** [`database/migration_s2_11_lead_search_filter.sql`](database/migration_s2_11_lead_search_filter.sql) (thiết kế chuẩn hóa 3NF gồm bảng `leads` và bảng `lead_interactions`, có index tối ưu truy vấn tìm kiếm).
-- **Chạy kiểm thử:**
-  ```bash
-  cd backend/legacy_node_be
-  npm test
-  ```
-  Tất cả các ca kiểm thử nghiệp vụ cho Story S2-11 đều đạt **PASS 100%**.
+# 5. Build và chạy ứng dụng trên Tomcat server tại địa chỉ:
+# http://localhost:8080/
