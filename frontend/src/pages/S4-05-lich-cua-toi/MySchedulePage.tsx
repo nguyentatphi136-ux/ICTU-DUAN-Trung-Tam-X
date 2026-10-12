@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { Box, Pill } from '../../components/ui';
@@ -58,6 +58,12 @@ export function MySchedulePage() {
           <h2>Lịch học của tôi</h2>
           <p>{k ? `Lớp ${k.code} · ${k.program}` : 'Bạn chưa được xếp lớp'}</p>
         </div>
+        {/* S4-08 */}
+        {k && (
+          <Link to="/xin-phep" className="btn">
+            Xin phép vắng một buổi
+          </Link>
+        )}
       </div>
       {next ? (
         <section className="my-next">
