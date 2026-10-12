@@ -3,6 +3,7 @@ import { AppLayout } from '../../components/AppLayout';
 import { shortName, useAuth } from '../../data/auth';
 import { ADMIN_ROLE, ROLES } from '../../data/permissions';
 import { ManagerDashboard } from '../S8-07-dashboard-qldt/ManagerDashboard';
+import { TeacherDashboard } from '../S8-08-dashboard-gv/TeacherDashboard';
 
 const ADMIN_STATS = [
   ['Tài khoản đang hoạt động', '286', 'trên 300 người dùng'],
@@ -24,7 +25,9 @@ export function HomePage() {
     <AppLayout crumb={['Trang chủ']}>
       {/* S8-07 */}
       {user?.active === 5 && <ManagerDashboard />}
-      {user && user.active !== 5 && (
+      {/* S8-08 */}
+      {user?.active === 2 && <TeacherDashboard name={user.name} />}
+      {user && user.active !== 5 && user.active !== 2 && (
         <>
           <div className="h">
             <div>
