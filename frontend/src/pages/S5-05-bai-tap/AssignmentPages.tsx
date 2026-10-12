@@ -68,7 +68,7 @@ export function AssignmentListPage() {
             </thead>
             <tbody>
               {list.map((a) => (
-                <tr key={a.id} tabIndex={0} onClick={() => navigate(`/bai-tap/${a.id}/sua`)} onKeyDown={(e) => e.key === 'Enter' && navigate(`/bai-tap/${a.id}/sua`)}>
+                <tr key={a.id} tabIndex={0} onClick={() => navigate(a.status === 'Nháp' ? `/bai-tap/${a.id}/sua` : `/bai-tap/${a.id}`)} onKeyDown={(e) => e.key === 'Enter' && navigate(a.status === 'Nháp' ? `/bai-tap/${a.id}/sua` : `/bai-tap/${a.id}`)}>
                   <td className="strong">{a.title}</td>
                   <td>
                     {a.cls} · {a.subject}
