@@ -36,6 +36,7 @@ const STORIES: [string, string, string][] = [
   ['S3-08', 'Phân công giảng viên và trợ giảng (lớp WEB-K16)', '/lop-hoc/WEB-K16/phan-cong'],
   ['S3-09', 'Phòng học vật lý và trực tuyến', '/phong-hoc'],
   ['S3-09', 'Xếp phòng cho lớp, cảnh báo vượt sức chứa (lớp WEB-K16)', '/lop-hoc/WEB-K16/phong'],
+  ['S4-01', 'Sinh thời khoá biểu theo mẫu lặp (lớp WEB-K16)', '/lop-hoc/WEB-K16/sinh-lich'],
 ];
 
 export function StoryIndexPage() {
