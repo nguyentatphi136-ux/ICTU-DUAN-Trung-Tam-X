@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link, Navigate } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
@@ -21,11 +22,8 @@ export function SurveyPage() {
   const { user } = useAuth();
   if (user?.active === 0) return <MySurveys />;
   if (user?.active === 5 || user?.active === 6) return <SurveyAdmin />;
-  return (
-    <AppLayout crumb={[MODULE]} module={MODULE}>
-      <p className="empty">Giảng viên xem kết quả tổng hợp khảo sát của các lớp mình dạy.</p>
-    </AppLayout>
-  );
+  // S8-06: giảng viên xem kết quả tổng hợp của các lớp mình dạy.
+  return <Navigate to="/khao-sat/ket-qua" replace />;
 }
 
 function MySurveys() {
@@ -187,6 +185,10 @@ function SurveyAdmin() {
           <h2>Khảo sát chất lượng</h2>
           <p>Bộ câu hỏi dùng chung, mở riêng cho từng lớp</p>
         </div>
+        <Link to="/khao-sat/ket-qua" className="btn">
+          <Icon name="chart" size={16} />
+          Xem kết quả
+        </Link>
       </div>
       <div className="sv-admin">
         <section className="panel">
