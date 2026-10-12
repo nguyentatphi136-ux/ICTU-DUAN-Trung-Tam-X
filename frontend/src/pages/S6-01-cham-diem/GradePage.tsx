@@ -14,6 +14,7 @@ import { RUBRIC_SCALE, rubricTotal } from '../../data/rubrics';
 import { saveAll } from '../../data/store';
 import '../S6-02-rubric/rubric.css';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
+import { RedoDialog } from '../S6-03-lam-lai/RedoDialog';
 import { MODULE, teachable } from '../S5-05-bai-tap/AssignmentPages';
 import { nowIso } from '../S5-06-bai-tap-cua-toi/MyAssignmentsPage';
 import { rowsOf } from '../S5-10-bai-nop/SubmissionsPage';
@@ -49,6 +50,7 @@ export function GradePage() {
   const [comment, setComment] = useState(g?.comment ?? '');
   const [reason, setReason] = useState('');
   const [file, setFile] = useState(0);
+  const [redo, setRedo] = useState(false);
   const [error, setError] = useState('');
   const k = findClass(a?.cls);
   if (!a || !k || !r) return <ErrorPage code="404" />;
@@ -226,6 +228,10 @@ export function GradePage() {
           {error && <p className="err">{error}</p>}
           <p className="hint">Điểm chỉ hiện cho học viên sau khi bạn bấm Công bố.</p>
           <div className="gr-acts">
+            {/* S6-03 */}
+            <button type="button" className="btn outline-danger" onClick={() => setRedo(true)}>
+              Yêu cầu làm lại{sub.redos?.length ? ` (đã yêu cầu ${sub.redos.length} lần)` : ''}
+            </button>
             <button
               type="button"
               className="btn"
@@ -252,6 +258,20 @@ export function GradePage() {
           </div>
         </section>
       </div>
+      {redo && (
+        <RedoDialog
+          a={a}
+          sub={sub}
+          name={r.st.name}
+          me={user!.name}
+          onClose={() => setRedo(false)}
+          onDone={() => {
+            setRedo(false);
+            toast('Đã gửi yêu cầu làm lại', r.st.name);
+            navigate('/bai-tap/' + a.id);
+          }}
+        />
+      )}
     </AppLayout>
   );
 }
