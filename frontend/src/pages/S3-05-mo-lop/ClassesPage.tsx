@@ -36,6 +36,8 @@ export function ClassesPage() {
     if (k.status === 'Chuẩn bị' || k.status === 'Đang học') {
       // S3-06
       list.unshift({ label: 'Ghi danh học viên', onClick: () => navigate(`/lop-hoc/${k.code}/ghi-danh`) });
+      // S4-01
+      list.splice(1, 0, { label: 'Sinh thời khoá biểu', onClick: () => navigate(`/lop-hoc/${k.code}/sinh-lich`) });
       // S3-08
       list.splice(1, 0, { label: 'Phân công giảng dạy', onClick: () => navigate(`/lop-hoc/${k.code}/phan-cong`) });
       list.push({ label: 'Huỷ lớp', danger: true, onClick: () => setCancelling(k) });
