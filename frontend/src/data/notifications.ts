@@ -20,6 +20,8 @@ export type Notice = {
   to: Audience;
   /** Họ tên những người đã đọc. */
   readBy: string[];
+  /** Mã đối tượng gốc, ví dụ "cn3" là thông báo lớp số 3 (S6-07 đếm số đã đọc). */
+  ref?: string;
 };
 
 export const NOTICES: Notice[] = persisted('notices', []);

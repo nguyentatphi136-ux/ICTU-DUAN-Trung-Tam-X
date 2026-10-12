@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
@@ -64,6 +64,10 @@ export function MaterialsPage() {
           <h2>Học liệu lớp {k.code}</h2>
           <p>Chỉ học viên của lớp {k.code} tải được tài liệu</p>
         </div>
+        {/* S6-07 */}
+        <Link to="/thong-bao-lop" className="btn">
+          Thông báo lớp
+        </Link>
         {mine.length > 1 && <Filter label="Lớp" value={k.code} options={mine.map((c) => c.code)} onChange={(v) => v && navigate('/hoc-lieu/' + v)} />}
       </div>
       <div className="ml-grid">
