@@ -24,6 +24,7 @@ const STORIES: [string, string, string][] = [
   ['S2-08', 'Đăng ký tư vấn (công khai)', '/dang-ky-tu-van'],
   ['S2-09', 'Lead (S2-11 tìm kiếm và bộ lọc)', '/tuyen-sinh/lead'],
   ['S2-10', 'Phân công lead (chọn lead rồi bấm Phân công)', '/tuyen-sinh/lead'],
+  ['S2', 'Thùng rác: khôi phục, xoá vĩnh viễn (chương trình, môn, buổi học)', '/dao-tao/thung-rac'],
 ];
 
 export function StoryIndexPage() {
@@ -38,7 +39,7 @@ export function StoryIndexPage() {
         <table>
           <tbody>
             {STORIES.map(([id, name, to]) => (
-              <tr key={to}>
+              <tr key={id + to}>
                 <td style={{ width: 70 }}>{id}</td>
                 <td>
                   <Link to={to}>{name}</Link>
