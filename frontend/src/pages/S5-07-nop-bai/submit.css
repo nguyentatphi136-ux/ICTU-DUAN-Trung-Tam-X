@@ -11,3 +11,4 @@
 .lv-drop:hover{border-color:var(--blue)}.lv-drop svg{color:var(--blue)}.lv-drop small{color:var(--muted)}
 .lv-drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
 @media(max-width:1100px){.sb-grid{grid-template-columns:1fr}}
+.warn-t{color:var(--warn)}
