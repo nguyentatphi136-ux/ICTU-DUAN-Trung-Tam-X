@@ -84,6 +84,7 @@ const STORIES: [string, string, string][] = [
   ['S8-03', 'Bảng điểm toàn khoá và mẫu PDF', '/bang-diem/HV260101'],
   ['S8-04', 'Xét hoàn thành khoá, xác nhận tốt nghiệp', '/tot-nghiep'],
   ['S8-05', 'Khảo sát: khai báo, mở theo lớp, học viên trả lời', '/khao-sat'],
+  ['S8-06', 'Kết quả khảo sát theo lớp, giảng viên', '/khao-sat/ket-qua'],
 ];
 
 export function StoryIndexPage() {
