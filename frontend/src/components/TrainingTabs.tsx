@@ -12,6 +12,7 @@ export function useCanEditTraining() {
 }
 
 export function TrainingTabs() {
+  const canEdit = useCanEditTraining();
   return (
     <nav className="tabs">
       <NavLink to="/dao-tao/chuong-trinh" className={({ isActive }) => (isActive ? 'on' : undefined)} end>
@@ -20,6 +21,11 @@ export function TrainingTabs() {
       <NavLink to="/dao-tao/mon-hoc" className={({ isActive }) => (isActive ? 'on' : undefined)} end>
         Môn học
       </NavLink>
+      {canEdit && (
+        <NavLink to="/dao-tao/thung-rac" className={({ isActive }) => (isActive ? 'on' : undefined)} end>
+          Thùng rác
+        </NavLink>
+      )}
     </nav>
   );
 }
