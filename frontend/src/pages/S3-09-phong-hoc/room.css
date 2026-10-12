@@ -1,0 +1,13 @@
+/* S3-09. Danh sách phòng, chọn phòng cho lớp, cảnh báo vượt sức chứa. */
+.rm-acts{white-space:nowrap;text-align:right}
+button.link{border:0;background:none;color:var(--blue);font-weight:500;padding:4px 8px}
+button.link.danger{color:var(--red)}button.link:disabled{color:var(--faint);cursor:not-allowed}
+.rm-kind{display:flex;width:100%}.rm-kind button{flex:1;border:0;background:none;font:inherit}
+.rm-current{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:16px}
+.rm-current b{display:block;font-size:18px;margin:2px 0}.rm-current span:not(.hint){color:var(--muted)}
+.rm-opts{display:flex;flex-direction:column;gap:8px;margin:6px 0 16px}
+.rm-opt{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid var(--line);border-radius:var(--r);cursor:pointer}
+.rm-opt.on{border-color:var(--blue);background:var(--soft)}
+.rm-opt input{accent-color:var(--blue);width:16px;height:16px}
+.rm-opt span{flex:1}.rm-opt b{display:block;font-size:14px}.rm-opt small{color:var(--muted);font-size:12px}
+.rm-opt em{font-style:normal;font-weight:600;font-size:13px}.rm-opt em.warn{color:var(--warn)}

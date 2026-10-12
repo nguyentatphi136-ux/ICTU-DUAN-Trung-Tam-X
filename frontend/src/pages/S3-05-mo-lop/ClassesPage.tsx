@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { ConfirmDialog, type MenuAction } from '../../components/ui';
@@ -47,12 +47,18 @@ export function ClassesPage() {
     <>
       <ClassListPage
         head={
-          manage && (
-            <button type="button" className="btn primary" style={{ width: 160 }} onClick={() => setOpening(true)}>
-              <Icon name="plus" size={16} />
-              Mở lớp mới
-            </button>
-          )
+          <>
+            {/* S3-09 */}
+            <Link to="/phong-hoc" className="btn">
+              Phòng học
+            </Link>
+            {manage && (
+              <button type="button" className="btn primary" style={{ width: 160 }} onClick={() => setOpening(true)}>
+                <Icon name="plus" size={16} />
+                Mở lớp mới
+              </button>
+            )}
+          </>
         }
         rowActions={manage ? actions : undefined}
         onOpen={(k) => navigate('/lop-hoc/' + k.code)}

@@ -11,6 +11,7 @@ import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
 import '../S3-04-ho-so-hoc-vien/student.css';
 import { canManageClasses, MODULE } from '../S3-07-danh-sach-lop/ClassListPage';
 import '../S3-07-danh-sach-lop/classes.css';
+import { RoomTab } from '../S3-09-phong-hoc/RoomTab';
 import { AssignTab } from './AssignTab';
 import './assign.css';
 
@@ -32,6 +33,7 @@ export function ClassDetailPage() {
     { path: '', label: 'Tổng quan', render: (c) => <Overview k={c} /> },
     { path: 'hoc-vien', label: 'Học viên', render: (c, m) => <Roster k={c} manage={m} onEnroll={() => navigate(`/lop-hoc/${c.code}/ghi-danh`)} /> },
     { path: 'phan-cong', label: 'Phân công giảng dạy', render: (c, m, r) => <AssignTab k={c} manage={m} onChange={r} /> },
+    { path: 'phong', label: 'Phòng học', render: (c, m, r) => <RoomTab k={c} manage={m} onChange={r} /> },
   ];
   const current = tabs.find((t) => t.path === tab);
   if (!current) return <ErrorPage code="404" />;
