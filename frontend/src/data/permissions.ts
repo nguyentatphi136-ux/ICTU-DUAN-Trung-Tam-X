@@ -31,7 +31,7 @@ export type AppModule = {
 export const MODULES: AppModule[] = [
   { name: 'Chương trình & môn học', icon: 'book', perms: ['R', 'R', 'R', 'R', '–', 'F'], to: '/dao-tao/chuong-trinh' },
   { name: 'Tuyển sinh & lead', icon: 'funnel', perms: ['–', '–', '–', 'F', 'R', 'R'], to: '/tuyen-sinh/lead' },
-  { name: 'Hồ sơ học viên', icon: 'users', perms: ['W*', 'R', 'R', 'W', 'R', 'F'] },
+  { name: 'Hồ sơ học viên', icon: 'users', perms: ['W*', 'R', 'R', 'W', 'R', 'F'], to: '/hoc-vien' },
   { name: 'Lớp học & thời khoá biểu', icon: 'cal', perms: ['R*', 'R', 'R', 'R', '–', 'F'] },
   { name: 'Điểm danh', icon: 'check', perms: ['R*', 'W', 'W', '–', '–', 'F'] },
   { name: 'Học liệu & thông báo lớp', icon: 'folder', perms: ['R*', 'W*', 'W*', '–', '–', 'F'] },
