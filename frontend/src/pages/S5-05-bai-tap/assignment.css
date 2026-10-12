@@ -1,0 +1,21 @@
+/* S5-05 trở đi. Soạn bài tập: ô mô tả có thanh định dạng, tệp đính kèm, cột cài đặt bên phải. Khối .md dùng chung. */
+.as-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+.as-desc-h{display:flex;justify-content:space-between;align-items:center}
+.as-editor{border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.as-editor.bad{border-color:var(--red)}
+.as-tools{display:flex;flex-wrap:wrap;gap:2px;padding:6px;border-bottom:1px solid var(--line);background:var(--hover)}
+.as-tools button{border:0;background:none;padding:4px 8px;border-radius:4px;color:var(--ink);font-size:13px;font-weight:600}
+.as-tools button:hover:not(:disabled){background:var(--chip)}.as-tools button:disabled{opacity:.4}
+.as-editor textarea{display:block;width:100%;border:0;padding:12px 14px;font:inherit;color:var(--ink);background:var(--surface);resize:vertical;outline:none;min-height:200px}
+.as-preview{padding:12px 14px;min-height:200px}
+.as-files{list-style:none;display:flex;flex-direction:column;gap:8px;margin:6px 0 10px}
+.as-files li{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:var(--r);padding:8px 10px}
+.as-files span{flex:1;color:var(--blue);font-weight:500}.as-files small{color:var(--muted)}
+.as-add{position:relative;display:inline-flex;align-items:center;gap:6px;border:1px dashed var(--line);border-radius:var(--r);padding:8px 14px;color:var(--blue);font-weight:500;cursor:pointer}
+.as-add input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.as-acts{display:flex;flex-direction:column;gap:10px;margin-top:16px}.as-acts .btn{width:100%}
+.as-sum{margin-bottom:16px}
+.md{display:flex;flex-direction:column;gap:8px;line-height:1.6}
+.md h4{font-size:16px}.md h5{font-size:15px}.md ul,.md ol{margin-left:20px}
+.md code{background:var(--chip);border-radius:4px;padding:1px 5px;font-size:13px}
+@media(max-width:1100px){.as-grid{grid-template-columns:1fr}}
