@@ -7,7 +7,7 @@ import { Box, Pill } from '../../components/ui';
 import { approvedFor } from '../../data/leaves';
 import { ATT_LOGS, countMarks, isToday, MARKS, markTone, SHEETS, sheetOf, SHORT, summary, type Mark } from '../../data/attendance';
 import { useAuth } from '../../data/auth';
-import { classesOf } from '../../data/classes';
+import { CLASSES, classesOf } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
 import { notify } from '../../data/notifications';
 import { ROLES } from '../../data/permissions';
@@ -52,6 +52,15 @@ export function AttendanceListPage() {
       <Link to="/duyet-phep" className="btn at-leaves">
         Duyệt đơn xin phép ({pendingFor(user!.name, role)})
       </Link>
+      {/* S5-01 */}
+      <div className="at-classes">
+        <span>Bảng chuyên cần:</span>
+        {(role === 5 || role === 6 ? CLASSES.filter((k) => k.status === 'Đang học') : classesOf(user!.name).filter((k) => k.status === 'Đang học')).map((k) => (
+          <Link key={k.code} to={'/chuyen-can/' + k.code} className="chip">
+            {k.code}
+          </Link>
+        ))}
+      </div>
       <h3 className="section-t">Hôm nay</h3>
       <div className="at-today">
         {today.map((s) => (
