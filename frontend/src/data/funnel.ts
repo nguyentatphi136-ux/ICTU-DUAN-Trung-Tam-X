@@ -1,5 +1,7 @@
 // Phễu lead cho S3-01 trở đi. Khi tích hợp: GET /admissions/funnel, PATCH /admissions/leads/:id/stage (kèm lý do khi Từ chối).
 // Mảng FUNNEL được sửa trực tiếp để các trang dùng chung một nguồn khi chưa có API.
+import { persisted } from './store';
+
 export type Stage = 'Mới' | 'Đã liên hệ' | 'Đang tư vấn' | 'Hẹn học thử' | 'Chốt' | 'Từ chối';
 
 export type FunnelLead = {
@@ -18,10 +20,12 @@ export type FunnelLead = {
   trial?: string;
   /** Lý do khi ở cột Từ chối. */
   reason?: string;
+  /** Mã học viên khi lead đã được chuyển thành học viên (S3-03). Lead này chỉ còn xem được. */
+  student?: string;
 };
 
 /** Một dòng trong nhật ký chăm sóc (S3-02). at là yyyy-mm-ddThh:mm. */
-export type LogKind = 'Gọi' | 'Nhắn' | 'Gặp' | 'Đổi trạng thái' | 'Phân công';
+export type LogKind = 'Gọi' | 'Nhắn' | 'Gặp' | 'Đổi trạng thái' | 'Phân công' | 'Chuyển thành học viên';
 export type CareLog = { kind: LogKind; at: string; by: string; text: string };
 
 export const STAGES: Stage[] = ['Mới', 'Đã liên hệ', 'Đang tư vấn', 'Hẹn học thử', 'Chốt', 'Từ chối'];
@@ -70,18 +74,18 @@ const SEED: Seed[] = [
   { name: 'VO THANH NHAN', phone: '0962 381 457', program: 'Phân tích dữ liệu', stage: 'Hẹn học thử', trial: '2026-10-11' },
   { name: 'HA GIA LINH', phone: '0917 064 228', program: 'Kiểm thử phần mềm', stage: 'Hẹn học thử', trial: '2026-10-15' },
   { name: 'VU THANH DAT', phone: '0919 530 276', email: 'dat.vt@gmail.com', program: 'Kiểm thử phần mềm', stage: 'Chốt', source: 'Facebook' },
-  { name: 'DO TUAN KIET', phone: '0971 846 320', program: 'Lập trình web Full-stack', stage: 'Chốt' },
+  { name: 'DO TUAN KIET', phone: '0971 846 320', program: 'Lập trình web Full-stack', stage: 'Chốt', student: 'HV260142' },
   { name: 'HOANG MAI LAN', phone: '0977 418 902', program: 'Phân tích dữ liệu', stage: 'Từ chối', reason: 'Học phí cao', owner: 'DANG BAO VY' },
   { name: 'KIEU VAN SON', phone: '0988 257 613', program: 'Lập trình Java Backend', stage: 'Từ chối', reason: 'Đã chọn trung tâm khác' },
   { name: 'LUONG THI HOA', phone: '0925 640 389', program: 'Thiết kế UI/UX', stage: 'Từ chối', reason: 'Không liên lạc được' },
 ];
 
-export const FUNNEL: FunnelLead[] = SEED.map((s, i) => ({ id: i + 1, source: 'Biểu mẫu web', owner: 'TRAN THU HA', ...s }));
+export const FUNNEL: FunnelLead[] = persisted('funnel', SEED.map((s, i) => ({ id: i + 1, source: 'Biểu mẫu web', owner: 'TRAN THU HA', ...s })));
 
 const MANAGER = 'LE HOANG NAM';
 
 // Nhật ký mẫu theo id lead. Lead nào chưa có thì chỉ có dòng phân công. Khi tích hợp: GET/POST /admissions/leads/:id/logs.
-export const LOGS: Record<number, CareLog[]> = {
+export const LOGS: Record<number, CareLog[]> = persisted('funnel-logs', {
   12: [
     { kind: 'Gọi', at: '2026-09-29T14:30', by: 'TRAN THU HA', text: 'Khách quan tâm lớp tối, xin gửi lịch khai giảng tháng 10.' },
     { kind: 'Đổi trạng thái', at: '2026-09-29T14:32', by: 'TRAN THU HA', text: 'Đã liên hệ → Đang tư vấn' },
@@ -89,7 +93,7 @@ export const LOGS: Record<number, CareLog[]> = {
     { kind: 'Đổi trạng thái', at: '2026-09-26T09:06', by: 'TRAN THU HA', text: 'Mới → Đã liên hệ' },
     { kind: 'Phân công', at: '2026-09-24T08:00', by: MANAGER, text: 'Giao cho TRAN THU HA' },
   ],
-};
+});
 
 export function logsOf(l: FunnelLead): CareLog[] {
   const list = LOGS[l.id] ?? [{ kind: 'Phân công', at: '2026-09-24T08:00', by: MANAGER, text: 'Giao cho ' + l.owner }];
