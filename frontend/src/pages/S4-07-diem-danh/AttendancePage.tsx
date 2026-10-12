@@ -35,7 +35,7 @@ function visible(role: number, name: string) {
 export function AttendanceListPage() {
   const { user } = useAuth();
   const role = user?.active ?? -1;
-  if (role === 0) return <Navigate to="/xin-phep" replace />;
+  if (role === 0) return <Navigate to="/diem-danh-cua-toi" replace />;
   const list = visible(role, user!.name).filter((s) => !s.cancelled && s.date <= TODAY && s.date >= addDays(TODAY, -14));
   const today = list.filter(isToday).sort((a, b) => a.start.localeCompare(b.start));
   const recent = list.filter((s) => !isToday(s)).sort((a, b) => (b.date + b.start).localeCompare(a.date + a.start));
