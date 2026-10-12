@@ -97,3 +97,51 @@
 }
 .lg-page .lg-alert.lg-ok{background:var(--ok-bg); border:1px solid var(--ok-line); color:var(--green)}
 .lg-page .lg-alert.lg-info{background:var(--info-bg); border:1px solid var(--info-line); color:var(--info)}
+/* Màn hình laptop thấp (768-900px): thu khoảng cách để cả khung nằm gọn trong màn hình, không phải cuộn. */
+@media (min-width:901px) and (max-height:900px){
+.lg-page{padding:16px}
+.lg-page .lg-card{min-height:calc(100vh - 32px)}
+.lg-page .lg-left{padding:32px 48px}
+.lg-page .lg-hero{margin-top:5vh}
+.lg-page .lg-hero h1{font-size:36px}
+.lg-page .lg-hero p{margin-top:12px; font-size:15px; line-height:1.6}
+.lg-page .lg-features{padding-top:24px; gap:10px}
+.lg-page .lg-feat{padding:12px 16px}
+.lg-page .lg-feat .lg-ic{width:36px; height:36px}
+.lg-page .lg-right{padding:32px 64px}
+.lg-page .lg-right h2{font-size:30px; margin-top:6px}
+.lg-page .lg-lead{margin-top:6px}
+.lg-page form{margin-top:20px}
+.lg-page label.lg-f{margin-bottom:6px}
+.lg-page .lg-field{margin-bottom:14px}
+.lg-page .lg-field input{height:46px}
+.lg-page .lg-eye{top:23px}
+.lg-page .lg-row{margin-bottom:16px}
+.lg-page .lg-btn{height:48px}
+.lg-page .lg-alert{margin-top:12px}
+.lg-page .lg-or{margin:16px 0 12px}
+.lg-page .lg-social button{height:44px}
+.lg-page .lg-secure{margin-top:12px}
+.lg-page .lg-foot{margin-top:16px}
+.lg-page .lg-demo{margin-top:10px}
+}
+/* Màn hình 768px trở xuống (cửa sổ trình duyệt còn khoảng 650px): gọn thêm, ẩn mô tả phụ của ba thẻ tính năng. */
+@media (min-width:901px) and (max-height:760px){
+.lg-page .lg-left{padding:24px 40px}
+.lg-page .lg-hero h1{font-size:32px}
+.lg-page .lg-feat p{display:none}
+.lg-page .lg-feat{align-items:center; padding:8px 14px}
+.lg-page .lg-right{padding:24px 64px}
+.lg-page .lg-right h2{font-size:26px}
+.lg-page form{margin-top:16px}
+.lg-page .lg-field{margin-bottom:12px}
+.lg-page .lg-field input{height:42px}
+.lg-page .lg-eye{top:21px}
+.lg-page .lg-row{margin-bottom:12px}
+.lg-page .lg-btn{height:44px}
+.lg-page .lg-or{margin:12px 0 10px}
+.lg-page .lg-social button{height:40px}
+.lg-page .lg-secure{margin-top:8px}
+.lg-page .lg-foot{margin-top:12px}
+.lg-page .lg-demo{margin-top:8px}
+}
