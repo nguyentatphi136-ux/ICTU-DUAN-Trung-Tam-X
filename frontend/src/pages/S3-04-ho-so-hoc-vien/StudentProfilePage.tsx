@@ -13,6 +13,7 @@ import { findStudent, studentTone, type Student } from '../../data/students';
 import { isPhone, PHONE_MSG } from '../../data/validate';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
 import { StatusDialog } from '../S4-06-tinh-trang-hoc/StatusDialog';
+import { AbsenceFlag } from '../S5-02-nguong-vang/AbsenceFlag';
 import { MODULE } from './StudentListPage';
 import './student.css';
 
@@ -80,6 +81,8 @@ export function StudentProfilePage({ actions }: Props) {
         )}
       </div>
 
+      {/* S5-02 */}
+      {k && role !== 0 && <AbsenceFlag code={s.code} cls={k.code} program={k.program} total={totalSessions(k)} canNote={canEdit} onNote={(text) => (s.notes.unshift({ at: TODAY, by: user!.name, text }), saveAll(), refresh())} />}
       <div className="sp-grid">
         <div className="sp-col">
           <section className="panel sp-card">

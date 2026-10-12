@@ -5,6 +5,7 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Box, Pill } from '../../components/ui';
 import { approvedFor } from '../../data/leaves';
+import { flagCheck } from '../../data/attendance';
 import { ATT_LOGS, countMarks, isToday, MARKS, markTone, SHEETS, sheetOf, SHORT, summary, type Mark } from '../../data/attendance';
 import { useAuth } from '../../data/auth';
 import { CLASSES, classesOf } from '../../data/classes';
@@ -168,6 +169,7 @@ export function TakeAttendancePage() {
       ATT_LOGS.unshift({ session: s!.id, at, by, role: roleName, text: `Lưu điểm danh lần đầu: ${summary({ savedAt: at, savedBy: by, marks, notes })}.` });
     }
     SHEETS[s!.id] = { savedAt: at, savedBy: by, marks, notes };
+    flagCheck(s!.cls); // S5-02
     saveAll();
     toast(saved ? 'Đã lưu sửa điểm danh' : 'Đã lưu điểm danh', `${s!.cls} · Buổi ${s!.no}`);
     navigate('/diem-danh');
