@@ -42,3 +42,7 @@ textarea.inp{width:100%;padding:10px 14px;font:inherit;resize:vertical;height:au
 .fe-left{margin-right:auto}
 .fe-calc{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:end;padding-bottom:18px}.fe-calc span{display:block;color:var(--muted);font-size:12px}.fe-calc b{font-size:16px;white-space:nowrap}
 .fe-pending{margin-bottom:16px}.fe-decide{display:flex;gap:8px;margin-top:10px}
+.fe-toggle{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--muted);font:inherit;font-size:14px}
+.fe-toggle.on{border-color:var(--bad-line);background:var(--bad-bg);color:var(--bad);font-weight:600}
+.fe-late{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--warn-bg);color:var(--warn);white-space:nowrap}.fe-late.bad{background:var(--bad-bg);color:var(--bad)}
+.fe-total td{font-weight:700;background:var(--hover);border-top:1px solid var(--line)}

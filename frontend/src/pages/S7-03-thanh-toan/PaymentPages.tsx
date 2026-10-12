@@ -47,9 +47,9 @@ function FeeDetail({ s }: { s: Student }) {
 
   return (
     <AppLayout crumb={[MODULE, 'Công nợ', s.name]} module={MODULE}>
-      <Link to="/hoc-phi/ke-hoach" className="back">
+      <Link to="/hoc-phi/cong-no" className="back">
         <Icon name="back" size={16} />
-        Kế hoạch thanh toán
+        Bảng công nợ
       </Link>
       <div className="h">
         <div>
