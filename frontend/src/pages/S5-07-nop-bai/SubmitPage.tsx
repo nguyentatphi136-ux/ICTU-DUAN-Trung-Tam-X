@@ -12,6 +12,7 @@ import { findSession } from '../../data/schedule';
 import { saveAll } from '../../data/store';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
 import { VersionList } from '../S5-08-phien-ban/Versions';
+import { GradeView } from '../S6-04-xem-diem/GradeView';
 import { useMe } from '../S4-05-lich-cua-toi/MySchedulePage';
 import { MODULE } from '../S5-05-bai-tap/AssignmentPages';
 import { dueOf, nowIso, remaining } from '../S5-06-bai-tap-cua-toi/MyAssignmentsPage';
@@ -97,6 +98,8 @@ export function SubmitPage() {
         <Icon name="back" size={16} />
         Bài tập của tôi
       </Link>
+      {/* S6-04 */}
+      <GradeView a={a} sub={sub} />
       <div className="sb-grid">
         <section className="panel sp-card">
           <h2 className="sb-title">{a.title}</h2>
