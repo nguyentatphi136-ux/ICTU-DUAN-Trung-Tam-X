@@ -33,7 +33,19 @@ export type Assignment = {
 };
 
 export type Version = { no: number; at: string; files: FileRef[]; repo?: string; note?: string };
-export type Grade = { score: number; comment: string; by: string; at: string; rubric?: Record<string, number> };
+export type GradeLog = { at: string; by: string; text: string };
+export type Grade = {
+  score: number;
+  comment: string;
+  by: string;
+  at: string;
+  rubric?: Record<string, number>;
+  /** S6-01: điểm chỉ hiện cho học viên sau khi công bố. Dữ liệu cũ không có trường này là đã công bố. */
+  published?: boolean;
+  publishedAt?: string;
+  /** S6-01: nhật ký chấm và sửa điểm. */
+  log?: GradeLog[];
+};
 export type SubState = 'Đã nộp' | 'Cần làm lại' | 'Đã chấm';
 export type Submission = {
   assignment: number;
@@ -154,6 +166,9 @@ function seedSubs(): Submission[] {
 
 export const SUBMISSIONS: Submission[] = persisted('submissions', seedSubs());
 
+/** Điểm đã công bố cho học viên xem chưa (S6-01, S6-04). */
+export const isPublished = (g?: Grade) => !!g && g.published !== false;
+
 export const subOf = (assignment: number, student: string) => SUBMISSIONS.find((s) => s.assignment === assignment && s.student === student);
 export const findAssignment = (id: number) => ASSIGNMENTS.find((a) => a.id === id);
 
@@ -161,7 +176,12 @@ export const findAssignment = (id: number) => ASSIGNMENTS.find((a) => a.id === i
 export const lateHours = (a: Assignment, v: Version) => Math.max(0, Math.ceil((Date.parse(v.at + ':00') - Date.parse(a.due + ':00')) / 3600000));
 
 export type MyState = 'Chưa nộp' | SubState;
-export const stateOf = (a: Assignment, student: string): MyState => subOf(a.id, student)?.state ?? 'Chưa nộp';
+/** Trạng thái học viên nhìn thấy: bài đã chấm nhưng chưa công bố điểm vẫn là Đã nộp (S6-01). */
+export function stateOf(a: Assignment, student: string): MyState {
+  const s = subOf(a.id, student);
+  if (!s) return 'Chưa nộp';
+  return s.state === 'Đã chấm' && !isPublished(s.grade) ? 'Đã nộp' : s.state;
+}
 
 /** "1,8 MB", "312 KB" */
 export const fileSize = (n: number) => (n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB');

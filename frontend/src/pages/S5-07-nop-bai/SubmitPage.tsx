@@ -5,7 +5,7 @@ import { Icon } from '../../components/Icon';
 import { Markdown } from '../../components/Markdown';
 import { useToast } from '../../components/Toast';
 import { Box, Pill } from '../../components/ui';
-import { fileSize, findAssignment, lateHours, SUBMISSIONS, subOf, vdt, type Assignment, type FileRef, type Version } from '../../data/assignments';
+import { fileSize, findAssignment, lateHours, stateOf, SUBMISSIONS, subOf, vdt, type Assignment, type FileRef, type Version } from '../../data/assignments';
 import { findClass } from '../../data/classes';
 import { notify } from '../../data/notifications';
 import { findSession } from '../../data/schedule';
@@ -57,7 +57,8 @@ export function SubmitPage() {
   const refresh = () => setTick((t) => t + 1);
   const canSubmit = !sub || sub.state === 'Cần làm lại' || editing;
   // S5-08: bài đã chấm khoá nộp lại, trừ khi giảng viên mở lại.
-  const locked = sub?.state === 'Đã chấm' && !sub.reopened;
+  const shown = stateOf(a, me.code);
+  const locked = shown === 'Đã chấm' && !sub!.reopened;
 
   const big = files.filter((f) => f.tooBig);
   const repoBad = repo.trim() !== '' && !REPO_RE.test(repo.trim());
@@ -133,7 +134,7 @@ export function SubmitPage() {
         <section className="panel sp-card">
           <div className="sb-head">
             <h3>Bài nộp của bạn</h3>
-            <Pill tone={!sub ? undefined : sub.state === 'Đã chấm' ? 'ok' : sub.state === 'Cần làm lại' ? 'off' : 'info'}>{sub?.state ?? 'Chưa nộp'}</Pill>
+            <Pill tone={shown === 'Chưa nộp' ? undefined : shown === 'Đã chấm' ? 'ok' : shown === 'Cần làm lại' ? 'off' : 'info'}>{shown}</Pill>
           </div>
           {latest && !canSubmit && (
             <Box icon="check" tone={lateHours(a, latest) ? 'warn' : 'ok'} title={`Đã nộp lúc ${latest.at.slice(11, 16)} ngày ${vdt(latest.at).slice(0, 10)}`}>

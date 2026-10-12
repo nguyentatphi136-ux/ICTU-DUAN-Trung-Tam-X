@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Drawer, Pill } from '../../components/ui';
-import { fileSize, lateHours, vdt, type Assignment, type Submission } from '../../data/assignments';
+import { fileSize, isPublished, lateHours, vdt, type Assignment, type Submission } from '../../data/assignments';
 import { TODAY } from '../../data/funnel';
 import { notify } from '../../data/notifications';
 import { saveAll } from '../../data/store';
@@ -20,7 +20,7 @@ export function VersionList({ a, sub }: { a: Assignment; sub: Submission }) {
             <div className="vs-top">
               <b>Bản {v.no}</b>
               {i === 0 && <Pill tone="info">Mới nhất</Pill>}
-              {i === 0 && sub.state === 'Đã chấm' && <Pill tone="ok">Bản được chấm</Pill>}
+              {i === 0 && sub.state === 'Đã chấm' && isPublished(sub.grade) && <Pill tone="ok">Bản được chấm</Pill>}
               {late > 0 && <Pill tone="off">Trễ {late} giờ</Pill>}
               <small>{vdt(v.at)}</small>
             </div>
