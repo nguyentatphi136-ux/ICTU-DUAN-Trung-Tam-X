@@ -2,6 +2,7 @@ import { useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { shortName, useAuth } from '../../data/auth';
 import { ADMIN_ROLE, ROLES } from '../../data/permissions';
+import { ManagerDashboard } from '../S8-07-dashboard-qldt/ManagerDashboard';
 
 const ADMIN_STATS = [
   ['Tài khoản đang hoạt động', '286', 'trên 300 người dùng'],
@@ -21,7 +22,9 @@ export function HomePage() {
   const role = user ? ROLES[user.active] : '';
   return (
     <AppLayout crumb={['Trang chủ']}>
-      {user && (
+      {/* S8-07 */}
+      {user?.active === 5 && <ManagerDashboard />}
+      {user && user.active !== 5 && (
         <>
           <div className="h">
             <div>
