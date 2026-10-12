@@ -36,6 +36,8 @@ export function ClassesPage() {
     if (k.status === 'Chuẩn bị' || k.status === 'Đang học') {
       // S3-06
       list.unshift({ label: 'Ghi danh học viên', onClick: () => navigate(`/lop-hoc/${k.code}/ghi-danh`) });
+      // S3-08
+      list.splice(1, 0, { label: 'Phân công giảng dạy', onClick: () => navigate(`/lop-hoc/${k.code}/phan-cong`) });
       list.push({ label: 'Huỷ lớp', danger: true, onClick: () => setCancelling(k) });
     }
     return list.length ? list : [{ label: 'Lớp đã ' + k.status.toLowerCase(), disabled: true }];
@@ -53,6 +55,7 @@ export function ClassesPage() {
           )
         }
         rowActions={manage ? actions : undefined}
+        onOpen={(k) => navigate('/lop-hoc/' + k.code)}
       />
       {opening && (
         <OpenClassDrawer
