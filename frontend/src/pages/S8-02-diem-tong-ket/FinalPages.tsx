@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
@@ -40,6 +40,8 @@ export function FinalListPage() {
   const [cls, setCls] = useState('');
   const [state, setState] = useState('');
   const pairs = finalPairs(user?.name ?? '', user?.active ?? -1);
+  // S8-03: học viên vào mục này thì xem bảng điểm toàn khoá của mình.
+  if (user?.active === 0) return <Navigate to="/bang-diem" replace />;
   const rows = pairs.filter((p) => (!cls || p.k.code === cls) && (!state || (state === 'Đã chốt') === !!LOCKS[p.key]));
   return (
     <AppLayout crumb={[MODULE, 'Điểm tổng kết môn']} module={MODULE}>
@@ -213,7 +215,9 @@ export function FinalPage() {
                   <tr key={st.code} className={pick?.st.code === st.code ? 'on' : undefined} tabIndex={0} onClick={() => setSel(st.code)} onKeyDown={(e) => e.key === 'Enter' && setSel(st.code)}>
                     <td>
                       <b className="strong">{st.name}</b>
-                      <div className="hint">{st.code}</div>
+                      <div className="hint">
+                        {st.code} · <Link to={`/bang-diem/${st.code}`} onClick={(e) => e.stopPropagation()}>bảng điểm</Link>
+                      </div>
                     </td>
                     {f.parts.map((p) => (
                       <td key={p.c.key} className={'num' + (p.v == null ? ' bad-t' : f.cfg.failOn.includes(p.c.key) && p.v < f.cfg.fail ? ' bad-t' : '')}>
@@ -288,7 +292,7 @@ export function FinalPage() {
   );
 }
 
-function Breakdown({ name, f }: { name: string; f: ReturnType<typeof finalOf> }) {
+export function Breakdown({ name, f }: { name: string; f: ReturnType<typeof finalOf> }) {
   const late = f.failed.map((p) => `${p.c.name.toLowerCase()} ${num(p.v!)}`).join(', ');
   const crit = f.parts.filter((p) => f.cfg.failOn.includes(p.c.key) && p.v != null);
   return (
