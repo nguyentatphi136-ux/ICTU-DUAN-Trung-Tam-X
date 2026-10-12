@@ -27,6 +27,7 @@ const STORIES: [string, string, string][] = [
   ['S2', 'Thùng rác: khôi phục, xoá vĩnh viễn (chương trình, môn, buổi học)', '/dao-tao/thung-rac'],
   ['S3-01', 'Phễu lead dạng Kanban, lý do từ chối', '/tuyen-sinh/pheu'],
   ['S3-02', 'Nhật ký chăm sóc (bấm vào thẻ lead trong phễu)', '/tuyen-sinh/pheu?lead=12'],
+  ['S3-03', 'Chuyển lead thành học viên (lead VU THANH DAT ở cột Chốt)', '/tuyen-sinh/pheu?lead=23'],
 ];
 
 export function StoryIndexPage() {

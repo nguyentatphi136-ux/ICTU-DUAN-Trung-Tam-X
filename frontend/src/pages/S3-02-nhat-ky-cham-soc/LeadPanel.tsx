@@ -21,7 +21,7 @@ const KINDS: [LogKind, IconName][] = [
   ['Nhắn', 'chat'],
   ['Gặp', 'users'],
 ];
-const ICONS: Record<LogKind, IconName> = { Gọi: 'phone', Nhắn: 'chat', Gặp: 'users', 'Đổi trạng thái': 'swap', 'Phân công': 'user' };
+const ICONS: Record<LogKind, IconName> = { Gọi: 'phone', Nhắn: 'chat', Gặp: 'users', 'Đổi trạng thái': 'swap', 'Phân công': 'user', 'Chuyển thành học viên': 'cap' };
 
 // S3-02. Bấm vào thẻ lead để mở ngăn bên: ghi lần tương tác mới (gọi, nhắn, gặp), đặt ngày nhắc gọi lại, xem nhật ký mới nhất ở trên.
 export function LeadPanel({ lead, canWrite, me, onClose, onLog, onMove, extra }: Props) {
@@ -30,7 +30,7 @@ export function LeadPanel({ lead, canWrite, me, onClose, onLog, onMove, extra }:
   const [text, setText] = useState('');
   const [callback, setCallback] = useState('');
   const [error, setError] = useState('');
-  const late = overdueDays(lead);
+  const late = lead.student ? 0 : overdueDays(lead);
   const logs = logsOf(lead);
   const lastTouch = logs.find((l) => l.kind === 'Gọi' || l.kind === 'Nhắn' || l.kind === 'Gặp');
 
@@ -46,7 +46,7 @@ export function LeadPanel({ lead, canWrite, me, onClose, onLog, onMove, extra }:
   return (
     <Drawer title={lead.name} onClose={onClose}>
       <div className="cr-tags">
-        <Pill tone={stageTone(lead.stage)}>{lead.stage}</Pill>
+        {lead.student ? <Pill tone="ok">Đã nhập học</Pill> : <Pill tone={stageTone(lead.stage)}>{lead.stage}</Pill>}
         {late > 0 && <Pill tone="off">Quá hạn gọi lại {late} ngày</Pill>}
         {canWrite && (
           <label className="cr-stage">

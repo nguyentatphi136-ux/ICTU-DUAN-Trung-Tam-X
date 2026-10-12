@@ -9,6 +9,7 @@ import { addLog, ddmm, FUNNEL, overdueDays, STAGES, stageTone, TODAY, type Funne
 import { LEADS } from '../../data/leads';
 import { LeadDrawer } from '../S2-09-lead/LeadDrawer';
 import { LeadPanel } from '../S3-02-nhat-ky-cham-soc/LeadPanel';
+import { ConvertBlock, ConvertDialog } from '../S3-03-chuyen-hoc-vien/ConvertDialog';
 import { RejectDialog } from './RejectDialog';
 import './funnel.css';
 
@@ -18,6 +19,7 @@ const SHOWN = 3;
 
 // S3-01. Phễu lead dạng bảng Kanban sáu cột. Kéo thẻ sang cột khác để đổi giai đoạn; thả vào Từ chối thì phải chọn lý do.
 // S3-02. Bấm vào thẻ để mở ngăn nhật ký chăm sóc. Mỗi lần đổi giai đoạn đều được ghi vào nhật ký.
+// S3-03. Lead ở cột Chốt có nút chuyển thành học viên; lead đã chuyển không kéo, không sửa được nữa.
 export function FunnelPage() {
   const { user } = useAuth();
   const toast = useToast();
@@ -29,6 +31,7 @@ export function FunnelPage() {
   const [over, setOver] = useState<Stage | null>(null);
   const [rejecting, setRejecting] = useState<FunnelLead | null>(null);
   const [adding, setAdding] = useState(false);
+  const [converting, setConverting] = useState<FunnelLead | null>(null);
   const [params] = useSearchParams();
   // ?lead=<id> mở sẵn ngăn của lead đó (dùng cho liên kết từ trang khác và mục lục màn hình).
   const [openId, setOpenId] = useState<number | null>(Number(params.get('lead')) || null);
@@ -57,7 +60,7 @@ export function FunnelPage() {
     addLog(l, { kind: 'Đổi trạng thái', at: now(), by: user!.name, text: `${l.stage} → ${to}` + (why ? ` · ${why}` : '') });
 
   function move(l: FunnelLead, to: Stage) {
-    if (l.stage === to) return;
+    if (l.stage === to || l.student) return;
     if (to === 'Từ chối') return setRejecting(l);
     logStage(l, to);
     commit(leads.map((x) => (x.id === l.id ? { ...x, stage: to, reason: undefined } : x)));
@@ -128,7 +131,7 @@ export function FunnelPage() {
                 <Pill tone={stageTone(s)}>{col.length}</Pill>
               </header>
               {cards.map((l) => (
-                <LeadCard key={l.id} lead={l} draggable={canWrite} onOpen={() => setOpenId(l.id)} onDragStart={() => setDragging(l.id)} onDragEnd={() => setDragging(null)} />
+                <LeadCard key={l.id} lead={l} draggable={canWrite && !l.student} onOpen={() => setOpenId(l.id)} onDragStart={() => setDragging(l.id)} onDragEnd={() => setDragging(null)} />
               ))}
               {cards.length < col.length && (
                 <button type="button" className="kb-more" onClick={() => setOpen((o) => [...o, s])}>
@@ -156,14 +159,27 @@ export function FunnelPage() {
         <LeadPanel
           key={panel.id}
           lead={panel}
-          canWrite={canWrite}
+          canWrite={canWrite && !panel.student}
           me={user!.name}
+          extra={<ConvertBlock lead={panel} canWrite={canWrite} onConvert={() => setConverting(panel)} />}
           onClose={() => setOpenId(null)}
           onMove={(to) => move(panel, to)}
           onLog={(log, callback) => {
             addLog(panel, log);
             commit(leads.map((x) => (x.id === panel.id ? { ...x, callback } : x)));
             toast('Đã lưu nhật ký', callback ? `Nhắc gọi lại ngày ${ddmm(callback)}.` : panel.name);
+          }}
+        />
+      )}
+      {converting && (
+        <ConvertDialog
+          lead={converting}
+          onClose={() => setConverting(null)}
+          onDone={(s, sentTo) => {
+            addLog(converting, { kind: 'Chuyển thành học viên', at: now(), by: user!.name, text: `Tạo hồ sơ ${s.code} và tài khoản đăng nhập.` });
+            commit(leads.map((x) => (x.id === converting.id ? { ...x, student: s.code, callback: undefined } : x)));
+            toast('Đã tạo học viên ' + s.code, 'Email kích hoạt đã gửi tới ' + sentTo + '.');
+            setConverting(null);
           }}
         />
       )}
@@ -216,6 +232,7 @@ function LeadCard({ lead: l, draggable, onOpen, onDragStart, onDragEnd }: CardPr
 /** Nhãn cuối thẻ: lý do từ chối, chờ chuyển học viên, quá hạn, hẹn gọi lại hoặc học thử. */
 function CardTag({ lead: l, late }: { lead: FunnelLead; late: number }) {
   if (l.stage === 'Từ chối') return l.reason ? <Pill>{l.reason}</Pill> : null;
+  if (l.student) return <Pill tone="ok">Đã nhập học</Pill>;
   if (l.stage === 'Chốt') return <Pill tone="ok">Chờ chuyển học viên</Pill>;
   if (late) return <Pill tone="off">Quá hạn {late} ngày</Pill>;
   if (l.callback === TODAY) return <Pill tone="wait">Gọi lại hôm nay</Pill>;
