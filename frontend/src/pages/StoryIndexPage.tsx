@@ -46,6 +46,8 @@ const STORIES: [string, string, string][] = [
   ['S4-08', 'Học viên gửi đơn xin phép vắng', '/xin-phep'],
   ['S4-08', 'Giảng viên duyệt đơn xin phép', '/duyet-phep'],
   ['S5-01', 'Bảng chuyên cần của lớp (ma trận buổi)', '/chuyen-can/WEB-K15'],
+  ['S5-02', 'Ngưỡng vắng theo chương trình', '/dao-tao/nguong-vang'],
+  ['S5-02', 'Cờ vượt ngưỡng trên danh sách lớp (tab Học viên)', '/lop-hoc/WEB-K15/hoc-vien'],
 ];
 
 export function StoryIndexPage() {

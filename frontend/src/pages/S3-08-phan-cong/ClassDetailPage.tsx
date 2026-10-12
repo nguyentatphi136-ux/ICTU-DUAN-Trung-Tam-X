@@ -6,6 +6,7 @@ import { Box, Pill } from '../../components/ui';
 import { useAuth } from '../../data/auth';
 import { classesOf, classSize, classTone, ENROLLMENTS, findClass, isOpen, totalSessions, type Klass } from '../../data/classes';
 import { viDate } from '../../data/leads';
+import { statOf } from '../../data/attendance';
 import { STUDENTS, studentTone } from '../../data/students';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
 import '../S3-04-ho-so-hoc-vien/student.css';
@@ -14,6 +15,9 @@ import '../S3-07-danh-sach-lop/classes.css';
 import { RoomTab } from '../S3-09-phong-hoc/RoomTab';
 import { AssignTab } from './AssignTab';
 import './assign.css';
+
+/** Số học viên đang vượt ngưỡng vắng của lớp (S5-02). */
+const overCount = (k: Klass) => STUDENTS.filter((s) => s.cls === k.code && statOf(s.code, k.code, k.program, totalSessions(k)).over).length;
 
 type ClassTab = { path: string; label: string; render: (k: Klass, manage: boolean, refresh: () => void) => ReactNode };
 
@@ -48,6 +52,8 @@ export function ClassDetailPage() {
         <div>
           <h2 className="cd-title">
             {k.code} <Pill tone={classTone(k.status)}>{k.status}</Pill>
+            {/* S5-02 */}
+            {overCount(k) > 0 && <Pill tone="off">{overCount(k)} học viên vượt ngưỡng vắng</Pill>}
           </h2>
           <p>
             {k.program} · Khai giảng {viDate(k.start)} · {classSize(k.code)}/{k.max} học viên
@@ -122,12 +128,16 @@ function Roster({ k, manage, onEnroll }: { k: Klass; manage: boolean; onEnroll: 
                 <th>Số điện thoại</th>
                 <th>Ngày ghi danh</th>
                 <th>Người ghi danh</th>
+                <th>Vắng</th>
+                <th>Chuyên cần</th>
+                <th>Cảnh báo</th>
                 <th>Trạng thái</th>
               </tr>
             </thead>
             <tbody>
               {list.map((s) => {
                 const e = ENROLLMENTS.find((x) => x.student === s.code && x.cls === k.code);
+                const a = statOf(s.code, k.code, k.program, totalSessions(k));
                 return (
                   <tr key={s.code}>
                     <td className="code">
@@ -137,6 +147,9 @@ function Roster({ k, manage, onEnroll }: { k: Klass; manage: boolean; onEnroll: 
                     <td>{s.phone}</td>
                     <td>{e ? viDate(e.at) : viDate(s.enrolledAt)}</td>
                     <td>{e?.by ?? '–'}</td>
+                    <td className="strong">{a.absent} buổi</td>
+                    <td className={a.over ? 'bad-t' : 'strong'}>{a.rate}%</td>
+                    <td>{a.over ? <Pill tone="off">Vượt ngưỡng</Pill> : a.left <= 3 ? <Pill tone="wait">Còn {a.left} buổi</Pill> : null}</td>
                     <td>
                       <Pill tone={studentTone(s.status)}>{s.status}</Pill>
                     </td>
@@ -145,7 +158,7 @@ function Roster({ k, manage, onEnroll }: { k: Klass; manage: boolean; onEnroll: 
               })}
               {!list.length && (
                 <tr>
-                  <td colSpan={6} className="empty">
+                  <td colSpan={9} className="empty">
                     Lớp chưa có học viên.
                   </td>
                 </tr>
