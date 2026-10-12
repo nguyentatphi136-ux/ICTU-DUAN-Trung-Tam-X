@@ -99,3 +99,7 @@ export const missingTeachers = (k: Klass) => k.subjects.filter((s) => !s.teacher
 export const isOpen = (k: Klass) => k.status === 'Chuẩn bị' || k.status === 'Đang học';
 /** Các lớp có người này dạy chính hoặc trợ giảng. */
 export const classesOf = (name: string) => CLASSES.filter((k) => k.subjects.some((s) => s.teacher === name || s.tas.includes(name)));
+
+/** Lần ghi danh (S3-06): ai, vào lớp nào, ngày nào, người thực hiện. Khi tích hợp: GET /classes/:code/enrollments. */
+export type Enrollment = { student: string; cls: string; at: string; by: string };
+export const ENROLLMENTS: Enrollment[] = persisted('enrollments', []);
