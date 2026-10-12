@@ -1,4 +1,5 @@
 // Lead mẫu cho S2-08 đến S2-11. Khi tích hợp: /admissions/leads (GET có bộ lọc, POST, PUT, POST /assign).
+import { persisted } from './store';
 export type LeadStatus = 'Mới' | 'Đang chăm sóc' | 'Hẹn gọi lại' | 'Đã nhập học' | 'Không quan tâm';
 export type Lead = {
   id: number;
@@ -36,7 +37,7 @@ const NAMES = ['NGUYEN THU TRANG', 'TRAN MINH KHOA', 'LE THANH HUONG', 'PHAM DUC
 const PROGRAMS = ['Lập trình web Full-stack', 'Phân tích dữ liệu', 'Thiết kế UI/UX', 'Lập trình Java Backend', 'Kiểm thử phần mềm'];
 
 // Sinh thêm cho đủ 128 lead như thiết kế, trải đều tháng 8 và tháng 9/2026.
-export const LEADS: Lead[] = [...Array(128)].map((_, i) => {
+export const LEADS: Lead[] = persisted('leads', [...Array(128)].map((_, i): Lead => {
   if (i < SEED.length) return { id: i + 1, ...SEED[i] };
   const day = 1 + ((i * 7) % 28);
   return {
@@ -49,7 +50,7 @@ export const LEADS: Lead[] = [...Array(128)].map((_, i) => {
     owner: COUNSELORS[i % COUNSELORS.length],
     createdAt: `2026-${i % 2 ? '08' : '09'}-${String(day).padStart(2, '0')}`,
   };
-});
+}));
 
 export const samePhone = (a: string, b: string) => a.replace(/\D/g, '') === b.replace(/\D/g, '');
 export const viDate = (iso: string) => iso.split('-').reverse().join('/');
