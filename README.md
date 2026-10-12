@@ -84,38 +84,40 @@ Hệ thống Quản lý Đào tạo Trung tâm là nền tảng quản trị s�
 
 ```text
 ICTU-DUAN-Trung-Tam-X/
-├── pom.xml                                     # Cấu hình Maven (Java 17, Servlet 4.0, JSP, JSTL, MySQL)
 ├── package.json                                # Quản lý script npm (Proxy 'npm run dev' vào frontend)
 ├── README.md                                   # Tài liệu hướng dẫn toàn diện dự án
-├── src/                                        # BỘ NGUỒN CHÍNH THỨC: JAVA SERVLET & JSP (MVC)
-│   ├── main/
-│   │   ├── java/com/ems/
-│   │   │   ├── config/                         # DBConnection, SessionBlacklist, Migration
-│   │   │   ├── constant/                       # RoleConstant (8 vai trò), PermissionConstant (Ma trận quyền)
-│   │   │   ├── controller/                     # Servlets điều hướng: Login, Logout, UserRole, Grade, Tuition, Program
-│   │   │   ├── dao/                            # Data Access Objects (UserDAO, AdminDAO, PermissionDAO, TrainingProgramDAO)
-│   │   │   ├── dto/                            # Data Transfer Objects
-│   │   │   ├── filter/                         # AuthorizationFilter (RBAC), SessionAuthFilter (Sliding session)
-│   │   │   ├── model/                          # Entities: User, Grade, TuitionFee, TrainingProgram
-│   │   │   ├── security/                       # ApiResponse, Password policies
-│   │   │   └── service/                        # EmailService, TrainingProgramService, UserStore (In-memory store & fallback)
-│   │   └── webapp/                             # Giao diện JSP, JSTL và cấu hình Web Descriptor
-│   │       ├── index.jsp                       # Điều hướng trang chủ
-│   │       ├── login.jsp                       # Giao diện đăng nhập (có nút chọn nhanh tài khoản test)
-│   │       ├── dashboard.jsp                   # Bảng điều khiển phân hệ nghiệp vụ theo vai trò
-│   │       ├── admin.jsp                       # Quản lý tài khoản người dùng
-│   │       ├── change-password.jsp             # Đổi mật khẩu
-│   │       ├── forgot-password.jsp             # Quên mật khẩu qua email
-│   │       ├── reset-password.jsp              # Đặt lại mật khẩu từ liên kết bảo mật
-│   │       └── WEB-INF/
-│   │           ├── web.xml                     # Cấu hình Deployment Descriptor, session-timeout 8h, error pages
-│   │           └── views/
-│   │               ├── common/                 # 403.jsp, 404.jsp, 500.jsp (Thông báo tiếng Việt thân thiện)
-│   │               ├── admin/                  # user-roles.jsp (Gán & thu hồi vai trò Jira IDTTX-24)
-│   │               ├── grades/                 # list-grade.jsp, edit-grade.jsp (Giảng viên sửa điểm, Kế toán chỉ xem)
-│   │               ├── tuition/                # list-tuition.jsp, edit-tuition.jsp (Kế toán sửa học phí, Giảng viên chỉ xem)
-│   │               └── programs/               # list-programs.jsp (Danh mục chương trình đào tạo S2-04)
-│   └── test/java/com/ems/                      # Bộ kiểm thử tự động JUnit 5 cho RBAC, IDTTX-24, Session, Auth
+├── backend/                                    # TOÀN BỘ MÃ NGUỒN BACKEND
+│   ├── pom.xml                                 # Cấu hình Maven (Java 17, Servlet 4.0, JSP, JSTL, MySQL)
+│   ├── legacy_node_be/                         # Backend Node.js/Express cũ (auth, phân quyền, API lead S2-10/S2-11)
+│   └── src/                                    # BỘ NGUỒN CHÍNH THỨC: JAVA SERVLET & JSP (MVC)
+│       ├── main/
+│       │   ├── java/com/ems/
+│       │   │   ├── config/                     # DBConnection, SessionBlacklist, Migration
+│       │   │   ├── constant/                   # RoleConstant (8 vai trò), PermissionConstant (Ma trận quyền)
+│       │   │   ├── controller/                 # Servlets điều hướng: Login, Logout, UserRole, Grade, Tuition, Program
+│       │   │   ├── dao/                        # Data Access Objects (UserDAO, AdminDAO, PermissionDAO, TrainingProgramDAO)
+│       │   │   ├── dto/                        # Data Transfer Objects
+│       │   │   ├── filter/                     # AuthorizationFilter (RBAC), SessionAuthFilter (Sliding session)
+│       │   │   ├── model/                      # Entities: User, Grade, TuitionFee, TrainingProgram
+│       │   │   ├── security/                   # ApiResponse, Password policies
+│       │   │   └── service/                    # EmailService, TrainingProgramService, UserStore (In-memory store & fallback)
+│       │   └── webapp/                         # Giao diện JSP, JSTL và cấu hình Web Descriptor
+│       │       ├── index.jsp                   # Điều hướng trang chủ
+│       │       ├── login.jsp                   # Giao diện đăng nhập (có nút chọn nhanh tài khoản test)
+│       │       ├── dashboard.jsp               # Bảng điều khiển phân hệ nghiệp vụ theo vai trò
+│       │       ├── admin.jsp                   # Quản lý tài khoản người dùng
+│       │       ├── change-password.jsp         # Đổi mật khẩu
+│       │       ├── forgot-password.jsp         # Quên mật khẩu qua email
+│       │       ├── reset-password.jsp          # Đặt lại mật khẩu từ liên kết bảo mật
+│       │       └── WEB-INF/
+│       │           ├── web.xml                 # Cấu hình Deployment Descriptor, session-timeout 8h, error pages
+│       │           └── views/
+│       │               ├── common/             # 403.jsp, 404.jsp, 500.jsp (Thông báo tiếng Việt thân thiện)
+│       │               ├── admin/              # user-roles.jsp (Gán & thu hồi vai trò Jira IDTTX-24)
+│       │               ├── grades/             # list-grade.jsp, edit-grade.jsp (Giảng viên sửa điểm, Kế toán chỉ xem)
+│       │               ├── tuition/            # list-tuition.jsp, edit-tuition.jsp (Kế toán sửa học phí, Giảng viên chỉ xem)
+│       │               └── programs/           # list-programs.jsp (Danh mục chương trình đào tạo S2-04)
+│       └── test/java/com/ems/                  # Bộ kiểm thử tự động JUnit 5 cho RBAC, IDTTX-24, Session, Auth
 ├── database/                                   # CSDL MySQL (schema.sql, DESIGN_DATABASE.md)
 ├── frontend/                                   # Giao diện web client (Vite, HTML5, CSS3, JS)
 ├── legacy_or_mock/                             # Lưu trữ prototype cũ Node.js & mock data để đối chiếu
@@ -143,10 +145,10 @@ Hệ thống hỗ trợ cơ chế xác thực kép: tự động truy vấn MySQ
 ## 8. Hướng dẫn chạy dự án
 
 ### Cách 1: Chạy toàn bộ ứng dụng Java Servlet / JSP trên Apache Tomcat (Khuyên dùng)
-1. Mở dự án trên **IntelliJ IDEA** hoặc **Eclipse**: Chọn thư mục gốc `ICTU-DUAN-Trung-Tam-X`.
+1. Mở dự án trên **IntelliJ IDEA** hoặc **Eclipse**: Chọn thư mục `ICTU-DUAN-Trung-Tam-X/backend`.
 2. IntelliJ sẽ tự động nhận diện file `pom.xml` làm dự án Maven.
 3. Thêm cấu hình chạy **Tomcat Server (Local)**:
-   - Deployment: Thêm Artifact `education-management-system:war exploded` (hoặc thư mục `src/main/webapp`).
+   - Deployment: Thêm Artifact `education-management-system:war exploded` (hoặc thư mục `backend/src/main/webapp`).
    - Application context: `/` hoặc `/ems`.
 4. Nhấn **Run** (Shift + F10).
 5. Mở trình duyệt tại: `http://localhost:8080/` (hệ thống sẽ tự động chuyển hướng đến `login.jsp`).
@@ -196,7 +198,7 @@ Nhánh **`s2-11-minhngoc(BE)`** hoàn thành toàn diện hạng mục Backend c
 - **Migration SQL:** [`database/migration_s2_11_lead_search_filter.sql`](database/migration_s2_11_lead_search_filter.sql) (thiết kế chuẩn hóa 3NF gồm bảng `leads` và bảng `lead_interactions`, có index tối ưu truy vấn tìm kiếm).
 - **Chạy kiểm thử:**
   ```bash
-  cd legacy_or_mock/legacy_node_be
+  cd backend/legacy_node_be
   npm test
   ```
   Tất cả các ca kiểm thử nghiệp vụ cho Story S2-11 đều đạt **PASS 100%**.
