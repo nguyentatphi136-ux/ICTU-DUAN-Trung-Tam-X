@@ -1,0 +1,13 @@
+/* S4-05. Lịch học của học viên: thẻ buổi kế tiếp, bảng tuần (máy tính), thẻ theo buổi (điện thoại). */
+.my-next{display:flex;justify-content:space-between;align-items:center;gap:20px;background:var(--grad);color:#fff;border-radius:var(--r);padding:20px 28px;margin-bottom:24px;box-shadow:0 12px 26px var(--glow)}
+.my-next small{display:block;font-size:12px;font-weight:600;letter-spacing:.4px;opacity:.9}
+.my-next span{display:block;opacity:.92}.my-next b{display:block;font-size:20px;margin:10px 0 4px}
+.my-left{text-align:right;flex:none}.my-left b{margin:0;font-size:18px}
+.my-week-h{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.my-week-h h3{font-size:18px}.my-nav{display:flex;align-items:center;gap:6px}
+.my-table tr.off td{color:var(--faint)}
+.my-table{margin-bottom:16px;overflow-x:auto}
+.my-cards{display:none}
+.my-card{position:relative;padding:12px 16px;margin-bottom:8px}.my-card small{color:var(--muted)}.my-card b{display:block}.my-card span{color:var(--muted);font-size:13px}
+.my-card .pill{position:absolute;top:12px;right:14px}.my-card.off b{color:var(--faint)}
+@media(max-width:700px){.my-table{display:none}.my-cards{display:block}.my-next{flex-direction:column;align-items:flex-start;padding:18px}.my-left{text-align:left}}
