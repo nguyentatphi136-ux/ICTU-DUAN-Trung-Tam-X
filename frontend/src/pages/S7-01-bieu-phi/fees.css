@@ -29,3 +29,12 @@ input.fe-cell{width:100%;max-width:200px}.fe-money.fe-cell{position:relative;dis
 .fe-radios .on{border-color:var(--blue);background:var(--soft)}.fe-radios span{color:var(--muted);font-size:13px}
 .fe-due{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:8px;margin-bottom:8px}
 .fe-bulk{display:flex;align-items:center;gap:12px;margin-top:16px}.fe-bulk>div{flex:1}
+.fe-used a.link+a.link{margin-left:16px}
+.fe-fill{float:right;padding:0!important;font-size:13px}
+.fe-adjs{padding:12px 16px;border-top:1px solid var(--line);font-size:13px}.fe-adjs p{margin-top:4px;color:var(--muted)}
+.fe-note{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.fe-after{font-size:18px;font-weight:600;padding-top:8px}
+.fe-info{display:flex;align-items:center;gap:8px;background:var(--info-bg);color:var(--navy);border-radius:var(--r);padding:10px 12px;font-size:13px;margin-bottom:12px}
+textarea.inp{width:100%;padding:10px 14px;font:inherit;resize:vertical;height:auto}
+.fe-seg{display:flex;width:100%}.fe-seg>*{flex:1;white-space:nowrap;padding:0 10px}
+.fe-pays td{white-space:nowrap}.fe-pays td.hint{white-space:normal;min-width:160px}

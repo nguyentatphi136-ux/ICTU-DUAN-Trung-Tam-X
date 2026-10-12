@@ -89,6 +89,11 @@ export function PlanListPage() {
                       <Link className="link" to={`/hoc-phi/ke-hoach/${s.code}`}>
                         {d.plan ? 'Xem kế hoạch' : 'Lập kế hoạch'}
                       </Link>
+                      {d.plan && (
+                        <Link className="link" to={`/hoc-phi/cong-no/${s.code}`}>
+                          Thu tiền
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 );
