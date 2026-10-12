@@ -26,9 +26,9 @@ function sample(s: ClassSession): Sheet {
   const notes: Record<string, string> = {};
   for (const st of rosterOn(s.cls, s.date)) {
     const h = hash(st.code + s.id) % 100;
-    // Vài học viên (mã kết thúc bằng 7) vắng nhiều hơn để minh hoạ cảnh báo chuyên cần (S5-02).
-    const risky = st.code.endsWith('7');
-    marks[st.code] = h < (risky ? 22 : 3) ? 'Vắng không phép' : h < (risky ? 28 : 6) ? 'Vắng có phép' : h < 10 ? 'Đi muộn' : 'Có mặt';
+    // Vài học viên vắng nhiều hơn để minh hoạ cảnh báo chuyên cần (S5-02): mã kết thúc bằng 17 vượt ngưỡng, bằng 7 gần ngưỡng.
+    const [un, ex] = st.code.endsWith('17') ? [45, 70] : st.code.endsWith('7') ? [18, 30] : [3, 6];
+    marks[st.code] = h < un ? 'Vắng không phép' : h < ex ? 'Vắng có phép' : h < ex + 4 ? 'Đi muộn' : 'Có mặt';
     if (marks[st.code] === 'Đi muộn') notes[st.code] = 'Đến ' + s.start.slice(0, 3) + String(10 + (h % 30)).padStart(2, '0');
   }
   for (const code of approvedFor(s.id)) if (marks[code]) [marks[code], notes[code]] = ['Vắng có phép', 'Đơn xin phép đã duyệt'];
@@ -59,6 +59,31 @@ export const summary = (sh?: Sheet) => {
 
 /** Buổi giảng viên điểm danh được: buổi hôm nay. Buổi khác cần quyền Quản lý đào tạo. */
 export const isToday = (s: ClassSession) => s.date === TODAY;
+
+/** Ngưỡng vắng mặc định: 20% tổng số buổi của lớp (S5-01, S5-02). */
+export const DEFAULT_THRESHOLD = 20;
+export const thresholdOf = (_program: string) => DEFAULT_THRESHOLD;
+
+export type AttStat = { held: number; late: number; excused: number; unexcused: number; absent: number; rate: number; max: number; left: number; over: boolean };
+
+/** Chuyên cần của một học viên trong một lớp: tính trên các buổi đã điểm danh. Đi muộn vẫn tính là có mặt. */
+export function statOf(code: string, cls: string, program: string, total: number): AttStat {
+  let held = 0;
+  let late = 0;
+  let excused = 0;
+  let unexcused = 0;
+  for (const s of heldSessions(cls)) {
+    const m = sheetOf(s)?.marks[code];
+    if (!m) continue;
+    held++;
+    if (m === 'Đi muộn') late++;
+    if (m === 'Vắng có phép') excused++;
+    if (m === 'Vắng không phép') unexcused++;
+  }
+  const absent = excused + unexcused;
+  const max = Math.floor((total * thresholdOf(program)) / 100);
+  return { held, late, excused, unexcused, absent, rate: held ? Math.round((100 * (held - absent)) / held) : 100, max, left: max - absent, over: absent > max };
+}
 
 /** Các buổi đã diễn ra (không tính buổi huỷ) của một lớp. */
 export const heldSessions = (cls: string) => SESSIONS.filter((s) => s.cls === cls && !s.cancelled && s.date <= TODAY).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
