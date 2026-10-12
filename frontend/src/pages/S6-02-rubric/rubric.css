@@ -1,0 +1,22 @@
+/* S6-02. Tạo mẫu rubric và chấm theo tiêu chí. */
+.rb-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+.rb-grid aside{display:flex;flex-direction:column;gap:16px}
+.rb-row2{display:grid;grid-template-columns:1fr 220px;gap:16px}
+.rb-head{display:flex;justify-content:space-between;padding-right:48px}
+.rb-list{list-style:none;display:flex;flex-direction:column;gap:10px;margin:6px 0 10px}
+.rb-list li{display:flex;align-items:flex-start;gap:12px;border:1px solid var(--line);border-radius:var(--r);padding:10px 12px}
+.rb-no{width:22px;color:var(--muted);padding-top:8px}
+.rb-fields{flex:1;display:flex;flex-direction:column;gap:6px}
+.rb-fields input,.rb-w input,.rc-row input{height:36px;border:1px solid var(--line);border-radius:var(--r);padding:0 10px;font:inherit;color:var(--ink);background:var(--surface)}
+.rb-fields .rb-hint{border-style:dashed;font-size:13px}
+.rb-w{display:flex;align-items:center;gap:6px;color:var(--muted)}.rb-w input{width:70px;text-align:right}
+.rb-total{display:flex;justify-content:space-between;gap:12px;margin:16px 0 8px;padding:10px 14px;border-radius:var(--r);font-size:13px}
+.rb-total.bad{background:var(--bad-bg);color:var(--bad)}.rb-total.ok{background:var(--ok-bg);color:var(--green)}
+.rb-saved{list-style:none;display:flex;flex-direction:column;gap:14px}
+.rb-saved b{display:block}.rb-saved small{display:block;color:var(--muted)}.rb-saved .link{padding:2px 0}
+.rc-list{display:flex;flex-direction:column;gap:8px;margin:8px 0 12px}
+.rc-row{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:var(--r);padding:8px 12px}
+.rc-row>div{flex:1}.rc-row b{display:block;font-size:14px}.rc-row small{color:var(--muted)}
+.rc-row input{width:64px;text-align:right}.rc-row span{color:var(--muted);font-size:13px}
+.rc-total{display:flex;justify-content:space-between;padding:10px 14px;border-radius:var(--r);background:var(--ok-bg);color:var(--green);font-weight:600;margin-bottom:12px}
+@media(max-width:1100px){.rb-grid{grid-template-columns:1fr}.rb-row2{grid-template-columns:1fr}}

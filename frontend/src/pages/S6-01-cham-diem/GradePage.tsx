@@ -10,7 +10,9 @@ import { useAuth } from '../../data/auth';
 import { findClass } from '../../data/classes';
 import { notify } from '../../data/notifications';
 import { ROLES } from '../../data/permissions';
+import { RUBRIC_SCALE, rubricTotal } from '../../data/rubrics';
 import { saveAll } from '../../data/store';
+import '../S6-02-rubric/rubric.css';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
 import { MODULE, teachable } from '../S5-05-bai-tap/AssignmentPages';
 import { nowIso } from '../S5-06-bai-tap-cua-toi/MyAssignmentsPage';
@@ -42,6 +44,8 @@ export function GradePage() {
   const r = rows[idx];
   const g = r?.sub?.grade;
   const [value, setValue] = useState(g ? score(g.score) : '');
+  // S6-02: điểm từng tiêu chí khi bài tập có rubric.
+  const [rs, setRs] = useState<Record<string, string>>(() => Object.fromEntries(Object.entries(g?.rubric ?? {}).map(([k, v]) => [k, score(v)])));
   const [comment, setComment] = useState(g?.comment ?? '');
   const [reason, setReason] = useState('');
   const [file, setFile] = useState(0);
@@ -52,12 +56,16 @@ export function GradePage() {
   const sub = r.sub!;
   const v = sub.versions[0];
   const late = lateHours(a, v);
-  const n = parseScore(value);
+  const crit = a?.rubric;
+  const rNums = Object.fromEntries((crit ?? []).map((c) => [c.name, parseScore(rs[c.name] ?? '')]));
+  const rBad = (crit ?? []).some((c) => !(rNums[c.name] >= 0 && rNums[c.name] <= RUBRIC_SCALE));
+  const n = crit ? (rBad ? NaN : rubricTotal(crit, rNums, a!.max)) : parseScore(value);
   const changed = !!g && n !== g.score;
   const go = (j: number) => rows[j] && navigate(`/bai-tap/${a.id}/cham/${rows[j].st.code}`);
 
   /** Lưu điểm nháp; trả về false nếu dữ liệu chưa hợp lệ. */
   function save(): boolean {
+    if (crit && rBad) return setError(`Chấm đủ các tiêu chí, mỗi tiêu chí từ 0 đến ${RUBRIC_SCALE}.`), false;
     if (!(n >= 0 && n <= a!.max)) return setError(`Nhập số từ 0 đến ${a!.max}, cho phép một chữ số thập phân.`), false;
     if (!comment.trim()) return setError('Viết nhận xét để học viên biết cần cải thiện gì.'), false;
     if (changed && isPublished(g) && !reason.trim()) return setError('Điểm đã công bố, ghi lý do sửa điểm.'), false;
@@ -73,6 +81,7 @@ export function GradePage() {
       }
       Object.assign(g, { score: n, comment: comment.trim(), by, at });
     }
+    if (crit) sub.grade!.rubric = rNums;
     sub.state = 'Đã chấm';
     setError('');
     setReason('');
@@ -151,6 +160,29 @@ export function GradePage() {
             <h3>Chấm điểm</h3>
             {g && isPublished(g) ? <Pill tone="ok">Đã công bố</Pill> : <Pill>Chưa công bố</Pill>}
           </div>
+          {crit ? (
+            <>
+              <span className="hint">Rubric gồm {crit.length} tiêu chí, mỗi tiêu chí chấm từ 0 đến {RUBRIC_SCALE}</span>
+              <div className="rc-list">
+                {crit.map((c) => (
+                  <div key={c.name} className="rc-row">
+                    <div>
+                      <b>{c.name}</b>
+                      <small>Trọng số {c.weight}%</small>
+                    </div>
+                    <input aria-label={'Điểm ' + c.name} inputMode="decimal" value={rs[c.name] ?? ''} onChange={(e) => setRs({ ...rs, [c.name]: e.target.value })} />
+                    <span>/{RUBRIC_SCALE}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="rc-total">
+                <span>Điểm tổng tự tính</span>
+                <span>
+                  {Number.isNaN(n) ? '–' : score(n)} / {a.max}
+                </span>
+              </div>
+            </>
+          ) : (
           <div className="field">
             <label htmlFor="gr-score">Điểm</label>
             <div className="gr-score">
@@ -161,6 +193,7 @@ export function GradePage() {
             </div>
             <p className="hint">Nhập số từ 0 đến {a.max}, cho phép một chữ số thập phân.</p>
           </div>
+          )}
           <div className="field">
             <label htmlFor="gr-comment">Nhận xét</label>
             <div className="inp">
