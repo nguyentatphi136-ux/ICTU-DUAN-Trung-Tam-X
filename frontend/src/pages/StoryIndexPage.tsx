@@ -28,6 +28,8 @@ const STORIES: [string, string, string][] = [
   ['S3-01', 'Phễu lead dạng Kanban, lý do từ chối', '/tuyen-sinh/pheu'],
   ['S3-02', 'Nhật ký chăm sóc (bấm vào thẻ lead trong phễu)', '/tuyen-sinh/pheu?lead=12'],
   ['S3-03', 'Chuyển lead thành học viên (lead VU THANH DAT ở cột Chốt)', '/tuyen-sinh/pheu?lead=23'],
+  ['S3-04', 'Danh sách học viên', '/hoc-vien'],
+  ['S3-04', 'Hồ sơ học viên (sửa hồ sơ, ghi chú)', '/hoc-vien/HV260101'],
 ];
 
 export function StoryIndexPage() {
