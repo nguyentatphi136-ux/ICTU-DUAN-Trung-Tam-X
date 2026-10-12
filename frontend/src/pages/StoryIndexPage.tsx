@@ -30,6 +30,7 @@ const STORIES: [string, string, string][] = [
   ['S3-03', 'Chuyển lead thành học viên (lead VU THANH DAT ở cột Chốt)', '/tuyen-sinh/pheu?lead=23'],
   ['S3-04', 'Danh sách học viên', '/hoc-vien'],
   ['S3-04', 'Hồ sơ học viên (sửa hồ sơ, ghi chú)', '/hoc-vien/HV260101'],
+  ['S3-07', 'Danh sách lớp kèm chỉ số và bộ lọc', '/lop-hoc'],
 ];
 
 export function StoryIndexPage() {
