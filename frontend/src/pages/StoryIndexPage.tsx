@@ -76,6 +76,7 @@ const STORIES: [string, string, string][] = [
   ['S7-03', 'Ghi nhận thanh toán, biên lai, bút toán điều chỉnh', '/hoc-phi/cong-no/HV260142'],
   ['S7-04', 'Học bổng, giảm giá; vượt 30% cần phê duyệt', '/hoc-phi/ke-hoach/HV260142'],
   ['S7-05', 'Bảng công nợ, lọc quá hạn, xuất Excel', '/hoc-phi/cong-no'],
+  ['S7-06', 'Nhắc học phí trước hạn và khi quá hạn', '/hoc-phi/nhac-hoc-phi'],
 ];
 
 export function StoryIndexPage() {
