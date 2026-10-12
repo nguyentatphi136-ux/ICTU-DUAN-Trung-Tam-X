@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { ConfirmDialog, type MenuAction } from '../../components/ui';
@@ -12,6 +13,7 @@ import { nextStep, OpenClassDrawer } from './OpenClassDrawer';
 export function ClassesPage() {
   const { user } = useAuth();
   const toast = useToast();
+  const navigate = useNavigate();
   const [, setTick] = useState(0);
   const [opening, setOpening] = useState(false);
   const [cancelling, setCancelling] = useState<Klass | null>(null);
@@ -31,7 +33,11 @@ export function ClassesPage() {
           toast(`Lớp ${k.code} chuyển sang ${step.to}`);
         },
       });
-    if (k.status === 'Chuẩn bị' || k.status === 'Đang học') list.push({ label: 'Huỷ lớp', danger: true, onClick: () => setCancelling(k) });
+    if (k.status === 'Chuẩn bị' || k.status === 'Đang học') {
+      // S3-06
+      list.unshift({ label: 'Ghi danh học viên', onClick: () => navigate(`/lop-hoc/${k.code}/ghi-danh`) });
+      list.push({ label: 'Huỷ lớp', danger: true, onClick: () => setCancelling(k) });
+    }
     return list.length ? list : [{ label: 'Lớp đã ' + k.status.toLowerCase(), disabled: true }];
   };
 
