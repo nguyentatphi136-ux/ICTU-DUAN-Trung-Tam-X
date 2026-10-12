@@ -45,7 +45,10 @@ button.role:hover{background:var(--chip)}
 .content{padding:24px 32px 40px}
 .h{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}.h>div:first-child{flex:1;min-width:200px}.h h2{font-size:26px;line-height:1.3}.h p{color:var(--muted)}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
-.dash{border:1px dashed var(--line);border-radius:var(--r);min-height:420px;display:grid;place-items:center;color:var(--faint);font-size:15px;text-align:center;padding:24px}
+.dash{border:1px dashed var(--line);border-radius:var(--r);min-height:160px;display:grid;place-items:center;color:var(--faint);font-size:15px;text-align:center;padding:24px}
+/* Trang có vùng giữ chỗ (.dash): vùng đó giãn vừa phần còn lại của màn hình thay vì cao cố định rồi phải cuộn. */
+.main:has(>.content>.dash){display:flex;flex-direction:column}
+.content:has(>.dash){flex:1;display:flex;flex-direction:column}.content>.dash{flex:1}
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-bottom:24px}
 .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px}
 .stat span{color:var(--muted);font-size:13px}.stat b{display:block;font-size:36px;line-height:1.2;margin:14px 0 12px}
@@ -62,10 +65,14 @@ td .err{margin:0;font-size:13px}
 .tags{display:flex;gap:6px;flex-wrap:wrap}
 .pill.info{background:var(--soft);color:var(--blue)}
 .pager{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 20px;border-top:1px solid var(--line);font-size:13px;color:var(--muted);flex-wrap:wrap}
-.pager div{display:flex;gap:8px}
+.pager div{display:flex;flex-wrap:wrap;gap:8px}
 .pager button{width:32px;height:32px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);font-size:13px;color:var(--ink)}
 .pager button.on{background:var(--soft);border-color:var(--soft);color:var(--blue);font-weight:600}
-.pager button:disabled{cursor:default}
+.pager button:disabled{cursor:default;opacity:.5}
+.pager button.step{width:auto;padding:0 10px}
+.pager-size{display:flex;align-items:center;gap:6px;margin-right:8px}
+.pager-size select{height:32px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--ink);font:inherit;padding:0 6px}
+.confirm-body{color:var(--muted);margin-bottom:16px;line-height:1.6}.confirm-body b{color:var(--ink)}
 /* Bộ lọc */
 .bar{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
 .search{width:420px;max-width:100%}.search input{height:44px}
@@ -77,6 +84,7 @@ td .err{margin:0;font-size:13px}
 .icon-btn:hover{background:var(--chip);color:var(--ink)}
 .rowmenu{position:relative;display:inline-block}
 .rowmenu .menu,.dropdown{position:absolute;right:0;top:36px;min-width:230px;background:var(--raised);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 12px 30px rgba(5,36,77,.14);padding:6px;z-index:15}
+.rowmenu .menu.up{top:auto;bottom:36px}
 .rowmenu .menu button,.dropdown button{display:block;width:100%;text-align:left;padding:9px 12px;border:0;background:none;border-radius:var(--r);color:var(--ink);font-size:14px}
 .rowmenu .menu button:hover:not(:disabled),.dropdown button:hover{background:var(--chip)}
 .rowmenu .menu button:disabled{color:var(--faint);cursor:not-allowed}
@@ -92,6 +100,7 @@ td .err{margin:0;font-size:13px}
 .overlay{position:fixed;inset:0;background:var(--scrim);z-index:20;display:flex;align-items:center;justify-content:center;padding:16px}
 .modal{background:var(--raised);border-radius:var(--r);width:100%;max-width:540px;padding:28px 32px;box-shadow:0 24px 60px rgba(5,36,77,.25);max-height:calc(100vh - 32px);overflow:auto}
 .modal.wide{max-width:560px}
+.modal-overlay{z-index:22}
 .modal h3{font-size:20px;margin-bottom:16px}.modal .acts{display:flex;justify-content:flex-end;gap:12px;margin-top:8px}
 .modal-head{display:flex;gap:16px;align-items:flex-start;margin-bottom:16px}.modal-head h3{margin:0}.modal-head p{color:var(--muted);font-size:13px}
 .danger-ic{width:44px;height:44px;border-radius:var(--r);background:var(--bad-bg);color:var(--red);display:grid;place-items:center;flex:none}
@@ -109,6 +118,10 @@ td .err{margin:0;font-size:13px}
 .inp.chipbox{display:flex;align-items:center;gap:8px;min-height:46px;border:1px solid var(--line);border-radius:var(--r);padding:6px 8px;flex-wrap:wrap}
 .inp.chipbox select{border:0;height:30px;flex:1;min-width:120px;padding:0 6px;box-shadow:none}
 .sep{border:0;border-top:1px solid var(--line);margin:20px 0}
+.check-list{border:0;padding:0;min-width:0}.check-list legend{font-size:13px;font-weight:600;margin-bottom:6px;padding:0}
+.check-list label{display:flex;gap:10px;align-items:center;padding:5px 0;font-weight:400!important;margin:0!important;cursor:pointer}
+.check-list input{width:16px;height:16px;accent-color:var(--blue)}.check-list small{color:var(--muted)}
+a.pill.info:hover{text-decoration:underline}
 .section-t{font-size:16px;font-weight:600;margin-bottom:12px}
 .btn.outline-danger{border-color:var(--bad-line);color:var(--red)}
 @media(max-width:1100px){.stats{grid-template-columns:1fr}}
