@@ -22,6 +22,16 @@ export function TrainingTabs() {
         Môn học
       </NavLink>
       {canEdit && (
+        // S5-02
+        <NavLink to="/dao-tao/nguong-vang" className={({ isActive }) => (isActive ? 'on' : undefined)} end>
+          Ngưỡng vắng
+        </NavLink>
+      )}
+      {/* S8-01 */}
+      <NavLink to="/dao-tao/cach-tinh-diem" className={({ isActive }) => (isActive ? 'on' : undefined)} end>
+        Cách tính điểm
+      </NavLink>
+      {canEdit && (
         <NavLink to="/dao-tao/thung-rac" className={({ isActive }) => (isActive ? 'on' : undefined)} end>
           Thùng rác
         </NavLink>
