@@ -201,168 +201,32 @@ public class UserDAO {
         }
     }
 
-    public static final Pattern VN_PHONE_PATTERN = Pattern.compile("^(0|\\+84)(3|5|7|8|9)[0-9]{8}$");
-
-    /**
-     * Kiểm tra định dạng số điện thoại Việt Nam (Sprint 2 S2-02 AC3)
-     * - 10 chữ số, bắt đầu bằng các đầu số di động: 03, 05, 07, 08, 09 (hoặc +843, +845, +847, +848, +849)
-     */
-    public static boolean isValidVietnamPhone(String phone) {
-        if (phone == null || phone.trim().isEmpty()) return true;
-        String normalized = phone.trim().replaceAll("[\\s.-]", "");
-        return VN_PHONE_PATTERN.matcher(normalized).matches();
-    }
-
-    /**
-     * Lấy thông tin hồ sơ cá nhân của người dùng (Sprint 2 S2-02)
-     */
-    public Map<String, Object> getUserProfile(long userId) throws SQLException {
-        try (Connection connection = DBConnection.getConnection()) {
-            String sql = "SELECT id, user_code, email, full_name, phone, date_of_birth, gender, address, avatar_url, status, created_at "
-                    + "FROM users WHERE id = ?";
-            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-                stmt.setLong(1, userId);
-                try (ResultSet rs = stmt.executeQuery()) {
-                    if (!rs.next()) return null;
-                    return mapUserProfile(connection, rs);
-                }
-            }
-        }
-    }
-
-    /**
-     * Lấy thông tin hồ sơ theo Email (hỗ trợ kiểm thử và session)
-     */
-    public Map<String, Object> getUserProfileByEmail(String email) throws SQLException {
-        if (email == null || email.trim().isEmpty()) return null;
-        try (Connection connection = DBConnection.getConnection()) {
-            String sql = "SELECT id, user_code, email, full_name, phone, date_of_birth, gender, address, avatar_url, status, created_at "
-                    + "FROM users WHERE email = ?";
-            try (PreparedStatement stmt = connection.prepareStatement(sql)) {
-                stmt.setString(1, email.trim().toLowerCase(java.util.Locale.ROOT));
-                try (ResultSet rs = stmt.executeQuery()) {
-                    if (!rs.next()) return null;
-                    return mapUserProfile(connection, rs);
-                }
-            }
-        }
-    }
-
-    private Map<String, Object> mapUserProfile(Connection connection, ResultSet rs) throws SQLException {
-        long userId = rs.getLong("id");
-        Map<String, Object> profile = new LinkedHashMap<>();
-        profile.put("id", userId);
-        profile.put("userCode", rs.getString("user_code"));
-        profile.put("email", rs.getString("email"));
-        profile.put("fullName", rs.getString("full_name"));
-        profile.put("phone", rs.getString("phone") != null ? rs.getString("phone") : "");
-        profile.put("dateOfBirth", rs.getDate("date_of_birth") != null ? rs.getDate("date_of_birth").toString() : "");
-        profile.put("gender", rs.getString("gender") != null ? rs.getString("gender") : "OTHER");
-        profile.put("address", rs.getString("address") != null ? rs.getString("address") : "");
-        profile.put("avatarUrl", rs.getString("avatar_url") != null ? rs.getString("avatar_url") : "");
-        profile.put("status", rs.getString("status"));
-        profile.put("createdAt", rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toString() : "");
-
-        // Lấy danh sách vai trò
-        List<String> roles = new ArrayList<>();
-        String roleSql = "SELECT r.role_code FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ?";
-        try (PreparedStatement roleStmt = connection.prepareStatement(roleSql)) {
-            roleStmt.setLong(1, userId);
-            try (ResultSet roleRs = roleStmt.executeQuery()) {
-                while (roleRs.next()) {
-                    roles.add(roleRs.getString("role_code"));
-                }
-            }
-        }
-        profile.put("roles", roles);
-        profile.put("primaryRole", roles.isEmpty() ? "STUDENT" : roles.get(0));
-        return profile;
-    }
-
-    /**
-     * Cập nhật thông tin hồ sơ cá nhân (Sprint 2 S2-02)
-     * - Sửa họ tên, số điện thoại, ngày sinh, địa chỉ, giới tính
-     * - Tuyệt đối không cho phép đổi email và vai trò
-     * - Bắt buộc kiểm tra định dạng số điện thoại Việt Nam
-     */
-    public Map<String, Object> updateUserProfile(long userId, String fullName, String phone,
-                                                String dateOfBirth, String gender, String address) throws SQLException {
-        if (fullName == null || fullName.trim().isEmpty()) {
-            throw new IllegalArgumentException("Họ và tên không được để trống.");
-        }
-
-        String normalizedPhone = null;
-        if (phone != null && !phone.trim().isEmpty()) {
-            normalizedPhone = phone.trim().replaceAll("[\\s.-]", "");
-            if (!isValidVietnamPhone(normalizedPhone)) {
-                throw new IllegalArgumentException("Số điện thoại không đúng định dạng di động Việt Nam (gồm 10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09).");
-            }
-        }
-
-        String normalizedGender = "OTHER";
-        if (gender != null && !gender.trim().isEmpty()) {
-            String g = gender.trim().toUpperCase(java.util.Locale.ROOT);
-            if ("MALE".equals(g) || "FEMALE".equals(g) || "OTHER".equals(g)) {
-                normalizedGender = g;
-            }
-        }
-
-        java.sql.Date dobDate = null;
-        if (dateOfBirth != null && !dateOfBirth.trim().isEmpty()) {
-            try {
-                dobDate = java.sql.Date.valueOf(dateOfBirth.trim());
-            } catch (IllegalArgumentException e) {
-                throw new IllegalArgumentException("Định dạng ngày sinh không hợp lệ (yêu cầu YYYY-MM-DD).");
-            }
-        }
-
-        try (Connection connection = DBConnection.getConnection()) {
-            connection.setAutoCommit(false);
-            try {
-                String oldValuesJson = null;
-                try (PreparedStatement selectStmt = connection.prepareStatement(
-                        "SELECT full_name, phone, date_of_birth, gender, address FROM users WHERE id = ? FOR UPDATE")) {
-                    selectStmt.setLong(1, userId);
-                    try (ResultSet rs = selectStmt.executeQuery()) {
-                        if (!rs.next()) {
-                            connection.commit();
-                            throw new IllegalStateException("Không tìm thấy người dùng.");
-                        }
-                        oldValuesJson = String.format("{\"full_name\":\"%s\",\"phone\":\"%s\",\"gender\":\"%s\"}",
-                                rs.getString("full_name"), rs.getString("phone"), rs.getString("gender"));
+    public User findById(long userId) throws SQLException {
+        String sql = "SELECT id, user_code, email, full_name, phone, status FROM users WHERE id = ?";
+        try (Connection connection = DBConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, userId);
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next()) return null;
+                User user = new User();
+                user.setId(result.getLong("id"));
+                user.setUserCode(result.getString("user_code"));
+                user.setEmail(result.getString("email"));
+                user.setFullName(result.getString("full_name"));
+                user.setPhone(result.getString("phone"));
+                user.setStatus(result.getString("status"));
+                List<String> roles = new ArrayList<>();
+                try (PreparedStatement roleStmt = connection.prepareStatement(
+                        "SELECT r.role_code FROM user_roles ur JOIN roles r ON r.id = ur.role_id "
+                                + "WHERE ur.user_id = ? ORDER BY CASE r.role_code WHEN 'ADMIN' THEN 0 ELSE 1 END, r.id")) {
+                    roleStmt.setLong(1, userId);
+                    try (ResultSet roleRs = roleStmt.executeQuery()) {
+                        while (roleRs.next()) roles.add(roleRs.getString("role_code"));
                     }
                 }
-
-                String updateSql = "UPDATE users SET full_name = ?, phone = ?, date_of_birth = ?, gender = ?, address = ?, updated_at = NOW() "
-                        + "WHERE id = ?";
-                try (PreparedStatement updateStmt = connection.prepareStatement(updateSql)) {
-                    updateStmt.setString(1, fullName.trim());
-                    updateStmt.setString(2, normalizedPhone);
-                    updateStmt.setDate(3, dobDate);
-                    updateStmt.setString(4, normalizedGender);
-                    updateStmt.setString(5, address != null ? address.trim() : null);
-                    updateStmt.setLong(6, userId);
-                    updateStmt.executeUpdate();
-                }
-
-                String newValuesJson = String.format("{\"full_name\":\"%s\",\"phone\":\"%s\",\"gender\":\"%s\"}",
-                        fullName.trim(), normalizedPhone, normalizedGender);
-
-                try (PreparedStatement auditStmt = connection.prepareStatement(
-                        "INSERT INTO audit_logs (user_id, action, entity_type, entity_id, old_values, new_values, created_at) "
-                                + "VALUES (?, 'UPDATE_PROFILE', 'USER', ?, ?, ?, NOW())")) {
-                    auditStmt.setLong(1, userId);
-                    auditStmt.setString(2, String.valueOf(userId));
-                    auditStmt.setString(3, oldValuesJson);
-                    auditStmt.setString(4, newValuesJson);
-                    auditStmt.executeUpdate();
-                }
-
-                connection.commit();
-                return getUserProfile(userId);
-            } catch (SQLException | RuntimeException e) {
-                connection.rollback();
-                throw e;
+                user.setRoles(roles);
+                if (!roles.isEmpty()) user.setPrimaryRole(roles.get(0));
+                return user;
             }
         }
     }
