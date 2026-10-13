@@ -3539,6 +3539,84 @@ if (accountTable) {
     if (window.lucide) window.lucide.createIcons();
   };
 
+  document.querySelectorAll("[data-close-edit-user]").forEach((btn) => {
+    btn.addEventListener("click", closeEditUser);
+  });
+
+  if (editUserModal) {
+    editUserModal.addEventListener("click", (e) => {
+      if (e.target === editUserModal) closeEditUser();
+    });
+  }
+
+  if (editUserForm) {
+    editUserForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const email = document.querySelector("#edit-user-email")?.value;
+      const name = document.querySelector("#edit-user-name")?.value.trim();
+      const phone = document.querySelector("#edit-user-phone")?.value.trim();
+      const alertBox = document.querySelector("#edit-user-alert");
+
+      if (!name) {
+        if (alertBox) {
+          alertBox.className = "p-3 rounded-lg text-sm bg-rose-500/10 text-rose-500 border border-rose-500/20";
+          alertBox.textContent = "Họ và tên không được để trống.";
+          alertBox.classList.remove("hidden");
+        }
+        return;
+      }
+
+      // Cập nhật trong custom accounts hoặc ghi đè
+      const customAccounts = readStore("edumanager-custom-accounts") || [];
+      const idx = customAccounts.findIndex((a) => a.email === email);
+      if (idx >= 0) {
+        customAccounts[idx].fullName = name;
+        customAccounts[idx].phone = phone;
+      } else {
+        const demo = DEMO_ACCOUNTS.find((a) => a.email === email);
+        if (demo) {
+          customAccounts.push({ ...demo, fullName: name, phone });
+        }
+      }
+      writeStore("edumanager-custom-accounts", customAccounts);
+
+      // Gửi API cập nhật
+      const all = getAllAccounts();
+      const targetIdx = all.findIndex((a) => a.email === email);
+      const targetId = targetIdx >= 0 ? targetIdx + 1 : 1;
+      fetch(`/api/admin/users/${targetId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName: name, phone }),
+      }).catch(() => null);
+
+      addAuditLog(`Cập nhật thông tin tài khoản ${email}: Họ tên "${name}", SĐT "${phone}"`);
+      renderAccounts();
+      renderAuditLog();
+      closeEditUser();
+
+      if (typeof showToast === "function") {
+        showToast("Cập nhật thông tin tài khoản thành công!", "success");
+      }
+    });
+  }
+
+  // -------------------------------------------------------------------
+  // Modal Khoá / Mở khoá tài khoản (S1-10)
+  // -------------------------------------------------------------------
+  const closeLockModal = () => {
+    if (lockAccountModal) {
+      lockAccountModal.classList.add("hidden");
+      if (lockAccountForm) lockAccountForm.reset();
+      const errBox = document.querySelector("#lock-account-error");
+      if (errBox) {
+        errBox.classList.add("hidden");
+        errBox.textContent = "";
+      }
+    }
+  };
+
+  // Mở modal khoá / sửa / mở khoá tài khoản từ bảng
   accountTable.addEventListener("click", (event) => {
     // Sửa thông tin tài khoản
     const editBtn = event.target.closest("[data-edit-account]");
