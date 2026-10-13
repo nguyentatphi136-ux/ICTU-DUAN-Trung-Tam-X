@@ -34,3 +34,4 @@
 .at-note,.at-note-t{grid-column:1/-1}.at-note:placeholder-shown{display:none}
 }
 .at-leaves{margin-bottom:20px}
+.at-classes{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:-8px 0 20px;color:var(--muted)}

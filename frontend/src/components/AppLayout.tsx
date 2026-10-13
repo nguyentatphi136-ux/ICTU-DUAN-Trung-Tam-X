@@ -112,6 +112,12 @@ export function AppLayout({ crumb, module, children }: Props) {
           <button type="button" className="burger" aria-label="Mở menu" onClick={() => setOpen(true)}>
             <Icon name="menu" />
           </button>
+          <Link to="/" className="logo top-logo">
+            <span>
+              <Icon name="cap" />
+            </span>
+            TMS.
+          </Link>
           <div className="crumb">
             {crumb.map((c, i) => (
               <span key={c} className={i < crumb.length - 1 ? 'up' : undefined}>

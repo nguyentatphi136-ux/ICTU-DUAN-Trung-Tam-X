@@ -99,6 +99,7 @@ td .err{margin:0;font-size:13px}
 .seg{display:inline-flex;gap:4px;height:44px;padding:3px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface)}
 .seg>*{display:grid;place-items:center;padding:0 18px;border-radius:4px;color:var(--muted);font-weight:400;font-size:13px}
 .seg .on{background:var(--soft);color:var(--blue);font-weight:600}
+.h .seg{height:40px}
 .check-box{display:flex;align-items:center;gap:10px;height:44px;padding:0 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);font-size:13px;cursor:pointer}
 .check-box input{width:18px;height:18px;accent-color:var(--blue)}
 /* Ngăn bên, hộp thoại */
@@ -143,6 +144,9 @@ a.pill.info:hover{text-decoration:underline}
 .search,.filter{width:100%!important}
 .seg,.check-box{width:100%}.seg>*{flex:1}
 }
+/* Bản 360px theo Figma: thanh trên hiện logo thay cho đường dẫn, nội dung sát lề 12px. */
+.top-logo{display:none}
+@media(max-width:600px){.top .top-logo{display:flex;flex:1;padding:0;font-size:18px}.top .top-logo span{display:none}.top .crumb{display:none}.content{padding:16px 12px 28px}}
 /* Lịch học hôm nay của Học viên (S1-06, bản 360px) */
 .today{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:24px}
 .today h3{grid-column:1/-1;font-size:20px}

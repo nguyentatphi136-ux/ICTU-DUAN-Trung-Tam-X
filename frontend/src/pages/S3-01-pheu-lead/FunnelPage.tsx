@@ -85,6 +85,14 @@ export function FunnelPage() {
             {leads.length} lead đang theo dõi · {late} lead quá hạn gọi lại
           </p>
         </div>
+        <div className="seg" role="tablist" aria-label="Chế độ xem">
+          <span className="on" role="tab" aria-selected="true">
+            Bảng phễu
+          </span>
+          <Link to="/tuyen-sinh/lead" role="tab" aria-selected="false">
+            Danh sách
+          </Link>
+        </div>
         {canWrite && (
           <button type="button" className="btn primary" style={{ width: 140 }} onClick={() => setAdding(true)}>
             <Icon name="plus" size={16} />
@@ -94,14 +102,6 @@ export function FunnelPage() {
       </div>
       <div className="bar">
         <Search placeholder="Tìm theo tên hoặc số điện thoại" value={q} onChange={setQ} width={320} />
-        <div className="seg" role="tablist" aria-label="Chế độ xem">
-          <span className="on" role="tab" aria-selected="true">
-            Bảng phễu
-          </span>
-          <Link to="/tuyen-sinh/lead" role="tab" aria-selected="false">
-            Danh sách
-          </Link>
-        </div>
         <label className="check-box">
           <input type="checkbox" checked={onlyLate} onChange={(e) => setOnlyLate(e.target.checked)} />
           Chỉ hiện lead quá hạn

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
@@ -63,6 +63,10 @@ export function MyLeavesPage() {
           <h2>Đơn xin phép vắng</h2>
           <p>Gửi trước giờ học để giảng viên kịp duyệt</p>
         </div>
+        {/* S5-03 */}
+        <Link to="/diem-danh-cua-toi" className="btn">
+          Điểm danh của tôi
+        </Link>
       </div>
       <div className="lv-grid">
         <section className="panel lv-form">

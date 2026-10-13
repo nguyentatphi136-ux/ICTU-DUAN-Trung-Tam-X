@@ -5,6 +5,7 @@
 .pf-img{width:120px;height:120px;border-radius:50%;background:var(--soft);color:var(--blue);display:grid;place-items:center;font-size:40px;font-weight:600;object-fit:cover}
 .pf-form{padding:24px 28px}
 .pf-form h3{font-size:17px;font-weight:600;margin:4px 0 16px}
+.pf-form .grid2+h3{border-top:1px solid var(--line);padding-top:20px;margin-top:16px}
 .pf-form .grid2{gap:0 24px;margin-bottom:12px}
 .pf-form .inp input{height:44px}
 .pf-lock{display:flex;gap:8px;align-items:center;font-size:13px}
