@@ -5,9 +5,11 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Box, Pill } from '../../components/ui';
 import { approvedFor } from '../../data/leaves';
+import { audit } from '../../data/audit';
+import { flagCheck } from '../../data/attendance';
 import { ATT_LOGS, countMarks, isToday, MARKS, markTone, SHEETS, sheetOf, SHORT, summary, type Mark } from '../../data/attendance';
 import { useAuth } from '../../data/auth';
-import { classesOf } from '../../data/classes';
+import { CLASSES, classesOf } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
 import { notify } from '../../data/notifications';
 import { ROLES } from '../../data/permissions';
@@ -34,7 +36,7 @@ function visible(role: number, name: string) {
 export function AttendanceListPage() {
   const { user } = useAuth();
   const role = user?.active ?? -1;
-  if (role === 0) return <Navigate to="/xin-phep" replace />;
+  if (role === 0) return <Navigate to="/diem-danh-cua-toi" replace />;
   const list = visible(role, user!.name).filter((s) => !s.cancelled && s.date <= TODAY && s.date >= addDays(TODAY, -14));
   const today = list.filter(isToday).sort((a, b) => a.start.localeCompare(b.start));
   const recent = list.filter((s) => !isToday(s)).sort((a, b) => (b.date + b.start).localeCompare(a.date + a.start));
@@ -52,6 +54,15 @@ export function AttendanceListPage() {
       <Link to="/duyet-phep" className="btn at-leaves">
         Duyệt đơn xin phép ({pendingFor(user!.name, role)})
       </Link>
+      {/* S5-01 */}
+      <div className="at-classes">
+        <span>Bảng chuyên cần:</span>
+        {(role === 5 || role === 6 ? CLASSES.filter((k) => k.status === 'Đang học') : classesOf(user!.name).filter((k) => k.status === 'Đang học')).map((k) => (
+          <Link key={k.code} to={'/chuyen-can/' + k.code} className="chip">
+            {k.code}
+          </Link>
+        ))}
+      </div>
       <h3 className="section-t">Hôm nay</h3>
       <div className="at-today">
         {today.map((s) => (
@@ -154,11 +165,16 @@ export function TakeAttendancePage() {
     const by = user!.name;
     const roleName = ROLES[role];
     if (saved) {
-      for (const st of changes) ATT_LOGS.unshift({ session: s!.id, at, by, role: roleName, text: `${st.name}: ${saved.marks[st.code] ?? 'chưa có'} → ${marks[st.code]}${reason.trim() ? '. Lý do: ' + reason.trim() : ''}` });
+      for (const st of changes) {
+        ATT_LOGS.unshift({ session: s!.id, at, by, role: roleName, text: `${st.name}: ${saved.marks[st.code] ?? 'chưa có'} → ${marks[st.code]}${reason.trim() ? '. Lý do: ' + reason.trim() : ''}` });
+        // S6-11
+        audit({ at, by, role: roleName, entity: 'Điểm danh', action: 'Sửa điểm danh', target: `${st.code} · ${s!.cls} buổi ${s!.no}`, changes: [{ field: 'Trạng thái', before: saved.marks[st.code] ?? 'chưa có', after: marks[st.code] }], note: reason.trim() || undefined });
+      }
     } else {
       ATT_LOGS.unshift({ session: s!.id, at, by, role: roleName, text: `Lưu điểm danh lần đầu: ${summary({ savedAt: at, savedBy: by, marks, notes })}.` });
     }
     SHEETS[s!.id] = { savedAt: at, savedBy: by, marks, notes };
+    flagCheck(s!.cls); // S5-02
     saveAll();
     toast(saved ? 'Đã lưu sửa điểm danh' : 'Đã lưu điểm danh', `${s!.cls} · Buổi ${s!.no}`);
     navigate('/diem-danh');

@@ -2,7 +2,7 @@
 /* login.css đặt margin, padding về 0 cho mọi phần tử trong .lg-page nên trả lại khoảng cách của ô nhập ở đây. */
 .ct-right .field{margin-bottom:16px}.ct-right .field label{margin-bottom:6px}.ct-right .err{margin-top:5px}.ct-right .inp textarea{padding:10px 14px}
 .lg-page .ct-card{grid-template-columns:560px 1fr}
-.lg-page .ct-h{font-size:38px}
+.lg-page .lg-hero .ct-h{font-size:38px}
 .lg-page .ct-feat{align-items:center;padding:10px 12px}
 .lg-page .ct-feat .lg-ic{width:36px;height:36px}
 .lg-page .ct-feat h3{font-size:15px}
@@ -18,10 +18,10 @@
 .ct-note{text-align:center;margin-top:12px;font-size:13px}
 .ct-thanks .box{text-align:left}
 .ct-back{margin-top:4px;height:48px;font-size:14px}
-@media(max-width:900px){.lg-page .ct-card{grid-template-columns:1fr}.ct-right{padding:32px 24px}.ct-right h2{font-size:26px}.lg-page .ct-h{font-size:30px}}
+@media(max-width:900px){.lg-page .ct-card{grid-template-columns:1fr}.ct-right{padding:32px 24px}.ct-right h2{font-size:26px}.lg-page .lg-hero .ct-h{font-size:30px}}
 /* Màn hình laptop thấp: thu khoảng cách để biểu mẫu nằm gọn trong màn hình (đi cùng phần thu gọn trong login.css). */
 @media (min-width:901px) and (max-height:900px){
-.lg-page .ct-h{font-size:32px}
+.lg-page .lg-hero .ct-h{font-size:32px}
 .ct-right{padding:28px 56px}
 .ct-right h2{font-size:26px;margin:4px 0 16px}
 .ct-right .field{margin-bottom:12px}

@@ -1,0 +1,14 @@
+/* S5-07. Trang nộp bài: đề bài bên trái, khung bài nộp bên phải. Dùng lại .lv-drop, .as-files. */
+.sb-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.sb-title{font-size:22px;line-height:1.3}
+.sb-due{display:flex;align-items:center;gap:8px;margin:14px 0 18px;padding:10px 14px;border-radius:var(--r);background:var(--hover);font-weight:500}
+.sb-due.off{background:var(--bad-bg);color:var(--bad)}.sb-due.wait{background:var(--warn-bg);color:var(--warn)}
+.sb-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.sb-head h3{margin:0!important}
+.as-files li.bad{border-color:var(--bad-line);background:var(--bad-bg)}.as-files li.bad span,.as-files li.bad small{color:var(--bad)}
+.sb-err{margin:-4px 0 12px}
+.sb-foot{display:flex;align-items:center;justify-content:flex-end;gap:12px;margin-top:16px;flex-wrap:wrap}.sb-foot .err{flex:1;margin:0}
+.lv-drop{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;border:1px dashed var(--line);border-radius:var(--r);padding:18px;margin:6px 0 10px;cursor:pointer;text-align:center}
+.lv-drop:hover{border-color:var(--blue)}.lv-drop svg{color:var(--blue)}.lv-drop small{color:var(--muted)}
+.lv-drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+@media(max-width:1100px){.sb-grid{grid-template-columns:1fr}}
+.warn-t{color:var(--warn)}

@@ -4,7 +4,9 @@ import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { ConfirmDialog, Filter, initial, Pager, paginate, Pill, RowMenu, Search, usePaging } from '../../components/ui';
+import { audit } from '../../data/audit';
 import { useAuth } from '../../data/auth';
+import { TODAY } from '../../data/funnel';
 import { moveToTrash, restore } from '../../data/trash';
 import { ROLES, USERS_MODULE } from '../../data/permissions';
 import { statusTone, USERS, type Status, type UserRow } from '../../data/users';
@@ -63,6 +65,11 @@ export function UserListPage() {
           <h2>Tài khoản người dùng</h2>
           <p>{users.length} tài khoản</p>
         </div>
+        {/* S6-11 */}
+        <Link to="/quan-tri/nhat-ky" className="btn">
+          <Icon name="file" size={16} />
+          Nhật ký thao tác
+        </Link>
         <Link to="/quan-tri/thung-rac" className="btn">
           <Icon name="trash" size={16} />
           Thùng rác
@@ -156,6 +163,11 @@ export function UserListPage() {
               setUsers((list) => [{ ...u, id: Math.max(...list.map((x) => x.id)) + 1 }, ...list]);
               toast('Đã tạo tài khoản', `Email kích hoạt đã gửi tới ${u.email}.`);
             } else {
+              // S6-11: đổi vai trò được ghi nhật ký thao tác.
+              const before = editing.roles.map((r) => ROLES[r]).join(', ');
+              const after = u.roles.map((r) => ROLES[r]).join(', ');
+              if (before !== after)
+                audit({ at: TODAY + 'T' + new Date().toTimeString().slice(0, 5), by: me?.name ?? '', role: me ? ROLES[me.active] : '', entity: 'Vai trò', action: u.roles.length > editing.roles.length ? 'Thêm vai trò' : u.roles.length < editing.roles.length ? 'Gỡ vai trò' : 'Đổi vai trò', target: `${u.email.split('@')[0]} · ${u.name}`, changes: [{ field: 'Vai trò', before: before || '(không có)', after: after || '(không còn vai trò)' }] });
               update(u);
               toast('Đã lưu thay đổi', u.name);
             }
