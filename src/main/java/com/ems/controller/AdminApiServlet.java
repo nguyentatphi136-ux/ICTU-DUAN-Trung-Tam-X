@@ -18,6 +18,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,6 +39,16 @@ public class AdminApiServlet extends HttpServlet {
             throws IOException {
         try {
             String path = request.getPathInfo() == null ? "" : request.getPathInfo();
+            if ("/users/import/template".equals(path)) {
+                response.setContentType("text/csv; charset=UTF-8");
+                response.setHeader("Content-Disposition", "attachment; filename=\"mau_nhap_nguoi_dung_tms.csv\"");
+                String csv = "\uFEFFHọ và tên,Email,Số điện thoại,Vai trò,Ngày sinh,Giới tính,Địa chỉ\n"
+                        + "Nguyễn Văn An,an.nguyen@tms.vn,0912345678,HOC_VIEN,2003-05-15,Nam,Hà Nội\n"
+                        + "Trần Thị Bình,binh.tran@tms.vn,0987654321,HOC_VIEN,2002-11-20,Nữ,Thái Nguyên\n"
+                        + "Lê Hoàng Cường,cuong.le@tms.vn,0903112233,GIANG_VIEN,1990-08-10,Nam,Đà Nẵng\n";
+                response.getWriter().write(csv);
+                return;
+            }
             Object data = switch (path) {
                 case "/roles" -> permissionDAO.listRoles();
                 case "/permissions" -> permissionDAO.listPermissions();
@@ -177,6 +188,23 @@ public class AdminApiServlet extends HttpServlet {
         String path = request.getPathInfo() == null ? "" : request.getPathInfo();
         Matcher userMatcher = USER_ROLE_PATH.matcher(path);
         try {
+            if ("/users/import/preview".equals(path)) {
+                JsonObject body = GSON.fromJson(request.getReader(), JsonObject.class);
+                List<Map<String, Object>> rows = parseRowsFromJson(body);
+                Map<String, Object> preview = adminDAO.previewUsersBatch(rows);
+                ApiResponse.success(response, "IMPORT_PREVIEW_SUCCESS", "Xem trước danh sách người dùng thành công.", preview);
+                return;
+            }
+            if ("/users/import".equals(path)) {
+                Object actor = request.getAttribute("authenticatedUserId");
+                long actorId = (actor instanceof Long l) ? l : 0;
+                JsonObject body = GSON.fromJson(request.getReader(), JsonObject.class);
+                String fileName = body != null && body.has("fileName") ? body.get("fileName").getAsString() : "import_users.xlsx";
+                List<Map<String, Object>> rows = parseRowsFromJson(body);
+                Map<String, Object> summary = adminDAO.importUsersBatch(actorId, fileName, rows);
+                ApiResponse.success(response, "IMPORT_BATCH_SUCCESS", "Nhập danh sách người dùng thành công.", summary);
+                return;
+            }
             if ("/users".equals(path) || "/users/".equals(path)) {
                 Object actor = request.getAttribute("authenticatedUserId");
                 if (!(actor instanceof Long actorId)) {
@@ -296,6 +324,29 @@ public class AdminApiServlet extends HttpServlet {
         } catch (SQLException exception) {
             serviceUnavailable(response);
         }
+    }
+
+    private List<Map<String, Object>> parseRowsFromJson(JsonObject body) {
+        List<Map<String, Object>> rows = new ArrayList<>();
+        if (body != null && body.has("rows") && body.get("rows").isJsonArray()) {
+            JsonArray arr = body.getAsJsonArray("rows");
+            for (JsonElement el : arr) {
+                if (el.isJsonObject()) {
+                    JsonObject obj = el.getAsJsonObject();
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    if (obj.has("fullName")) row.put("fullName", obj.get("fullName").getAsString());
+                    else if (obj.has("name")) row.put("fullName", obj.get("name").getAsString());
+                    if (obj.has("email")) row.put("email", obj.get("email").getAsString());
+                    if (obj.has("phone")) row.put("phone", obj.get("phone").getAsString());
+                    if (obj.has("role")) row.put("role", obj.get("role").getAsString());
+                    if (obj.has("dateOfBirth")) row.put("dateOfBirth", obj.get("dateOfBirth").getAsString());
+                    if (obj.has("gender")) row.put("gender", obj.get("gender").getAsString());
+                    if (obj.has("address")) row.put("address", obj.get("address").getAsString());
+                    rows.add(row);
+                }
+            }
+        }
+        return rows;
     }
 
     private List<String> stringArray(JsonObject body, String key) {
