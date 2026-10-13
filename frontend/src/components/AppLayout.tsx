@@ -4,6 +4,7 @@ import { useAuth } from '../data/auth';
 import { canAccess, menuFor, ROLES } from '../data/permissions';
 import { ErrorPage } from '../pages/S1-07-trang-loi/ErrorPage';
 import { Icon } from './Icon';
+import { NotificationBell } from './NotificationBell';
 import { ThemeToggle } from './ThemeToggle';
 
 type Props = {
@@ -95,7 +96,7 @@ export function AppLayout({ crumb, module, children }: Props) {
         {multi && <div className="me-roles">{roleList}</div>}
         <nav className="nav">
           {items.map((m) => (
-            <NavLink key={m.name} to={moduleHref(m.name, m.to)} end={m.to === '/'} className={({ isActive }) => (isActive || isUnder(location.pathname, m.to) ? 'on' : undefined)}>
+            <NavLink key={m.name} to={moduleHref(m.name, m.to)} end={m.to === '/'} className={({ isActive }) => (isActive || isUnder(location.pathname, m.to) || (!!module && m.name === module) ? 'on' : undefined)}>
               <Icon name={m.icon} />
               {m.name}
             </NavLink>
@@ -127,7 +128,7 @@ export function AppLayout({ crumb, module, children }: Props) {
             ))}
           </div>
           <ThemeToggle />
-          <Icon name="bell" />
+          <NotificationBell />
           <div className="um" ref={menuRef}>
             <button type="button" className="um-btn" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
               <span className="who">
@@ -152,6 +153,7 @@ export function AppLayout({ crumb, module, children }: Props) {
                 <div className="um-links">
                   <Link to="/ho-so">Hồ sơ cá nhân</Link>
                   <Link to="/doi-mat-khau">Đổi mật khẩu</Link>
+                  <Link to="/cai-dat">Cài đặt thông báo</Link>
                   <button type="button" className="danger" onClick={logout}>
                     Đăng xuất
                     <small>Kết thúc phiên trên máy chủ ngay</small>
