@@ -1,20 +1,23 @@
 /* Layout ứng dụng (sidebar, thanh trên, menu người dùng), bảng, ngăn bên, hộp thoại, bộ lọc: dùng cho mọi trang sau đăng nhập. */
 .app{display:grid;grid-template-columns:248px 1fr;min-height:100vh}
-.side{background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:14px 12px 0;position:sticky;top:0;height:100vh}
+/* Sidebar theo Figma: nền gradient như bên trái trang đăng nhập (sáng xanh, tối tím đỏ), vòng tròn mờ góc trên,
+   biểu tượng nằm trong ô vuông nền trắng (tối: nền xám), mục đang chọn là ô trắng mờ có viền. */
+.side{background:var(--hero);display:flex;flex-direction:column;padding:14px 12px 0;position:sticky;top:0;height:100vh;overflow:hidden}
+.side::before{content:"";position:absolute;right:-120px;top:-140px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.14);pointer-events:none}
+.side>*{position:relative}
 .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;color:var(--navy);padding:0 8px 18px}
 .logo span{width:36px;height:36px;border-radius:var(--r);display:grid;place-items:center;color:#fff;background:var(--logo)}
-.side .me{display:none;gap:12px;align-items:center;padding:4px 8px 14px}
-.side .me b{display:block;font-size:15px}.side .me span{display:block;font-size:13px;color:var(--muted)}
-.me-roles{display:none;border-bottom:1px solid var(--line);margin:0 0 10px;padding-bottom:10px}
-.nav{flex:1;overflow:auto;margin:0 -12px;padding:0 12px}
-.nav a,.side .out{display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:var(--r);color:var(--ink);font-weight:400;font-size:13.5px;margin-bottom:4px;border:0;background:none;width:100%;text-align:left;white-space:nowrap}
-.nav a svg,.side .out svg{color:var(--muted)}
-.nav a:hover{background:var(--hover)}
-.nav a.on{position:relative;background:var(--soft);color:var(--blue);font-weight:600}
-/* Thanh nhỏ sát mép trái sidebar ở mục đang chọn, cùng màu nền bên trái trang đăng nhập. */
-.nav a.on::before{content:"";position:absolute;left:-12px;top:0;bottom:0;width:4px;border-radius:0 4px 4px 0;background:var(--hero)}
-.nav a.on svg{color:var(--blue)}
-.side .out{border-top:1px solid var(--line);border-radius:0;height:64px;margin:0 -12px;width:calc(100% + 24px);padding:0 24px}
+.side .logo span{background:var(--ink);color:var(--mint)}[data-theme=dark] .side .logo span{color:var(--blue)}
+.side .me{display:none;gap:12px;align-items:center;padding:4px 8px 14px;color:var(--navy)}
+.side .me b{display:block;font-size:15px}.side .me span{display:block;font-size:13px;color:var(--navy-soft)}
+.me-roles{display:none;border-bottom:1px solid rgba(255,255,255,.35);margin:0 0 10px;padding-bottom:10px}
+.side .role.on{background:rgba(255,255,255,.3)}.side .role.on b,.side .role small,.side .role svg{color:var(--navy)}
+.nav{flex:1;overflow:auto;margin:0 -12px;padding:0 12px;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.5) transparent}
+.nav a,.side .out{display:flex;align-items:center;gap:10px;height:36px;padding:0 6px;border-radius:var(--r);color:var(--navy);font-weight:400;font-size:13.5px;margin-bottom:3px;border:1px solid transparent;background:none;width:100%;text-align:left;white-space:nowrap}
+.nav a svg,.side .out svg{width:26px;height:26px;padding:5px;border-radius:var(--r);background:var(--surface);color:var(--blue)}
+.nav a:hover{background:rgba(255,255,255,.15)}
+.nav a.on{background:rgba(255,255,255,.3);border-color:rgba(255,255,255,.6);font-weight:600}
+.side .out{border:0;border-top:1px solid rgba(255,255,255,.35);border-radius:0;height:64px;margin:0 -12px;width:calc(100% + 24px);padding:0 18px}
 .main{min-width:0}
 .top{height:64px;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;padding:0 32px;position:sticky;top:0;z-index:5}
 .top .crumb{font-weight:600;font-size:15px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}

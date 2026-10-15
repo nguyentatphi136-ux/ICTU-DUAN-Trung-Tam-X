@@ -3,14 +3,14 @@
   --surface:#fff;--raised:#fff;--hover:#f7f9fc;--chip:#f0f1f5;--faint:#a4abba;
   --ok-bg:#ecfdf3;--ok-line:#abefc6;--warn:#93370d;--warn-bg:#fffaeb;--warn-line:#fedf89;
   --bad:#b42318;--bad-bg:#fef3f2;--bad-line:#fecdca;--info:#0b4a99;--info-bg:#eff6ff;--info-line:#b3d4fb;
-  --grad:linear-gradient(135deg,#0575E6,#00F260);--logo:linear-gradient(135deg,#9FCCFA,#0974F1);--hero:var(--logo);--side:var(--surface);
+  --grad:linear-gradient(135deg,#0575E6,#00F260);--logo:linear-gradient(135deg,#9FCCFA,#0974F1);--hero:var(--logo);
   --glow:rgba(0,190,130,.25);--scrim:rgba(6,36,77,.45);--er-num:linear-gradient(180deg,#cfe4fd,#b3d4fb);--card-glow:rgba(9,116,241,.15)}
 /* Giao diện tối theo bảng "Giao diện tối" trong Figma: nền đen ngả xám, điểm nhấn gradient hồng sang cam. */
 :root[data-theme=dark]{color-scheme:dark;--ink:#ECECEF;--muted:#A1A1AA;--line:#3A3A40;--bg:#18181B;--blue:#F7708F;--navy:#ECECEF;--navy-soft:#E4E4E7;--soft:#3D1A28;--red:#FF6B5F;--green:#4ADE80;
   --surface:#232327;--raised:#2A2A2E;--hover:#2A2A2E;--chip:#3A3A40;--faint:#71717A;
   --ok-bg:#0F2E22;--ok-line:#1E5A3C;--warn:#FBBF5C;--warn-bg:#33270D;--warn-line:#5C4719;
   --bad:#FF6B5F;--bad-bg:#3A1616;--bad-line:#6A2A26;--info:#F7708F;--info-bg:#3D1A28;--info-line:#7A2943;
-  --grad:linear-gradient(135deg,#D4145A,#FBB03B);--logo:var(--grad);--hero:linear-gradient(135deg,#42378F,#F53844);--side:#232327;
+  --grad:linear-gradient(135deg,#D4145A,#FBB03B);--logo:var(--grad);--hero:linear-gradient(135deg,#42378F,#F53844);
   --glow:rgba(212,20,90,.3);--scrim:rgba(0,0,0,.6);--er-num:linear-gradient(180deg,#3A3A40,#2A2A2E);--card-glow:rgba(0,0,0,.4)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Be Vietnam Pro',system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.5}
