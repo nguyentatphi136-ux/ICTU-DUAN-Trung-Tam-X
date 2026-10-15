@@ -1,3 +1,4 @@
+import { useTitle } from '../../components/ui';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../data/auth';
@@ -20,6 +21,7 @@ const FEATURES = [
 type LoginState = { from?: string; loggedOut?: boolean; expired?: boolean; email?: string } | null;
 
 export function LoginPage() {
+  useTitle('Đăng nhập');
   const { signIn, signOut } = useAuth();
   const navigate = useNavigate();
   const state = useLocation().state as LoginState;

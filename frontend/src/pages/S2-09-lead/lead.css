@@ -3,6 +3,6 @@
 .ld-table tbody tr:hover td{background:var(--hover)}
 .ld-none{color:var(--red);font-size:13px}
 .ld-fields{border:0;margin:0;padding:0;min-width:0}
-.inp.warn input{border-color:#fdb022}
+.inp.warn input{border-color:var(--warn)}
 .ld-dup{margin-top:-6px}
 .link{border:0;background:none;color:var(--blue);font-weight:500;padding:0;display:block;margin-top:6px}

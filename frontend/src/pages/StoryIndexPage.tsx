@@ -1,3 +1,4 @@
+import { useTitle } from '../components/ui';
 import { Link } from 'react-router-dom';
 import { ThemeToggle } from '../components/ThemeToggle';
 
@@ -90,6 +91,7 @@ const STORIES: [string, string, string][] = [
 ];
 
 export function StoryIndexPage() {
+  useTitle('Danh sách màn hình');
   return (
     <div className="page">
       <div className="card" style={{ maxWidth: 720 }}>

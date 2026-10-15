@@ -229,3 +229,10 @@ export function Search({ placeholder, value, onChange, width }: { placeholder: s
 /** Chữ cái đầu của tên gọi (chữ cuối họ tên), dùng cho ảnh đại diện tròn. */
 export const initial = (name: string) => (name.trim().split(/\s+/).pop() ?? '?')[0];
 
+
+// Tiêu đề tab trình duyệt theo từng trang: "<tên trang> - TMS".
+export function useTitle(title: string) {
+  useEffect(() => {
+    document.title = title + ' - TMS';
+  }, [title]);
+}

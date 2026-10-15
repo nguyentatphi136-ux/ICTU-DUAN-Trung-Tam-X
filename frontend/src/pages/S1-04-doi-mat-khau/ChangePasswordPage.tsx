@@ -1,3 +1,4 @@
+import { useTitle } from '../../components/ui';
 import { useState } from 'react';
 import { Link, Navigate, useLocation } from 'react-router-dom';
 import { Badge, CardPage } from '../../components/CardPage';
@@ -10,6 +11,7 @@ import { DEMO_PASSWORD } from '../S1-01-dang-nhap/mockAuth';
 // S1-04. Đổi mật khẩu khi đã đăng nhập. Nút chỉ bật khi đủ bốn yêu cầu và hai ô mật khẩu mới khớp nhau.
 // Khi tích hợp: POST /auth/change-password { current, password }; máy chủ thu hồi mọi phiên khác, giữ phiên hiện tại.
 export function ChangePasswordPage() {
+  useTitle('Đổi mật khẩu');
   const { user } = useAuth();
   const location = useLocation();
   const [current, setCurrent] = useState('');

@@ -1,3 +1,4 @@
+import { useTitle } from '../../components/ui';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Icon, type IconName } from '../../components/Icon';
 import { ThemeToggle } from '../../components/ThemeToggle';
@@ -30,6 +31,7 @@ export function ErrorPage({ code: fixed }: { code?: Code }) {
   const raw = fixed ?? params.code ?? '404';
   const code: Code = raw in PAGES ? (raw as Code) : '404';
   const p = PAGES[code];
+  useTitle('Lỗi ' + code);
 
   return (
     <div className="er-page">

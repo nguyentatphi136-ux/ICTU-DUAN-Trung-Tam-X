@@ -1,3 +1,4 @@
+import { useTitle } from '../../components/ui';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Badge, CardPage } from '../../components/CardPage';
@@ -20,6 +21,7 @@ const BackToLogin = () => (
 // S1-03 bước 1 và 2: nhập email, báo đã gửi. Cùng một thông báo cho mọi email để không dò được ai có tài khoản.
 // Khi tích hợp: POST /auth/forgot-password { email }.
 export function ForgotPasswordPage() {
+  useTitle('Quên mật khẩu');
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [sentAt, setSentAt] = useState(0);
@@ -106,6 +108,7 @@ export function ForgotPasswordPage() {
 // S1-03 bước 3 đến 5: mở từ liên kết trong email. token "het-han" mô phỏng liên kết quá 30 phút hoặc đã dùng.
 // Khi tích hợp: POST /auth/reset-password { token, password }; máy chủ trả 410 nếu liên kết hết hiệu lực.
 export function ResetPasswordPage() {
+  useTitle('Đặt lại mật khẩu');
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [pw, setPw] = useState('');

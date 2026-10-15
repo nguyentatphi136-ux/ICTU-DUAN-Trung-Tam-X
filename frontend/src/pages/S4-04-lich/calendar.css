@@ -12,7 +12,7 @@
 .cal-cell{border-left:1px solid var(--line);padding:6px;display:flex;flex-direction:column;gap:6px;min-width:0}
 .ev{--c:var(--blue);--bg:var(--info-bg);display:block;width:100%;text-align:left;border:0;border-left:3px solid var(--c);background:var(--bg);border-radius:4px;padding:5px 7px;font:inherit;font-size:12px;color:var(--c);cursor:pointer;overflow:hidden}
 .ev b{display:block;font-size:12px}.ev span{display:block;opacity:.85;line-height:1.35}
-.ev.amber{--c:var(--warn);--bg:var(--warn-bg)}.ev.green{--c:var(--green);--bg:var(--ok-bg)}.ev.violet{--c:#6941c6;--bg:#f4f3ff}
+.ev.amber{--c:var(--warn);--bg:var(--warn-bg)}.ev.green{--c:var(--green);--bg:var(--ok-bg)}.ev.violet{--c:var(--navy-soft);--bg:var(--chip)}
 .ev.red{--c:var(--bad);--bg:var(--bad-bg)}.ev.off{--c:var(--faint);--bg:var(--chip);text-decoration:line-through}
 .ev:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
 .cal-month{overflow:hidden}

@@ -6,6 +6,7 @@ import { ErrorPage } from '../pages/S1-07-trang-loi/ErrorPage';
 import { Icon } from './Icon';
 import { NotificationBell } from './NotificationBell';
 import { ThemeToggle } from './ThemeToggle';
+import { useTitle } from './ui';
 
 type Props = {
   /** Đường dẫn trên thanh trên, phần tử cuối là trang hiện tại. */
@@ -26,6 +27,7 @@ export function AppLayout({ crumb, module, children }: Props) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
+  useTitle(crumb[crumb.length - 1]);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setOpen(false), [location.pathname]);

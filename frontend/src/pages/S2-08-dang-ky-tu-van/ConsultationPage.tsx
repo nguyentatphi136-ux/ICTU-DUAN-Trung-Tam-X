@@ -1,3 +1,4 @@
+import { useTitle } from '../../components/ui';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '../../components/CardPage';
@@ -20,6 +21,7 @@ type Form = { name: string; phone: string; email: string; program: string; messa
 // S2-08. Biểu mẫu công khai, không cần đăng nhập. Gửi thành công tạo một lead trạng thái Mới, chưa phân công.
 // Ô "Tôi không phải người máy" là chỗ đặt CAPTCHA thật. Khi tích hợp: POST /public/consultations (kèm token CAPTCHA).
 export function ConsultationPage() {
+  useTitle('Đăng ký tư vấn');
   const [f, setF] = useState<Form>({ name: '', phone: '', email: '', program: '', message: '' });
   const [human, setHuman] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof Form | 'human', string>>>({});

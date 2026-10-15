@@ -1,3 +1,4 @@
+import { useTitle } from '../../components/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
@@ -28,6 +29,7 @@ const hhmm = (t: number) => new Date(t).toTimeString().slice(0, 5);
 // hết hạn thì lưu nháp và về trang đăng nhập, đăng nhập lại thì mở đúng form và điền lại nội dung.
 // ?canh-bao=1 mở ngay hộp thoại cảnh báo để kiểm thử.
 export function SessionDemoPage() {
+  useTitle('Phiên đăng nhập');
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();

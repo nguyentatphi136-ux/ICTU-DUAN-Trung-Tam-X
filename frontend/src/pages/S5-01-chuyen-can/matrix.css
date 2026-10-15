@@ -2,7 +2,7 @@
 .cc-bar{align-items:center}.cc-bar .check-box.on{color:var(--blue);border-color:var(--blue);background:var(--soft)}
 .cc-legend{margin-left:auto;display:flex;gap:16px;font-size:13px;color:var(--muted);flex-wrap:wrap}
 .cc-legend span::before{content:'';display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
-.cc-legend .ok,.cc-cell.ok{--c:#12b76a}.cc-legend .wait,.cc-cell.wait{--c:#f79009}.cc-legend .info,.cc-cell.info{--c:var(--blue)}.cc-legend .off,.cc-cell.off{--c:var(--red)}
+.cc-legend .ok,.cc-cell.ok{--c:var(--green)}.cc-legend .wait,.cc-cell.wait{--c:var(--warn)}.cc-legend .info,.cc-cell.info{--c:var(--blue)}.cc-legend .off,.cc-cell.off{--c:var(--red)}
 .cc-wrap{overflow-x:auto}
 .cc{border-collapse:separate;border-spacing:0}
 .cc th,.cc td{padding:8px 4px;text-align:center;font-size:12px}
