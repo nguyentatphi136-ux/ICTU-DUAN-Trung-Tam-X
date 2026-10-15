@@ -58,6 +58,13 @@ const users = [
     [ROLES.ADMISSIONS],
     process.env.DEMO_TUVAN_PASSWORD || 'tuvan123',
   ),
+  createUser(
+    '7',
+    's25200212101@tms.vn',
+    'NGUYEN MINH ANH',
+    [ROLES.STUDENT],
+    'student123',
+  ),
 ];
 
 function findUserById(id) {
@@ -124,6 +131,7 @@ function resetUsers() {
     createUser('4', process.env.DEMO_MANAGER_EMAIL || 'manager@example.com', 'Phạm Thị Quản (Quản lý đào tạo)', [ROLES.TRAINING_MANAGER], process.env.DEMO_MANAGER_PASSWORD || 'manager123'),
     createUser('5', process.env.DEMO_ADMISSIONS_EMAIL || 'admissions@example.com', 'Lê Thị Thu Hà (Tư vấn viên)', [ROLES.ADMISSIONS], process.env.DEMO_ADMISSIONS_PASSWORD || 'admissions123'),
     createUser('6', process.env.DEMO_TUVAN_EMAIL || 'tuvan@example.com', 'Hoàng Văn Tư (Tư vấn viên)', [ROLES.ADMISSIONS], process.env.DEMO_TUVAN_PASSWORD || 'tuvan123'),
+    createUser('7', 's25200212101@tms.vn', 'NGUYEN MINH ANH', [ROLES.STUDENT], 'student123'),
   );
 }
 

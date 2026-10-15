@@ -1,9 +1,12 @@
-// Kho lưu trữ dữ liệu hồ sơ học viên và nghiệp vụ chuyển đổi Lead (Story S3-03 / IDTTX-211)
+// Kho lưu trữ dữ liệu hồ sơ học viên và nghiệp vụ chuyển đổi Lead (Story S3-03 & S3-04)
 const { ROLES } = require('../constants/roles');
 const {
   DEFAULT_STUDENT_STATUS,
+  PHONE_MSG,
   STUDENT_STATUSES,
   isValidEmail,
+  isValidPhone,
+  isValidStudentStatus,
   loginOf,
   pad,
   seq,
@@ -11,6 +14,7 @@ const {
 const { addUser, findUserById, users } = require('./users');
 const { addLeadCareLog, findLeadById, leads } = require('./leads');
 const { LEAD_STATUS } = require('../constants/leads');
+const { classSize, findClass, totalSessions } = require('./classes');
 
 // Danh sách học viên mẫu khởi tạo ban đầu đồng bộ với frontend (data/students.ts)
 const SEED_STUDENTS = [
@@ -251,12 +255,38 @@ function nextStudentCode(yearPrefix = '26') {
 }
 
 /**
- * Tìm học viên theo mã HV
+ * Tìm học viên theo mã HV kèm thông tin lớp đang học (nếu có)
  */
-function findStudentByCode(code) {
+function findStudentByCode(code, { enrichClass = true } = {}) {
   if (!code || typeof code !== 'string') return null;
   const upper = code.trim().toUpperCase();
-  return students.find((s) => s.code.toUpperCase() === upper) || null;
+  const student = students.find((s) => s.code.toUpperCase() === upper);
+  if (!student) return null;
+
+  if (enrichClass) {
+    const clone = { ...student, notes: [...student.notes], history: [...student.history] };
+    if (student.cls) {
+      const k = findClass(student.cls);
+      if (k) {
+        clone.currentClass = {
+          code: k.code,
+          program: k.program,
+          start: k.start,
+          max: k.max,
+          mode: k.mode,
+          status: k.status,
+          done: k.done,
+          slot: k.slot,
+          room: k.room || '',
+          totalSessions: totalSessions(k),
+          classSize: classSize(k.code, students),
+          subjects: k.subjects,
+        };
+      }
+    }
+    return clone;
+  }
+  return student;
 }
 
 /**
@@ -267,7 +297,7 @@ function findStudentByLeadId(leadId) {
 }
 
 /**
- * Lấy danh sách học viên kèm tìm kiếm và bộ lọc
+ * Lấy danh sách học viên kèm tìm kiếm, bộ lọc và thống kê (Story S3-04)
  */
 function getStudents({ search = '', status = '', program = '', cls = '', page = 1, limit = 20 } = {}) {
   let list = students;
@@ -278,10 +308,10 @@ function getStudents({ search = '', status = '', program = '', cls = '', page = 
     list = list.filter((s) => {
       const matchCode = s.code.toLowerCase().includes(q);
       const matchName = s.name.toLowerCase().includes(q);
-      const matchEmail = s.email.toLowerCase().includes(q);
+      const matchEmail = (s.email || '').toLowerCase().includes(q);
       const matchLogin = (s.login || '').toLowerCase().includes(q);
       const cleanStudentPhone = (s.phone || '').replace(/[\s.-]/g, '');
-      const matchPhone = cleanStudentPhone.includes(cleanPhone);
+      const matchPhone = cleanPhone.length > 2 && cleanStudentPhone.includes(cleanPhone);
       return matchCode || matchName || matchEmail || matchLogin || matchPhone;
     });
   }
@@ -305,21 +335,107 @@ function getStudents({ search = '', status = '', program = '', cls = '', page = 
   const offset = (pageNum - 1) * limitNum;
   const paginated = list.slice(offset, offset + limitNum);
 
+  const studyingCount = students.filter((s) => s.status === 'Đang học').length;
+  const totalAll = students.length;
+  const from = total === 0 ? 0 : offset + 1;
+  const to = Math.min(offset + limitNum, total);
+
   return {
     total,
     page: pageNum,
     limit: limitNum,
     totalPages,
+    from,
+    to,
+    studyingCount,
+    totalAll,
+    items: paginated,
     students: paginated,
     data: paginated,
   };
 }
 
 /**
+ * Cập nhật thông tin hồ sơ học viên (Story S3-04 / IDTTX-212 / Subtask IDTTX-241)
+ * Cho phép xem và sửa thông tin cá nhân, trình độ đầu vào và thêm ghi chú
+ */
+function updateStudentProfile(code, payload = {}, user = {}) {
+  const student = students.find((s) => s.code.toUpperCase() === (code || '').trim().toUpperCase());
+  if (!student) {
+    const err = new Error('Không tìm thấy học viên');
+    err.code = 'STUDENT_NOT_FOUND';
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // 1. Kiểm tra validation số điện thoại nếu có gửi lên
+  if (payload.phone !== undefined) {
+    if (!isValidPhone(payload.phone)) {
+      const err = new Error(PHONE_MSG);
+      err.code = 'INVALID_PHONE';
+      err.statusCode = 400;
+      throw err;
+    }
+    student.phone = payload.phone.trim();
+  }
+
+  // 2. Kiểm tra validation email nếu có gửi lên
+  if (payload.email !== undefined && payload.email !== '') {
+    if (!isValidEmail(payload.email)) {
+      const err = new Error('Email liên hệ không hợp lệ');
+      err.code = 'INVALID_EMAIL';
+      err.statusCode = 400;
+      throw err;
+    }
+    student.email = payload.email.trim();
+  }
+
+  // 3. Cập nhật các trường thông tin cá nhân
+  if (payload.birth !== undefined) {
+    student.birth = payload.birth ? String(payload.birth).trim() : '';
+  }
+  if (payload.address !== undefined) {
+    student.address = String(payload.address || '').trim();
+  }
+
+  // 4. Cập nhật trình độ đầu vào
+  if (payload.entryScore !== undefined) {
+    student.entryScore = String(payload.entryScore || '').trim();
+  }
+  if (payload.level !== undefined) {
+    student.level = String(payload.level || '').trim();
+  }
+  if (payload.background !== undefined) {
+    student.background = String(payload.background || '').trim();
+  }
+
+  // 5. Cập nhật trạng thái nếu hợp lệ
+  if (payload.status !== undefined && payload.status.trim()) {
+    if (isValidStudentStatus(payload.status)) {
+      student.status = payload.status.trim();
+    }
+  }
+
+  // 6. Tự động thêm ghi chú nếu có gửi kèm trong Drawer chỉnh sửa (S3-04 Figma)
+  const noteText = payload.note || payload.text;
+  if (noteText && String(noteText).trim()) {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    student.notes.unshift({
+      at: todayStr,
+      by: user.name || 'Quản lý đào tạo',
+      text: String(noteText).trim(),
+    });
+  }
+
+  student.updatedAt = new Date().toISOString();
+  return findStudentByCode(code);
+}
+
+/**
  * Thêm ghi chú vào hồ sơ học viên
  */
 function addStudentNote(code, { text, by = 'Tư vấn viên' }) {
-  const student = findStudentByCode(code);
+  const student = students.find((s) => s.code.toUpperCase() === (code || '').trim().toUpperCase());
   if (!student) {
     const err = new Error('Không tìm thấy học viên');
     err.code = 'STUDENT_NOT_FOUND';
@@ -502,4 +618,5 @@ module.exports = {
   nextStudentCode,
   seedSampleStudents,
   students,
+  updateStudentProfile,
 };

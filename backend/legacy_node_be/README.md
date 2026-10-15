@@ -253,3 +253,102 @@ Content-Type: application/json
   "emailSentTo": "duc.tm@gmail.com"
 }
 ```
+
+---
+
+## API Quản lý Hồ sơ học viên (Story S3-04 - IDTTX-212 / Subtask IDTTX-241)
+
+Áp dụng cho nhánh: **`feature/S3-04-ho-so-hoc-vien`**
+
+### Yêu cầu nghiệp vụ Story S3-04:
+> **User Story:** Là Quản lý đào tạo, tôi muốn quản lý hồ sơ học viên, để tra cứu được toàn bộ quá trình học của một người khi họ xin cấp lại bảng điểm.
+
+1. **Xem và sửa thông tin cá nhân, trình độ đầu vào, ghi chú:**
+   - Thông tin cá nhân: số điện thoại (chuẩn 10 số, đầu 03, 05, 07, 08, 09), ngày sinh, email liên hệ, địa chỉ, ngày nhập học, tư vấn viên, nguồn tiếp cận.
+   - Trình độ đầu vào: điểm kiểm tra đầu vào, xếp loại trình độ, nền tảng học vấn / kinh nghiệm.
+   - Ghi chú: Thêm ghi chú mới tự động kèm ngày hôm nay và tên người thực hiện (từ token đăng nhập). Hỗ trợ sửa hồ sơ và thêm ghi chú đồng thời.
+2. **Trang hồ sơ hiển thị lớp đang học và lịch sử các lớp đã học:**
+   - Lớp đang học: Mã lớp, chương trình đào tạo, ca học (`slot`), phòng học (`room`), tiến độ buổi học (`done`/`totalSessions`), sĩ số lớp (`classSize`/`max`), trạng thái.
+   - Lịch sử các lớp đã học: Danh sách các lớp đã kết thúc hoặc bảo lưu kèm kết quả đánh giá (ví dụ: `Hoàn thành · 8,2`, `Bảo lưu`).
+3. **Tìm kiếm và lọc học viên đa tiêu chí:**
+   - Tìm kiếm nhanh (`search` hoặc `q`): Không phân biệt hoa thường theo mã học viên, họ tên, số điện thoại (hỗ trợ nhập số liền không khoảng cách như `0912345678`), email.
+   - Lọc theo trạng thái học tập (`status`): `Mới nhập học`, `Đang học`, `Bảo lưu`, `Đã tốt nghiệp`, `Thôi học`.
+   - Lọc theo chương trình đào tạo (`program`): `Lập trình web Full-stack`, `Phân tích dữ liệu`, `Thiết kế UI/UX`, v.v.
+   - Phân trang chuẩn (`page`, `limit`) kèm thống kê: tổng số học viên thỏa mãn lọc (`total`), số học viên `Đang học` (`studyingCount`), tổng số học viên toàn trường (`totalAll`).
+4. **Phân quyền người dùng (Role-Based Access Control):**
+   - `TrainingManager` (Quản lý đào tạo), `Admin`, `Admissions`: Toàn quyền xem danh sách, xem chi tiết, sửa hồ sơ học viên và thêm ghi chú.
+   - `Instructor` (Giảng viên): Được xem danh sách và xem chi tiết hồ sơ phục vụ công tác giảng dạy, không được sửa hồ sơ.
+   - `Student` (Học viên): **Chỉ được xem hồ sơ của chính mình** (`GET /api/students/:code` kiểm tra `s.login === user.email`). Bị chặn khỏi API xem danh sách toàn trường (`403 FORBIDDEN_STUDENT_LIST`), bị chặn xem hồ sơ của học viên khác (`403 FORBIDDEN_STUDENT_PROFILE`), và không có quyền sửa hồ sơ (`403`).
+
+### Danh sách API Story S3-04:
+
+| Phương thức | Đường dẫn | Quyền truy cập | Mô tả |
+| --- | --- | --- | --- |
+| `GET` | `/api/students` hoặc `/students` | `TrainingManager`, `Admin`, `Admissions`, `Instructor` | Danh sách học viên có tìm kiếm, lọc theo trạng thái & chương trình, phân trang và thống kê |
+| `GET` | `/api/students/:code` hoặc `/students/:code` | `TrainingManager`, `Admin`, `Admissions`, `Instructor`, `Student` (chỉ chính mình) | Xem chi tiết hồ sơ học viên kèm thông tin lớp đang học và lịch sử các lớp đã học |
+| `GET` | `/api/students/me` | Mọi người dùng đã đăng nhập | Tra cứu hồ sơ học viên của chính tài khoản đang đăng nhập |
+| `PUT` / `PATCH` | `/api/students/:code` | `TrainingManager`, `Admin`, `Admissions` | Cập nhật thông tin cá nhân, trình độ đầu vào và thêm ghi chú mới vào hồ sơ học viên |
+| `POST` | `/api/students/:code/notes` | `TrainingManager`, `Admin`, `Admissions` | Thêm ghi chú mới vào hồ sơ học viên |
+| `GET` | `/api/classes` | Mọi người dùng đã đăng nhập | Danh sách các lớp học kèm tiến độ buổi học và sĩ số |
+| `GET` | `/api/classes/:code` | Mọi người dùng đã đăng nhập | Chi tiết lớp học theo mã lớp |
+
+#### Mẫu sửa hồ sơ học viên (`PUT /api/students/HV260101`):
+```http
+PUT /api/students/HV260101 HTTP/1.1
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "phone": "0988 777 666",
+  "birth": "2004-05-20",
+  "email": "minhanh.new@gmail.com",
+  "address": "Số 99 Cầu Giấy, Hà Nội",
+  "entryScore": "8,0 / 10",
+  "level": "Khá",
+  "background": "Đã hoàn thành khóa React cơ bản",
+  "note": "Học viên xin bảo lưu 1 tuần vì thi học kỳ ở trường"
+}
+```
+- **Phản hồi thành công (`200 OK`):**
+```json
+{
+  "success": true,
+  "message": "Đã cập nhật hồ sơ học viên HV260101 · NGUYEN MINH ANH",
+  "data": {
+    "code": "HV260101",
+    "name": "NGUYEN MINH ANH",
+    "phone": "0988 777 666",
+    "email": "minhanh.new@gmail.com",
+    "login": "S25200212101@tms.vn",
+    "program": "Lập trình web Full-stack",
+    "status": "Đang học",
+    "enrolledAt": "2026-08-12",
+    "cls": "WEB-K15",
+    "birth": "2004-05-20",
+    "address": "Số 99 Cầu Giấy, Hà Nội",
+    "entryScore": "8,0 / 10",
+    "level": "Khá",
+    "background": "Đã hoàn thành khóa React cơ bản",
+    "currentClass": {
+      "code": "WEB-K15",
+      "program": "Lập trình web Full-stack",
+      "slot": "Tối 2-4-6",
+      "room": "P.301",
+      "done": 22,
+      "totalSessions": 64,
+      "classSize": 27
+    },
+    "notes": [
+      {
+        "at": "2026-10-16",
+        "by": "Phạm Thị Quản (Quản lý đào tạo)",
+        "text": "Học viên xin bảo lưu 1 tuần vì thi học kỳ ở trường"
+      }
+    ],
+    "history": [
+      { "cls": "GIT-K03", "program": "Git và làm việc nhóm", "period": "06/2026 – 07/2026", "result": "Hoàn thành · 8,2" }
+    ]
+  }
+}
+```
+

@@ -41,6 +41,29 @@ function isValidStudentStatus(status) {
 }
 
 /**
+ * Số di động Việt Nam: 10 chữ số, đầu 03, 05, 07, 08, 09 (chuẩn UserDAO.VN_PHONE_PATTERN)
+ */
+const PHONE_RE = /^0[35789]\d{8}$/;
+const PHONE_MSG = 'Số điện thoại di động gồm 10 chữ số, bắt đầu bằng 03, 05, 07, 08 hoặc 09';
+
+/**
+ * Kiểm tra định dạng số điện thoại Việt Nam hợp lệ
+ */
+function isValidPhone(phone) {
+  if (!phone || typeof phone !== 'string') return false;
+  const digits = phone.replace(/[\s.-]/g, '');
+  return PHONE_RE.test(digits);
+}
+
+/**
+ * Rút trích chỉ các chữ số từ chuỗi điện thoại
+ */
+function cleanDigits(phone) {
+  if (!phone || typeof phone !== 'string') return '';
+  return phone.replace(/[\s.-]/g, '');
+}
+
+/**
  * Kiểm tra định dạng email
  */
 function isValidEmail(email) {
@@ -50,10 +73,15 @@ function isValidEmail(email) {
 
 module.exports = {
   DEFAULT_STUDENT_STATUS,
+  PHONE_MSG,
+  PHONE_RE,
   STUDENT_STATUSES,
+  cleanDigits,
   isValidEmail,
+  isValidPhone,
   isValidStudentStatus,
   loginOf,
   pad,
   seq,
 };
+

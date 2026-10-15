@@ -4,6 +4,7 @@ const adminRoutes = require('./routes/admin.routes');
 const leadsRoutes = require('./routes/leads.routes');
 const funnelRoutes = require('./routes/funnel.routes');
 const studentRoutes = require('./routes/students.routes');
+const classesRoutes = require('./routes/classes.routes');
 
 const app = express();
 
@@ -16,6 +17,8 @@ app.use('/api/funnel', funnelRoutes);
 app.use('/admissions', funnelRoutes);
 app.use('/api/students', studentRoutes);
 app.use('/students', studentRoutes);
+app.use('/api/classes', classesRoutes);
+app.use('/classes', classesRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
