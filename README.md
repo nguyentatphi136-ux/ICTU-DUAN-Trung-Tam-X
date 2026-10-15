@@ -104,3 +104,35 @@ git checkout develop
 
 # 5. Build và chạy ứng dụng trên Tomcat server tại địa chỉ:
 # http://localhost:8080/
+```
+
+---
+
+## 7. Sprint 3 — Chuyển Lead đã chốt thành Học viên (Story S3-03 / Subtask IDTTX-240)
+
+Áp dụng cho nhánh: **`feature/S3-03-chuyen-hoc-vien`**  
+**User Story (IDTTX-211):** Là Tư vấn tuyển sinh, tôi muốn chuyển một lead đã chốt thành hồ sơ học viên, để không phải nhập lại thông tin khách đã cung cấp ba lần trước đó.
+
+### Kết quả triển khai Backend (IDTTX-240):
+1. **Thiết kế CSDL & Migration:**
+   - File: [`database/migration_s3_03_convert_student.sql`](database/migration_s3_03_convert_student.sql)
+   - Thiết kế chuẩn hóa 3NF: các bảng `students`, `student_notes`, `student_class_history`, `student_activation_emails`.
+   - Mở rộng bảng `leads`: các trường khóa `is_converted`, `is_locked`, `student_code` để ngăn chặn chỉnh sửa, kéo thẻ phễu sau khi nhập học.
+2. **Kế thừa thông tin lead & Tự động sinh mã học viên:**
+   - Chuyển dữ liệu tự động không cần nhập lại: Họ tên, số điện thoại, email, chương trình đào tạo quan tâm, tư vấn viên phụ trách, nguồn tiếp cận, `leadId`.
+   - Tự động sinh mã học viên định dạng chuẩn `HV26xxxx` (tự tăng tuần tự từ mã cao nhất, ví dụ `HV260143`).
+   - Endpoint `GET /api/students/next-code` xem trước mã dự kiến.
+3. **Cấp tài khoản & Dispatch Email kích hoạt:**
+   - Tự động tạo tài khoản trong hệ thống `users` với vai trò `Student` (`Học viên`).
+   - Email đăng nhập chuẩn TMS: `S25200212{pad(n,3)}@tms.vn`.
+   - Ghi nhận lịch sử gửi email kích hoạt tới địa chỉ nhận tin (`sendTo`).
+4. **Khóa Lead & Ghi Audit Log:**
+   - Cập nhật lead sang trạng thái `Đã nhập học`, gắn liên kết mã học viên `student`.
+   - Khóa toàn bộ thao tác sửa lead, kéo stage hoặc thêm nhật ký mới (`LEAD_LOCKED` - HTTP 400).
+   - Tự động ghi nhận log chuyển đổi vào dòng thời gian `timeline` và `care_logs`.
+5. **Kiểm thử tự động:**
+   ```bash
+   cd backend/legacy_node_be
+   npm test
+   ```
+   Toàn bộ **58/58 test cases** (bao gồm 15 test cases chuyên sâu cho S3-03) đều **PASS 100%**.
