@@ -592,4 +592,6 @@ Ban Quản trị Hệ thống TMS`,
 // Ứng dụng một trang React Router theo thiết kế Figma + Tích hợp Dev API Middleware cho S1 & S2
 export default defineConfig({
   plugins: [react(), emailPlugin()],
+  // Các /api mà emailPlugin không giả lập được chuyển sang backend Java (cùng origin nên cookie phiên JSESSIONID dùng được).
+  server: { proxy: { "/api": process.env.BACKEND_URL || "http://localhost:8080" } },
 });

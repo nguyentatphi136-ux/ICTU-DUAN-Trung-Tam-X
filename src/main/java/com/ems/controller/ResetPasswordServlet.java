@@ -28,6 +28,17 @@ public class ResetPasswordServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String token = req.getParameter("token");
+        if (isApiRequest(req)) {
+            // S1-03: giao diện hỏi trước liên kết còn dùng được không để hiện màn "Liên kết không còn hiệu lực".
+            PasswordResetToken t = token == null || token.isBlank() ? null : tokenDAO.findByToken(token);
+            if (t == null || t.isUsed() || t.isExpired()) {
+                ApiResponse.error(resp, HttpServletResponse.SC_GONE, "AUTH_RESET_TOKEN_INVALID",
+                        "Liên kết đã hết hạn hoặc đã được dùng.", "Gửi lại liên kết", "/quen-mat-khau");
+            } else {
+                ApiResponse.success(resp, "AUTH_RESET_TOKEN_VALID", "Liên kết còn hiệu lực.", null);
+            }
+            return;
+        }
         if (token == null || token.trim().isEmpty()) {
             req.setAttribute("errorMessage", "Liên kết không hợp lệ hoặc thiếu mã xác thực.");
             req.getRequestDispatcher("/reset-password.jsp").forward(req, resp);
@@ -114,6 +125,8 @@ public class ResetPasswordServlet extends HttpServlet {
         boolean success = tokenDAO.resetPasswordWithTransaction(resetToken.getUserId(), token, hashedPassword);
 
         if (success) {
+            // Đặt lại mật khẩu thì mọi phiên cũ của tài khoản bị đăng xuất.
+            com.ems.config.SessionBlacklist.revokeOtherSessions(resetToken.getUserId(), null);
             sendResponse(req, resp, true, "Đặt lại mật khẩu thành công! Bạn có thể đăng nhập bằng mật khẩu mới.");
         } else {
             sendResponse(req, resp, false, "Đã xảy ra lỗi trong quá trình cập nhật mật khẩu. Vui lòng thử lại.");
@@ -129,7 +142,8 @@ public class ResetPasswordServlet extends HttpServlet {
             String code = message.startsWith("Mật khẩu") || message.startsWith("Dữ liệu")
                 ? "REQUEST_VALIDATION_ERROR"
                 : "AUTH_RESET_TOKEN_INVALID";
-            ApiResponse.error(resp, HttpServletResponse.SC_BAD_REQUEST, code, message,
+            int status = "AUTH_RESET_TOKEN_INVALID".equals(code) ? HttpServletResponse.SC_GONE : HttpServletResponse.SC_BAD_REQUEST;
+            ApiResponse.error(resp, status, code, message,
                 "Gửi lại liên kết", "/ForgotPasswordForm.html");
             }
         } else {

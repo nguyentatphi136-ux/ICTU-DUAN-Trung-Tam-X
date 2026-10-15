@@ -203,6 +203,22 @@ public class UserDAO {
         }
     }
 
+    /** Số giây còn bị khoá tạm vì nhập sai mật khẩu nhiều lần, 0 nếu không bị khoá. */
+    public long lockedSeconds(String email) throws SQLException {
+        if (email == null || email.isBlank()) return 0;
+        try (Connection connection = DBConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(
+                     "SELECT locked_until FROM users WHERE email = ? AND deleted_at IS NULL")) {
+            statement.setString(1, email.trim().toLowerCase(java.util.Locale.ROOT));
+            try (ResultSet result = statement.executeQuery()) {
+                if (!result.next() || result.getTimestamp("locked_until") == null) return 0;
+                long seconds = java.time.Duration.between(Instant.now(),
+                        result.getTimestamp("locked_until").toInstant()).getSeconds();
+                return Math.max(0, seconds);
+            }
+        }
+    }
+
     public User findById(long userId) throws SQLException {
         String sql = "SELECT id, user_code, email, full_name, phone, status FROM users WHERE id = ? AND deleted_at IS NULL";
         try (Connection connection = DBConnection.getConnection();
