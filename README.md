@@ -143,3 +143,51 @@ Nhánh **`s2-11-minhngoc(BE)`** hoàn thành toàn diện hạng mục Backend c
   npm test
   ```
   Tất cả các ca kiểm thử nghiệp vụ cho Story S2-11 đều đạt **PASS 100%**.
+
+
+
+---
+
+## 8. Tiến độ Sprint 3: Phễu lead dạng Kanban và lý do từ chối (Story S3-01 - Nhánh `features/s3-01-BE-NMN`)
+
+Nhánh **`features/s3-01-BE-NMN`** hoàn thành toàn diện hạng mục Backend cho **Story S3-01 (IDTTX-209 / Subtask IDTTX-222)**:
+
+> **User Story S3-01:** Là Tư vấn tuyển sinh, tôi muốn theo dõi lead trên bảng phễu theo trạng thái, để nhìn một màn hình là biết hôm nay cần gọi ai trước.
+
+### 8.1. Các tiêu chí nghiệm thu hoàn thành:
+1. **Bảng phễu Kanban gồm đủ 6 cột chuẩn:**
+   - 6 cột giai đoạn: `Mới` → `Đã liên hệ` → `Đang tư vấn` → `Hẹn học thử` → `Chốt` → `Từ chối`.
+   - Mỗi cột hiển thị số lượng lead tương ứng (`counts`) phục vụ tổng quan nhanh.
+2. **Kéo thả để đổi trạng thái & Tự động ghi nhật ký (Audit Log):**
+   - Kéo thẻ đổi trạng thái giữa các cột (`PATCH /api/leads/:id/stage` hoặc `/api/funnel/leads/:id/stage`).
+   - Mỗi lần đổi trạng thái hệ thống tự động ghi nhật ký chuyển giai đoạn vào `timeline` và `care_logs` gồm giai đoạn cũ, giai đoạn mới, người thực hiện và thời điểm.
+3. **Chuyển sang "Từ chối" bắt buộc chọn lý do:**
+   - Hộp thoại chọn lý do từ danh mục chuẩn: `Học phí cao`, `Lịch học không phù hợp`, `Đã chọn trung tâm khác`, `Không liên lạc được`, `Chưa có nhu cầu lúc này`, `Lý do khác`.
+   - Nếu chọn `Lý do khác`, bắt buộc phải có ghi chú chi tiết.
+   - Backend validate chặt chẽ: thiếu lý do hoặc thiếu ghi chú trả mã lỗi HTTP `400 Bad Request` (`REJECT_REASON_REQUIRED`, `REJECT_NOTE_REQUIRED`).
+   - Rời khỏi cột Từ chối tự động làm sạch lý do từ chối cũ.
+4. **Tìm kiếm & Cảnh báo lead quá hạn gọi lại:**
+   - Tìm kiếm nhanh theo tên hoặc số điện thoại (`search` hoặc `q`).
+   - Tự động tính toán số ngày quá hạn (`overdueDays`) so với ngày hẹn gọi lại (`callback_date`) và hỗ trợ lọc riêng lead quá hạn (`onlyLate=true`).
+5. **Phân quyền truy cập (Role Authorization):**
+   - Tư vấn viên (`Admissions`) chỉ được thao tác trên lead được phân công cho mình (trả về 403 khi thao tác lead của người khác).
+   - Quản trị viên (`Admin`) và Quản lý đào tạo (`TrainingManager`) xem và kéo thả đổi trạng thái được tất cả lead.
+   - Các vai trò khác (`Instructor`, `Student`) bị chặn truy cập.
+
+### 8.2. Danh mục RESTful APIs triển khai:
+- `GET /api/funnel` (hoặc `/admissions/funnel`): Lấy dữ liệu Bảng phễu Kanban 6 cột, hỗ trợ tìm kiếm và lọc quá hạn.
+- `GET /api/funnel/stats`: Thống kê số lượng lead theo 6 cột và tổng quan phễu.
+- `GET /api/funnel/reasons`: Danh mục lý do từ chối chuẩn.
+- `GET /api/funnel/stages`: Danh mục 6 cột giai đoạn phễu.
+- `PATCH /api/leads/:id/stage`: Kéo thả đổi trạng thái phễu (validate lý do từ chối + tự động ghi nhật ký).
+- `GET /api/leads/:id/logs`: Xem toàn bộ nhật ký chăm sóc và chuyển trạng thái của lead.
+- `POST /api/leads/:id/logs`: Thêm nhật ký chăm sóc thủ công (Gọi, Nhắn, Gặp...).
+
+### 8.3. Cơ sở dữ liệu & Kiểm thử tự động:
+- **Migration SQL:** [`database/migration_s3_01_lead_funnel.sql`](database/migration_s3_01_lead_funnel.sql) (bổ sung các trường `stage`, `callback_date`, `trial_date`, `reject_reason`, `reject_note`, `student_code`; tạo bảng `lead_stage_logs` và `lead_care_logs`, index tối ưu hóa).
+- **Chạy kiểm thử:**
+  ```bash
+  cd BE
+  npm test
+  ```
+  Tất cả **43/43 ca kiểm thử tự động** (bao gồm 14 test cases Story S3-01, 10 test cases Story S2-11 và 19 test cases Core Auth/RBAC) đều đạt **PASS 100%**.

@@ -2,6 +2,7 @@ const express = require('express');
 const authRoutes = require('./routes/auth.routes');
 const adminRoutes = require('./routes/admin.routes');
 const leadsRoutes = require('./routes/leads.routes');
+const funnelRoutes = require('./routes/funnel.routes');
 
 const app = express();
 
@@ -10,6 +11,8 @@ app.use(express.json({ limit: '10kb' }));
 app.use('/api/auth', authRoutes);
 app.use('/admin', adminRoutes);
 app.use('/api/leads', leadsRoutes);
+app.use('/api/funnel', funnelRoutes);
+app.use('/admissions', funnelRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

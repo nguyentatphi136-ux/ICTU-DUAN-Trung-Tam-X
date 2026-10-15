@@ -52,11 +52,50 @@ const STATUS_ALIAS_MAP = Object.freeze({
   converted: LEAD_STATUS.WON,
   'đã đăng ký': LEAD_STATUS.WON,
   'đã nhập học': LEAD_STATUS.WON,
+  chốt: LEAD_STATUS.WON,
   rejected: LEAD_STATUS.REJECTED,
   unreachable: LEAD_STATUS.REJECTED,
   'not-interested': LEAD_STATUS.REJECTED,
   'không tiềm năng': LEAD_STATUS.REJECTED,
   'từ chối': LEAD_STATUS.REJECTED,
+});
+
+// S3-01: 6 cột trạng thái của phễu Kanban
+const FUNNEL_STAGES = Object.freeze([
+  'Mới',
+  'Đã liên hệ',
+  'Đang tư vấn',
+  'Hẹn học thử',
+  'Chốt',
+  'Từ chối',
+]);
+
+// S3-01: Danh mục lý do từ chối chuẩn bắt buộc khi thả vào cột Từ chối
+const REJECT_REASONS = Object.freeze([
+  'Học phí cao',
+  'Lịch học không phù hợp',
+  'Đã chọn trung tâm khác',
+  'Không liên lạc được',
+  'Chưa có nhu cầu lúc này',
+  'Lý do khác',
+]);
+
+const STAGE_TO_STATUS = Object.freeze({
+  'Mới': LEAD_STATUS.NEW,
+  'Đã liên hệ': LEAD_STATUS.CONTACTED,
+  'Đang tư vấn': LEAD_STATUS.CONSULTING,
+  'Hẹn học thử': LEAD_STATUS.TRIAL_SCHEDULED,
+  'Chốt': LEAD_STATUS.WON,
+  'Từ chối': LEAD_STATUS.REJECTED,
+});
+
+const STATUS_TO_STAGE = Object.freeze({
+  [LEAD_STATUS.NEW]: 'Mới',
+  [LEAD_STATUS.CONTACTED]: 'Đã liên hệ',
+  [LEAD_STATUS.CONSULTING]: 'Đang tư vấn',
+  [LEAD_STATUS.TRIAL_SCHEDULED]: 'Hẹn học thử',
+  [LEAD_STATUS.WON]: 'Chốt',
+  [LEAD_STATUS.REJECTED]: 'Từ chối',
 });
 
 function normalizeStatus(status) {
@@ -69,8 +108,30 @@ function normalizeStatus(status) {
   return STATUS_ALIAS_MAP[lower] || null;
 }
 
+function normalizeStage(stageOrStatus) {
+  if (!stageOrStatus || typeof stageOrStatus !== 'string') return null;
+  const trimmed = stageOrStatus.trim();
+  if (FUNNEL_STAGES.includes(trimmed)) {
+    return trimmed;
+  }
+  const status = normalizeStatus(trimmed);
+  if (status && STATUS_TO_STAGE[status]) {
+    return STATUS_TO_STAGE[status];
+  }
+  return null;
+}
+
 function isValidLeadStatus(status) {
   return normalizeStatus(status) !== null;
+}
+
+function isValidStage(stage) {
+  return normalizeStage(stage) !== null;
+}
+
+function isValidRejectReason(reason) {
+  if (!reason || typeof reason !== 'string') return false;
+  return REJECT_REASONS.includes(reason.trim()) || reason.trim().length > 0;
 }
 
 function normalizeSource(source) {
@@ -90,12 +151,20 @@ function normalizeSource(source) {
 }
 
 module.exports = {
+  FUNNEL_STAGES,
   LEAD_SOURCE,
   LEAD_SOURCE_LABELS,
   LEAD_STATUS,
   LEAD_STATUS_LABELS,
+  REJECT_REASONS,
+  STAGE_TO_STATUS,
   STATUS_ALIAS_MAP,
+  STATUS_TO_STAGE,
   isValidLeadStatus,
+  isValidRejectReason,
+  isValidStage,
   normalizeSource,
+  normalizeStage,
   normalizeStatus,
 };
+

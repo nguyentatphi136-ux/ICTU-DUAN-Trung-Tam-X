@@ -185,3 +185,106 @@ GET /api/leads?search=0988&status=CONSULTING&source=FACEBOOK&datePreset=last-mon
 
 
 
+
+
+
+---
+
+## API Phễu Lead dạng Kanban & Lý do từ chối (Story S3-01 - IDTTX-209 / Subtask IDTTX-222)
+
+Áp dụng cho nhánh: **`features/s3-01-BE-NMN`**
+
+### Yêu cầu nghiệp vụ Story S3-01:
+> **User Story:** Là Tư vấn tuyển sinh, tôi muốn theo dõi lead trên bảng phễu theo trạng thái, để nhìn một màn hình là biết hôm nay cần gọi ai trước.
+
+1. **Bảng phễu Kanban gồm đủ 6 cột chuẩn:**
+   - `Mới` → `Đã liên hệ` → `Đang tư vấn` → `Hẹn học thử` → `Chốt` → `Từ chối`.
+   - Mỗi cột hiển thị số lượng lead tương ứng (`counts`).
+2. **Kéo thả để đổi trạng thái & Tự động ghi nhật ký:**
+   - Kéo thẻ sang cột khác để đổi giai đoạn.
+   - Mỗi lần đổi trạng thái đều được tự động ghi nhận vào dòng thời gian (timeline) và nhật ký chăm sóc (care logs) với người thực hiện và thời điểm chính xác.
+3. **Chuyển sang "Từ chối" bắt buộc chọn lý do:**
+   - Danh mục lý do từ chối chuẩn:
+     1. `Học phí cao`
+     2. `Lịch học không phù hợp`
+     3. `Đã chọn trung tâm khác`
+     4. `Không liên lạc được`
+     5. `Chưa có nhu cầu lúc này`
+     6. `Lý do khác` (Bắt buộc phải điền ghi chú chi tiết).
+   - Nếu không có lý do hoặc chọn "Lý do khác" mà thiếu ghi chú: Trả lỗi HTTP `400 Bad Request` kèm mã lỗi nghiệp vụ rõ ràng (`REJECT_REASON_REQUIRED`, `REJECT_NOTE_REQUIRED`).
+   - Nếu chuyển từ "Từ chối" sang giai đoạn khác (vd. "Đang tư vấn"): Tự động xóa lý do từ chối cũ.
+4. **Tìm kiếm & Cảnh báo lead quá hạn gọi lại:**
+   - Tìm kiếm nhanh theo tên hoặc số điện thoại (`search` hoặc `q`).
+   - Đánh dấu và lọc lead quá hạn gọi lại (`onlyLate=true` dựa trên `callback_date`).
+
+### Danh sách API Story S3-01:
+
+| Phương thức | Đường dẫn | Quyền truy cập | Mô tả |
+| --- | --- | --- | --- |
+| `GET` | `/api/funnel` hoặc `/admissions/funnel` | `Admissions`, `TrainingManager`, `Admin` | Lấy dữ liệu Bảng phễu Kanban 6 cột kèm số lượng từng cột |
+| `GET` | `/api/funnel/stats` | `Admissions`, `TrainingManager`, `Admin` | Thống kê số lượng lead theo 6 cột và tổng quan phễu |
+| `GET` | `/api/funnel/reasons` | `Admissions`, `TrainingManager`, `Admin` | Danh mục các lý do từ chối chuẩn |
+| `GET` | `/api/funnel/stages` | `Admissions`, `TrainingManager`, `Admin` | Danh mục 6 cột giai đoạn phễu chuẩn |
+| `PATCH` | `/api/leads/:id/stage` hoặc `/api/funnel/leads/:id/stage` | `Admissions`, `TrainingManager`, `Admin` | Đổi trạng thái phễu (validate lý do từ chối + tự động ghi nhật ký) |
+| `GET` | `/api/leads/:id/logs` hoặc `/api/funnel/leads/:id/logs` | `Admissions`, `TrainingManager`, `Admin` | Xem toàn bộ nhật ký chăm sóc và chuyển trạng thái của lead |
+| `POST` | `/api/leads/:id/logs` hoặc `/api/funnel/leads/:id/logs` | `Admissions`, `TrainingManager`, `Admin` | Thêm nhật ký chăm sóc thủ công (Gọi, Nhắn, Gặp...) |
+
+#### 1. Chi tiết API `GET /api/funnel`:
+```http
+GET /api/funnel?search=0988&onlyLate=true HTTP/1.1
+Authorization: Bearer <token>
+```
+- **Phản hồi mẫu (`200 OK`):**
+```json
+{
+  "success": true,
+  "total": 8,
+  "lateCount": 2,
+  "counts": {
+    "Mới": 2,
+    "Đã liên hệ": 1,
+    "Đang tư vấn": 1,
+    "Hẹn học thử": 1,
+    "Chốt": 1,
+    "Từ chối": 2
+  },
+  "columns": {
+    "Mới": [ ... ],
+    "Đã liên hệ": [ ... ],
+    "Đang tư vấn": [ ... ],
+    "Hẹn học thử": [ ... ],
+    "Chốt": [ ... ],
+    "Từ chối": [ ... ]
+  }
+}
+```
+
+#### 2. Chi tiết API `PATCH /api/leads/:id/stage`:
+- **Chuyển sang Từ chối (`200 OK`):**
+```json
+// Request
+{
+  "stage": "Từ chối",
+  "reason": "Học phí cao"
+}
+// Response
+{
+  "success": true,
+  "message": "Đã chuyển giai đoạn lead sang Từ chối",
+  "data": {
+    "id": "1",
+    "name": "Vũ Minh Anh",
+    "stage": "Từ chối",
+    "status": "REJECTED",
+    "reason": "Học phí cao"
+  }
+}
+```
+- **Lỗi thiếu lý do từ chối (`400 Bad Request`):**
+```json
+{
+  "success": false,
+  "code": "REJECT_REASON_REQUIRED",
+  "message": "Bắt buộc chọn lý do khi chuyển lead sang trạng thái Từ chối"
+}
+```
