@@ -34,6 +34,14 @@ class PermissionPolicyTest {
     }
 
     @Test
+    void s1SessionAndProfileApisNeedOnlyLogin() {
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/auth/me"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("PUT", "/api/profile"));
+        assertEquals("USER_CREATE", PermissionPolicy.requiredPermission("POST", "/api/admin/users/import"));
+        assertEquals(null, PermissionPolicy.requiredPermission("DELETE", "/api/profile"));
+    }
+
+    @Test
     void userMayHoldMultipleRolesButCannotRemoveTheirOwnAdminRole() {
         assertTrue(PermissionPolicy.mayReplaceRoles(4, 5, List.of("ADMIN"), List.of("STUDENT")));
         assertFalse(PermissionPolicy.mayReplaceRoles(4, 4, List.of("ADMIN"), List.of("STUDENT")));

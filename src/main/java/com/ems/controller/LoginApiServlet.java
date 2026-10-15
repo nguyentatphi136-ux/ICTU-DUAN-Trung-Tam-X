@@ -15,7 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-@WebServlet(urlPatterns = {"/login", "/auth/login", "/api/auth/login"})
+@WebServlet(urlPatterns = {"/login", "/auth/login", "/api/auth/login", "/api/auth/me"})
 public class LoginApiServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Gson GSON = new Gson();
@@ -26,6 +26,10 @@ public class LoginApiServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
+        if (request.getRequestURI().endsWith("/api/auth/me")) {
+            sendMe(request, response, session);
+            return;
+        }
         if (session != null && session.getAttribute("currentUser") != null) {
             response.sendRedirect(request.getContextPath() + "/dashboard.jsp");
             return;
@@ -69,6 +73,26 @@ public class LoginApiServlet extends HttpServlet {
         }
 
         if (user == null) {
+            long lockedSeconds = 0;
+            try {
+                lockedSeconds = userDAO.lockedSeconds(email);
+            } catch (SQLException ignored) {
+            }
+            if (apiRequest && lockedSeconds > 0) {
+                // S1-01: sai 5 lần thì khoá tạm 15 phút, giao diện cần số giây còn lại để đếm ngược.
+                response.setHeader("Retry-After", Long.toString(lockedSeconds));
+                response.setStatus(423);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write(GSON.toJson(Map.of(
+                        "success", false,
+                        "error", Map.of(
+                                "code", "AUTH_ACCOUNT_TEMP_LOCKED",
+                                "message", "Bạn đã nhập sai 5 lần. Vui lòng thử lại sau.",
+                                "retryAfterSeconds", lockedSeconds
+                        )
+                )));
+                return;
+            }
             if (apiRequest) {
                 sendApiError(response, 401, "AUTH_CREDENTIALS_INVALID", INVALID_CREDENTIALS);
             } else {
@@ -83,7 +107,7 @@ public class LoginApiServlet extends HttpServlet {
         HttpSession session = request.getSession(true);
         request.changeSessionId();
         session.setAttribute("currentUser", user);
-        session.setMaxInactiveInterval(8 * 60 * 60);
+        session.setMaxInactiveInterval(com.ems.filter.SessionAuthFilter.SESSION_TIMEOUT_SECONDS);
         com.ems.config.SessionBlacklist.registerSession(user.getId(), session.getId());
 
         String role = roleSlug(user.getPrimaryRole());
@@ -95,12 +119,7 @@ public class LoginApiServlet extends HttpServlet {
             return;
         }
 
-        Map<String, Object> userData = new LinkedHashMap<>();
-        userData.put("id", user.getId());
-        userData.put("email", user.getEmail());
-        userData.put("fullName", user.getFullName());
-        userData.put("role", role);
-        userData.put("roles", user.getRoles().stream().map(LoginApiServlet::roleSlug).toList());
+        Map<String, Object> userData = userData(user);
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write(GSON.toJson(Map.of(
@@ -109,6 +128,39 @@ public class LoginApiServlet extends HttpServlet {
                 "message", "Đăng nhập thành công.",
                 "data", Map.of("user", userData, "redirectUrl", redirectUrl)
         )));
+    }
+
+    /** GET /api/auth/me: người đang đăng nhập, đọc lại từ CSDL để vai trò mới có hiệu lực ngay. */
+    private void sendMe(HttpServletRequest request, HttpServletResponse response, HttpSession session)
+            throws IOException {
+        User user = session == null ? null : (User) session.getAttribute("currentUser");
+        try {
+            User fresh = user == null ? null : userDAO.findById(user.getId());
+            if (fresh != null) {
+                if (!"ACTIVE".equalsIgnoreCase(fresh.getStatus()) || fresh.getRoles().isEmpty()) {
+                    session.invalidate();
+                    sendApiError(response, 401, "AUTH_UNAUTHORIZED", "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                    return;
+                }
+                session.setAttribute("currentUser", fresh);
+                user = fresh;
+            }
+        } catch (SQLException exception) {
+            getServletContext().log("Không đọc được người dùng từ CSDL, dùng dữ liệu trong phiên.", exception);
+        }
+        Map<String, Object> data = new LinkedHashMap<>(userData(user));
+        data.put("sessionTimeoutSeconds", session.getMaxInactiveInterval());
+        com.ems.security.ApiResponse.success(response, "AUTH_ME_SUCCESS", "Lấy thông tin phiên thành công.", data);
+    }
+
+    private static Map<String, Object> userData(User user) {
+        Map<String, Object> userData = new LinkedHashMap<>();
+        userData.put("id", user.getId());
+        userData.put("email", user.getEmail());
+        userData.put("fullName", user.getFullName());
+        userData.put("role", roleSlug(user.getPrimaryRole()));
+        userData.put("roles", user.getRoles().stream().map(LoginApiServlet::roleSlug).toList());
+        return userData;
     }
 
     private static boolean isApiRequest(HttpServletRequest request) {

@@ -18,7 +18,8 @@ import java.sql.SQLException;
 @WebFilter("/*")
 public class SessionAuthFilter implements Filter {
 
-    private static final int SESSION_TIMEOUT_SECONDS = 8 * 60 * 60; // 8 giờ
+    // S1-02: phiên hết hạn sau 30 phút không thao tác; mỗi request gia hạn lại.
+    public static final int SESSION_TIMEOUT_SECONDS = 30 * 60;
     private final PermissionDAO permissionDAO = new PermissionDAO();
     private ServletContext servletContext;
 

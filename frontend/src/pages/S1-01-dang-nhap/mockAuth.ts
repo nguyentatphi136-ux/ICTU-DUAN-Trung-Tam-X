@@ -1,6 +1,8 @@
 // S1-01. Dữ liệu và hàm đăng nhập giả để chạy giao diện khi chưa có backend.
 // Hỗ trợ cả tài khoản @tms.vn (Figma TMS) và @edumanager.vn (Java Backend), chấp nhận mật khẩu Tms@2026, 123456, Admin@123.
 
+import { api, isOffline, roleIndexes, type ApiError } from '../../data/api';
+
 /** roles là chỉ số trong ROLES (src/data/permissions.ts), xếp theo quyền giảm dần: phần tử đầu là vai trò khi vừa đăng nhập. */
 export type Account = { email: string; name: string; roles: number[] };
 
@@ -72,9 +74,23 @@ export function findAccount(input: string): Account | undefined {
   return DEMO_ACCOUNTS.find((a) => a.email.toLowerCase() === targetEmail);
 }
 
-/** Trả về tài khoản nếu đúng, null nếu sai. Chấp nhận email TMS, Edumanager, alias và các mật khẩu chuẩn. */
-export function login(email: string, password: string): Promise<Account | null> {
+export type ServerUser = { email: string; fullName: string; roles: string[] };
+export const toAccount = (u: ServerUser): Account => ({ email: u.email, name: u.fullName.toUpperCase(), roles: roleIndexes(u.roles) });
+
+/**
+ * POST /api/auth/login. Trả tài khoản nếu đúng, null nếu sai, { lockedSeconds } nếu máy chủ đang khoá tạm.
+ * Máy chủ chưa bật thì dùng tài khoản mẫu: email TMS, Edumanager, alias và các mật khẩu chuẩn.
+ */
+export async function login(email: string, password: string): Promise<Account | null | { lockedSeconds: number }> {
+  try {
+    const data = await api<{ user: ServerUser }>('POST', '/auth/login', { email: email.trim(), password });
+    return toAccount(data.user);
+  } catch (e) {
+    if (!isOffline(e)) {
+      const err = e as ApiError;
+      return err.status === 423 ? { lockedSeconds: Number(err.detail?.retryAfterSeconds) || LOCK_SECONDS } : null;
+    }
+  }
   const found = findAccount(email);
-  const ok = found && isPasswordAccepted(password) ? found : null;
-  return new Promise((resolve) => window.setTimeout(() => resolve(ok), 200));
+  return found && isPasswordAccepted(password) ? found : null;
 }

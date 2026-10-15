@@ -8,6 +8,9 @@ public final class PermissionPolicy {
             Map.entry("GET /api/me/menu", "MENU_VIEW"),
             Map.entry("GET /api/admin/users", "USER_READ"),
             Map.entry("POST /api/admin/users", "USER_CREATE"),
+            Map.entry("GET /api/admin/users/import/template", "USER_CREATE"),
+            Map.entry("POST /api/admin/users/import/preview", "USER_CREATE"),
+            Map.entry("POST /api/admin/users/import", "USER_CREATE"),
             Map.entry("GET /api/admin/roles", "ROLE_PERMISSION_READ"),
             Map.entry("GET /api/admin/permissions", "ROLE_PERMISSION_READ"),
             Map.entry("GET /api/admin/menus", "ROLE_PERMISSION_READ"),
@@ -47,6 +50,11 @@ public final class PermissionPolicy {
         }
         if ("DELETE".equals(method) && path.matches("^/api/leads/\\d+$")) {
             return "LEAD_DELETE";
+        }
+        if ("GET".equals(method) && "/api/auth/me".equals(path)
+                || ("/api/profile".equals(path) || "/api/user/profile".equals(path))
+                && ("GET".equals(method) || "PUT".equals(method) || "POST".equals(method))) {
+            return "@authenticated";
         }
         if ("POST".equals(method) && ("/api/auth/logout".equals(path) || "/api/auth/change-password".equals(path))) {
             return "@authenticated";

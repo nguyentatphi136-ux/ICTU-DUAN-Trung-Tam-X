@@ -83,7 +83,7 @@ public class ForgotPasswordServlet extends HttpServlet {
                 Timestamp expiresAt = new Timestamp(System.currentTimeMillis() + 30 * 60 * 1000L);
                 if (tokenDAO.saveToken(user.getId(), token, expiresAt)) {
                     String appBase = setting("APP_BASE_URL", "http://localhost:5173").replaceAll("/+$", "");
-                    String resetLink = appBase + "/ResetPasswordForm.html?token=" + token;
+                    String resetLink = appBase + "/dat-lai-mat-khau?token=" + token;
                     try {
                         CompletableFuture.runAsync(() -> EmailService.sendPasswordResetEmail(user.getEmail(), resetLink));
                     } catch (RejectedExecutionException exception) {

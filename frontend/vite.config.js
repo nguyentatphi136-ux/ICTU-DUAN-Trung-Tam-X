@@ -27,7 +27,7 @@ function emailPlugin() {
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         // 1. Endpoint gửi liên kết đặt lại mật khẩu có hiệu lực 30 phút, dùng 1 lần (S1-03)
-        if (req.method === "POST" && (req.url === "/api/forgot-password" || req.url === "/api/send-reset-link" || req.url === "/api/auth/forgot-password" || req.url === "/api/send-otp")) {
+        if (req.method === "POST" && (req.url === "/api/forgot-password" || req.url === "/api/send-reset-link" || req.url === "/api/send-otp")) {
           let body = "";
           req.on("data", (chunk) => { body += chunk; });
           req.on("end", async () => {
@@ -253,7 +253,7 @@ function emailPlugin() {
         }
 
         // 4. Endpoint gửi thông tin tài khoản và mật khẩu tạm khi Admin tạo mới (S1-08)
-        if (req.method === "POST" && (req.url === "/api/send-email" || req.url === "/api/admin/users" || req.url === "/api/send-activation-email")) {
+        if (req.method === "POST" && (req.url === "/api/send-email" || req.url === "/api/send-activation-email")) {
           let body = "";
           req.on("data", (chunk) => {
             body += chunk;
@@ -335,7 +335,7 @@ Ban Quản trị Hệ thống TMS`,
         }
 
         // 6. Endpoint Đổi mật khẩu tài khoản (S1-04)
-        if (req.method === "POST" && (req.url === "/api/auth/change-password" || req.url === "/auth/change-password")) {
+        if (req.method === "POST" && req.url === "/auth/change-password") {
           let body = "";
           req.on("data", (chunk) => { body += chunk; });
           req.on("end", () => {
@@ -592,4 +592,7 @@ Ban Quản trị Hệ thống TMS`,
 // Ứng dụng một trang React Router theo thiết kế Figma + Tích hợp Dev API Middleware cho S1 & S2
 export default defineConfig({
   plugins: [react(), emailPlugin()],
+  // Các /api mà emailPlugin không giả lập được chuyển sang backend Java. Đăng nhập, quên/đổi mật khẩu và tạo tài khoản
+  // (S1) đã bỏ khỏi emailPlugin để đi thẳng tới backend; trang tự dùng dữ liệu mẫu khi backend chưa bật. (cùng origin nên cookie phiên JSESSIONID dùng được).
+  server: { proxy: { "/api": process.env.BACKEND_URL || "http://localhost:8080" } },
 });

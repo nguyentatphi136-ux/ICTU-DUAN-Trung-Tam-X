@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../data/auth';
 import { ROLES } from '../../data/permissions';
 import { Icon } from '../../components/Icon';
-import { DEMO_ACCOUNTS, DEMO_PASSWORD, LOCK_SECONDS, MAX_ATTEMPTS, login } from './mockAuth';
+import { DEMO_ACCOUNTS, DEMO_PASSWORD, findAccount, LOCK_SECONDS, MAX_ATTEMPTS, login } from './mockAuth';
 import './login.css';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -24,7 +24,7 @@ export function LoginPage() {
   const state = useLocation().state as LoginState;
   const [email, setEmail] = useState(state?.email ?? '');
 
-  // Đến từ nút Đăng xuất hoặc phiên hết hạn: xoá phiên ở đây. Khi tích hợp: POST /auth/logout để máy chủ thu hồi token.
+  // Đến từ nút Đăng xuất hoặc phiên hết hạn: xoá phiên ở đây; signOut gọi POST /api/auth/logout để máy chủ thu hồi phiên.
   useEffect(() => {
     if (state?.loggedOut || state?.expired) signOut();
   }, [state, signOut]);
@@ -74,6 +74,13 @@ export function LoginPage() {
     setLoading(true);
     const result = await login(email, password);
     setLoading(false);
+    if (result && 'lockedSeconds' in result) {
+      setPassword('');
+      setWrong(false);
+      setNow(Date.now());
+      setLockedUntil(Date.now() + result.lockedSeconds * 1000);
+      return;
+    }
     if (result) {
       setFails(0);
       setWrong(false);
@@ -272,8 +279,10 @@ export function LoginPage() {
                           setLoading(true);
                           const res = await login(btn.email, DEMO_PASSWORD);
                           setLoading(false);
-                          if (res) {
-                            signIn(res);
+                          // Nút demo luôn vào được: tài khoản mẫu không có trong CSDL thì dùng bản giả lập.
+                          const acc = res && !('lockedSeconds' in res) ? res : findAccount(btn.email);
+                          if (acc) {
+                            signIn(acc);
                             navigate(state?.from ?? '/', { replace: true });
                           }
                         }}
