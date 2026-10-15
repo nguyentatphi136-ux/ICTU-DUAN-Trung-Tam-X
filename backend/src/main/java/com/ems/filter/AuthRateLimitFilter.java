@@ -16,7 +16,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-@WebFilter(urlPatterns = {"/api/auth/login", "/api/auth/forgot-password", "/api/auth/reset-password"})
+@WebFilter(urlPatterns = {"/api/auth/login", "/api/auth/forgot-password", "/api/auth/reset-password", "/api/public/consultations"})
 public class AuthRateLimitFilter implements Filter {
     private static final long WINDOW_MILLIS = 15 * 60 * 1000L;
     private static final int MAX_KEYS = 10000;
@@ -32,7 +32,8 @@ public class AuthRateLimitFilter implements Filter {
         String path = httpRequest.getRequestURI().substring(httpRequest.getContextPath().length());
         String key = httpRequest.getRemoteAddr() + ":" + path;
         long now = Instant.now().toEpochMilli();
-        int limit = "/api/auth/forgot-password".equals(path) ? 5 : 30;
+        // Đăng ký tư vấn (S2-08) là biểu mẫu công khai nên giới hạn chặt như quên mật khẩu.
+        int limit = "/api/auth/forgot-password".equals(path) || "/api/public/consultations".equals(path) ? 5 : 30;
         synchronized (WINDOWS) {
             Window window = WINDOWS.get(key);
             if (window == null || now - window.startedAt >= WINDOW_MILLIS) {

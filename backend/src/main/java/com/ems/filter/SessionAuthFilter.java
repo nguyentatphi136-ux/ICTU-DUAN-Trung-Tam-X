@@ -106,6 +106,7 @@ public class SessionAuthFilter implements Filter {
         }
         if ("/api/auth/login".equals(path) || "/api/auth/forgot-password".equals(path)
                 || "/api/auth/reset-password".equals(path) || "/api/health".equals(path)
+                || path.startsWith("/api/public/")
                 || path.startsWith("/api-docs") || path.startsWith("/api/docs")) {
             return true;
         }

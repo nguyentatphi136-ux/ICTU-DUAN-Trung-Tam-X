@@ -287,6 +287,10 @@ public class TrainingProgramDAO {
                         }
                     }
                 }
+                try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM program_subject_prereqs WHERE program_id = ?")) {
+                    stmt.setInt(1, id);
+                    stmt.executeUpdate();
+                }
                 try (PreparedStatement stmt = conn.prepareStatement("DELETE FROM programs WHERE id = ?")) {
                     stmt.setInt(1, id);
                     stmt.executeUpdate();
@@ -300,27 +304,138 @@ public class TrainingProgramDAO {
         }
     }
 
-    /** Lộ trình môn của chương trình theo order_index (S2-06). */
+    /** Lộ trình môn của chương trình theo order_index (S2-06), mỗi môn kèm danh sách mã môn tiên quyết (prereq). */
     public List<Map<String, Object>> listSubjects(int programId) throws SQLException {
-        String sql = "SELECT s.subject_code, s.subject_name, s.total_sessions, ps.order_index "
+        String sql = "SELECT s.id, s.subject_code, s.subject_name, s.total_sessions, ps.order_index "
                 + "FROM program_subjects ps JOIN subjects s ON s.id = ps.subject_id "
                 + "WHERE ps.program_id = ? AND s.deleted_at IS NULL ORDER BY ps.order_index, ps.id";
+        String prereqSql = "SELECT pr.subject_id, s.subject_code FROM program_subject_prereqs pr "
+                + "JOIN subjects s ON s.id = pr.prereq_subject_id WHERE pr.program_id = ? AND s.deleted_at IS NULL "
+                + "ORDER BY s.subject_code";
         List<Map<String, Object>> items = new ArrayList<>();
+        Map<Integer, List<String>> prereqs = new LinkedHashMap<>();
         try (Connection conn = DBConnection.getConnection();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             PreparedStatement prereqStmt = conn.prepareStatement(prereqSql)) {
             stmt.setInt(1, programId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> item = new LinkedHashMap<>();
+                    List<String> list = new ArrayList<>();
+                    prereqs.put(rs.getInt("id"), list);
                     item.put("code", rs.getString("subject_code"));
                     item.put("name", rs.getString("subject_name"));
                     item.put("sessions", rs.getInt("total_sessions"));
                     item.put("order", rs.getInt("order_index"));
+                    item.put("prereq", list);
                     items.add(item);
+                }
+            }
+            prereqStmt.setInt(1, programId);
+            try (ResultSet rs = prereqStmt.executeQuery()) {
+                while (rs.next()) {
+                    List<String> list = prereqs.get(rs.getInt("subject_id"));
+                    if (list != null) list.add(rs.getString("subject_code"));
                 }
             }
         }
         return items;
+    }
+
+    /** Thêm môn vào cuối lộ trình; môn đã có thì trả false. */
+    public boolean addSubject(int programId, int subjectId) throws SQLException {
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                int last;
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "SELECT subject_id, order_index FROM program_subjects WHERE program_id = ? FOR UPDATE")) {
+                    stmt.setInt(1, programId);
+                    last = 0;
+                    try (ResultSet rs = stmt.executeQuery()) {
+                        while (rs.next()) {
+                            if (rs.getInt("subject_id") == subjectId) {
+                                conn.rollback();
+                                return false;
+                            }
+                            last = Math.max(last, rs.getInt("order_index"));
+                        }
+                    }
+                }
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "INSERT INTO program_subjects (program_id, subject_id, order_index) VALUES (?, ?, ?)")) {
+                    stmt.setInt(1, programId);
+                    stmt.setInt(2, subjectId);
+                    stmt.setInt(3, last + 1);
+                    stmt.executeUpdate();
+                }
+                conn.commit();
+                return true;
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /** Gỡ môn khỏi lộ trình, bỏ luôn quan hệ tiên quyết có môn này. Môn không có trong lộ trình thì trả false. */
+    public boolean removeSubject(int programId, int subjectId) throws SQLException {
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                int removed;
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "DELETE FROM program_subjects WHERE program_id = ? AND subject_id = ?")) {
+                    stmt.setInt(1, programId);
+                    stmt.setInt(2, subjectId);
+                    removed = stmt.executeUpdate();
+                }
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "DELETE FROM program_subject_prereqs WHERE program_id = ? AND (subject_id = ? OR prereq_subject_id = ?)")) {
+                    stmt.setInt(1, programId);
+                    stmt.setInt(2, subjectId);
+                    stmt.setInt(3, subjectId);
+                    stmt.executeUpdate();
+                }
+                conn.commit();
+                return removed > 0;
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /** Thay danh sách môn tiên quyết của một môn trong lộ trình. Service đã kiểm các môn này đứng trước. */
+    public void setPrerequisites(int programId, String subjectCode, List<String> prereqCodes) throws SQLException {
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "DELETE FROM program_subject_prereqs WHERE program_id = ? "
+                                + "AND subject_id = (SELECT id FROM subjects WHERE UPPER(subject_code) = UPPER(?))")) {
+                    stmt.setInt(1, programId);
+                    stmt.setString(2, subjectCode);
+                    stmt.executeUpdate();
+                }
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "INSERT INTO program_subject_prereqs (program_id, subject_id, prereq_subject_id) "
+                                + "SELECT ?, a.id, b.id FROM subjects a, subjects b "
+                                + "WHERE UPPER(a.subject_code) = UPPER(?) AND UPPER(b.subject_code) = UPPER(?)")) {
+                    for (String prereq : prereqCodes) {
+                        stmt.setInt(1, programId);
+                        stmt.setString(2, subjectCode);
+                        stmt.setString(3, prereq);
+                        stmt.addBatch();
+                    }
+                    stmt.executeBatch();
+                }
+                conn.commit();
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            }
+        }
     }
 
     /**
@@ -336,7 +451,7 @@ public class TrainingProgramDAO {
                 Map<String, Integer> current = new LinkedHashMap<>();
                 try (PreparedStatement stmt = conn.prepareStatement(
                         "SELECT ps.id, s.subject_code FROM program_subjects ps JOIN subjects s ON s.id = ps.subject_id "
-                                + "WHERE ps.program_id = ? FOR UPDATE")) {
+                                + "WHERE ps.program_id = ? AND s.deleted_at IS NULL FOR UPDATE")) {
                     stmt.setInt(1, programId);
                     try (ResultSet rs = stmt.executeQuery()) {
                         while (rs.next()) current.put(rs.getString("subject_code").toUpperCase(java.util.Locale.ROOT), rs.getInt("id"));
@@ -353,6 +468,16 @@ public class TrainingProgramDAO {
                         stmt.addBatch();
                     }
                     stmt.executeBatch();
+                }
+                // Môn tiên quyết phải đứng trước: đổi thứ tự xong thì bỏ các quan hệ không còn đúng.
+                try (PreparedStatement stmt = conn.prepareStatement(
+                        "DELETE FROM program_subject_prereqs WHERE program_id = ? AND "
+                                + "(SELECT a.order_index FROM program_subjects a WHERE a.program_id = program_subject_prereqs.program_id "
+                                + "AND a.subject_id = program_subject_prereqs.prereq_subject_id) >= "
+                                + "(SELECT b.order_index FROM program_subjects b WHERE b.program_id = program_subject_prereqs.program_id "
+                                + "AND b.subject_id = program_subject_prereqs.subject_id)")) {
+                    stmt.setInt(1, programId);
+                    stmt.executeUpdate();
                 }
                 conn.commit();
             } catch (SQLException | RuntimeException e) {

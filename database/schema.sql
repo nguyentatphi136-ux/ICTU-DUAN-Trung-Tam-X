@@ -224,6 +224,17 @@ CREATE TABLE IF NOT EXISTS `subject_lessons` (
     CONSTRAINT `fk_sl_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB COMMENT='Bảng danh mục các buổi học chuẩn theo môn';
 
+-- 2.5 Bảng Môn tiên quyết trong lộ trình (S2-06). Một môn có thể cần nhiều môn tiên quyết, ví dụ BE-01 cần WEB-02 và DB-01.
+CREATE TABLE IF NOT EXISTS `program_subject_prereqs` (
+    `program_id` INT NOT NULL,
+    `subject_id` INT NOT NULL,
+    `prereq_subject_id` INT NOT NULL COMMENT 'Môn phải học trước, đứng trước subject_id trong lộ trình',
+    PRIMARY KEY (`program_id`, `subject_id`, `prereq_subject_id`),
+    CONSTRAINT `fk_psp_program` FOREIGN KEY (`program_id`) REFERENCES `programs` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_psp_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_psp_prereq` FOREIGN KEY (`prereq_subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Bảng môn tiên quyết của từng môn trong lộ trình chương trình';
+
 
 -- =============================================================================
 -- PHÂN HỆ 3: TUYỂN SINH, PHỄU KHÁCH HÀNG & HỒ SƠ HỌC VIÊN (Sprint 2 & 3)
@@ -265,6 +276,22 @@ CREATE TABLE IF NOT EXISTS `lead_interactions` (
     CONSTRAINT `fk_li_counselor` FOREIGN KEY (`counselor_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
     INDEX `idx_callback_time` (`callback_scheduled_at`)
 ) ENGINE=InnoDB COMMENT='Bảng lịch sử chăm sóc và tương tác khách hàng';
+
+-- 3.2.1 Bảng Lịch sử phân công Lead (S2-10): ai giao, từ ai sang ai, lúc nào
+CREATE TABLE IF NOT EXISTS `lead_assignments` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `lead_id` BIGINT NOT NULL,
+    `from_counselor_id` BIGINT NULL COMMENT 'Người phụ trách trước đó, NULL là lead chưa phân công',
+    `to_counselor_id` BIGINT NOT NULL,
+    `assigned_by` BIGINT NULL COMMENT 'Người thực hiện phân công',
+    `note` VARCHAR(255) NULL,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_la_lead` FOREIGN KEY (`lead_id`) REFERENCES `leads` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_la_from` FOREIGN KEY (`from_counselor_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_la_to` FOREIGN KEY (`to_counselor_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_la_by` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+    INDEX `idx_la_lead_time` (`lead_id`, `created_at`)
+) ENGINE=InnoDB COMMENT='Bảng lịch sử chuyển giao lead giữa các tư vấn viên';
 
 -- 3.3 Bảng Hồ sơ Học viên chi tiết (Students Profile)
 CREATE TABLE IF NOT EXISTS `students` (
@@ -817,6 +844,7 @@ INSERT INTO `permissions` (`permission_code`, `permission_name`, `module`, `desc
 ('PROGRAM_MANAGE', 'Quản lý chương trình', 'PROGRAM', 'Quản lý chương trình đào tạo'),
 ('CLASS_MANAGE', 'Quản lý lớp học', 'CLASS', 'Mở lớp và phân công'),
 ('LEAD_MANAGE', 'Quản lý tuyển sinh', 'ADMISSIONS', 'Quản lý khách hàng tiềm năng'),
+('LEAD_ASSIGN', 'Phân công lead', 'ADMISSIONS', 'Xem mọi lead, phân công tư vấn viên và xoá lead'),
 ('ATTENDANCE_MANAGE', 'Quản lý điểm danh', 'ATTENDANCE', 'Điểm danh học viên'),
 ('ASSIGNMENT_MANAGE', 'Quản lý bài tập', 'ASSIGNMENT', 'Giao và quản lý bài tập'),
 ('ASSIGNMENT_READ', 'Xem bài tập', 'ASSIGNMENT', 'Xem và nộp bài tập'),
@@ -836,7 +864,7 @@ ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_MANAGE','CLASS_MANAGE','SCHEDULE_READ','REPORT_VIEW')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_MANAGE','CLASS_MANAGE','SCHEDULE_READ','REPORT_VIEW','LEAD_MANAGE','LEAD_ASSIGN')
 WHERE r.role_code = 'TRAINING_MANAGER'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)

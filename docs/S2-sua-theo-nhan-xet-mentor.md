@@ -73,6 +73,6 @@ Nếu xoá vĩnh viễn một tài khoản đang có dữ liệu liên quan, má
 ## Còn lại
 
 - Chưa chạy thử trên MySQL thật, mới chạy trên H2 ở chế độ MySQL.
-- Danh sách môn học, buổi học và lead chưa có API backend; các trang này vẫn dùng dữ liệu mẫu, kể cả khi đã cấu hình API.
+- Môn học, buổi học và lead đã có API backend ([S2-api.md](S2-api.md)), nhưng các trang chưa được nối vào API nên vẫn dùng dữ liệu mẫu.
 - Mục 13 cần nhóm thống nhất bộ giao diện chung trước khi sửa tiếp.
 - Trang Hồ sơ còn dư khoảng 37px trên màn hình 768px. Các danh sách dài (Tài khoản, Môn học, Lead) vẫn cuộn dọc, đây là bình thường.

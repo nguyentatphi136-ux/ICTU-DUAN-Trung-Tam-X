@@ -21,6 +21,7 @@ import java.util.Map;
 public class TrainingProgramService {
 
     private final TrainingProgramDAO trainingProgramDAO;
+    private final com.ems.dao.SubjectDAO subjectDAO = new com.ems.dao.SubjectDAO();
 
     public TrainingProgramService() {
         this.trainingProgramDAO = new TrainingProgramDAO();
@@ -197,6 +198,57 @@ public class TrainingProgramService {
         } catch (IllegalArgumentException e) {
             throw new ConflictException("CURRICULUM_CHANGED", e.getMessage());
         }
+        return trainingProgramDAO.listSubjects(program.getId());
+    }
+
+    /** Thêm môn vào cuối lộ trình (S2-06, nút +). */
+    public java.util.List<java.util.Map<String, Object>> addSubject(String idOrCode, String subjectCode) throws SQLException {
+        TrainingProgram program = resolve(idOrCode);
+        if (subjectCode == null || subjectCode.isBlank()) {
+            throw new ValidationException("Thiếu mã môn cần thêm (subjectCode).");
+        }
+        Map<String, Object> subject = subjectDAO.findByCode(subjectCode);
+        if (subject == null) {
+            throw new ResourceNotFoundException("Không tìm thấy môn học: " + subjectCode);
+        }
+        if (!trainingProgramDAO.addSubject(program.getId(), (Integer) subject.get("id"))) {
+            throw new ConflictException("SUBJECT_ALREADY_IN_PROGRAM", "Môn " + subject.get("code") + " đã có trong lộ trình.");
+        }
+        return trainingProgramDAO.listSubjects(program.getId());
+    }
+
+    /** Gỡ môn khỏi lộ trình (S2-06, nút ×). */
+    public java.util.List<java.util.Map<String, Object>> removeSubject(String idOrCode, String subjectCode) throws SQLException {
+        TrainingProgram program = resolve(idOrCode);
+        Map<String, Object> subject = subjectDAO.findByCode(subjectCode);
+        if (subject == null || !trainingProgramDAO.removeSubject(program.getId(), (Integer) subject.get("id"))) {
+            throw new ResourceNotFoundException("Môn " + subjectCode + " không có trong lộ trình.");
+        }
+        return trainingProgramDAO.listSubjects(program.getId());
+    }
+
+    /** Đặt môn tiên quyết cho một môn; chỉ chọn được các môn đứng trước nó trong lộ trình (S2-06). */
+    public java.util.List<java.util.Map<String, Object>> setPrerequisites(String idOrCode, String subjectCode, java.util.List<String> prereqCodes)
+            throws SQLException {
+        if (prereqCodes == null) {
+            throw new ValidationException("Thiếu danh sách mã môn tiên quyết (prereq).");
+        }
+        TrainingProgram program = resolve(idOrCode);
+        java.util.List<java.util.Map<String, Object>> list = trainingProgramDAO.listSubjects(program.getId());
+        java.util.List<String> codes = list.stream().map(m -> ((String) m.get("code")).toUpperCase(java.util.Locale.ROOT)).toList();
+        int at = codes.indexOf(subjectCode.toUpperCase(java.util.Locale.ROOT));
+        if (at < 0) {
+            throw new ResourceNotFoundException("Môn " + subjectCode + " không có trong lộ trình.");
+        }
+        java.util.Set<String> before = new java.util.HashSet<>(codes.subList(0, at));
+        java.util.List<String> wanted = prereqCodes.stream().map(c -> c.toUpperCase(java.util.Locale.ROOT)).distinct().toList();
+        for (String code : wanted) {
+            if (!before.contains(code)) {
+                throw new com.ems.exception.ApiException(400, "PREREQ_NOT_BEFORE",
+                        "Môn tiên quyết " + code + " phải nằm trong lộ trình và đứng trước môn " + subjectCode + ".");
+            }
+        }
+        trainingProgramDAO.setPrerequisites(program.getId(), codes.get(at), wanted);
         return trainingProgramDAO.listSubjects(program.getId());
     }
 

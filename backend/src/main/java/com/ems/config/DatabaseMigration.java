@@ -70,8 +70,77 @@ public class DatabaseMigration {
                 )
             """);
 
+            // 3. Bảng của S2-05 đến S2-10: môn học, lộ trình, buổi học, lead, lịch sử phân công.
+            // Cùng cột với database/schema.sql nhưng không khai báo khoá ngoại để chạy được trên CSDL đang dở dang.
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS subjects (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    subject_code VARCHAR(50) NOT NULL UNIQUE,
+                    subject_name VARCHAR(150) NOT NULL,
+                    total_sessions INT NOT NULL DEFAULT 15
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS program_subjects (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    program_id INT NOT NULL,
+                    subject_id INT NOT NULL,
+                    order_index INT NOT NULL DEFAULT 1
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS program_subject_prereqs (
+                    program_id INT NOT NULL,
+                    subject_id INT NOT NULL,
+                    prereq_subject_id INT NOT NULL,
+                    PRIMARY KEY (program_id, subject_id, prereq_subject_id)
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS subject_lessons (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    subject_id INT NOT NULL,
+                    session_order INT NOT NULL,
+                    topic VARCHAR(255) NOT NULL,
+                    objectives TEXT NULL,
+                    CONSTRAINT uk_subject_session UNIQUE (subject_id, session_order)
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS leads (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    full_name VARCHAR(100) NOT NULL,
+                    phone VARCHAR(20) NOT NULL,
+                    email VARCHAR(150) NULL,
+                    source VARCHAR(50) DEFAULT 'WEBSITE',
+                    interested_program_id INT NULL,
+                    assigned_counselor_id BIGINT NULL,
+                    status VARCHAR(30) DEFAULT 'NEW',
+                    reject_reason VARCHAR(255) NULL,
+                    notes TEXT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS lead_assignments (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    lead_id BIGINT NOT NULL,
+                    from_counselor_id BIGINT NULL,
+                    to_counselor_id BIGINT NOT NULL,
+                    assigned_by BIGINT NULL,
+                    note VARCHAR(255) NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """);
+
             LOGGER.info("Đã kiểm tra và đảm bảo cấu trúc bảng programs và classes thành công.");
         }
+
+        ensureColumn(conn, "subjects", "credit_weight", "DECIMAL(4, 2) NOT NULL DEFAULT 1.00");
+        ensureColumn(conn, "subjects", "learning_outcomes", "TEXT NULL");
+        ensureColumn(conn, "subjects", "status", "VARCHAR(20) DEFAULT 'ACTIVE'");
+        seedLeadAssignPermission(conn);
 
         // schema.sql cũ đặt tên cột là duration_months, còn DAO và migration S2-04 dùng duration.
         if (hasColumn(conn, "programs", "duration_months") && !hasColumn(conn, "programs", "duration")) {
@@ -84,6 +153,32 @@ public class DatabaseMigration {
         for (String table : new String[] {"users", "programs", "subjects", "leads"}) {
             ensureColumn(conn, table, "deleted_at", "DATETIME NULL");
             ensureColumn(conn, table, "deleted_by", "BIGINT NULL");
+        }
+    }
+
+    /**
+     * S2-10: quyền LEAD_ASSIGN (xem mọi lead, phân công, xoá) cho Quản trị và Quản lý đào tạo; Quản lý đào tạo được thêm
+     * LEAD_MANAGE để mở danh sách lead. Chỉ gán ở lần đầu tạo quyền, để quản trị thu hồi ở S1-05 thì khởi động lại không gán lại.
+     */
+    static void seedLeadAssignPermission(Connection conn) throws SQLException {
+        if (!hasTable(conn, "permissions") || !hasTable(conn, "roles") || !hasTable(conn, "role_permissions")) return;
+        try (java.sql.PreparedStatement check = conn.prepareStatement("SELECT 1 FROM permissions WHERE permission_code = 'LEAD_ASSIGN'");
+             ResultSet rs = check.executeQuery()) {
+            if (rs.next()) return;
+        }
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("INSERT INTO permissions (permission_code, permission_name, module, description) "
+                    + "VALUES ('LEAD_ASSIGN', 'Phân công lead', 'ADMISSIONS', 'Xem mọi lead, phân công tư vấn viên và xoá lead')");
+        }
+        String grant = "INSERT INTO role_permissions (role_id, permission_id) "
+                + "SELECT r.id, p.id FROM roles r, permissions p WHERE r.role_code = ? AND p.permission_code = ? "
+                + "AND NOT EXISTS (SELECT 1 FROM role_permissions rp WHERE rp.role_id = r.id AND rp.permission_id = p.id)";
+        try (java.sql.PreparedStatement stmt = conn.prepareStatement(grant)) {
+            for (String[] g : new String[][] {{"ADMIN", "LEAD_ASSIGN"}, {"TRAINING_MANAGER", "LEAD_ASSIGN"}, {"TRAINING_MANAGER", "LEAD_MANAGE"}}) {
+                stmt.setString(1, g[0]);
+                stmt.setString(2, g[1]);
+                stmt.executeUpdate();
+            }
         }
     }
 

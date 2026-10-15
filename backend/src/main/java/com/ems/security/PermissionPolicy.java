@@ -49,8 +49,16 @@ public final class PermissionPolicy {
                 && ("/api/profile".equals(path) || "/api/user/profile".equals(path))) {
             return "@authenticated";
         }
-        if (path.startsWith("/api/training-programs")) {
+        if (path.startsWith("/api/training-programs") || "/api/subjects".equals(path) || path.startsWith("/api/subjects/")) {
             return "PROGRAM_MANAGE";
+        }
+        // S2-10: phân công, xem tư vấn viên, xoá và thùng rác lead chỉ dành cho người điều phối (Quản trị, Quản lý đào tạo).
+        if (path.matches("^/api/leads/(assign|counselors|trash)$") || path.matches("^/api/leads/\\d+/(restore|purge)$")
+                || "DELETE".equals(method) && path.matches("^/api/leads/\\d+$")) {
+            return "LEAD_ASSIGN";
+        }
+        if ("/api/leads".equals(path) || path.startsWith("/api/leads/")) {
+            return "LEAD_MANAGE";
         }
         if ("POST".equals(method) && ("/api/auth/logout".equals(path) || "/api/auth/change-password".equals(path))) {
             return "@authenticated";

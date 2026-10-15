@@ -44,6 +44,10 @@ public class TrainingProgramApiServlet extends HttpServlet {
     private static final Pattern PURGE_PATTERN = Pattern.compile("^/(\\d+)/purge$");
     /** Lộ trình môn theo id hoặc mã chương trình: /api/training-programs/WEB-FS/subjects */
     private static final Pattern SUBJECTS_PATTERN = Pattern.compile("^/([A-Za-z0-9._-]+)/subjects$");
+    /** Một môn trong lộ trình: DELETE để gỡ. */
+    private static final Pattern SUBJECT_ITEM_PATTERN = Pattern.compile("^/([A-Za-z0-9._-]+)/subjects/([A-Za-z0-9._-]+)$");
+    /** Môn tiên quyết của một môn trong lộ trình: PUT { prereq: ["WEB-01"] }. */
+    private static final Pattern PREREQ_PATTERN = Pattern.compile("^/([A-Za-z0-9._-]+)/subjects/([A-Za-z0-9._-]+)/prerequisites$");
 
     private TrainingProgramService trainingProgramService;
 
@@ -148,6 +152,17 @@ public class TrainingProgramApiServlet extends HttpServlet {
                 return;
             }
 
+            // POST /api/training-programs/{code}/subjects { subjectCode }: thêm môn vào cuối lộ trình
+            Matcher subjectsMatcher = SUBJECTS_PATTERN.matcher(pathInfo);
+            if (subjectsMatcher.matches()) {
+                JsonObject body = GSON.fromJson(request.getReader(), JsonObject.class);
+                String subjectCode = body != null && body.has("subjectCode") && !body.get("subjectCode").isJsonNull()
+                        ? body.get("subjectCode").getAsString().trim() : null;
+                ApiResponse.success(response, "CURRICULUM_SUBJECT_ADDED", "Đã thêm môn vào lộ trình.",
+                        trainingProgramService.addSubject(subjectsMatcher.group(1), subjectCode));
+                return;
+            }
+
             Matcher restoreMatcher = RESTORE_PATTERN.matcher(pathInfo);
             if (restoreMatcher.matches()) {
                 trainingProgramService.restore(Integer.parseInt(restoreMatcher.group(1)));
@@ -205,6 +220,19 @@ public class TrainingProgramApiServlet extends HttpServlet {
                 return;
             }
 
+            Matcher prereqMatcher = PREREQ_PATTERN.matcher(pathInfo);
+            if (prereqMatcher.matches()) {
+                JsonObject body = GSON.fromJson(request.getReader(), JsonObject.class);
+                java.util.List<String> codes = null;
+                if (body != null && body.has("prereq") && body.get("prereq").isJsonArray()) {
+                    codes = new java.util.ArrayList<>();
+                    for (JsonElement el : body.getAsJsonArray("prereq")) codes.add(el.getAsString().trim());
+                }
+                ApiResponse.success(response, "CURRICULUM_PREREQ_UPDATED", "Đã lưu môn tiên quyết.",
+                        trainingProgramService.setPrerequisites(prereqMatcher.group(1), prereqMatcher.group(2), codes));
+                return;
+            }
+
             Matcher idMatcher = ID_PATTERN.matcher(pathInfo);
             if (idMatcher.matches()) {
                 int id = Integer.parseInt(idMatcher.group(1));
@@ -251,6 +279,13 @@ public class TrainingProgramApiServlet extends HttpServlet {
                 }
                 trainingProgramService.purge(Integer.parseInt(purgeMatcher.group(1)));
                 ApiResponse.success(response, "PROGRAM_PURGED", "Đã xoá vĩnh viễn chương trình đào tạo.", null);
+                return;
+            }
+            // DELETE /api/training-programs/{code}/subjects/{subjectCode}: gỡ môn khỏi lộ trình
+            Matcher subjectItemMatcher = SUBJECT_ITEM_PATTERN.matcher(pathInfo);
+            if (subjectItemMatcher.matches()) {
+                ApiResponse.success(response, "CURRICULUM_SUBJECT_REMOVED", "Đã gỡ môn khỏi lộ trình.",
+                        trainingProgramService.removeSubject(subjectItemMatcher.group(1), subjectItemMatcher.group(2)));
                 return;
             }
             Matcher idMatcher = ID_PATTERN.matcher(pathInfo);
