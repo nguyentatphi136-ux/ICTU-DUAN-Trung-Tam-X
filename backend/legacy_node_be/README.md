@@ -183,5 +183,73 @@ GET /api/leads?search=0988&status=CONSULTING&source=FACEBOOK&datePreset=last-mon
   }
   ```
 
+---
 
+## API Chuyển Lead đã chốt thành Hồ sơ học viên (Story S3-03 - IDTTX-211 / Subtask IDTTX-240)
 
+Áp dụng cho nhánh: **`feature/S3-03-chuyen-hoc-vien`**
+
+### Yêu cầu nghiệp vụ Story S3-03:
+> **User Story:** Là Tư vấn tuyển sinh, tôi muốn chuyển một lead đã chốt thành hồ sơ học viên, để không phải nhập lại thông tin khách đã cung cấp ba lần trước đó.
+
+1. **Dữ liệu lead được chuyển sang hồ sơ học viên, không phải nhập lại:**
+   - Họ tên, số điện thoại, chương trình đào tạo quan tâm, tư vấn viên, nguồn tiếp cận, ID lead gốc được tự động kế thừa vào hồ sơ học viên mới tạo.
+2. **Hệ thống sinh mã học viên tự động:**
+   - Định dạng mã: `HV26xxxx` cho năm 2026 (ví dụ: `HV260143`), tự động tăng tuần tự từ mã cao nhất hiện có.
+   - API `GET /api/students/next-code` cung cấp trước mã dự kiến cho hộp thoại ConvertDialog trên frontend.
+3. **Tài khoản đăng nhập cho học viên được tạo và gửi email:**
+   - Email đăng nhập do hệ thống cấp theo chuẩn TMS: `S25200212{pad(n, 3)}@tms.vn` (ví dụ `S25200212143@tms.vn`).
+   - Tài khoản người dùng được tạo trong bảng `users` với vai trò `Student` (`Học viên`) và mật khẩu tạm thời.
+   - Email kích hoạt kèm thông tin tài khoản được gửi tới địa chỉ `sendTo` do tư vấn viên chỉ định hoặc email của lead.
+4. **Lead chuyển sang trạng thái Đã nhập học và không sửa được nữa:**
+   - Cập nhật `lead.student = studentCode`, `lead.isConverted = true`, `lead.isLocked = true`, `lead.subStatus = 'Đã nhập học'`.
+   - Tự động ghi nhật ký chuyển đổi vào dòng thời gian (`timeline`) và nhật ký chăm sóc (`care_logs`).
+   - Chặn toàn bộ thao tác sửa lead, kéo thẻ đổi stage hoặc thêm nhật ký mới (trả về lỗi HTTP `400 Bad Request` với mã `LEAD_LOCKED`).
+
+### Danh sách API Story S3-03:
+
+| Phương thức | Đường dẫn | Quyền truy cập | Mô tả |
+| --- | --- | --- | --- |
+| `POST` | `/api/leads/:id/convert` hoặc `/admissions/leads/:id/convert` | `Admissions`, `TrainingManager`, `Admin` | Chuyển lead đã chốt thành học viên, tạo user và gửi email |
+| `GET` | `/api/students/next-code` | `Admissions`, `TrainingManager`, `Admin` | Lấy trước mã học viên và email đăng nhập tự sinh tiếp theo |
+| `GET` | `/api/students` | `Admissions`, `TrainingManager`, `Instructor`, `Admin` | Tra cứu danh sách học viên kèm bộ lọc và tìm kiếm |
+| `GET` | `/api/students/:code` | `Admissions`, `TrainingManager`, `Instructor`, `Admin` | Xem chi tiết hồ sơ học viên kèm lịch sử học tập |
+| `POST` | `/api/students/:code/notes` | `Admissions`, `TrainingManager`, `Admin` | Thêm ghi chú vào hồ sơ học viên |
+
+#### Mẫu yêu cầu chuyển đổi lead (`POST /api/leads/:id/convert`):
+```http
+POST /api/leads/5/convert HTTP/1.1
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "sendTo": "duc.tm@gmail.com"
+}
+```
+- **Phản hồi thành công (`201 Created`):**
+```json
+{
+  "success": true,
+  "message": "Chuyển đổi thành công lead Trần Minh Đức thành học viên HV260143",
+  "data": {
+    "code": "HV260143",
+    "name": "Trần Minh Đức",
+    "phone": "0903456789",
+    "email": "duc.tm@gmail.com",
+    "login": "S25200212143@tms.vn",
+    "program": "Lập trình Frontend React",
+    "status": "Mới nhập học",
+    "enrolledAt": "2026-10-16",
+    "counselor": "Hoàng Văn Tư (Tư vấn viên)",
+    "source": "HOTLINE",
+    "leadId": 5
+  },
+  "user": {
+    "id": "7",
+    "email": "s25200212143@tms.vn",
+    "name": "Trần Minh Đức",
+    "roles": ["Student"]
+  },
+  "emailSentTo": "duc.tm@gmail.com"
+}
+```
