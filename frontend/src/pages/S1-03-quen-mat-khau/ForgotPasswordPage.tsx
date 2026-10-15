@@ -5,6 +5,7 @@ import { Icon } from '../../components/Icon';
 import { PasswordField } from '../../components/PasswordField';
 import { isStrongPassword, PasswordRules } from '../../components/PasswordRules';
 import { Box } from '../../components/ui';
+import { api, ApiError, isOffline } from '../../data/api';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const LINK_SECONDS = 30 * 60;
@@ -18,7 +19,8 @@ const BackToLogin = () => (
 );
 
 // S1-03 bước 1 và 2: nhập email, báo đã gửi. Cùng một thông báo cho mọi email để không dò được ai có tài khoản.
-// Khi tích hợp: POST /auth/forgot-password { email }.
+// POST /api/auth/forgot-password { email }; máy chủ chưa bật thì chỉ hiện màn đã gửi.
+const requestLink = (email: string) => api('POST', '/auth/forgot-password', { email });
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
@@ -31,12 +33,17 @@ export function ForgotPasswordPage() {
     return () => window.clearInterval(t);
   }, [sentAt]);
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     const v = email.trim();
     if (!v) return setError('Vui lòng nhập email');
     if (!EMAIL_RE.test(v)) return setError('Email không đúng định dạng');
     setError('');
+    try {
+      await requestLink(v);
+    } catch (err) {
+      if (!isOffline(err)) return setError((err as ApiError).message);
+    }
     setSentAt(Date.now());
     setNow(Date.now());
   }
@@ -52,7 +59,10 @@ export function ForgotPasswordPage() {
         <Box icon="clock" title={left ? `Liên kết hết hạn sau ${mmss(left)}` : 'Liên kết đã hết hạn'}>
           Chỉ sử dụng được một lần.
         </Box>
-        <button type="button" className="btn block" onClick={() => setSentAt(Date.now())}>
+        <button type="button" className="btn block" onClick={() => {
+            requestLink(email.trim()).catch(() => {});
+            setSentAt(Date.now());
+          }}>
           Gửi lại liên kết
         </button>
         <a
@@ -103,15 +113,38 @@ export function ForgotPasswordPage() {
   );
 }
 
-// S1-03 bước 3 đến 5: mở từ liên kết trong email. token "het-han" mô phỏng liên kết quá 30 phút hoặc đã dùng.
-// Khi tích hợp: POST /auth/reset-password { token, password }; máy chủ trả 410 nếu liên kết hết hiệu lực.
+// S1-03 bước 3 đến 5: mở từ liên kết trong email. Mở trang thì hỏi GET /api/auth/reset-password?token=, gửi bằng
+// POST /api/auth/reset-password { token, password, confirmPassword }; máy chủ trả 410 nếu liên kết hết hiệu lực.
+// Máy chủ chưa bật thì token "het-han" mô phỏng liên kết quá 30 phút hoặc đã dùng.
 export function ResetPasswordPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [pw, setPw] = useState('');
   const [confirm, setConfirm] = useState('');
   const [done, setDone] = useState(false);
-  const expired = params.get('token') === 'het-han' || !params.get('token');
+  const [gone, setGone] = useState(false);
+  const [error, setError] = useState('');
+  const token = params.get('token') ?? '';
+  const expired = gone || token === 'het-han' || !token;
+
+  useEffect(() => {
+    if (!token) return;
+    api('GET', '/auth/reset-password?token=' + encodeURIComponent(token)).catch((e) => {
+      if (e instanceof ApiError && e.status === 410) setGone(true);
+    });
+  }, [token]);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!valid) return;
+    try {
+      await api('POST', '/auth/reset-password', { token, password: pw, confirmPassword: confirm });
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 410) return setGone(true);
+      if (!isOffline(err)) return setError((err as ApiError).message);
+    }
+    setDone(true);
+  }
   const mismatch = confirm.length > 0 && confirm !== pw;
   const valid = isStrongPassword(pw) && confirm === pw;
 
@@ -152,16 +185,11 @@ export function ResetPasswordPage() {
       <Badge icon="lock" />
       <h1>Tạo mật khẩu mới</h1>
       <p className="lead-t">Chọn một mật khẩu mạnh để bảo vệ tài khoản của bạn.</p>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (valid) setDone(true);
-        }}
-        noValidate
-      >
+      <form onSubmit={submit} noValidate>
         <PasswordField id="rp-new" label="Mật khẩu mới" value={pw} onChange={setPw} placeholder="Nhập mật khẩu mới" />
         <PasswordField id="rp-confirm" label="Xác nhận mật khẩu" value={confirm} onChange={setConfirm} placeholder="Nhập lại mật khẩu" error={mismatch ? 'Mật khẩu xác nhận không khớp' : undefined} />
         <PasswordRules value={pw} />
+        {error && <p className="err">{error}</p>}
         <button className="btn primary block" type="submit" disabled={!valid}>
           Cập nhật mật khẩu
         </button>

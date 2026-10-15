@@ -1,18 +1,33 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Filter, initial, Pager, paginate, Pill, RowMenu, Search } from '../../components/ui';
+import { api, ApiError, isOffline, ROLE_CODES, roleIndexes } from '../../data/api';
 import { ROLES } from '../../data/permissions';
 import { statusTone, loadUsers, saveUsers, type Status, type UserRow } from '../../data/users';
 import { LockDialog } from './LockDialog';
 import { UserDrawer } from './UserDrawer';
 
 const STATUSES: Status[] = ['Hoạt động', 'Chờ kích hoạt', 'Đã khoá'];
+const STATUS_OF: Record<string, Status> = { ACTIVE: 'Hoạt động', PENDING: 'Chờ kích hoạt', LOCKED: 'Đã khoá' };
+
+type ServerRow = { id: number; fullName: string; email: string; phone: string; roles: string[]; status: string; lockedReason?: string };
+const fromServer = (u: ServerRow): UserRow => ({
+  id: u.id,
+  name: u.fullName.toUpperCase(),
+  email: u.email,
+  phone: u.phone ?? '',
+  roles: roleIndexes(u.roles),
+  status: STATUS_OF[u.status] ?? 'Hoạt động',
+  lockReason: u.lockedReason ?? undefined,
+});
+const codes = (roles: number[]) => roles.map((r) => ROLE_CODES[r]);
 
 // S1-08. Danh sách tài khoản: tìm theo tên, email, số điện thoại; lọc vai trò và trạng thái; 20 dòng mỗi trang.
 // S1-09 (gán vai trò) nằm trong ngăn Sửa, S1-10 (khoá, mở khoá) là hộp thoại mở từ menu ba chấm.
+// Có backend thì đọc GET /api/admin/users và ghi qua POST /users, PUT /users/:id, /roles, /status; chưa bật thì dùng dữ liệu mẫu.
 export function UserListPage() {
   const toast = useToast();
   const [users, setUsers] = useState<UserRow[]>(loadUsers);
@@ -22,6 +37,31 @@ export function UserListPage() {
   const [page, setPage] = useState(1);
   const [editing, setEditing] = useState<UserRow | 'new' | null>(null);
   const [locking, setLocking] = useState<UserRow | null>(null);
+  const [remote, setRemote] = useState(false);
+
+  // ponytail: tải hết một lần rồi lọc ở trình duyệt, đủ cho vài nghìn tài khoản; nhiều hơn thì chuyển sang lọc và phân trang ở máy chủ.
+  useEffect(() => {
+    api<{ items: ServerRow[] }>('GET', '/admin/users?pageSize=5000')
+      .then((d) => {
+        setUsers(d.items.map(fromServer));
+        setRemote(true);
+      })
+      .catch((e) => {
+        if (!isOffline(e)) toast('Không tải được danh sách từ máy chủ', (e as ApiError).message);
+      });
+  }, [toast]);
+
+  /** Chạy thao tác trên máy chủ (nếu có); lỗi thì báo và trả false để giữ nguyên hộp thoại. */
+  const remoteDo = async (f: () => Promise<unknown>) => {
+    if (!remote) return true;
+    try {
+      await f();
+      return true;
+    } catch (e) {
+      toast('Chưa lưu được', (e as ApiError).message);
+      return false;
+    }
+  };
 
   const filtered = useMemo(() => {
     const k = q.trim().toLowerCase().replace(/\s/g, '');
@@ -139,14 +179,27 @@ export function UserListPage() {
             setEditing(null);
             setLocking(u);
           }}
-          onSave={(u) => {
+          onSave={async (u) => {
+            const body = { fullName: u.name, phone: u.phone.replace(/\s/g, '') };
             if (editing === 'new') {
-              const nextId = Math.max(0, ...users.map((x) => x.id)) + 1;
+              let nextId = Math.max(0, ...users.map((x) => x.id)) + 1;
+              const ok = await remoteDo(async () => {
+                const created = await api<ServerRow>('POST', '/admin/users', { ...body, email: u.email, roles: codes(u.roles) });
+                nextId = created.id;
+                u = { ...u, status: 'Hoạt động' };
+              });
+              if (!ok) return;
               const next = [{ ...u, id: nextId }, ...users];
               setUsers(next);
               saveUsers(next);
               toast('Đã tạo tài khoản', `Email kích hoạt đã gửi tới ${u.email}.`);
             } else {
+              const before = editing;
+              const ok = await remoteDo(async () => {
+                await api('PUT', `/admin/users/${u.id}`, body);
+                if (codes(u.roles).join() !== codes(before.roles).join()) await api('PUT', `/admin/users/${u.id}/roles`, { roleCodes: codes(u.roles) });
+              });
+              if (!ok) return;
               update(u);
               toast('Đã lưu thay đổi', u.name);
             }
@@ -158,8 +211,10 @@ export function UserListPage() {
         <LockDialog
           user={locking}
           onClose={() => setLocking(null)}
-          onConfirm={(reason) => {
+          onConfirm={async (reason) => {
             const locked = locking.status !== 'Đã khoá';
+            const ok = await remoteDo(() => api('PUT', `/admin/users/${locking.id}/status`, { status: locked ? 'LOCKED' : 'ACTIVE', reason }));
+            if (!ok) return;
             update({ ...locking, status: locked ? 'Đã khoá' : 'Hoạt động', lockReason: locked ? reason : undefined });
             toast(locked ? 'Đã khoá tài khoản' : 'Đã mở khoá tài khoản', locking.name);
             setLocking(null);
