@@ -1,0 +1,3 @@
+com\ems\security\PermissionPolicyTest.class
+com\ems\security\LoginAttemptPolicyTest.class
+com\ems\model\PasswordResetTokenTest.class
