@@ -131,9 +131,20 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.5.0</version>
+                <!-- npm run start:dev gọi exec:exec: chạy Tomcat nhúng trong JVM riêng (cùng JDK với Maven).
+                     Chạy chung JVM với Maven (exec:java) thì Tomcat không nạp được lớp khi đọc web.xml. -->
                 <configuration>
-                    <mainClass>com.ems.bootstrap.TomcatBootstrap</mainClass>
+                    <executable>${java.home}/bin/java</executable>
                     <classpathScope>compile</classpathScope>
+                    <arguments>
+                        <argument>-Dstdout.encoding=UTF-8</argument>
+                        <argument>-Dstderr.encoding=UTF-8</argument>
+                        <argument>--add-opens=java.base/java.lang=ALL-UNNAMED</argument>
+                        <argument>--add-opens=java.rmi/sun.rmi.transport=ALL-UNNAMED</argument>
+                        <argument>-classpath</argument>
+                        <classpath/>
+                        <argument>com.ems.bootstrap.TomcatBootstrap</argument>
+                    </arguments>
                 </configuration>
             </plugin>
         </plugins>

@@ -1,0 +1,12 @@
+{
+  "name": "ems-backend",
+  "private": true,
+  "description": "Chạy backend Java (Maven Wrapper, Tomcat nhúng) bằng npm. Cấu hình riêng từng máy đặt trong backend/.env, xem .env.example.",
+  "scripts": {
+    "start:dev": "node --env-file-if-exists=.env mvn.js compile exec:exec",
+    "test": "node --env-file-if-exists=.env mvn.js test"
+  },
+  "engines": {
+    "node": ">=22.9"
+  }
+}

@@ -44,10 +44,11 @@ public class DBConnection {
         return setting("DB_PASSWORD", DEFAULT_DB_PASSWORD);
     }
 
+    /** Thứ tự ưu tiên: system property (-D, test dùng để trỏ sang H2), biến môi trường (backend/.env), database.properties. */
     public static String setting(String name, String fallback) {
-        String value = System.getenv(name);
+        String value = System.getProperty(name);
         if (isBlank(value)) {
-            value = System.getProperty(name);
+            value = System.getenv(name);
         }
         if (isBlank(value)) {
             value = loadPropertyFromFile(name);
