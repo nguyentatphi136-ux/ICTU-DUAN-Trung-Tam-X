@@ -4,6 +4,8 @@ import { persisted } from './store';
 
 export type RoomKind = 'Vật lý' | 'Trực tuyến';
 export type Room = {
+  /** Id trên máy chủ, chỉ có khi tải từ backend. */
+  id?: number;
   name: string;
   kind: RoomKind;
   /** Vị trí với phòng vật lý, liên kết với phòng trực tuyến. */

@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { Icon, type IconName } from '../../components/Icon';
-import { Drawer, Pill } from '../../components/ui';
+import { Drawer, LoadState, Pill } from '../../components/ui';
+import { useLoad } from '../../data/api';
+import { loadLeadLogs } from '../../data/s3api';
 import { logsOf, overdueDays, STAGES, stageTone, TODAY, viDateTime, type CareLog, type FunnelLead, type LogKind, type Stage } from '../../data/funnel';
 import './care.css';
 
@@ -26,10 +28,13 @@ const ICONS: Record<LogKind, IconName> = { Gọi: 'phone', Nhắn: 'chat', Gặp
 // S3-02. Bấm vào thẻ lead để mở ngăn bên: ghi lần tương tác mới (gọi, nhắn, gặp), đặt ngày nhắc gọi lại, xem nhật ký mới nhất ở trên.
 export function LeadPanel({ lead, canWrite, me, onClose, onLog, onMove, extra }: Props) {
   const [kind, setKind] = useState<LogKind>('Gọi');
-  const [at, setAt] = useState(TODAY + 'T10:15');
+  // Mặc định là giờ hiện tại: máy chủ không nhận thời điểm tương tác ở tương lai.
+  const [at, setAt] = useState(TODAY + 'T' + new Date().toTimeString().slice(0, 5));
   const [text, setText] = useState('');
   const [callback, setCallback] = useState('');
   const [error, setError] = useState('');
+  // Có backend: tải nhật ký của lead khi mở ngăn; sau mỗi lần ghi, trang phễu tải lại vào cùng LOGS.
+  const load = useLoad(() => loadLeadLogs(lead.id), [lead.id]);
   const late = lead.student ? 0 : overdueDays(lead);
   const logs = logsOf(lead);
   const lastTouch = logs.find((l) => l.kind === 'Gọi' || l.kind === 'Nhắn' || l.kind === 'Gặp');
@@ -110,6 +115,7 @@ export function LeadPanel({ lead, canWrite, me, onClose, onLog, onMove, extra }:
 
       <section>
         <h4>Nhật ký</h4>
+        <LoadState {...load} />
         <ol className="cr-log">
           {late > 0 && (
             <li className="bad">

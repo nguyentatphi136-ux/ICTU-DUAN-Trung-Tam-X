@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { ConfirmDialog, Drawer, Filter, Search } from '../../components/ui';
+import { ConfirmDialog, Drawer, Filter, LoadState, Search } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
+import { deleteRoom, loadClasses, loadRooms, saveRoom } from '../../data/s3api';
 import { capacityText, classesIn, ROOM_KINDS, roomHref, ROOMS, type Room, type RoomKind } from '../../data/rooms';
 import { saveAll } from '../../data/store';
 import '../S3-04-ho-so-hoc-vien/student.css';
@@ -22,6 +24,16 @@ export function RoomListPage() {
   const [kind, setKind] = useState('');
   const [editing, setEditing] = useState<Room | 'new' | null>(null);
   const [deleting, setDeleting] = useState<Room | null>(null);
+  // Có backend: tải phòng và lớp (cột Lớp đang dùng).
+  const load = useLoad(async () => {
+    await Promise.all([loadRooms(), loadClasses()]);
+    setList([...ROOMS]);
+  });
+  const sync = (call: Promise<unknown>, title: string, after: () => void) =>
+    call.then(
+      () => (after(), load.reload(), toast(title)),
+      (e: Error) => toast('Chưa lưu được', e.message),
+    );
 
   const commit = (next: Room[]) => {
     ROOMS.splice(0, ROOMS.length, ...next);
@@ -50,6 +62,7 @@ export function RoomListPage() {
           </button>
         )}
       </div>
+      <LoadState {...load} />
       <div className="bar">
         <Search placeholder="Tìm theo tên phòng" value={q} onChange={setQ} width={280} />
         <Filter label="Loại" value={kind} options={ROOM_KINDS} onChange={setKind} />
@@ -115,6 +128,8 @@ export function RoomListPage() {
           room={editing === 'new' ? null : editing}
           onClose={() => setEditing(null)}
           onSave={(r) => {
+            if (apiEnabled)
+              return void sync(saveRoom(r, editing === 'new' ? undefined : editing.id), editing === 'new' ? 'Đã thêm phòng ' + r.name : 'Đã lưu phòng ' + r.name, () => setEditing(null));
             commit(editing === 'new' ? [...list, r] : list.map((x) => (x === editing ? r : x)));
             setEditing(null);
             toast(editing === 'new' ? 'Đã thêm phòng ' + r.name : 'Đã lưu phòng ' + r.name);
@@ -128,6 +143,7 @@ export function RoomListPage() {
           confirmLabel="Xoá phòng"
           onClose={() => setDeleting(null)}
           onConfirm={() => {
+            if (apiEnabled && deleting.id) return void sync(deleteRoom(deleting.id), 'Đã xoá phòng ' + deleting.name, () => setDeleting(null));
             commit(list.filter((x) => x !== deleting));
             setDeleting(null);
             toast('Đã xoá phòng ' + deleting.name);

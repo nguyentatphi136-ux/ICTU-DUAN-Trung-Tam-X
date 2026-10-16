@@ -20,6 +20,8 @@ export type Klass = {
   slot: string;
   room?: string;
   subjects: ClassSubject[];
+  /** Sĩ số do máy chủ đếm (chế độ có backend); không có thì đếm theo STUDENTS. */
+  enrolled?: number;
 };
 
 export const CLASS_STATUSES: ClassStatus[] = ['Chuẩn bị', 'Đang học', 'Kết thúc', 'Huỷ'];
@@ -29,7 +31,8 @@ export const classTone = (s: ClassStatus): 'ok' | 'info' | 'off' | undefined =>
   s === 'Đang học' ? 'ok' : s === 'Chuẩn bị' ? 'info' : s === 'Huỷ' ? 'off' : undefined;
 
 /** Người dạy được phân công. role là chỉ số trong ROLES: 2 Giảng viên, 1 Trợ giảng. */
-export type Staff = { name: string; role: 1 | 2; email: string };
+/** id và openClasses chỉ có khi tải từ máy chủ (S3-08). */
+export type Staff = { name: string; role: 1 | 2; email: string; id?: number; openClasses?: number };
 export const STAFF: Staff[] = [
   { name: 'VU DUC LONG', role: 2, email: 'IST25200212045@tms.vn' },
   { name: 'LE HOANG NAM', role: 2, email: 'TM25200212002@tms.vn' },
@@ -91,7 +94,7 @@ export const CLASSES: Klass[] = persisted('classes', [
 export const findClass = (code?: string) => CLASSES.find((c) => c.code === code);
 export const totalSessions = (k: Klass) => k.subjects.reduce((n, s) => n + s.sessions, 0);
 /** Sĩ số hiện tại: học viên đang gắn với lớp. */
-export const classSize = (code: string) => STUDENTS.filter((s) => s.cls === code).length;
+export const classSize = (code: string) => findClass(code)?.enrolled ?? STUDENTS.filter((s) => s.cls === code).length;
 /** Giảng viên hiện ở cột Giảng viên: người dạy chính của môn đầu tiên đã phân công. */
 export const mainTeacher = (k: Klass) => k.subjects.find((s) => s.teacher)?.teacher;
 export const missingTeachers = (k: Klass) => k.subjects.filter((s) => !s.teacher).length;

@@ -3,8 +3,10 @@ import { Link, useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Drawer, Pill } from '../../components/ui';
+import { Drawer, LoadState, Pill } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
+import { loadClass, loadStudent, saveStudent } from '../../data/s3api';
 import { classSize, findClass, totalSessions } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
 import { viDate } from '../../data/leads';
@@ -42,9 +44,21 @@ export function StudentProfilePage({ actions }: Props) {
   const [, setTick] = useState(0);
   const [editing, setEditing] = useState(false);
   const [changing, setChanging] = useState(false);
+  // Có backend: tải hồ sơ đầy đủ và lớp đang học (để hiện sĩ số, tiến độ).
+  const load = useLoad(async () => {
+    const st = await loadStudent(code);
+    if (st.cls) await loadClass(st.cls);
+  }, [code]);
   const s = findStudent(code);
   const role = user?.active ?? -1;
-  if (!s) return <ErrorPage code="404" />;
+  if (!s || (apiEnabled && load.loading))
+    return apiEnabled && (load.loading || load.error) ? (
+      <AppLayout crumb={[MODULE, code]} module={MODULE}>
+        <LoadState {...load} />
+      </AppLayout>
+    ) : (
+      <ErrorPage code="404" />
+    );
   if (role === 0 && s.login !== user!.email) return <ErrorPage code="403" />;
   const canEdit = role === 3 || role === 5 || role === 6;
   const k = findClass(s.cls);
@@ -219,8 +233,14 @@ export function StudentProfilePage({ actions }: Props) {
           me={user!.name}
           onClose={() => setEditing(false)}
           onSave={() => {
-            saveAll();
             setEditing(false);
+            if (apiEnabled)
+              // Lỗi thì tải lại để bỏ phần đã sửa trên giao diện mà máy chủ chưa nhận.
+              return void saveStudent(s).then(
+                () => (load.reload(), toast('Đã lưu hồ sơ', s.code + ' · ' + s.name)),
+                (e: Error) => (load.reload(), toast('Chưa lưu được hồ sơ', e.message)),
+              );
+            saveAll();
             refresh();
             toast('Đã lưu hồ sơ', s.code + ' · ' + s.name);
           }}
@@ -287,16 +307,23 @@ function EditDrawer({ s, me, onClose, onSave }: EditProps) {
       {field('address', 'Địa chỉ')}
       <hr className="sep" />
       <h4 className="section-t">Trình độ đầu vào</h4>
-      <div className="grid2">
-        {field('entryScore', 'Kết quả kiểm tra đầu vào')}
-        {field('level', 'Xếp loại')}
-      </div>
-      <div className="field">
-        <label htmlFor="sp-bg">Nền tảng</label>
-        <div className="inp">
-          <textarea id="sp-bg" value={f.background} onChange={set('background')} />
-        </div>
-      </div>
+      {/* Máy chủ S3 chỉ lưu một ô trình độ đầu vào; kết quả kiểm tra và nền tảng chỉ có ở dữ liệu mẫu. */}
+      {apiEnabled ? (
+        field('level', 'Trình độ đầu vào')
+      ) : (
+        <>
+          <div className="grid2">
+            {field('entryScore', 'Kết quả kiểm tra đầu vào')}
+            {field('level', 'Xếp loại')}
+          </div>
+          <div className="field">
+            <label htmlFor="sp-bg">Nền tảng</label>
+            <div className="inp">
+              <textarea id="sp-bg" value={f.background} onChange={set('background')} />
+            </div>
+          </div>
+        </>
+      )}
       <hr className="sep" />
       <h4 className="section-t">Thêm ghi chú</h4>
       <div className="field">

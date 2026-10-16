@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useToast } from '../../components/Toast';
 import { Box, Modal } from '../../components/ui';
+import { apiEnabled } from '../../data/api';
 import { classSize, isOpen, type Klass } from '../../data/classes';
+import { setClassRoom } from '../../data/s3api';
 import { capacityText, classesIn, findRoom, roomHref, ROOMS, type Room } from '../../data/rooms';
 import { saveAll } from '../../data/store';
 import './room.css';
@@ -60,6 +62,11 @@ export function RoomTab({ k, manage, onChange }: Props) {
           k={k}
           onClose={() => setPicking(false)}
           onPick={(r) => {
+            if (apiEnabled)
+              return void setClassRoom(k.code, r.id).then(
+                () => (setPicking(false), onChange(), toast(`Đã xếp phòng ${r.name} cho lớp ${k.code}`)),
+                (e: Error) => toast('Chưa xếp được phòng', e.message),
+              );
             k.room = r.name;
             saveAll();
             setPicking(false);

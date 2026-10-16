@@ -2,8 +2,10 @@ import { useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, NavLink, useNavigate, useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
-import { Box, Pill } from '../../components/ui';
+import { Box, LoadState, Pill } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
+import { loadClass, loadEnrollments, loadMyClasses, loadRooms, loadStaff, loadStudents } from '../../data/s3api';
 import { classesOf, classSize, classTone, ENROLLMENTS, findClass, isOpen, totalSessions, type Klass } from '../../data/classes';
 import { viDate } from '../../data/leads';
 import { statOf } from '../../data/attendance';
@@ -27,12 +29,24 @@ export function ClassDetailPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [, setTick] = useState(0);
-  const k = findClass(code);
   const role = user?.active ?? -1;
+  const mine = role === 1 || role === 2;
+  // Có backend: giảng viên, trợ giảng chỉ có "lớp của tôi"; người quản lý tải lớp, học viên, ghi danh, người dạy và phòng để sửa.
+  const load = useLoad(
+    () => (mine ? loadMyClasses(user!.name) : Promise.all([loadClass(code), loadStudents(), loadEnrollments(code), loadStaff(), loadRooms()])),
+    [code, mine],
+  );
+  const k = findClass(code);
+  if (apiEnabled && (load.loading || load.error))
+    return (
+      <AppLayout crumb={[MODULE, code]} module={MODULE}>
+        <LoadState {...load} />
+      </AppLayout>
+    );
   if (!k) return <ErrorPage code="404" />;
-  if ((role === 1 || role === 2) && !classesOf(user!.name).includes(k)) return <ErrorPage code="403" />;
+  if (mine && !classesOf(user!.name).includes(k)) return <ErrorPage code="403" />;
   const manage = canManageClasses(role);
-  const refresh = () => setTick((t) => t + 1);
+  const refresh = apiEnabled ? load.reload : () => setTick((t) => t + 1);
   const tabs: ClassTab[] = [
     { path: '', label: 'Tổng quan', render: (c) => <Overview k={c} /> },
     { path: 'hoc-vien', label: 'Học viên', render: (c, m) => <Roster k={c} manage={m} onEnroll={() => navigate(`/lop-hoc/${c.code}/ghi-danh`)} /> },
@@ -107,7 +121,10 @@ function Overview({ k }: { k: Klass }) {
 }
 
 function Roster({ k, manage, onEnroll }: { k: Klass; manage: boolean; onEnroll: () => void }) {
-  const list = STUDENTS.filter((s) => s.cls === k.code);
+  // Có backend: danh sách theo ghi danh của lớp (học viên có thể đang ở nhiều lớp, s.cls chỉ là một lớp).
+  const list = apiEnabled
+    ? ENROLLMENTS.filter((e) => e.cls === k.code).flatMap((e) => STUDENTS.filter((s) => s.code === e.student))
+    : STUDENTS.filter((s) => s.cls === k.code);
   return (
     <>
       {manage && isOpen(k) && (

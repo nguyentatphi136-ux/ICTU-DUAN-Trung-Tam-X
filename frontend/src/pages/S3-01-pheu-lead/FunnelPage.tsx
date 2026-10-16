@@ -3,8 +3,11 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Pill, Search } from '../../components/ui';
+import { LoadState, Pill, Search } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
+import { loadPublicPrograms, saveLead, type PublicProgram } from '../../data/s2api';
+import { addLeadLog, loadFunnel, loadLeadLogs, moveLead } from '../../data/s3api';
 import { addLog, ddmm, FUNNEL, overdueDays, STAGES, stageTone, TODAY, type FunnelLead, type Stage } from '../../data/funnel';
 import { LEADS } from '../../data/leads';
 import { LeadDrawer } from '../S2-09-lead/LeadDrawer';
@@ -39,10 +42,27 @@ export function FunnelPage() {
   const role = user?.active ?? -1;
   const canWrite = role === 3 || role === 5 || role === 6;
 
+  const [programs, setPrograms] = useState<PublicProgram[]>([]);
+  const load = useLoad(async () => {
+    const [, list] = await Promise.all([loadFunnel(), loadPublicPrograms()]);
+    setPrograms(list);
+    setLeads([...FUNNEL]);
+  });
+
   const commit = (list: FunnelLead[]) => {
     FUNNEL.splice(0, FUNNEL.length, ...list);
     setLeads(list);
   };
+  /** Có backend: gọi API, tải lại phễu và nhật ký của lead đang mở rồi báo; lỗi thì báo lý do máy chủ trả về. */
+  const sync = (call: Promise<unknown>, title: string, sub?: string, after?: () => void) =>
+    call
+      .then(() => Promise.all([loadFunnel(), openId ? loadLeadLogs(openId) : null]))
+      .then(() => {
+        setLeads([...FUNNEL]);
+        after?.();
+        toast(title, sub);
+      })
+      .catch((e: Error) => toast('Chưa lưu được', e.message));
 
   const shown = useMemo(() => {
     const k = q.trim().toLowerCase();
@@ -62,6 +82,7 @@ export function FunnelPage() {
   function move(l: FunnelLead, to: Stage) {
     if (l.stage === to || l.student) return;
     if (to === 'Từ chối') return setRejecting(l);
+    if (apiEnabled) return void sync(moveLead(l.id, to), 'Đã chuyển giai đoạn', `${l.name}: ${l.stage} → ${to}`);
     logStage(l, to);
     commit(leads.map((x) => (x.id === l.id ? { ...x, stage: to, reason: undefined } : x)));
     toast('Đã chuyển giai đoạn', `${l.name}: ${l.stage} → ${to}`);
@@ -100,6 +121,7 @@ export function FunnelPage() {
           </button>
         )}
       </div>
+      <LoadState {...load} />
       <div className="bar">
         <Search placeholder="Tìm theo tên hoặc số điện thoại" value={q} onChange={setQ} width={320} />
         <label className="check-box">
@@ -148,6 +170,7 @@ export function FunnelPage() {
           lead={rejecting}
           onClose={() => setRejecting(null)}
           onConfirm={(reason) => {
+            if (apiEnabled) return void sync(moveLead(rejecting.id, 'Từ chối', reason), 'Đã chuyển sang Từ chối', `${rejecting.name}: ${reason}`, () => setRejecting(null));
             logStage(rejecting, 'Từ chối', reason);
             commit(leads.map((x) => (x.id === rejecting.id ? { ...x, stage: 'Từ chối', reason } : x)));
             toast('Đã chuyển sang Từ chối', `${rejecting.name}: ${reason}`);
@@ -165,6 +188,7 @@ export function FunnelPage() {
           onClose={() => setOpenId(null)}
           onMove={(to) => move(panel, to)}
           onLog={(log, callback) => {
+            if (apiEnabled) return void sync(addLeadLog(panel.id, log, callback), 'Đã lưu nhật ký', callback ? `Nhắc gọi lại ngày ${ddmm(callback)}.` : panel.name);
             addLog(panel, log);
             commit(leads.map((x) => (x.id === panel.id ? { ...x, callback } : x)));
             toast('Đã lưu nhật ký', callback ? `Nhắc gọi lại ngày ${ddmm(callback)}.` : panel.name);
@@ -175,11 +199,13 @@ export function FunnelPage() {
         <ConvertDialog
           lead={converting}
           onClose={() => setConverting(null)}
-          onDone={(s, sentTo) => {
-            addLog(converting, { kind: 'Chuyển thành học viên', at: now(), by: user!.name, text: `Tạo hồ sơ ${s.code} và tài khoản đăng nhập.` });
-            commit(leads.map((x) => (x.id === converting.id ? { ...x, student: s.code, callback: undefined } : x)));
-            toast('Đã tạo học viên ' + s.code, 'Email kích hoạt đã gửi tới ' + sentTo + '.');
+          onDone={(code, sentTo, emailSent) => {
+            const sub = emailSent ? 'Email kích hoạt đã gửi tới ' + sentTo + '.' : `Chưa gửi được email tới ${sentTo}, hãy báo học viên mật khẩu tạm bằng cách khác.`;
             setConverting(null);
+            if (apiEnabled) return void sync(Promise.resolve(), 'Đã tạo học viên ' + code, sub);
+            addLog(converting, { kind: 'Chuyển thành học viên', at: now(), by: user!.name, text: `Tạo hồ sơ ${code} và tài khoản đăng nhập.` });
+            commit(leads.map((x) => (x.id === converting.id ? { ...x, student: code, callback: undefined } : x)));
+            toast('Đã tạo học viên ' + code, sub);
           }}
         />
       )}
@@ -192,7 +218,9 @@ export function FunnelPage() {
           onOpen={() => {}}
           onClose={() => setAdding(false)}
           onDelete={() => {}}
+          programs={apiEnabled ? programs.map((p) => p.name) : undefined}
           onSave={(l) => {
+            if (apiEnabled) return void sync(saveLead(l, programs), 'Đã thêm lead', l.name, () => setAdding(false));
             const owner = role === 3 ? user!.name : '';
             LEADS.unshift({ ...l, id: Math.max(...LEADS.map((x) => x.id)) + 1, owner });
             commit([...leads, { id: Math.max(...leads.map((x) => x.id)) + 1, name: l.name, phone: l.phone, email: l.email, program: l.program, source: l.source, owner, stage: 'Mới' }]);

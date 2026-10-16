@@ -2,24 +2,35 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
 import { Box, Modal } from '../../components/ui';
+import { apiEnabled } from '../../data/api';
 import { TODAY, type FunnelLead } from '../../data/funnel';
+import { convertLead } from '../../data/s3api';
 import { loginOf, nextStudentCode, STUDENTS, type Student } from '../../data/students';
 import { USERS } from '../../data/users';
 import { EMAIL_RE } from '../../data/validate';
 import './convert.css';
 
-type Props = { lead: FunnelLead; onClose: () => void; onDone: (s: Student, sentTo: string) => void };
+type Props = { lead: FunnelLead; onClose: () => void; onDone: (code: string, sentTo: string, emailSent: boolean) => void };
 
 // S3-03. Chuyển lead đã chốt thành hồ sơ học viên: dữ liệu lấy từ lead, mã học viên và email đăng nhập do hệ thống sinh.
-// Khi tích hợp: POST /admissions/leads/:id/convert { sendTo } tạo hồ sơ, tài khoản Học viên và gửi email kích hoạt.
+// Có backend: POST /api/leads/:id/convert { sendTo } tạo hồ sơ, tài khoản Học viên và gửi email kích hoạt trong một lần.
 export function ConvertDialog({ lead, onClose, onDone }: Props) {
-  const code = nextStudentCode();
-  const login = loginOf(Number(code.slice(4)) % 1000);
+  // Có backend thì mã do máy chủ sinh lúc tạo, trước đó chưa biết.
+  const code = apiEnabled ? 'Tự sinh khi tạo' : nextStudentCode();
+  const login = apiEnabled ? '<mã học viên>@tms.vn' : loginOf(Number(code.slice(4)) % 1000);
   const [sendTo, setSendTo] = useState(lead.email ?? '');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   function create() {
     if (!EMAIL_RE.test(sendTo.trim())) return setError('Nhập email hợp lệ để gửi thông tin đăng nhập');
+    if (apiEnabled) {
+      setBusy(true);
+      return void convertLead(lead.id, sendTo.trim()).then(
+        (r) => onDone(r.code, r.email, r.emailSent),
+        (e: Error) => (setBusy(false), setError(e.message)),
+      );
+    }
     const s: Student = {
       code,
       name: lead.name,
@@ -37,7 +48,7 @@ export function ConvertDialog({ lead, onClose, onDone }: Props) {
     };
     STUDENTS.unshift(s);
     USERS.unshift({ id: Math.max(...USERS.map((u) => u.id)) + 1, name: s.name, email: login, phone: s.phone, roles: [0], status: 'Chờ kích hoạt' });
-    onDone(s, s.email);
+    onDone(s.code, s.email, true);
   }
 
   const facts: [string, string][] = [
@@ -105,8 +116,8 @@ export function ConvertDialog({ lead, onClose, onDone }: Props) {
         <button type="button" className="btn" style={{ width: 100 }} onClick={onClose}>
           Huỷ
         </button>
-        <button type="button" className="btn primary" style={{ width: 164 }} onClick={create}>
-          Tạo học viên
+        <button type="button" className="btn primary" style={{ width: 164 }} disabled={busy} onClick={create}>
+          {busy ? 'Đang tạo…' : 'Tạo học viên'}
         </button>
       </div>
     </Modal>
@@ -120,7 +131,7 @@ export function ConvertBlock({ lead, canWrite, onConvert }: { lead: FunnelLead; 
     return (
       <div className="cv-done">
         <Box icon="check" tone="ok" title={'Đã chuyển thành học viên ' + lead.student}>
-          {s && `Tài khoản ${s.login} đã được tạo. Email kích hoạt đã gửi tới ${s.email}.`}
+          {s ? `Tài khoản ${s.login} đã được tạo. Email kích hoạt đã gửi tới ${s.email}.` : `Tài khoản ${lead.student.toLowerCase()}@tms.vn đã được tạo.`}
         </Box>
         <Link to={'/hoc-vien/' + lead.student} className="btn" style={{ width: 200 }}>
           Mở hồ sơ học viên

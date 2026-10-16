@@ -3,8 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { ConfirmDialog, type MenuAction } from '../../components/ui';
+import { apiEnabled } from '../../data/api';
 import { useAuth } from '../../data/auth';
 import { CLASSES, type Klass } from '../../data/classes';
+import { openClass, setClassStatus } from '../../data/s3api';
 import { saveAll } from '../../data/store';
 import { canManageClasses, ClassListPage } from '../S3-07-danh-sach-lop/ClassListPage';
 import { nextStep, OpenClassDrawer } from './OpenClassDrawer';
@@ -14,11 +16,17 @@ export function ClassesPage() {
   const { user } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
   const [opening, setOpening] = useState(false);
   const [cancelling, setCancelling] = useState<Klass | null>(null);
   const manage = canManageClasses(user?.active ?? -1);
-  const refresh = () => (saveAll(), setTick((t) => t + 1));
+  // Có backend: tick tăng thì ClassListPage tải lại danh sách từ máy chủ.
+  const refresh = () => (apiEnabled || saveAll(), setTick((t) => t + 1));
+  const sync = (call: Promise<unknown>, title: string, sub?: string, after?: () => void) =>
+    call.then(
+      () => (after?.(), refresh(), toast(title, sub)),
+      (e: Error) => toast('Chưa lưu được', e.message),
+    );
 
   const actions = (k: Klass): MenuAction[] => {
     const step = nextStep(k);
@@ -28,6 +36,7 @@ export function ClassesPage() {
         label: step.label,
         disabled: step.blocked,
         onClick: () => {
+          if (apiEnabled) return void sync(setClassStatus(k.code, step.to), `Lớp ${k.code} chuyển sang ${step.to}`);
           k.status = step.to;
           refresh();
           toast(`Lớp ${k.code} chuyển sang ${step.to}`);
@@ -68,11 +77,14 @@ export function ClassesPage() {
         }
         rowActions={manage ? actions : undefined}
         onOpen={(k) => navigate('/lop-hoc/' + k.code)}
+        version={tick}
       />
       {opening && (
         <OpenClassDrawer
           onClose={() => setOpening(false)}
-          onSave={(k) => {
+          onSave={(k, programCode) => {
+            if (apiEnabled)
+              return void sync(openClass(k, programCode), 'Đã mở lớp ' + k.code, `${k.program} · ${k.subjects.length} môn sao chép từ chương trình`, () => setOpening(false));
             CLASSES.unshift(k);
             setOpening(false);
             refresh();
@@ -87,6 +99,7 @@ export function ClassesPage() {
           confirmLabel="Huỷ lớp"
           onClose={() => setCancelling(null)}
           onConfirm={() => {
+            if (apiEnabled) return void sync(setClassStatus(cancelling.code, 'Huỷ'), 'Đã huỷ lớp ' + cancelling.code, undefined, () => setCancelling(null));
             cancelling.status = 'Huỷ';
             setCancelling(null);
             refresh();

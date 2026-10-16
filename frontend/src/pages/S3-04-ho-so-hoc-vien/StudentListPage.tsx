@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
-import { Filter, Pager, paginate, Pill, Search, usePaging } from '../../components/ui';
+import { Filter, LoadState, Pager, paginate, Pill, Search, usePaging } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
+import { loadStudents } from '../../data/s3api';
 import { viDate } from '../../data/leads';
 import { STUDENT_STATUSES, STUDENTS, studentTone } from '../../data/students';
 import { PROGRAMS } from '../../data/training';
@@ -19,6 +21,7 @@ export function StudentListPage() {
   const [status, setStatus] = useState('');
   const [program, setProgram] = useState('');
   const { page, setPage, size, setSize } = usePaging();
+  const load = useLoad(loadStudents);
 
   const filtered = useMemo(() => {
     const k = q.trim().toLowerCase();
@@ -29,7 +32,9 @@ export function StudentListPage() {
         (!status || s.status === status) &&
         (!program || s.program === program),
     );
-  }, [q, status, program]);
+  }, [q, status, program, load.loading]);
+  // Có backend: chương trình lấy từ chính danh sách học viên, khỏi cần quyền quản lý chương trình.
+  const programs = apiEnabled ? [...new Set(STUDENTS.map((s) => s.program).filter(Boolean))] : PROGRAMS.map((p) => p.name);
   const view = paginate(filtered, page, size);
 
   // Học viên chỉ được xem hồ sơ của chính mình.
@@ -48,10 +53,11 @@ export function StudentListPage() {
           </p>
         </div>
       </div>
+      <LoadState {...load} />
       <div className="bar">
         <Search placeholder="Tìm theo mã học viên, tên, số điện thoại" value={q} onChange={(v) => (setQ(v), setPage(1))} />
         <Filter label="Trạng thái" value={status} options={STUDENT_STATUSES} onChange={(v) => (setStatus(v), setPage(1))} width={220} />
-        <Filter label="Chương trình" value={program} options={PROGRAMS.map((p) => p.name)} onChange={(v) => (setProgram(v), setPage(1))} width={300} />
+        <Filter label="Chương trình" value={program} options={programs} onChange={(v) => (setProgram(v), setPage(1))} width={300} />
       </div>
       <div className="panel">
         <div className="scroll">

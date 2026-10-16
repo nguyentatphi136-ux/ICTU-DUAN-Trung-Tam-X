@@ -1,8 +1,10 @@
 import { useState, type CSSProperties, type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
-import { Filter, Pager, paginate, Pill, RowMenu, Search, usePaging, type MenuAction } from '../../components/ui';
+import { Filter, LoadState, Pager, paginate, Pill, RowMenu, Search, usePaging, type MenuAction } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
+import { loadClasses, loadMyClasses, loadStaff } from '../../data/s3api';
 import { CLASS_STATUSES, CLASSES, classesOf, classSize, classTone, isOpen, mainTeacher, missingTeachers, STAFF, totalSessions, type Klass } from '../../data/classes';
 import { viDate } from '../../data/leads';
 import { PROGRAMS } from '../../data/training';
@@ -21,13 +23,18 @@ type Props = {
   rowActions?: (k: Klass) => MenuAction[];
   /** Bấm vào một dòng (S3-08 mở trang lớp). */
   onOpen?: (k: Klass) => void;
+  /** Đổi số này để tải lại danh sách từ máy chủ sau khi trang cha sửa dữ liệu. */
+  version?: number;
 };
 
 // S3-07. Danh sách lớp kèm bốn chỉ số nhanh và bộ lọc theo trạng thái, chương trình, giảng viên, khoảng ngày khai giảng.
 // Mỗi dòng hiện sĩ số hiện tại trên sĩ số tối đa và tiến độ buổi học. Giảng viên và trợ giảng chỉ thấy lớp mình dạy.
-export function ClassListPage({ head, rowActions, onOpen }: Props) {
+export function ClassListPage({ head, rowActions, onOpen, version }: Props) {
   const { user } = useAuth();
   const role = user?.active ?? -1;
+  const mine = role === 1 || role === 2;
+  // Có backend: giảng viên, trợ giảng tải lớp của mình; người quản lý tải mọi lớp và danh sách giảng viên để lọc.
+  const load = useLoad(() => (mine ? loadMyClasses(user!.name) : Promise.all([loadClasses(), loadStaff()])), [version, mine]);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [program, setProgram] = useState('');
@@ -38,8 +45,8 @@ export function ClassListPage({ head, rowActions, onOpen }: Props) {
 
   // S4-05: học viên dùng trang Lịch học của tôi.
   if (role === 0) return <Navigate to="/lich-hoc" replace />;
-  const mine = role === 1 || role === 2;
   const base = mine ? classesOf(user!.name) : CLASSES;
+  const programs = apiEnabled ? [...new Set(CLASSES.map((c) => c.program).filter(Boolean))] : PROGRAMS.filter((p) => p.active).map((p) => p.name);
   const k = q.trim().toLowerCase();
   const filtered = base.filter(
     (c) =>
@@ -67,6 +74,7 @@ export function ClassListPage({ head, rowActions, onOpen }: Props) {
         </div>
         {head}
       </div>
+      <LoadState {...load} />
       <div className="stats cl-stats">
         <Stat value={open.filter((c) => c.status === 'Đang học').length} label="Lớp đang học" />
         <Stat value={open.filter((c) => c.status === 'Chuẩn bị').length} label="Lớp chuẩn bị khai giảng" />
@@ -76,7 +84,7 @@ export function ClassListPage({ head, rowActions, onOpen }: Props) {
       <div className="bar">
         <Search placeholder="Tìm theo mã lớp" value={q} onChange={reset(setQ)} width={260} />
         <Filter label="Trạng thái" value={status} options={CLASS_STATUSES} onChange={reset(setStatus)} width={190} />
-        <Filter label="Chương trình" value={program} options={PROGRAMS.filter((p) => p.active).map((p) => p.name)} onChange={reset(setProgram)} width={260} />
+        <Filter label="Chương trình" value={program} options={programs} onChange={reset(setProgram)} width={260} />
         {!mine && <Filter label="Giảng viên" value={teacher} options={STAFF.filter((s) => s.role === 2).map((s) => s.name)} onChange={reset(setTeacher)} width={240} />}
         <div className="cl-range" role="group" aria-label="Khai giảng trong khoảng">
           <input type="date" value={from} aria-label="Khai giảng từ ngày" onChange={(e) => reset(setFrom)(e.target.value)} />

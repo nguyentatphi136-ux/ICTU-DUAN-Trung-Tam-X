@@ -1,5 +1,6 @@
 // Phễu lead cho S3-01 trở đi. Khi tích hợp: GET /admissions/funnel, PATCH /admissions/leads/:id/stage (kèm lý do khi Từ chối).
 // Mảng FUNNEL được sửa trực tiếp để các trang dùng chung một nguồn khi chưa có API.
+import { apiEnabled } from './api';
 import { persisted } from './store';
 
 export type Stage = 'Mới' | 'Đã liên hệ' | 'Đang tư vấn' | 'Hẹn học thử' | 'Chốt' | 'Từ chối';
@@ -32,8 +33,8 @@ export const STAGES: Stage[] = ['Mới', 'Đã liên hệ', 'Đang tư vấn', '
 
 export const REJECT_REASONS = ['Học phí cao', 'Lịch học không phù hợp', 'Đã chọn trung tâm khác', 'Không liên lạc được', 'Chưa có nhu cầu lúc này', 'Lý do khác'];
 
-/** Ngày "hôm nay" của dữ liệu mẫu. Khi có API: lấy ngày máy chủ. */
-export const TODAY = '2026-10-06';
+/** Ngày "hôm nay": ngày cố định của dữ liệu mẫu, hoặc ngày thật khi có backend. */
+export const TODAY = apiEnabled ? new Date().toLocaleDateString('sv-SE') : '2026-10-06';
 
 export const stageTone = (s: Stage): 'ok' | 'wait' | 'off' | 'info' | undefined =>
   s === 'Mới' ? 'info' : s === 'Đang tư vấn' || s === 'Hẹn học thử' ? 'wait' : s === 'Chốt' ? 'ok' : s === 'Từ chối' ? 'off' : undefined;
@@ -96,7 +97,7 @@ export const LOGS: Record<number, CareLog[]> = persisted('funnel-logs', {
 });
 
 export function logsOf(l: FunnelLead): CareLog[] {
-  const list = LOGS[l.id] ?? [{ kind: 'Phân công', at: '2026-09-24T08:00', by: MANAGER, text: 'Giao cho ' + l.owner }];
+  const list = LOGS[l.id] ?? (apiEnabled ? [] : [{ kind: 'Phân công', at: '2026-09-24T08:00', by: MANAGER, text: 'Giao cho ' + l.owner }]);
   return [...list].sort((a, b) => b.at.localeCompare(a.at));
 }
 

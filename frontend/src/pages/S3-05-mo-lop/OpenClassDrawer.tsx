@@ -1,23 +1,37 @@
 import { useState } from 'react';
-import { Drawer } from '../../components/ui';
-import { CLASSES, PROGRAM_SUBJECTS, STUDY_MODES, totalSessions, type Klass, type StudyMode } from '../../data/classes';
+import { Drawer, LoadState } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
+import { CLASSES, PROGRAM_SUBJECTS, STUDY_MODES, totalSessions, type ClassSubject, type Klass, type StudyMode } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
-import { PROGRAMS } from '../../data/training';
+import { loadTraining } from '../../data/s2api';
+import { CURRICULUM, PROGRAMS, SUBJECTS } from '../../data/training';
 import './open.css';
 
-type Props = { onClose: () => void; onSave: (k: Klass) => void };
+type Props = { onClose: () => void; onSave: (k: Klass, programCode: string) => void };
+
+/** Môn theo lộ trình của chương trình: dữ liệu máy chủ (S2-06) khi có backend, bảng mẫu khi không. */
+function programSubjects(name: string): ClassSubject[] {
+  if (!apiEnabled) return PROGRAM_SUBJECTS[name]?.() ?? [];
+  const p = PROGRAMS.find((x) => x.name === name);
+  return (CURRICULUM[p?.code ?? ''] ?? []).flatMap((c) => {
+    const s = SUBJECTS.find((x) => x.code === c.code);
+    return s ? [{ code: s.code, name: s.name, sessions: s.sessions, tas: [] }] : [];
+  });
+}
 
 // S3-05. Mở lớp mới từ một chương trình: mã lớp duy nhất, ngày khai giảng dự kiến, sĩ số tối đa, hình thức học.
 // Danh sách môn được sao chép từ chương trình lúc mở lớp; lớp mới luôn bắt đầu ở Chuẩn bị.
 export function OpenClassDrawer({ onClose, onSave }: Props) {
-  const programs = PROGRAMS.filter((p) => p.active && PROGRAM_SUBJECTS[p.name]);
+  const load = useLoad(loadTraining);
+  const programs = PROGRAMS.filter((p) => p.active && programSubjects(p.name).length);
   const [code, setCode] = useState('');
-  const [program, setProgram] = useState(programs[0]?.name ?? '');
+  const [picked, setProgram] = useState('');
+  const program = picked || (programs[0]?.name ?? '');
   const [start, setStart] = useState('');
   const [max, setMax] = useState('30');
   const [mode, setMode] = useState<StudyMode>('Trực tiếp');
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const subjects = PROGRAM_SUBJECTS[program]?.() ?? [];
+  const subjects = programSubjects(program);
   const sessions = subjects.reduce((n, s) => n + s.sessions, 0);
 
   function save() {
@@ -32,8 +46,9 @@ export function OpenClassDrawer({ onClose, onSave }: Props) {
     const n = Number(max);
     if (!Number.isInteger(n) || n < 1 || n > 200) e.max = 'Sĩ số tối đa từ 1 đến 200';
     setErrors(e);
+    if (!program) e.program = 'Chưa có chương trình nào đang áp dụng và đã xếp lộ trình môn học';
     if (Object.keys(e).length) return;
-    onSave({ code: c, program, start, max: n, mode, status: 'Chuẩn bị', done: 0, slot: 'Chưa xếp lịch', subjects });
+    onSave({ code: c, program, start, max: n, mode, status: 'Chuẩn bị', done: 0, slot: 'Chưa xếp lịch', subjects }, PROGRAMS.find((p) => p.name === program)?.code ?? '');
   }
 
   const err = (k: string) => errors[k] && <p className="err">{errors[k]}</p>;
@@ -53,6 +68,7 @@ export function OpenClassDrawer({ onClose, onSave }: Props) {
         </>
       }
     >
+      <LoadState {...load} />
       <div className="grid2">
         <div className="field">
           <label htmlFor="oc-code">Mã lớp</label>
@@ -70,6 +86,7 @@ export function OpenClassDrawer({ onClose, onSave }: Props) {
               ))}
             </select>
           </div>
+          {err('program')}
         </div>
         <div className="field">
           <label htmlFor="oc-start">Ngày khai giảng dự kiến</label>

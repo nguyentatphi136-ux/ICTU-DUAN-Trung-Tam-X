@@ -3,8 +3,10 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Filter, Pill, Search } from '../../components/ui';
+import { Filter, LoadState, Pill, Search } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
+import { enrollStudents, loadClass, loadStudents } from '../../data/s3api';
 import { classSize, ENROLLMENTS, findClass, isOpen } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
 import { viDate } from '../../data/leads';
@@ -23,11 +25,19 @@ export function EnrollPage() {
   const { user } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
+  const load = useLoad(() => Promise.all([loadClass(code), loadStudents()]), [code]);
   const k = findClass(code);
   const [q, setQ] = useState('');
-  const [program, setProgram] = useState(k?.program ?? '');
+  const [program, setProgram] = useState(apiEnabled ? '' : (k?.program ?? ''));
   const [onlyFree, setOnlyFree] = useState(true);
   const [picked, setPicked] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  if (apiEnabled && (load.loading || load.error))
+    return (
+      <AppLayout crumb={[MODULE, code, 'Ghi danh']} module={MODULE}>
+        <LoadState {...load} />
+      </AppLayout>
+    );
   if (!k) return <ErrorPage code="404" />;
   if (!canManageClasses(user?.active ?? -1) || !isOpen(k)) return <ErrorPage code="403" />;
 
@@ -48,6 +58,14 @@ export function EnrollPage() {
   const toggle = (c: string) => setPicked((p) => (p.includes(c) ? p.filter((x) => x !== c) : [...p, c]));
 
   function enroll() {
+    if (apiEnabled) {
+      setBusy(true);
+      return void enrollStudents(k!.code, picked).then(
+        () => (toast(`Đã ghi danh ${picked.length} học viên vào ${k!.code}`, `Sĩ số mới ${after}/${k!.max}.`), navigate('/lop-hoc')),
+        // Máy chủ chặn khi lớp vừa đủ sĩ số hoặc có người đã ghi danh trước: tải lại để thấy số liệu mới.
+        (e: Error) => (setBusy(false), toast('Chưa ghi danh được', e.message), load.reload()),
+      );
+    }
     for (const c of picked) {
       const s = STUDENTS.find((x) => x.code === c)!;
       s.cls = k!.code;
@@ -84,7 +102,7 @@ export function EnrollPage() {
       </div>
       <div className="bar">
         <Search placeholder="Tìm theo mã học viên, tên, số điện thoại" value={q} onChange={setQ} />
-        <Filter label="Chương trình" value={program} options={PROGRAMS.map((p) => p.name)} onChange={setProgram} width={340} />
+        <Filter label="Chương trình" value={program} options={apiEnabled ? [...new Set(STUDENTS.map((s) => s.program).filter(Boolean))] : PROGRAMS.map((p) => p.name)} onChange={setProgram} width={340} />
         <label className="check-box">
           <input type="checkbox" checked={onlyFree} onChange={(e) => setOnlyFree(e.target.checked)} />
           Chỉ học viên chưa xếp lớp
@@ -155,7 +173,7 @@ export function EnrollPage() {
         <button type="button" className="btn" style={{ width: 80 }} onClick={() => navigate('/lop-hoc')}>
           Huỷ
         </button>
-        <button type="button" className="btn primary" disabled={!picked.length || over > 0} onClick={enroll}>
+        <button type="button" className="btn primary" disabled={!picked.length || over > 0 || busy} onClick={enroll}>
           Ghi danh {picked.length || ''} học viên
         </button>
       </div>

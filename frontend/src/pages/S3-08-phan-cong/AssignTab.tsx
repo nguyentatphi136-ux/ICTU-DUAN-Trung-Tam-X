@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { Box } from '../../components/ui';
+import { apiEnabled } from '../../data/api';
 import { CLASSES, isOpen, STAFF, type ClassSubject, type Klass } from '../../data/classes';
+import { assignSubject } from '../../data/s3api';
 import { ROLES } from '../../data/permissions';
 import { saveAll } from '../../data/store';
 
@@ -19,6 +21,13 @@ export function AssignTab({ k, manage, onChange }: Props) {
   const edit = manage && isOpen(k);
 
   const save = (s: ClassSubject, patch: Partial<ClassSubject>, msg: string) => {
+    if (apiEnabled) {
+      const next = { ...s, ...patch };
+      return void assignSubject(k.code, s.code, next.teacher, next.tas).then(
+        () => (onChange(), toast(msg, `${k.code} · ${s.name}`)),
+        (e: Error) => toast('Chưa lưu phân công', e.message),
+      );
+    }
     Object.assign(s, patch);
     saveAll();
     onChange();
@@ -127,7 +136,7 @@ function Picker({ role, label, empty, add, exclude, onPick }: PickerProps) {
             >
               <b>{p.name}</b>
               <small>
-                {p.email.replace(/\d+@.*/, '')} · đang dạy {load(p.name)} lớp
+                {p.email.replace(/\d+@.*/, '')} · đang dạy {p.openClasses ?? load(p.name)} lớp
               </small>
             </button>
           ))}
