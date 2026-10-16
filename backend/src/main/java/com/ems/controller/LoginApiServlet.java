@@ -20,6 +20,8 @@ public class LoginApiServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Gson GSON = new Gson();
     private static final String INVALID_CREDENTIALS = "Email hoặc mật khẩu không đúng.";
+    /** Thuộc tính phiên: còn đặt thì SessionAuthFilter chỉ cho gọi đổi mật khẩu và đăng xuất. */
+    public static final String MUST_CHANGE_PASSWORD = "mustChangePassword";
     private final UserDAO userDAO = new UserDAO();
 
     @Override
@@ -62,6 +64,8 @@ public class LoginApiServlet extends HttpServlet {
         } catch (SQLException exception) {
             getServletContext().log("Không thể kết nối MySQL, chuyển sang xác thực dự phòng.", exception);
         }
+        // Còn dùng mật khẩu mặc định thì phải đổi trước khi làm việc. Tài khoản dự phòng không có CSDL để đổi nên bỏ qua.
+        boolean mustChangePassword = user != null && UserDAO.DEFAULT_PASSWORD.equals(password);
 
         // Dự phòng xác thực in-memory UserStore (IDTTX-20, IDTTX-24) khi DB chưa sẵn sàng
         if (user == null) {
@@ -83,6 +87,7 @@ public class LoginApiServlet extends HttpServlet {
         HttpSession session = request.getSession(true);
         request.changeSessionId();
         session.setAttribute("currentUser", user);
+        if (mustChangePassword) session.setAttribute(MUST_CHANGE_PASSWORD, true);
         session.setMaxInactiveInterval(8 * 60 * 60);
         com.ems.config.SessionBlacklist.registerSession(user.getId(), session.getId());
 
@@ -90,7 +95,7 @@ public class LoginApiServlet extends HttpServlet {
         String redirectUrl = roleHome(role);
         if (!apiRequest) {
             // Chuyển hướng nội bộ theo JSP & Servlet
-            String jspRedirect = jspHome(role);
+            String jspRedirect = mustChangePassword ? "/auth/change-password" : jspHome(role);
             response.sendRedirect(request.getContextPath() + jspRedirect);
             return;
         }
@@ -101,6 +106,7 @@ public class LoginApiServlet extends HttpServlet {
         userData.put("fullName", user.getFullName());
         userData.put("role", role);
         userData.put("roles", user.getRoles().stream().map(LoginApiServlet::roleSlug).toList());
+        userData.put("mustChangePassword", mustChangePassword);
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write(GSON.toJson(Map.of(

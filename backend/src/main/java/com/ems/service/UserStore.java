@@ -1,6 +1,7 @@
 package com.ems.service;
 
 import com.ems.constant.RoleConstant;
+import com.ems.dao.UserDAO;
 import com.ems.model.User;
 
 import java.util.*;
@@ -33,44 +34,44 @@ public class UserStore {
 
         // 1. Quản trị hệ thống
         initUser(new User(1L, "Quản trị viên Hệ thống", "admin@edumanager.vn", "ACTIVE",
-                new ArrayList<>(Collections.singletonList(RoleConstant.ADMIN))), "Admin@123");
+                new ArrayList<>(Collections.singletonList(RoleConstant.ADMIN))), UserDAO.DEFAULT_PASSWORD);
         idByEmail.put("admin@example.com", 1L);
         idByEmail.put("admin", 1L);
 
         // 2. Giảng viên
         initUser(new User(2L, "Giảng viên Nguyễn Văn An", "giangvien@edumanager.vn", "ACTIVE",
-                new ArrayList<>(Collections.singletonList(RoleConstant.INSTRUCTOR))), "Giangvien@123");
+                new ArrayList<>(Collections.singletonList(RoleConstant.INSTRUCTOR))), UserDAO.DEFAULT_PASSWORD);
         idByEmail.put("instructor@example.com", 2L);
         idByEmail.put("giangvien", 2L);
 
         // 3. Học viên
         initUser(new User(3L, "Học viên Trần Thị Bình", "hocvien@edumanager.vn", "ACTIVE",
-                new ArrayList<>(Collections.singletonList(RoleConstant.STUDENT))), "Hocvien@123");
+                new ArrayList<>(Collections.singletonList(RoleConstant.STUDENT))), UserDAO.DEFAULT_PASSWORD);
         idByEmail.put("student@example.com", 3L);
         idByEmail.put("hocvien", 3L);
 
         // 4. Kế toán
         initUser(new User(4L, "Kế toán Lê Thị Cúc", "ketoan@edumanager.vn", "ACTIVE",
-                new ArrayList<>(Collections.singletonList(RoleConstant.ACCOUNTANT))), "Ketoan@123");
+                new ArrayList<>(Collections.singletonList(RoleConstant.ACCOUNTANT))), UserDAO.DEFAULT_PASSWORD);
         idByEmail.put("accountant@example.com", 4L);
         idByEmail.put("ketoan", 4L);
 
         // 5. Quản lý đào tạo
         initUser(new User(5L, "Quản lý đào tạo Hoàng Dũng", "daotao@edumanager.vn", "ACTIVE",
-                new ArrayList<>(Collections.singletonList(RoleConstant.TRAINING_MANAGER))), "Daotao@123");
+                new ArrayList<>(Collections.singletonList(RoleConstant.TRAINING_MANAGER))), UserDAO.DEFAULT_PASSWORD);
         idByEmail.put("training@example.com", 5L);
         idByEmail.put("daotao", 5L);
         idByEmail.put("quanlydaotao@edumanager.vn", 5L);
 
         // 6. Tư vấn tuyển sinh
         initUser(new User(6L, "Tư vấn tuyển sinh Phạm Mai", "tuvan@edumanager.vn", "ACTIVE",
-                new ArrayList<>(Collections.singletonList(RoleConstant.ADMISSIONS))), "Tuyensinh@123");
+                new ArrayList<>(Collections.singletonList(RoleConstant.ADMISSIONS))), UserDAO.DEFAULT_PASSWORD);
         idByEmail.put("admissions@example.com", 6L);
         idByEmail.put("tuvan", 6L);
 
         // 7. Trợ giảng
         initUser(new User(7L, "Trợ giảng Đỗ Tuấn", "trogiang@edumanager.vn", "ACTIVE",
-                new ArrayList<>(Collections.singletonList(RoleConstant.TEACHING_ASSISTANT))), "Trogiang@123");
+                new ArrayList<>(Collections.singletonList(RoleConstant.TEACHING_ASSISTANT))), UserDAO.DEFAULT_PASSWORD);
         idByEmail.put("ta@example.com", 7L);
         idByEmail.put("trogiang", 7L);
     }
@@ -115,15 +116,7 @@ public class UserStore {
         String userEmail = user.getEmail().toLowerCase(Locale.ROOT);
         String expectedPass = demoPasswords.get(userEmail);
 
-        // Chấp nhận mật khẩu mặc định của role hoặc mật khẩu chung 123456 / admin123
-        if (password.equals(expectedPass)
-                || "123456".equals(password)
-                || "admin123".equals(password)
-                || (expectedPass != null && password.equalsIgnoreCase(expectedPass.replace("@", "")))) {
-            return user;
-        }
-
-        return null;
+        return password.equals(expectedPass) ? user : null;
     }
 
     /**

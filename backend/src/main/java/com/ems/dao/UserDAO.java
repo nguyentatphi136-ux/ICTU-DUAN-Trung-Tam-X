@@ -24,6 +24,8 @@ import java.util.regex.Pattern;
  * Data Access Object (DAO) xử lý truy vấn dữ liệu bảng users và roles từ MySQL
  */
 public class UserDAO {
+    /** Mật khẩu chung của mọi tài khoản khi chạy local; đăng nhập bằng nó thì phải đổi mật khẩu ngay. */
+    public static final String DEFAULT_PASSWORD = "Tms@2026";
     private static final String DUMMY_PASSWORD_HASH = BCrypt.hashpw(
             "constant-time-login-placeholder",
             BCrypt.gensalt(10)
@@ -160,6 +162,9 @@ public class UserDAO {
         }
         if (currentPassword.equals(newPassword)) {
             throw new IllegalArgumentException("Mật khẩu mới không được trùng với mật khẩu hiện tại.");
+        }
+        if (DEFAULT_PASSWORD.equals(newPassword)) {
+            throw new IllegalArgumentException("Mật khẩu mới không được là mật khẩu mặc định.");
         }
 
         try (Connection connection = DBConnection.getConnection()) {

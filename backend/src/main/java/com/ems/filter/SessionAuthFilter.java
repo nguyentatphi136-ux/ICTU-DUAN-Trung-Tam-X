@@ -1,6 +1,7 @@
 package com.ems.filter;
 
 import com.ems.config.SessionBlacklist;
+import com.ems.controller.LoginApiServlet;
 import com.ems.dao.PermissionDAO;
 import com.ems.model.User;
 import com.ems.security.ApiResponse;
@@ -65,6 +66,19 @@ public class SessionAuthFilter implements Filter {
 
         // 5. Tự động gia hạn phiên khi còn hoạt động (IDTTX-36 - Sliding Window)
         session.setMaxInactiveInterval(SESSION_TIMEOUT_SECONDS);
+
+        // Đăng nhập bằng mật khẩu mặc định: chỉ được đổi mật khẩu hoặc đăng xuất.
+        if (session.getAttribute(LoginApiServlet.MUST_CHANGE_PASSWORD) != null
+                && !path.equals("/auth/change-password") && !path.equals("/api/auth/change-password")
+                && !path.equals("/api/auth/logout")) {
+            if (path.startsWith("/api/")) {
+                ApiResponse.error(resp, HttpServletResponse.SC_FORBIDDEN, "AUTH_PASSWORD_CHANGE_REQUIRED",
+                        "Bạn cần đổi mật khẩu mặc định trước khi sử dụng hệ thống.", "Đổi mật khẩu", "/doi-mat-khau");
+            } else {
+                resp.sendRedirect(contextPath + "/auth/change-password");
+            }
+            return;
+        }
 
         if (path.startsWith("/api/")) {
             String requiredPermission = PermissionPolicy.requiredPermission(req.getMethod(), path);

@@ -84,13 +84,13 @@
         <div class="demo-box">
             <strong style="display:block; margin-bottom:8px;">Chọn nhanh tài khoản thử nghiệm:</strong>
             <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
-                <button type="button" class="btn-demo" onclick="fillLogin('admin@edumanager.vn', '123456')">Admin</button>
-                <button type="button" class="btn-demo" onclick="fillLogin('giangvien@edumanager.vn', '123456')">Giảng viên</button>
-                <button type="button" class="btn-demo" onclick="fillLogin('ketoan@edumanager.vn', '123456')">Kế toán</button>
-                <button type="button" class="btn-demo" onclick="fillLogin('daotao@edumanager.vn', '123456')">Quản lý ĐT</button>
-                <button type="button" class="btn-demo" onclick="fillLogin('hocvien@edumanager.vn', '123456')">Học viên</button>
+                <button type="button" class="btn-demo" onclick="fillLogin('admin@edumanager.vn', 'Tms@2026')">Admin</button>
+                <button type="button" class="btn-demo" onclick="fillLogin('giangvien@edumanager.vn', 'Tms@2026')">Giảng viên</button>
+                <button type="button" class="btn-demo" onclick="fillLogin('ketoan@edumanager.vn', 'Tms@2026')">Kế toán</button>
+                <button type="button" class="btn-demo" onclick="fillLogin('daotao@edumanager.vn', 'Tms@2026')">Quản lý ĐT</button>
+                <button type="button" class="btn-demo" onclick="fillLogin('hocvien@edumanager.vn', 'Tms@2026')">Học viên</button>
             </div>
-            <span style="font-size: 11px; color: #64748b;">Mật khẩu chung: <code>123456</code> hoặc <code>Admin@123</code></span>
+            <span style="font-size: 11px; color: #64748b;">Mật khẩu chung: <code>Tms@2026</code> (đăng nhập xong phải đổi)</span>
         </div>
     </div>
 </div>

@@ -24,7 +24,7 @@ export const DEMO_ACCOUNTS: Account[] = [
 /** Mã vai trò máy chủ trả về (LoginApiServlet.roleSlug) theo thứ tự ROLES. */
 const ROLE_SLUGS = ['student', 'ta', 'instructor', 'admissions', 'accountant', 'training-manager', 'admin'];
 
-type LoginData = { user: { email: string; fullName: string; roles: string[] } };
+type LoginData = { user: { email: string; fullName: string; roles: string[]; mustChangePassword?: boolean } };
 
 /** Trả về tài khoản nếu đúng, null nếu sai. Không cho biết email có tồn tại hay không. */
 export async function login(email: string, password: string): Promise<Account | null> {
@@ -33,13 +33,14 @@ export async function login(email: string, password: string): Promise<Account | 
     try {
       const { user } = await api<LoginData>('/api/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
       const roles = user.roles.map((r) => ROLE_SLUGS.indexOf(r)).filter((r) => r >= 0).sort((a, b) => b - a);
-      return roles.length ? { email: user.email, name: user.fullName, roles } : null;
+      return roles.length ? { email: user.email, name: user.fullName, roles, mustChangePassword: !!user.mustChangePassword } : null;
     } catch {
       return null;
     }
   }
   const normalizedEmail = email.trim().toLowerCase();
   const found = DEMO_ACCOUNTS.find((a) => a.email.toLowerCase() === normalizedEmail);
-  const ok = found && password === DEMO_PASSWORD ? found : null;
+  // Dữ liệu mẫu không lưu được mật khẩu mới nên lần đăng nhập nào cũng là mật khẩu mặc định, phải đổi.
+  const ok = found && password === DEMO_PASSWORD ? { ...found, mustChangePassword: true } : null;
   return new Promise((resolve) => window.setTimeout(() => resolve(ok), 500));
 }

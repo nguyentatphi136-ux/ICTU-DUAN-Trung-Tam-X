@@ -81,6 +81,11 @@ export function LoginPage() {
       setFails(0);
       setWrong(false);
       signIn(result);
+      // Còn mật khẩu mặc định: đổi mật khẩu trước, xong mới về trang định vào.
+      if (result.mustChangePassword) {
+        navigate('/doi-mat-khau', { replace: true, state: { from: state?.from } });
+        return;
+      }
       // S1-02: quay lại đúng trang đang làm dở trước khi phiên hết hạn, nếu không thì về trang chủ của vai trò.
       navigate(state?.from ?? '/', { replace: true, state: state?.from ? { restored: true } : undefined });
       return;

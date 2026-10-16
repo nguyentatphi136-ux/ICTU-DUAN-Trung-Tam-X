@@ -5,29 +5,35 @@ import { Badge, CardPage } from '../../components/CardPage';
 import { PasswordField } from '../../components/PasswordField';
 import { isStrongPassword, PasswordRules } from '../../components/PasswordRules';
 import { Box } from '../../components/ui';
+import { api, apiEnabled, json } from '../../data/api';
 import { useAuth } from '../../data/auth';
 import { DEMO_PASSWORD } from '../S1-01-dang-nhap/mockAuth';
 
 // S1-04. Đổi mật khẩu khi đã đăng nhập. Nút chỉ bật khi đủ bốn yêu cầu và hai ô mật khẩu mới khớp nhau.
-// Khi tích hợp: POST /auth/change-password { current, password }; máy chủ thu hồi mọi phiên khác, giữ phiên hiện tại.
+// Có backend: POST /api/auth/change-password; máy chủ thu hồi mọi phiên khác, giữ phiên hiện tại.
+// Đăng nhập bằng mật khẩu mặc định thì bị đưa tới đây và phải đổi xong mới vào được các trang khác (AppLayout).
 export function ChangePasswordPage() {
   useTitle('Đổi mật khẩu');
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const location = useLocation();
+  const from = (location.state as { from?: string } | null)?.from ?? '/';
   const [current, setCurrent] = useState('');
   const [pw, setPw] = useState('');
   const [confirm, setConfirm] = useState('');
-  const [wrong, setWrong] = useState(false);
+  const [wrong, setWrong] = useState('');
+  const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
   if (!user) return <Navigate to="/dang-nhap" replace state={{ from: location.pathname }} />;
 
+  const forced = !!user.mustChangePassword;
   const mismatch = confirm.length > 0 && confirm !== pw;
-  const valid = current.length > 0 && isStrongPassword(pw) && confirm === pw;
+  const isDefault = pw === DEMO_PASSWORD;
+  const valid = current.length > 0 && isStrongPassword(pw) && confirm === pw && !isDefault;
 
   if (done)
     return (
-      <CardPage closeTo="/">
+      <CardPage closeTo={from}>
         <Badge icon="check" />
         <div className="eyebrow">Hoàn tất</div>
         <h1>Đã đổi mật khẩu</h1>
@@ -35,8 +41,8 @@ export function ChangePasswordPage() {
         <Box icon="devices" tone="ok" title="Các phiên đăng nhập khác đã bị thu hồi">
           Phiên trên thiết bị này vẫn giữ nguyên.
         </Box>
-        <Link className="btn primary block" to="/">
-          Về trang chủ
+        <Link className="btn primary block" to={from} replace>
+          {from === '/' ? 'Về trang chủ' : 'Tiếp tục'}
         </Link>
       </CardPage>
     );
@@ -45,16 +51,30 @@ export function ChangePasswordPage() {
     <CardPage closeTo="/">
       <Badge icon="key" />
       <h1>Đổi mật khẩu</h1>
-      <p className="lead-t">Nhập mật khẩu hiện tại rồi chọn một mật khẩu mới.</p>
+      <p className="lead-t">
+        {forced
+          ? 'Bạn đang dùng mật khẩu mặc định. Hãy đổi sang mật khẩu của riêng bạn trước khi tiếp tục.'
+          : 'Nhập mật khẩu hiện tại rồi chọn một mật khẩu mới.'}
+      </p>
       <form
         noValidate
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          if (!valid) return;
-          if (current !== DEMO_PASSWORD) return setWrong(true);
+          if (!valid || busy) return;
+          if (apiEnabled) {
+            setBusy(true);
+            try {
+              await api('/api/auth/change-password', json('POST', { currentPassword: current, newPassword: pw, confirmPassword: confirm }));
+            } catch (err) {
+              return setWrong((err as Error).message);
+            } finally {
+              setBusy(false);
+            }
+          } else if (current !== DEMO_PASSWORD) return setWrong('Mật khẩu hiện tại không đúng');
           setCurrent('');
           setPw('');
           setConfirm('');
+          updateUser({ mustChangePassword: false });
           setDone(true);
         }}
       >
@@ -66,18 +86,18 @@ export function ChangePasswordPage() {
           placeholder="Nhập mật khẩu hiện tại"
           onChange={(v) => {
             setCurrent(v);
-            setWrong(false);
+            setWrong('');
           }}
-          error={wrong ? 'Mật khẩu hiện tại không đúng' : undefined}
+          error={wrong || undefined}
         />
-        <PasswordField id="cp-new" label="Mật khẩu mới" value={pw} onChange={setPw} placeholder="Nhập mật khẩu mới" />
+        <PasswordField id="cp-new" label="Mật khẩu mới" value={pw} onChange={setPw} placeholder="Nhập mật khẩu mới" error={isDefault ? 'Không dùng lại mật khẩu mặc định' : undefined} />
         <PasswordField id="cp-confirm" label="Xác nhận mật khẩu" value={confirm} onChange={setConfirm} placeholder="Nhập lại mật khẩu" error={mismatch ? 'Mật khẩu xác nhận không khớp' : undefined} />
         <PasswordRules value={pw} />
         <Box icon="devices" title="Các thiết bị khác sẽ bị đăng xuất">
           Phiên trên thiết bị này vẫn giữ nguyên.
         </Box>
-        <button className="btn primary block" type="submit" disabled={!valid}>
-          Cập nhật mật khẩu
+        <button className="btn primary block" type="submit" disabled={!valid || busy}>
+          {busy ? 'Đang cập nhật…' : 'Cập nhật mật khẩu'}
         </button>
       </form>
     </CardPage>

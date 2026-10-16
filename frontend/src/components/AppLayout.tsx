@@ -39,6 +39,7 @@ export function AppLayout({ crumb, module, children }: Props) {
   }, [menu]);
 
   if (!user) return <Navigate to="/dang-nhap" replace state={{ from: location.pathname + location.search }} />;
+  if (user.mustChangePassword) return <Navigate to="/doi-mat-khau" replace state={{ from: location.pathname + location.search }} />;
   if (module && !canAccess(user.active, module)) return <ErrorPage code="403" />;
 
   const multi = user.roles.length > 1;

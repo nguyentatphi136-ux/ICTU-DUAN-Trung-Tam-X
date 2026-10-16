@@ -79,6 +79,7 @@ public class ChangePasswordServlet extends HttpServlet {
 
         try {
             userDAO.changePassword(currentUser.getId(), currentPassword, newPassword, confirmPassword);
+            session.removeAttribute(LoginApiServlet.MUST_CHANGE_PASSWORD);
 
             // Thu hồi các phiên đăng nhập khác của người dùng
             int revokedSessions = SessionBlacklist.revokeOtherSessions(currentUser.getId(), session.getId());
