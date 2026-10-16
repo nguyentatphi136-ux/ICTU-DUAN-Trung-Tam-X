@@ -46,7 +46,7 @@ export function SessionDemoPage() {
     (expired: boolean) => {
       const email = user?.email;
       if (expired) sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ ...formRef.current, savedAt: Date.now() }));
-      navigate('/dang-nhap', { replace: true, state: expired ? { expired: true, email, from: location.pathname } : { loggedOut: true } });
+      navigate('/dang-nhap', { replace: true, state: expired ? { expired: true, draft: true, email, from: location.pathname } : { loggedOut: true } });
     },
     [user, navigate, location.pathname],
   );

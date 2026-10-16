@@ -19,6 +19,9 @@ export class ApiError extends Error {
 
 type Envelope<T> = { success?: boolean; data?: T; message?: string; error?: { code?: string; message?: string } };
 
+/** Sự kiện phát khi máy chủ báo phiên không còn hiệu lực; AppLayout chuyển về trang đăng nhập. */
+export const SESSION_EXPIRED = 'tms:session-expired';
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const isForm = init.body instanceof FormData;
   let res: Response;
@@ -32,6 +35,10 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     throw new ApiError(0, 'NETWORK_ERROR', 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.');
   }
   const body: Envelope<T> | null = await res.json().catch(() => null);
+  // S1-02: máy chủ báo phiên hết hạn hoặc bị thu hồi (đăng xuất nơi khác, tài khoản bị khoá) thì về trang đăng nhập.
+  if (res.status === 401 && (body?.error?.code === 'AUTH_UNAUTHORIZED' || body?.error?.code === 'AUTH_SESSION_REVOKED')) {
+    window.dispatchEvent(new Event(SESSION_EXPIRED));
+  }
   if (!res.ok || body?.success === false) {
     throw new ApiError(res.status, body?.error?.code ?? 'HTTP_' + res.status, body?.error?.message ?? 'Máy chủ báo lỗi (' + res.status + ').');
   }

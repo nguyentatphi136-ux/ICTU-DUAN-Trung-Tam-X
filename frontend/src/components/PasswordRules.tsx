@@ -1,11 +1,11 @@
 import { Icon } from './Icon';
 
-// Bốn điều kiện mật khẩu dùng chung cho S1-03 và S1-04.
+// Điều kiện mật khẩu dùng chung cho S1-03 và S1-04, đúng tiêu chí S1-04: tối thiểu 8 ký tự, có chữ và số.
+// Phải khớp backend: UserDAO.changePassword và ResetPasswordServlet.
 export const PASSWORD_RULES: { label: string; test: (v: string) => boolean }[] = [
   { label: 'Tối thiểu 8 ký tự', test: (v) => v.length >= 8 },
-  { label: 'Bao gồm chữ cái in hoa và chữ cái thường', test: (v) => /[a-z]/.test(v) && /[A-Z]/.test(v) },
-  { label: 'Có các chữ số', test: (v) => /\d/.test(v) },
-  { label: 'Ít nhất một ký tự đặc biệt (!, @, #, $, ^, *)', test: (v) => /[!@#$^*]/.test(v) },
+  { label: 'Có chữ cái', test: (v) => /[A-Za-z]/.test(v) },
+  { label: 'Có chữ số', test: (v) => /\d/.test(v) },
 ];
 
 export const isStrongPassword = (v: string) => PASSWORD_RULES.every((r) => r.test(v));

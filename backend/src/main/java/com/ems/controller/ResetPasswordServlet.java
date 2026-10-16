@@ -22,7 +22,8 @@ import java.util.regex.Pattern;
 public class ResetPasswordServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Gson GSON = new Gson();
-    private static final Pattern STRONG_PASSWORD = Pattern.compile("^(?=.*[a-z])(?=.*[A-Z])(?=.*(?:\\d|[^A-Za-z0-9])).{8,}$");
+    /** S1-04: tối thiểu 8 ký tự, có chữ và số (cùng luật với UserDAO.changePassword và PasswordRules ở frontend). */
+    private static final Pattern STRONG_PASSWORD = Pattern.compile("^(?=.*[A-Za-z])(?=.*\\d).{8,}$");
     private final PasswordResetTokenDAO tokenDAO = new PasswordResetTokenDAO();
 
     @Override
@@ -81,7 +82,7 @@ public class ResetPasswordServlet extends HttpServlet {
         }
 
         if (newPassword == null || !STRONG_PASSWORD.matcher(newPassword).matches()) {
-            sendResponse(req, resp, false, "Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ thường và số hoặc ký tự đặc biệt.");
+            sendResponse(req, resp, false, "Mật khẩu phải có ít nhất 8 ký tự, gồm chữ và số.");
             return;
         }
 

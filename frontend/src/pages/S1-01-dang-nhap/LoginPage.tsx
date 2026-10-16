@@ -18,7 +18,8 @@ const FEATURES = [
 ] as const;
 
 // S1-01. Đăng nhập bằng email và mật khẩu: validate, báo sai thông tin, khoá tạm, chuyển trang theo vai trò.
-type LoginState = { from?: string; loggedOut?: boolean; expired?: boolean; email?: string } | null;
+/** draft: trang trước đó đã lưu nháp nội dung đang nhập dở (S1-02). */
+type LoginState = { from?: string; loggedOut?: boolean; expired?: boolean; draft?: boolean; email?: string } | null;
 
 export function LoginPage() {
   useTitle('Đăng nhập');
@@ -152,7 +153,9 @@ export function LoginPage() {
               {state?.expired && !locked && !wrong && (
                 <div className="lg-alert lg-info" role="status">
                   <strong>Phiên đăng nhập đã hết hạn</strong>
-                  Vui lòng đăng nhập lại. Nội dung bạn đang nhập dở đã được lưu nháp và sẽ được khôi phục sau khi đăng nhập.
+                  {state.draft
+                    ? 'Vui lòng đăng nhập lại. Nội dung bạn đang nhập dở đã được lưu nháp và sẽ được khôi phục sau khi đăng nhập.'
+                    : 'Vui lòng đăng nhập lại để quay về đúng trang bạn đang làm.'}
                 </div>
               )}
 

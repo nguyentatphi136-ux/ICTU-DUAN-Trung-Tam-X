@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { SESSION_EXPIRED } from '../data/api';
 import { useAuth } from '../data/auth';
 import { canAccess, menuFor, ROLES } from '../data/permissions';
 import { ErrorPage } from '../pages/S1-07-trang-loi/ErrorPage';
@@ -31,6 +32,12 @@ export function AppLayout({ crumb, module, children }: Props) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setOpen(false), [location.pathname]);
+  // S1-02: phiên hết hạn phía máy chủ thì về trang đăng nhập kèm thông báo, đăng nhập lại thì quay về đúng trang này.
+  useEffect(() => {
+    const expired = () => navigate('/dang-nhap', { replace: true, state: { expired: true, email: user?.email, from: location.pathname } });
+    window.addEventListener(SESSION_EXPIRED, expired);
+    return () => window.removeEventListener(SESSION_EXPIRED, expired);
+  }, [navigate, user?.email, location.pathname]);
   useEffect(() => {
     if (!menu) return;
     const f = (e: MouseEvent) => !menuRef.current?.contains(e.target as Node) && setMenu(false);
@@ -99,7 +106,7 @@ export function AppLayout({ crumb, module, children }: Props) {
         {multi && <div className="me-roles">{roleList}</div>}
         <nav className="nav">
           {items.map((m) => (
-            <NavLink key={m.name} to={moduleHref(m.name, m.to)} end={m.to === '/'} className={({ isActive }) => (isActive || isUnder(location.pathname, m.to) || (!!module && m.name === module) ? 'on' : undefined)}>
+            <NavLink key={m.name} to={moduleHref(m.name, m.to)} end={m.to === '/'} className={({ isActive }) => (isActive || (!m.exact && (isUnder(location.pathname, m.to) || (!!module && m.name === module))) ? 'on' : undefined)}>
               <Icon name={m.icon} />
               {m.name}
             </NavLink>
