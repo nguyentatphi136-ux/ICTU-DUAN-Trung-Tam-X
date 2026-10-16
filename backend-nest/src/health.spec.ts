@@ -21,9 +21,9 @@ describe('Khung backend NestJS', () => {
   });
 
   it('POST /api/auth/login: đúng mật khẩu thì 200, sai thì 401', async () => {
-    const ok = await request(app.getHttpServer()).post('/api/auth/login').send({ email: 'admin@edumanager.vn', password: '123456' }).expect(200);
+    const ok = await request(app.getHttpServer()).post('/api/auth/login').send({ email: 'A25200212001@tms.vn', password: '123456' }).expect(200);
     expect(ok.body.data.user.roles).toEqual(['admin']);
-    const bad = await request(app.getHttpServer()).post('/api/auth/login').send({ email: 'admin@edumanager.vn', password: 'sai' }).expect(401);
+    const bad = await request(app.getHttpServer()).post('/api/auth/login').send({ email: 'A25200212001@tms.vn', password: 'sai' }).expect(401);
     expect(bad.body.error.code).toBe('AUTH_INVALID_CREDENTIALS');
   });
 });

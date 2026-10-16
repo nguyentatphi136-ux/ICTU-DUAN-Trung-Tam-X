@@ -48,7 +48,7 @@
         <form action="${pageContext.request.contextPath}/auth/forgot-password" method="POST">
             <div class="form-group">
                 <label class="form-label" for="email">Địa chỉ Email</label>
-                <input type="email" id="email" name="email" class="form-control" placeholder="example@edumanager.vn" required autofocus>
+                <input type="email" id="email" name="email" class="form-control" placeholder="S25200212123@tms.vn" required autofocus>
             </div>
 
             <button type="submit" class="btn-submit">Gửi liên kết đặt lại mật khẩu</button>

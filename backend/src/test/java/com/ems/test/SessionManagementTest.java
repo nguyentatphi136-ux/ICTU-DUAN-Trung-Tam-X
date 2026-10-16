@@ -23,8 +23,8 @@ public class SessionManagementTest {
         // ---------------------------------------------------------------------
         totalTests++;
         System.out.println("\n[TC1] Kiểm tra tạo đối tượng User cho Session (IDTTX-33)...");
-        User user = new User(1L, "NV-ADMIN-01", "admin@edumanager.vn", "Quản trị viên", "ADMIN");
-        if (user.getId().equals(1L) && "admin@edumanager.vn".equals(user.getEmail()) && "ACTIVE".equals(user.getStatus())) {
+        User user = new User(1L, "NV-ADMIN-01", "A25200212001@tms.vn", "Quản trị viên", "ADMIN");
+        if (user.getId().equals(1L) && "A25200212001@tms.vn".equals(user.getEmail()) && "ACTIVE".equals(user.getStatus())) {
             System.out.println("-> PASS: Đối tượng User lưu trữ session hợp lệ.");
             passedTests++;
         } else {

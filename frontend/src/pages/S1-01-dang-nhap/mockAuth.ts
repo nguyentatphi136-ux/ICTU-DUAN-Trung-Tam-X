@@ -11,26 +11,16 @@ export const DEMO_PASSWORD = 'Tms@2026';
 export const MAX_ATTEMPTS = 5;
 export const LOCK_SECONDS = 15 * 60;
 
-/** Tài khoản mẫu: có backend thì là tài khoản seed trong database/schema.sql, không có thì là dữ liệu mẫu bên dưới. */
-export const DEMO_ACCOUNTS: Account[] = apiEnabled
-  ? [
-      { email: 'admin@edumanager.vn', name: 'Quản trị viên', roles: [6] },
-      { email: 'quanlydaotao@edumanager.vn', name: 'Phạm Thị Quản', roles: [5] },
-      { email: 'giangvien@edumanager.vn', name: 'Trần Thị Giảng', roles: [2] },
-      { email: 'trogiang@edumanager.vn', name: 'Lê Văn Trợ', roles: [1] },
-      { email: 'tuvan@edumanager.vn', name: 'Hoàng Văn Tư', roles: [3] },
-      { email: 'ketoan@edumanager.vn', name: 'Đỗ Thị Kế', roles: [4] },
-      { email: 'hocvien@edumanager.vn', name: 'Nguyễn Văn Học', roles: [0] },
-    ]
-  : [
-  { email: 'S25200212101@tms.vn', name: 'NGUYEN MINH ANH', roles: [0] },
+/** Tài khoản mẫu, cùng email với tài khoản seed trong database/schema.sql. Có backend thì họ tên, vai trò lấy từ máy chủ. */
+export const DEMO_ACCOUNTS: Account[] = [
+  { email: 'A25200212001@tms.vn', name: 'TRAN QUOC BAO', roles: [6] },
+  { email: 'TM25200212002@tms.vn', name: 'LE HOANG NAM', roles: [5, 2] },
   { email: 'IST25200212045@tms.vn', name: 'VU DUC LONG', roles: [2] },
   { email: 'TA25200212007@tms.vn', name: 'PHAM GIA HUY', roles: [1] },
-  { email: 'TM25200212002@tms.vn', name: 'LE HOANG NAM', roles: [5, 2] },
   { email: 'AMS25200212012@tms.vn', name: 'TRAN THU HA', roles: [3] },
   { email: 'ACT25200212003@tms.vn', name: 'DO THI MAI', roles: [4] },
-  { email: 'A25200212001@tms.vn', name: 'TRAN QUOC BAO', roles: [6] },
-    ];
+  { email: 'S25200212101@tms.vn', name: 'NGUYEN MINH ANH', roles: [0] },
+];
 
 /** Mã vai trò máy chủ trả về (LoginApiServlet.roleSlug) theo thứ tự ROLES. */
 const ROLE_SLUGS = ['student', 'ta', 'instructor', 'admissions', 'accountant', 'training-manager', 'admin'];

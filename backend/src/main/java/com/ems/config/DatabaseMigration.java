@@ -239,6 +239,7 @@ public class DatabaseMigration {
         ensureColumn(conn, "subjects", "learning_outcomes", "TEXT NULL");
         ensureColumn(conn, "subjects", "status", "VARCHAR(20) DEFAULT 'ACTIVE'");
         seedLeadAssignPermission(conn);
+        renameSeedEmails(conn);
 
         // schema.sql cũ đặt tên cột là duration_months, còn DAO và migration S2-04 dùng duration.
         if (hasColumn(conn, "programs", "duration_months") && !hasColumn(conn, "programs", "duration")) {
@@ -290,6 +291,31 @@ public class DatabaseMigration {
                 stmt.setString(1, g[0]);
                 stmt.setString(2, g[1]);
                 stmt.executeUpdate();
+            }
+        }
+    }
+
+    /** CSDL tạo từ schema.sql cũ có tài khoản mẫu @edumanager.vn; đổi sang email theo mã như frontend (A25200212001@tms.vn...). */
+    static void renameSeedEmails(Connection conn) throws SQLException {
+        if (!hasTable(conn, "users")) return;
+        String[][] renames = {
+                {"admin@edumanager.vn", "A25200212001@tms.vn"},
+                {"quanlydaotao@edumanager.vn", "TM25200212002@tms.vn"},
+                {"giangvien@edumanager.vn", "IST25200212045@tms.vn"},
+                {"trogiang@edumanager.vn", "TA25200212007@tms.vn"},
+                {"tuvan@edumanager.vn", "AMS25200212012@tms.vn"},
+                {"ketoan@edumanager.vn", "ACT25200212003@tms.vn"},
+                {"hocvien@edumanager.vn", "S25200212101@tms.vn"},
+        };
+        try (java.sql.PreparedStatement stmt = conn.prepareStatement("UPDATE users SET email = ? WHERE email = ?")) {
+            for (String[] r : renames) {
+                stmt.setString(1, r[1]);
+                stmt.setString(2, r[0]);
+                try {
+                    stmt.executeUpdate();
+                } catch (java.sql.SQLIntegrityConstraintViolationException duplicate) {
+                    // Email mới đã có người dùng thì giữ nguyên tài khoản cũ.
+                }
             }
         }
     }

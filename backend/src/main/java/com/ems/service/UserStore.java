@@ -33,44 +33,43 @@ public class UserStore {
         demoPasswords.clear();
 
         // 1. Quản trị hệ thống
-        initUser(new User(1L, "Quản trị viên Hệ thống", "admin@edumanager.vn", "ACTIVE",
+        initUser(new User(1L, "Quản trị viên Hệ thống", "A25200212001@tms.vn", "ACTIVE",
                 new ArrayList<>(Collections.singletonList(RoleConstant.ADMIN))), UserDAO.DEFAULT_PASSWORD);
         idByEmail.put("admin@example.com", 1L);
         idByEmail.put("admin", 1L);
 
         // 2. Giảng viên
-        initUser(new User(2L, "Giảng viên Nguyễn Văn An", "giangvien@edumanager.vn", "ACTIVE",
+        initUser(new User(2L, "Giảng viên Nguyễn Văn An", "IST25200212045@tms.vn", "ACTIVE",
                 new ArrayList<>(Collections.singletonList(RoleConstant.INSTRUCTOR))), UserDAO.DEFAULT_PASSWORD);
         idByEmail.put("instructor@example.com", 2L);
         idByEmail.put("giangvien", 2L);
 
         // 3. Học viên
-        initUser(new User(3L, "Học viên Trần Thị Bình", "hocvien@edumanager.vn", "ACTIVE",
+        initUser(new User(3L, "Học viên Trần Thị Bình", "S25200212101@tms.vn", "ACTIVE",
                 new ArrayList<>(Collections.singletonList(RoleConstant.STUDENT))), UserDAO.DEFAULT_PASSWORD);
         idByEmail.put("student@example.com", 3L);
         idByEmail.put("hocvien", 3L);
 
         // 4. Kế toán
-        initUser(new User(4L, "Kế toán Lê Thị Cúc", "ketoan@edumanager.vn", "ACTIVE",
+        initUser(new User(4L, "Kế toán Lê Thị Cúc", "ACT25200212003@tms.vn", "ACTIVE",
                 new ArrayList<>(Collections.singletonList(RoleConstant.ACCOUNTANT))), UserDAO.DEFAULT_PASSWORD);
         idByEmail.put("accountant@example.com", 4L);
         idByEmail.put("ketoan", 4L);
 
         // 5. Quản lý đào tạo
-        initUser(new User(5L, "Quản lý đào tạo Hoàng Dũng", "daotao@edumanager.vn", "ACTIVE",
+        initUser(new User(5L, "Quản lý đào tạo Hoàng Dũng", "TM25200212002@tms.vn", "ACTIVE",
                 new ArrayList<>(Collections.singletonList(RoleConstant.TRAINING_MANAGER))), UserDAO.DEFAULT_PASSWORD);
         idByEmail.put("training@example.com", 5L);
         idByEmail.put("daotao", 5L);
-        idByEmail.put("quanlydaotao@edumanager.vn", 5L);
 
         // 6. Tư vấn tuyển sinh
-        initUser(new User(6L, "Tư vấn tuyển sinh Phạm Mai", "tuvan@edumanager.vn", "ACTIVE",
+        initUser(new User(6L, "Tư vấn tuyển sinh Phạm Mai", "AMS25200212012@tms.vn", "ACTIVE",
                 new ArrayList<>(Collections.singletonList(RoleConstant.ADMISSIONS))), UserDAO.DEFAULT_PASSWORD);
         idByEmail.put("admissions@example.com", 6L);
         idByEmail.put("tuvan", 6L);
 
         // 7. Trợ giảng
-        initUser(new User(7L, "Trợ giảng Đỗ Tuấn", "trogiang@edumanager.vn", "ACTIVE",
+        initUser(new User(7L, "Trợ giảng Đỗ Tuấn", "TA25200212007@tms.vn", "ACTIVE",
                 new ArrayList<>(Collections.singletonList(RoleConstant.TEACHING_ASSISTANT))), UserDAO.DEFAULT_PASSWORD);
         idByEmail.put("ta@example.com", 7L);
         idByEmail.put("trogiang", 7L);

@@ -70,7 +70,7 @@
         <form action="${pageContext.request.contextPath}/login" method="POST">
             <div class="form-group">
                 <label class="form-label" for="email">Email</label>
-                <input type="email" id="email" name="email" class="form-control" placeholder="admin@edumanager.vn" required autofocus>
+                <input type="email" id="email" name="email" class="form-control" placeholder="A25200212001@tms.vn" required autofocus>
             </div>
 
             <div class="form-group">
@@ -84,11 +84,11 @@
         <div class="demo-box">
             <strong style="display:block; margin-bottom:8px;">Chọn nhanh tài khoản thử nghiệm:</strong>
             <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
-                <button type="button" class="btn-demo" onclick="fillLogin('admin@edumanager.vn', 'Tms@2026')">Admin</button>
-                <button type="button" class="btn-demo" onclick="fillLogin('giangvien@edumanager.vn', 'Tms@2026')">Giảng viên</button>
-                <button type="button" class="btn-demo" onclick="fillLogin('ketoan@edumanager.vn', 'Tms@2026')">Kế toán</button>
-                <button type="button" class="btn-demo" onclick="fillLogin('daotao@edumanager.vn', 'Tms@2026')">Quản lý ĐT</button>
-                <button type="button" class="btn-demo" onclick="fillLogin('hocvien@edumanager.vn', 'Tms@2026')">Học viên</button>
+                <button type="button" class="btn-demo" onclick="fillLogin('A25200212001@tms.vn', 'Tms@2026')">Admin</button>
+                <button type="button" class="btn-demo" onclick="fillLogin('IST25200212045@tms.vn', 'Tms@2026')">Giảng viên</button>
+                <button type="button" class="btn-demo" onclick="fillLogin('ACT25200212003@tms.vn', 'Tms@2026')">Kế toán</button>
+                <button type="button" class="btn-demo" onclick="fillLogin('TM25200212002@tms.vn', 'Tms@2026')">Quản lý ĐT</button>
+                <button type="button" class="btn-demo" onclick="fillLogin('S25200212101@tms.vn', 'Tms@2026')">Học viên</button>
             </div>
             <span style="font-size: 11px; color: #64748b;">Mật khẩu chung: <code>Tms@2026</code> (đăng nhập xong phải đổi)</span>
         </div>

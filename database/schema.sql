@@ -819,13 +819,13 @@ ON DUPLICATE KEY UPDATE `role_name` = VALUES(`role_name`);
 -- Seed Users mẫu (mật khẩu chung Tms@2026, BCrypt). Mỗi lần backend khởi động đều đặt lại về Tms@2026 (DatabaseMigration).
 -- Đăng nhập bằng mật khẩu này thì phải đổi mật khẩu trước khi dùng hệ thống.
 INSERT INTO `users` (`id`, `user_code`, `email`, `password_hash`, `full_name`, `phone`, `status`) VALUES
-(1, 'NV-ADMIN-01', 'admin@edumanager.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Quản trị viên', '0901234567', 'ACTIVE'),
-(2, 'NV-QLDT-01', 'quanlydaotao@edumanager.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Phạm Thị Quản', '0912345678', 'ACTIVE'),
-(3, 'NV-GV-01', 'giangvien@edumanager.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Trần Thị Giảng', '0923456789', 'ACTIVE'),
-(4, 'NV-TG-01', 'trogiang@edumanager.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Lê Văn Trợ', '0934567890', 'ACTIVE'),
-(5, 'HV-2026-001', 'hocvien@edumanager.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Nguyễn Văn Học', '0945678901', 'ACTIVE'),
-(6, 'NV-KT-01', 'ketoan@edumanager.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Đỗ Thị Kế', '0956789012', 'ACTIVE'),
-(7, 'NV-TV-01', 'tuvan@edumanager.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Hoàng Văn Tư', '0967890123', 'ACTIVE')
+(1, 'NV-ADMIN-01', 'A25200212001@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Quản trị viên', '0901234567', 'ACTIVE'),
+(2, 'NV-QLDT-01', 'TM25200212002@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Phạm Thị Quản', '0912345678', 'ACTIVE'),
+(3, 'NV-GV-01', 'IST25200212045@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Trần Thị Giảng', '0923456789', 'ACTIVE'),
+(4, 'NV-TG-01', 'TA25200212007@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Lê Văn Trợ', '0934567890', 'ACTIVE'),
+(5, 'HV-2026-001', 'S25200212101@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Nguyễn Văn Học', '0945678901', 'ACTIVE'),
+(6, 'NV-KT-01', 'ACT25200212003@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Đỗ Thị Kế', '0956789012', 'ACTIVE'),
+(7, 'NV-TV-01', 'AMS25200212012@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Hoàng Văn Tư', '0967890123', 'ACTIVE')
 ON DUPLICATE KEY UPDATE `full_name` = VALUES(`full_name`);
 
 -- Gán quyền tương ứng
