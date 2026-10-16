@@ -271,7 +271,7 @@ export function LeadListPage() {
           load={(c) =>
             apiEnabled
               ? (counselors.find((x) => x.name === c)?.openLeads ?? 0)
-              : leads.filter((l) => l.owner === c && l.status !== 'Đã nhập học' && l.status !== 'Không quan tâm').length
+              : leads.filter((l) => l.owner === c && l.status !== 'Chốt' && l.status !== 'Đã nhập học' && l.status !== 'Từ chối').length
           }
           onClose={() => setAssigning(false)}
           onAssign={async (c, note) => {
@@ -284,7 +284,7 @@ export function LeadListPage() {
               list.reload();
               side.reload();
             } else
-              commit(leads.map((l) => (picked.includes(l.id) ? { ...l, owner: c, status: l.status === 'Mới' ? 'Đang chăm sóc' : l.status } : l)));
+              commit(leads.map((l) => (picked.includes(l.id) ? { ...l, owner: c, status: l.status === 'Mới' ? 'Đang tư vấn' : l.status } : l)));
             toast(`Đã phân công ${picked.length} lead`, `Giao cho ${c}.`);
             setPicked([]);
             setAssigning(false);

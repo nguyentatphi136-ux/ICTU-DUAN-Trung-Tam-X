@@ -146,7 +146,9 @@ class S2ApiServletTest {
 
         assertEquals(400, call(s, "GET", "", null, 20L, Map.of("from", "28/09/2026")).status());
         Result updated = call(s, "PUT", "/" + id, "{\"name\":\"LEAD A\",\"phone\":\"0912000001\",\"status\":\"WON\"}", 10L);
-        assertEquals("Đã nhập học", updated.json().getAsJsonObject("data").get("statusLabel").getAsString());
+        // S2-09 sửa thông tin không đổi trạng thái; đổi trạng thái qua phễu (S3-01) để ghi nhật ký và bắt lý do.
+        assertEquals("CONSULTING", updated.json().getAsJsonObject("data").get("status").getAsString());
+        assertEquals("Đang tư vấn", updated.json().getAsJsonObject("data").get("statusLabel").getAsString());
     }
 
     @Test

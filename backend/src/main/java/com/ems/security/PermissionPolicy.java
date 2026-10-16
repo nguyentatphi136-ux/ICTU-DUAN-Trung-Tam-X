@@ -86,6 +86,10 @@ public final class PermissionPolicy {
         if ("GET".equals(method) && path.matches("^/api/students(/[^/]+)?$")) {
             return "STUDENT_READ";
         }
+        // Sheet 2: Tư vấn tuyển sinh (W) và Quản lý đào tạo (F) sửa hồ sơ học viên.
+        if ("PUT".equals(method) && path.matches("^/api/students/[^/]+$")) {
+            return "STUDENT_WRITE";
+        }
         // S3-04 đến S3-09: hồ sơ học viên, lớp, ghi danh, phân công, phòng học dành cho Quản lý đào tạo.
         if (path.matches("^/api/(classes|students|rooms)(/.*)?$")) {
             return "CLASS_MANAGE";

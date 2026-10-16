@@ -26,18 +26,21 @@ import java.util.Map;
  * lead tư vấn viên tự thêm được giao luôn cho người đó.
  */
 public class LeadService {
-    /** Mã trạng thái lưu trong CSDL (ENUM của bảng leads) và nhãn hiển thị trên giao diện. */
+    /**
+     * Mã trạng thái lưu trong CSDL (ENUM của bảng leads) và nhãn hiển thị, theo đúng thứ tự cột phễu S3-01:
+     * Mới → Đã liên hệ → Đang tư vấn → Hẹn học thử → Chốt → Từ chối. Trang Lead (S2) và Bảng phễu dùng chung nhãn này.
+     */
     public static final Map<String, String> STATUSES = new LinkedHashMap<>();
     /** Mã nguồn lead và nhãn hiển thị. */
     public static final Map<String, String> SOURCES = new LinkedHashMap<>();
 
     static {
         STATUSES.put("NEW", "Mới");
-        STATUSES.put("CONSULTING", "Đang chăm sóc");
-        STATUSES.put("CONTACTED", "Hẹn gọi lại");
+        STATUSES.put("CONTACTED", "Đã liên hệ");
+        STATUSES.put("CONSULTING", "Đang tư vấn");
         STATUSES.put("TRIAL_SCHEDULED", "Hẹn học thử");
-        STATUSES.put("WON", "Đã nhập học");
-        STATUSES.put("REJECTED", "Không quan tâm");
+        STATUSES.put("WON", "Chốt");
+        STATUSES.put("REJECTED", "Từ chối");
         SOURCES.put("WEBSITE", "Biểu mẫu web");
         SOURCES.put("FACEBOOK", "Facebook");
         SOURCES.put("ZALO", "Zalo");
@@ -100,9 +103,10 @@ public class LeadService {
     }
 
     public Map<String, Object> update(long id, LeadInput in, long actorId, boolean seeAll) throws SQLException {
-        editable(id, actorId, seeAll);
+        Map<String, Object> lead = editable(id, actorId, seeAll);
         Clean c = clean(in, false);
-        leadDAO.update(id, c.name, c.phone, c.email, c.source, c.programId, c.status, c.note);
+        // S2-09 chỉ sửa thông tin lead; trạng thái giữ nguyên, đổi qua changeStage (S3-01: ghi nhật ký, Từ chối cần lý do).
+        leadDAO.update(id, c.name, c.phone, c.email, c.source, c.programId, (String) lead.get("status"), c.note);
         return label(leadDAO.findById(id));
     }
 
@@ -176,18 +180,10 @@ public class LeadService {
 
     // ===== S3-01: phễu lead =====
 
-    /** Nhãn cột của bảng phễu S3-01, theo thứ tự cột. Cùng mã với STATUSES. */
-    public static final Map<String, String> STAGES = new LinkedHashMap<>();
     /** Loại dòng nhật ký S3-02. Ba loại đầu do tư vấn viên ghi, hai loại sau hệ thống tự ghi. */
     public static final Map<String, String> LOG_TYPES = new LinkedHashMap<>();
 
     static {
-        STAGES.put("NEW", "Mới");
-        STAGES.put("CONTACTED", "Đã liên hệ");
-        STAGES.put("CONSULTING", "Đang tư vấn");
-        STAGES.put("TRIAL_SCHEDULED", "Hẹn học thử");
-        STAGES.put("WON", "Chốt");
-        STAGES.put("REJECTED", "Từ chối");
         LOG_TYPES.put("CALL", "Gọi");
         LOG_TYPES.put("MESSAGE", "Nhắn");
         LOG_TYPES.put("MEETING", "Gặp");
@@ -199,7 +195,7 @@ public class LeadService {
     public Map<String, Object> funnel(String keyword, long actorId, boolean seeAll) throws SQLException {
         LocalDate today = LocalDate.now();
         Map<String, List<Map<String, Object>>> byStage = new LinkedHashMap<>();
-        STAGES.keySet().forEach(s -> byStage.put(s, new ArrayList<>()));
+        STATUSES.keySet().forEach(s -> byStage.put(s, new ArrayList<>()));
         int overdue = 0;
         for (Map<String, Object> lead : leadDAO.funnel(keyword, seeAll ? null : actorId)) {
             int days = overdueDays(lead, today);
@@ -215,7 +211,7 @@ public class LeadService {
             items.sort((a, b) -> Integer.compare((int) b.getOrDefault("overdueDays", 0), (int) a.getOrDefault("overdueDays", 0)));
             Map<String, Object> col = new LinkedHashMap<>();
             col.put("status", status);
-            col.put("label", STAGES.getOrDefault(status, status));
+            col.put("label", STATUSES.getOrDefault(status, status));
             col.put("count", items.size());
             col.put("items", items);
             columns.add(col);
@@ -231,7 +227,7 @@ public class LeadService {
     public Map<String, Object> changeStage(long id, String status, String reason, long actorId, boolean seeAll) throws SQLException {
         Map<String, Object> lead = editable(id, actorId, seeAll);
         if (status == null || status.isBlank()) throw new ValidationException("Chọn giai đoạn mới (status).");
-        String to = code(status, STAGES, "Giai đoạn");
+        String to = code(status, STATUSES, "Giai đoạn");
         String why = reason == null || reason.isBlank() ? null : reason.trim();
         if ("REJECTED".equals(to) && why == null) {
             throw new ApiException(400, "REJECT_REASON_REQUIRED", "Chuyển sang Từ chối phải chọn lý do.");
@@ -239,7 +235,7 @@ public class LeadService {
         if (why != null && why.length() > 255) throw new ValidationException("Lý do tối đa 255 ký tự.");
         String from = (String) lead.get("status");
         if (to.equals(from) && !"REJECTED".equals(to)) return lead;
-        String text = STAGES.getOrDefault(from, from) + " → " + STAGES.get(to) + ("REJECTED".equals(to) ? ": " + why : "");
+        String text = STATUSES.getOrDefault(from, from) + " → " + STATUSES.get(to) + ("REJECTED".equals(to) ? ": " + why : "");
         leadDAO.changeStage(id, to, "REJECTED".equals(to) ? why : null, actorId, text);
         return label(leadDAO.findById(id));
     }
@@ -375,7 +371,9 @@ public class LeadService {
     }
 
     private static Map<String, Object> label(Map<String, Object> lead) {
-        lead.put("statusLabel", STATUSES.getOrDefault((String) lead.get("status"), (String) lead.get("status")));
+        // S3-03: lead đã chuyển thành học viên hiện là "Đã nhập học" (vẫn là mã WON, nằm ở cột Chốt của phễu).
+        lead.put("statusLabel", lead.get("studentCode") != null ? "Đã nhập học"
+                : STATUSES.getOrDefault((String) lead.get("status"), (String) lead.get("status")));
         lead.put("sourceLabel", SOURCES.getOrDefault((String) lead.get("source"), (String) lead.get("source")));
         return lead;
     }

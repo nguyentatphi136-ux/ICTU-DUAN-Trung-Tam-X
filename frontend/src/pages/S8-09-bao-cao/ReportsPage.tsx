@@ -76,10 +76,10 @@ function teacherReport(name: string) {
 }
 
 // ---------- Số liệu tuyển sinh ----------
-const FOLLOWING = (l: Lead) => l.status === 'Đang chăm sóc' || l.status === 'Hẹn gọi lại';
+const FOLLOWING = (l: Lead) => l.status === 'Đã liên hệ' || l.status === 'Đang tư vấn' || l.status === 'Hẹn học thử';
 function leadGroup(name: string, ls: Lead[]) {
   const won = ls.filter((l) => l.status === 'Đã nhập học').length;
-  return { name, total: ls.length, fresh: ls.filter((l) => l.status === 'Mới').length, following: ls.filter(FOLLOWING).length, won, lost: ls.filter((l) => l.status === 'Không quan tâm').length, rate: pct(won, ls.length) };
+  return { name, total: ls.length, fresh: ls.filter((l) => l.status === 'Mới').length, following: ls.filter(FOLLOWING).length, won, lost: ls.filter((l) => l.status === 'Từ chối').length, rate: pct(won, ls.length) };
 }
 
 /** Ba tháng gần nhất, tính tới tháng hiện tại. */
@@ -359,7 +359,7 @@ function AdmissionReport({ leads, mine }: { leads: Lead[]; mine: boolean }) {
   const label = by === 'owner' ? 'Tư vấn viên' : 'Chương trình';
 
   function exportXlsx() {
-    const head: Cell[] = [label, 'Lead', 'Mới', 'Đang theo', 'Đã nhập học', 'Không quan tâm', 'Tỷ lệ chuyển đổi (%)'];
+    const head: Cell[] = [label, 'Lead', 'Mới', 'Đang theo', 'Đã nhập học', 'Từ chối', 'Tỷ lệ chuyển đổi (%)'];
     const row = (g: ReturnType<typeof leadGroup>): Cell[] => [g.name, g.total, g.fresh, g.following, g.won, g.lost, g.rate];
     download(toXlsx([[`Báo cáo tuyển sinh ${period}`], [], head, ...groups.map(row), row(total)], 'Tuyển sinh'), `bao-cao-tuyen-sinh-${month}.xlsx`);
   }
@@ -413,7 +413,7 @@ function AdmissionReport({ leads, mine }: { leads: Lead[]; mine: boolean }) {
             </div>
           ))}
           <p className="hint bc-legend">
-            <span className="bc-dot won" /> Đã nhập học <span className="bc-dot following" /> Đang theo <span className="bc-dot fresh" /> Mới <span className="bc-dot lost" /> Không quan tâm
+            <span className="bc-dot won" /> Đã nhập học <span className="bc-dot following" /> Đang theo <span className="bc-dot fresh" /> Mới <span className="bc-dot lost" /> Từ chối
           </p>
         </section>
         <section className="panel">

@@ -39,6 +39,14 @@ class AdminPermissionMigrationTest {
             s.execute("INSERT INTO role_permissions (role_id, permission_id) VALUES (1, 2)");
             DatabaseMigration.runMigration(c);
             assertTrue(perms(s, "ADMIN").contains("PROGRAM_MANAGE"));
+
+            // CSDL đã cập nhật nhưng chưa có quyền mới (STUDENT_WRITE): chỉ thêm quyền đó, không đụng phần còn lại.
+            s.execute("DELETE FROM role_permissions WHERE permission_id IN (SELECT id FROM permissions WHERE permission_code = 'STUDENT_WRITE')");
+            s.execute("DELETE FROM permissions WHERE permission_code = 'STUDENT_WRITE'");
+            DatabaseMigration.runMigration(c);
+            assertTrue(perms(s, "TRAINING_MANAGER").contains("STUDENT_WRITE"));
+            assertFalse(perms(s, "ACCOUNTANT").contains("STUDENT_WRITE"));
+            assertTrue(perms(s, "ADMIN").contains("PROGRAM_MANAGE"), "Quyền tự gán vẫn giữ nguyên");
         }
     }
 

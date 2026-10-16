@@ -61,7 +61,8 @@ export function StudentProfilePage({ actions }: Props) {
       <ErrorPage code="404" />
     );
   if (role === 0 && s.login !== user!.email) return <ErrorPage code="403" />;
-  const canEdit = role === 3 || role === 5 || role === 6;
+  // Sheet 2: Tư vấn tuyển sinh (W) và Quản lý đào tạo (F) sửa hồ sơ; backend kiểm STUDENT_WRITE.
+  const canEdit = role === 3 || role === 5;
   const k = findClass(s.cls);
   const refresh = () => setTick((t) => t + 1);
 

@@ -854,6 +854,7 @@ INSERT INTO `permissions` (`permission_code`, `permission_name`, `module`, `desc
 ('PROGRAM_READ', 'Xem chương trình', 'PROGRAM', 'Xem chương trình, môn học, lộ trình'),
 ('STUDENT_READ', 'Xem hồ sơ học viên', 'CLASS', 'Xem danh sách và hồ sơ học viên'),
 ('CLASS_READ', 'Xem lớp học', 'CLASS', 'Xem lớp, ghi danh, người dạy và phòng học'),
+('STUDENT_WRITE', 'Sửa hồ sơ học viên', 'CLASS', 'Sửa thông tin cá nhân, trình độ đầu vào, ghi chú của học viên'),
 ('TRASH_PURGE', 'Xoá vĩnh viễn', 'SYSTEM', 'Xem thùng rác các module và xoá vĩnh viễn'),
 ('LEAD_MANAGE', 'Quản lý tuyển sinh', 'ADMISSIONS', 'Quản lý khách hàng tiềm năng'),
 ('LEAD_ASSIGN', 'Phân công lead', 'ADMISSIONS', 'Xem mọi lead, phân công tư vấn viên và xoá lead'),
@@ -880,12 +881,12 @@ WHERE r.role_code = 'ADMIN'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_MANAGE','PROGRAM_READ','STUDENT_READ','CLASS_MANAGE','CLASS_READ','SCHEDULE_READ','LEAD_READ','LEAD_ASSIGN','ATTENDANCE_MANAGE','ASSIGNMENT_READ','GRADE_MANAGE','GRADE_READ','FINANCE_READ','REPORT_VIEW','USER_READ')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_MANAGE','PROGRAM_READ','STUDENT_READ','STUDENT_WRITE','CLASS_MANAGE','CLASS_READ','SCHEDULE_READ','LEAD_READ','LEAD_ASSIGN','ATTENDANCE_MANAGE','ASSIGNMENT_READ','GRADE_MANAGE','GRADE_READ','FINANCE_READ','REPORT_VIEW','USER_READ')
 WHERE r.role_code = 'TRAINING_MANAGER'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','LEAD_MANAGE','PROGRAM_READ','STUDENT_READ','CLASS_READ','SCHEDULE_READ','FINANCE_READ','REPORT_VIEW')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','LEAD_MANAGE','PROGRAM_READ','STUDENT_READ','STUDENT_WRITE','CLASS_READ','SCHEDULE_READ','FINANCE_READ','REPORT_VIEW')
 WHERE r.role_code = 'ADMISSIONS'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)

@@ -223,7 +223,7 @@ class S2ApiTest {
         assertEquals(0, count("SELECT COUNT(*) FROM lead_assignments"), "Lỗi giữa chừng thì không giao lead nào");
 
         assertEquals(2, leads.assign(List.of(a, b), 10L, "Lead cuối tuần", 20).get("assigned"));
-        assertEquals("CONSULTING", leads.get(b, 20, true).get("status"), "Lead Mới được giao thì sang Đang chăm sóc");
+        assertEquals("CONSULTING", leads.get(b, 20, true).get("status"), "Lead Mới được giao thì sang Đang tư vấn");
         assertEquals(0, leads.assign(List.of(a), 10L, null, 20).get("assigned"), "Giao lại cho đúng người cũ thì bỏ qua");
         leads.assign(List.of(a), 11L, null, 20);
 

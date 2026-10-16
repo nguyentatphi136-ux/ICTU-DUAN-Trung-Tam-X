@@ -142,7 +142,7 @@ class S3ApiTest {
         assertEquals("CLASS_MANAGE", PermissionPolicy.requiredPermission("PUT", "/api/classes/WEB-K16/subjects/WEB-01"));
         assertEquals("STUDENT_READ", PermissionPolicy.requiredPermission("GET", "/api/students"));
         assertEquals("STUDENT_READ", PermissionPolicy.requiredPermission("GET", "/api/students/HV260001"));
-        assertEquals("CLASS_MANAGE", PermissionPolicy.requiredPermission("PUT", "/api/students/HV260001"));
+        assertEquals("STUDENT_WRITE", PermissionPolicy.requiredPermission("PUT", "/api/students/HV260001"));
         assertEquals("CLASS_READ", PermissionPolicy.requiredPermission("GET", "/api/classes"));
         assertEquals("CLASS_READ", PermissionPolicy.requiredPermission("GET", "/api/rooms"));
         assertEquals("CLASS_MANAGE", PermissionPolicy.requiredPermission("DELETE", "/api/rooms/3"));

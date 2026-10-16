@@ -3,7 +3,7 @@ import { Icon } from '../../components/Icon';
 import { ConfirmDialog, Drawer } from '../../components/ui';
 import { apiEnabled } from '../../data/api';
 import { samePhoneLeads } from '../../data/s2api';
-import { LEAD_STATUSES, samePhone, SOURCES, type Lead, type LeadStatus } from '../../data/leads';
+import { samePhone, SOURCES, type Lead, type LeadStatus } from '../../data/leads';
 import { PROGRAMS } from '../../data/training';
 import { isPhone, PHONE_MSG } from '../../data/validate';
 
@@ -156,7 +156,7 @@ export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, 
           {select('source', 'Nguồn', SOURCES)}
           {select('program', 'Chương trình quan tâm', f.program && !programs.includes(f.program) ? [...programs, f.program] : programs)}
         </div>
-        {lead && select('status', 'Trạng thái', LEAD_STATUSES)}
+        {/* S2-09 chỉ sửa thông tin lead; trạng thái đổi ở Bảng phễu (S3-01) để ghi nhật ký và bắt lý do khi Từ chối. */}
         <div className="field">
           <label htmlFor="ld-note">Ghi chú</label>
           <div className="inp">

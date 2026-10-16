@@ -256,6 +256,16 @@ public class DatabaseMigration {
                 stmt.execute("ALTER TABLE programs RENAME COLUMN duration_months TO duration");
             }
         }
+        // Bảng lead_assignments tạo từ migration S2-10/S2-11 cũ dùng previous_counselor_id, new_counselor_id, assigned_at;
+        // LeadDAO và schema.sql dùng from_counselor_id, to_counselor_id, created_at (phân công và lịch sử chuyển giao S2-10).
+        for (String[] r : new String[][] {{"previous_counselor_id", "from_counselor_id"}, {"new_counselor_id", "to_counselor_id"},
+                {"assigned_at", "created_at"}}) {
+            if (hasColumn(conn, "lead_assignments", r[0]) && !hasColumn(conn, "lead_assignments", r[1])) {
+                try (Statement stmt = conn.createStatement()) {
+                    stmt.execute("ALTER TABLE lead_assignments RENAME COLUMN " + r[0] + " TO " + r[1]);
+                }
+            }
+        }
 
         // Xoá mềm: bản ghi bị xoá chỉ được gán deleted_at, nằm trong thùng rác cho tới khi khôi phục hoặc xoá vĩnh viễn.
         for (String table : new String[] {"users", "programs", "subjects", "leads"}) {
@@ -288,10 +298,10 @@ public class DatabaseMigration {
      */
     static final Map<String, List<String>> ROLE_PERMISSIONS = Map.of(
             "ADMIN", with("USER_READ", "USER_CREATE", "USER_ROLE_ASSIGN", "ROLE_PERMISSION_READ", "ROLE_PERMISSION_UPDATE", "TRASH_PURGE"),
-            "TRAINING_MANAGER", with("PROGRAM_MANAGE", "PROGRAM_READ", "STUDENT_READ", "CLASS_MANAGE", "CLASS_READ", "SCHEDULE_READ",
+            "TRAINING_MANAGER", with("PROGRAM_MANAGE", "PROGRAM_READ", "STUDENT_READ", "STUDENT_WRITE", "CLASS_MANAGE", "CLASS_READ", "SCHEDULE_READ",
                     "LEAD_READ", "LEAD_ASSIGN", "ATTENDANCE_MANAGE", "ASSIGNMENT_READ", "GRADE_MANAGE", "GRADE_READ", "FINANCE_READ",
                     "REPORT_VIEW", "USER_READ"),
-            "ADMISSIONS", with("LEAD_MANAGE", "PROGRAM_READ", "STUDENT_READ", "CLASS_READ", "SCHEDULE_READ", "FINANCE_READ", "REPORT_VIEW"),
+            "ADMISSIONS", with("LEAD_MANAGE", "PROGRAM_READ", "STUDENT_READ", "STUDENT_WRITE", "CLASS_READ", "SCHEDULE_READ", "FINANCE_READ", "REPORT_VIEW"),
             "INSTRUCTOR", with("PROGRAM_READ", "STUDENT_READ", "CLASS_READ", "SCHEDULE_READ", "ATTENDANCE_MANAGE", "ASSIGNMENT_MANAGE",
                     "GRADE_MANAGE", "GRADE_READ", "REPORT_VIEW"),
             "TA", with("PROGRAM_READ", "STUDENT_READ", "CLASS_READ", "SCHEDULE_READ", "ATTENDANCE_MANAGE", "ASSIGNMENT_MANAGE", "GRADE_READ"),
@@ -306,6 +316,7 @@ public class DatabaseMigration {
             {"PROGRAM_READ", "Xem chương trình", "PROGRAM", "Xem chương trình, môn học, lộ trình"},
             {"STUDENT_READ", "Xem hồ sơ học viên", "CLASS", "Xem danh sách và hồ sơ học viên"},
             {"CLASS_READ", "Xem lớp học", "CLASS", "Xem lớp, ghi danh, người dạy và phòng học"},
+            {"STUDENT_WRITE", "Sửa hồ sơ học viên", "CLASS", "Sửa thông tin cá nhân, trình độ đầu vào, ghi chú của học viên"},
             {"TRASH_PURGE", "Xoá vĩnh viễn", "SYSTEM", "Xem thùng rác các module và xoá vĩnh viễn"}};
 
     private static List<String> with(String... extra) {
@@ -315,8 +326,9 @@ public class DatabaseMigration {
     }
 
     /**
-     * Gán quyền mọi vai trò đúng ROLE_PERMISSIONS. Chỉ chạy một lần, khi CSDL chưa có quyền CLASS_READ (tạo từ schema.sql
-     * cũ); sau đó quản trị chỉnh ở S1-05 thì khởi động lại không ghi đè.
+     * CSDL tạo từ schema.sql cũ (chưa có CLASS_READ): gán lại quyền mọi vai trò đúng ROLE_PERMISSIONS, một lần.
+     * CSDL đã cập nhật: chỉ tạo quyền mới trong NEW_PERMISSIONS và gán cho các vai trò có quyền đó trong ROLE_PERMISSIONS.
+     * Quản trị chỉnh ở S1-05 thì khởi động lại không bị ghi đè.
      */
     static void applyRolePermissions(Connection conn) throws SQLException {
         if (!hasTable(conn, "permissions") || !hasTable(conn, "roles") || !hasTable(conn, "role_permissions")) return;
@@ -324,14 +336,31 @@ public class DatabaseMigration {
         try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery("SELECT permission_code FROM permissions")) {
             while (rs.next()) existing.add(rs.getString(1));
         }
-        if (existing.contains("CLASS_READ")) return;
+        boolean oldDatabase = !existing.contains("CLASS_READ");
+        Set<String> added = new HashSet<>();
         try (PreparedStatement add = conn.prepareStatement(
                 "INSERT INTO permissions (permission_code, permission_name, module, description) VALUES (?, ?, ?, ?)")) {
             for (String[] p : NEW_PERMISSIONS) {
                 if (existing.contains(p[0])) continue;
                 for (int i = 0; i < 4; i++) add.setString(i + 1, p[i]);
                 add.executeUpdate();
+                added.add(p[0]);
             }
+        }
+        if (!oldDatabase) {
+            try (PreparedStatement grant = conn.prepareStatement("INSERT INTO role_permissions (role_id, permission_id) "
+                    + "SELECT r.id, p.id FROM roles r, permissions p WHERE r.role_code = ? AND p.permission_code = ?")) {
+                for (Map.Entry<String, List<String>> role : ROLE_PERMISSIONS.entrySet()) {
+                    for (String permission : role.getValue()) {
+                        if (!added.contains(permission)) continue;
+                        grant.setString(1, role.getKey());
+                        grant.setString(2, permission);
+                        grant.executeUpdate();
+                    }
+                }
+            }
+            if (!added.isEmpty()) LOGGER.info("Đã thêm quyền mới " + added + " cho các vai trò theo Product Backlog.");
+            return;
         }
         try (PreparedStatement clear = conn.prepareStatement(
                      "DELETE FROM role_permissions WHERE role_id IN (SELECT id FROM roles WHERE role_code = ?)");

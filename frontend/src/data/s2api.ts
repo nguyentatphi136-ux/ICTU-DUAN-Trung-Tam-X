@@ -78,10 +78,12 @@ export const cloneLessons = (subject: string, from: string) =>
 export const LEAD_SOURCE_CODES: Record<string, string> = { 'Biểu mẫu web': 'WEBSITE', Facebook: 'FACEBOOK', Zalo: 'ZALO', 'Giới thiệu': 'REFERRAL' };
 export const LEAD_STATUS_CODES: Record<LeadStatus, string> = {
   Mới: 'NEW',
-  'Đang chăm sóc': 'CONSULTING',
-  'Hẹn gọi lại': 'CONTACTED',
+  'Đã liên hệ': 'CONTACTED',
+  'Đang tư vấn': 'CONSULTING',
+  'Hẹn học thử': 'TRIAL_SCHEDULED',
+  Chốt: 'WON',
+  'Từ chối': 'REJECTED',
   'Đã nhập học': 'WON',
-  'Không quan tâm': 'REJECTED',
 };
 
 type ApiLead = {
