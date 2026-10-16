@@ -15,8 +15,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Truy cập bảng leads (S2-08, S2-09, S2-11) và lead_assignments (S2-10, lịch sử phân công).
- * Lead trả về dạng Map: { id, name, phone, email, source, programCode, programName, status, ownerId, ownerName, note, createdAt }.
+ * Truy cập bảng leads (S2-08, S2-09, S2-11, S3-01), lead_assignments (S2-10, lịch sử phân công)
+ * và lead_interactions (S3-02, nhật ký chăm sóc).
+ * Lead trả về dạng Map: { id, name, phone, email, source, programCode, programName, status, ownerId, ownerName, note,
+ * rejectReason, callbackDate, studentId, studentCode, createdAt }.
  * Nhãn tiếng Việt của status và source do LeadService gắn thêm.
  */
 public class LeadDAO {
@@ -24,9 +26,11 @@ public class LeadDAO {
     public record Filter(String keyword, String status, String source, Long owner, LocalDate from, LocalDate to) {}
 
     private static final String SELECT = "SELECT l.id, l.full_name, l.phone, l.email, l.source, l.status, l.notes, l.created_at, "
-            + "l.assigned_counselor_id, u.full_name AS owner_name, p.program_code, p.program_name "
+            + "l.assigned_counselor_id, u.full_name AS owner_name, p.program_code, p.program_name, "
+            + "l.reject_reason, l.callback_date, l.converted_student_id, s.student_code "
             + "FROM leads l LEFT JOIN users u ON u.id = l.assigned_counselor_id "
-            + "LEFT JOIN programs p ON p.id = l.interested_program_id ";
+            + "LEFT JOIN programs p ON p.id = l.interested_program_id "
+            + "LEFT JOIN students s ON s.id = l.converted_student_id ";
 
     /** onlyOwner khác null: tư vấn viên chỉ thấy lead được giao cho mình. */
     public Map<String, Object> search(Filter f, Long onlyOwner, int page, int size) throws SQLException {
@@ -210,7 +214,9 @@ public class LeadDAO {
             try (PreparedStatement read = conn.prepareStatement(
                          "SELECT assigned_counselor_id FROM leads WHERE id = ? AND deleted_at IS NULL FOR UPDATE");
                  PreparedStatement update = conn.prepareStatement(
-                         "UPDATE leads SET assigned_counselor_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?");
+                         // Lead Mới được giao thì chuyển sang Đang chăm sóc, giống giao diện S2-10.
+                         "UPDATE leads SET assigned_counselor_id = ?, status = CASE WHEN status = 'NEW' THEN 'CONSULTING' ELSE status END, "
+                                 + "updated_at = CURRENT_TIMESTAMP WHERE id = ?");
                  PreparedStatement log = conn.prepareStatement(
                          "INSERT INTO lead_assignments (lead_id, from_counselor_id, to_counselor_id, assigned_by, note) VALUES (?, ?, ?, ?, ?)")) {
                 int changed = 0;
@@ -320,7 +326,8 @@ public class LeadDAO {
                         }
                     }
                 }
-                for (String sql : new String[] {"DELETE FROM lead_assignments WHERE lead_id = ?", "DELETE FROM leads WHERE id = ?"}) {
+                for (String sql : new String[] {"DELETE FROM lead_assignments WHERE lead_id = ?",
+                        "DELETE FROM lead_interactions WHERE lead_id = ?", "DELETE FROM leads WHERE id = ?"}) {
                     try (PreparedStatement stmt = conn.prepareStatement(sql)) {
                         stmt.setLong(1, id);
                         stmt.executeUpdate();
@@ -333,6 +340,116 @@ public class LeadDAO {
                 throw e;
             }
         }
+    }
+
+    // ===== S3-01 phễu, S3-02 nhật ký chăm sóc =====
+
+    /** Mọi lead đang dùng cho bảng phễu; onlyOwner khác null thì chỉ lead của tư vấn viên đó. */
+    public List<Map<String, Object>> funnel(String keyword, Long onlyOwner) throws SQLException {
+        StringBuilder where = new StringBuilder("WHERE l.deleted_at IS NULL");
+        List<Object> params = new ArrayList<>();
+        if (onlyOwner != null) {
+            where.append(" AND l.assigned_counselor_id = ?");
+            params.add(onlyOwner);
+        }
+        if (keyword != null && !keyword.isBlank()) {
+            String digits = keyword.replaceAll("\\D", "");
+            where.append(digits.length() >= 3 ? " AND (LOWER(l.full_name) LIKE ? OR l.phone LIKE ?)" : " AND LOWER(l.full_name) LIKE ?");
+            params.add("%" + keyword.trim().toLowerCase(java.util.Locale.ROOT) + "%");
+            if (digits.length() >= 3) params.add("%" + digits + "%");
+        }
+        List<Map<String, Object>> items = new ArrayList<>();
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(SELECT + where + " ORDER BY l.created_at DESC, l.id DESC")) {
+            SubjectDAO.bind(stmt, params);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) items.add(mapRow(rs));
+            }
+        }
+        return items;
+    }
+
+    /** Đổi giai đoạn và ghi một dòng STAGE vào nhật ký trong cùng giao dịch. reason chỉ giữ khi sang REJECTED. */
+    public void changeStage(long id, String status, String reason, long actorId, String logText) throws SQLException {
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement update = conn.prepareStatement(
+                    "UPDATE leads SET status = ?, reject_reason = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND deleted_at IS NULL")) {
+                update.setString(1, status);
+                update.setString(2, reason);
+                update.setLong(3, id);
+                update.executeUpdate();
+                insertLog(conn, id, actorId, "STAGE", logText, null, null);
+                conn.commit();
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /** Ghi một lần tương tác; có ngày hẹn gọi lại thì đặt làm ngày nhắc của lead. */
+    public void addLog(long leadId, long actorId, String type, String content, java.time.LocalDateTime at,
+                       LocalDate callbackDate) throws SQLException {
+        try (Connection conn = DBConnection.getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                insertLog(conn, leadId, actorId, type, content, at, callbackDate);
+                if (callbackDate != null) {
+                    try (PreparedStatement stmt = conn.prepareStatement("UPDATE leads SET callback_date = ? WHERE id = ?")) {
+                        stmt.setDate(1, java.sql.Date.valueOf(callbackDate));
+                        stmt.setLong(2, leadId);
+                        stmt.executeUpdate();
+                    }
+                }
+                conn.commit();
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            }
+        }
+    }
+
+    /** Ghi nhật ký trong giao dịch đang mở của nơi gọi. at null là thời điểm hiện tại. */
+    static void insertLog(Connection conn, long leadId, long actorId, String type, String content,
+                          java.time.LocalDateTime at, LocalDate callbackDate) throws SQLException {
+        try (PreparedStatement stmt = conn.prepareStatement(
+                "INSERT INTO lead_interactions (lead_id, counselor_id, interaction_type, content, callback_scheduled_at, created_at) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)")) {
+            stmt.setLong(1, leadId);
+            stmt.setLong(2, actorId);
+            stmt.setString(3, type);
+            stmt.setString(4, content);
+            stmt.setTimestamp(5, callbackDate == null ? null : Timestamp.valueOf(callbackDate.atStartOfDay()));
+            stmt.setTimestamp(6, Timestamp.valueOf(at == null ? java.time.LocalDateTime.now() : at));
+            stmt.executeUpdate();
+        }
+    }
+
+    /** Nhật ký chăm sóc của một lead, mới nhất trước. */
+    public List<Map<String, Object>> logs(long leadId) throws SQLException {
+        String sql = "SELECT i.id, i.interaction_type, i.content, i.callback_scheduled_at, i.created_at, u.full_name "
+                + "FROM lead_interactions i LEFT JOIN users u ON u.id = i.counselor_id WHERE i.lead_id = ? "
+                + "ORDER BY i.created_at DESC, i.id DESC";
+        List<Map<String, Object>> items = new ArrayList<>();
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setLong(1, leadId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("id", rs.getLong("id"));
+                    item.put("type", rs.getString("interaction_type"));
+                    item.put("content", rs.getString("content"));
+                    item.put("at", rs.getTimestamp("created_at").toLocalDateTime().toString());
+                    item.put("by", rs.getString("full_name"));
+                    Timestamp callback = rs.getTimestamp("callback_scheduled_at");
+                    item.put("callbackDate", callback == null ? null : callback.toLocalDateTime().toLocalDate().toString());
+                    items.add(item);
+                }
+            }
+        }
+        return items;
     }
 
     private static Map<String, Object> mapRow(ResultSet rs) throws SQLException {
@@ -348,6 +465,11 @@ public class LeadDAO {
         item.put("ownerId", rs.getObject("assigned_counselor_id") == null ? null : rs.getLong("assigned_counselor_id"));
         item.put("ownerName", rs.getString("owner_name"));
         item.put("note", rs.getString("notes"));
+        item.put("rejectReason", rs.getString("reject_reason"));
+        java.sql.Date callback = rs.getDate("callback_date");
+        item.put("callbackDate", callback == null ? null : callback.toLocalDate().toString());
+        item.put("studentId", rs.getObject("converted_student_id") == null ? null : rs.getLong("converted_student_id"));
+        item.put("studentCode", rs.getString("student_code"));
         Timestamp created = rs.getTimestamp("created_at");
         item.put("createdAt", created == null ? null : created.toLocalDateTime().toString());
         return item;

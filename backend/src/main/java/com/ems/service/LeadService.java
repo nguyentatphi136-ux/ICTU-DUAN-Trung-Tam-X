@@ -1,15 +1,18 @@
 package com.ems.service;
 
 import com.ems.dao.LeadDAO;
+import com.ems.dao.StudentDAO;
 import com.ems.dao.TrainingProgramDAO;
 import com.ems.dao.UserDAO;
 import com.ems.exception.ApiException;
+import com.ems.exception.ConflictException;
 import com.ems.exception.ResourceNotFoundException;
 import com.ems.exception.ValidationException;
 import com.ems.model.TrainingProgram;
 
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -50,6 +53,7 @@ public class LeadService {
 
     private final LeadDAO leadDAO;
     private final TrainingProgramDAO programDAO;
+    private final StudentDAO studentDAO = new StudentDAO();
 
     public LeadService() {
         this(new LeadDAO(), new TrainingProgramDAO());
@@ -96,7 +100,7 @@ public class LeadService {
     }
 
     public Map<String, Object> update(long id, LeadInput in, long actorId, boolean seeAll) throws SQLException {
-        visible(id, actorId, seeAll);
+        editable(id, actorId, seeAll);
         Clean c = clean(in, false);
         leadDAO.update(id, c.name, c.phone, c.email, c.source, c.programId, c.status, c.note);
         return label(leadDAO.findById(id));
@@ -168,6 +172,141 @@ public class LeadService {
     public void submitConsultation(String name, String phone, String email, String programCode, String message) throws SQLException {
         Clean c = clean(new LeadInput(name, phone, email, "WEBSITE", programCode, "NEW", message), true);
         leadDAO.create(c.name, c.phone, c.email, c.source, c.programId, null, c.status, c.note);
+    }
+
+    // ===== S3-01: phễu lead =====
+
+    /** Nhãn cột của bảng phễu S3-01, theo thứ tự cột. Cùng mã với STATUSES. */
+    public static final Map<String, String> STAGES = new LinkedHashMap<>();
+    /** Loại dòng nhật ký S3-02. Ba loại đầu do tư vấn viên ghi, hai loại sau hệ thống tự ghi. */
+    public static final Map<String, String> LOG_TYPES = new LinkedHashMap<>();
+
+    static {
+        STAGES.put("NEW", "Mới");
+        STAGES.put("CONTACTED", "Đã liên hệ");
+        STAGES.put("CONSULTING", "Đang tư vấn");
+        STAGES.put("TRIAL_SCHEDULED", "Hẹn học thử");
+        STAGES.put("WON", "Chốt");
+        STAGES.put("REJECTED", "Từ chối");
+        LOG_TYPES.put("CALL", "Gọi");
+        LOG_TYPES.put("MESSAGE", "Nhắn");
+        LOG_TYPES.put("MEETING", "Gặp");
+        LOG_TYPES.put("STAGE", "Đổi trạng thái");
+        LOG_TYPES.put("CONVERT", "Chuyển thành học viên");
+    }
+
+    /** Sáu cột phễu, mỗi cột có số lượng và danh sách lead; overdue là số lead quá hạn gọi lại. */
+    public Map<String, Object> funnel(String keyword, long actorId, boolean seeAll) throws SQLException {
+        LocalDate today = LocalDate.now();
+        Map<String, List<Map<String, Object>>> byStage = new LinkedHashMap<>();
+        STAGES.keySet().forEach(s -> byStage.put(s, new ArrayList<>()));
+        int overdue = 0;
+        for (Map<String, Object> lead : leadDAO.funnel(keyword, seeAll ? null : actorId)) {
+            int days = overdueDays(lead, today);
+            if (days > 0) {
+                lead.put("overdueDays", days);
+                overdue++;
+            }
+            byStage.computeIfAbsent((String) lead.get("status"), k -> new ArrayList<>()).add(label(lead));
+        }
+        List<Map<String, Object>> columns = new ArrayList<>();
+        byStage.forEach((status, items) -> {
+            // Lead quá hạn lâu nhất lên đầu cột để biết hôm nay cần gọi ai trước.
+            items.sort((a, b) -> Integer.compare((int) b.getOrDefault("overdueDays", 0), (int) a.getOrDefault("overdueDays", 0)));
+            Map<String, Object> col = new LinkedHashMap<>();
+            col.put("status", status);
+            col.put("label", STAGES.getOrDefault(status, status));
+            col.put("count", items.size());
+            col.put("items", items);
+            columns.add(col);
+        });
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("today", today.toString());
+        result.put("overdue", overdue);
+        result.put("columns", columns);
+        return result;
+    }
+
+    /** Kéo thả sang cột khác. Sang Từ chối bắt buộc có lý do; rời Từ chối thì xoá lý do. Mỗi lần đổi ghi một dòng nhật ký. */
+    public Map<String, Object> changeStage(long id, String status, String reason, long actorId, boolean seeAll) throws SQLException {
+        Map<String, Object> lead = editable(id, actorId, seeAll);
+        if (status == null || status.isBlank()) throw new ValidationException("Chọn giai đoạn mới (status).");
+        String to = code(status, STAGES, "Giai đoạn");
+        String why = reason == null || reason.isBlank() ? null : reason.trim();
+        if ("REJECTED".equals(to) && why == null) {
+            throw new ApiException(400, "REJECT_REASON_REQUIRED", "Chuyển sang Từ chối phải chọn lý do.");
+        }
+        if (why != null && why.length() > 255) throw new ValidationException("Lý do tối đa 255 ký tự.");
+        String from = (String) lead.get("status");
+        if (to.equals(from) && !"REJECTED".equals(to)) return lead;
+        String text = STAGES.getOrDefault(from, from) + " → " + STAGES.get(to) + ("REJECTED".equals(to) ? ": " + why : "");
+        leadDAO.changeStage(id, to, "REJECTED".equals(to) ? why : null, actorId, text);
+        return label(leadDAO.findById(id));
+    }
+
+    // ===== S3-02: nhật ký chăm sóc =====
+
+    public List<Map<String, Object>> logs(long id, long actorId, boolean seeAll) throws SQLException {
+        visible(id, actorId, seeAll);
+        List<Map<String, Object>> items = leadDAO.logs(id);
+        items.forEach(i -> i.put("typeLabel", LOG_TYPES.getOrDefault((String) i.get("type"), (String) i.get("type"))));
+        return items;
+    }
+
+    /**
+     * Ghi một lần tương tác: type CALL, MESSAGE hoặc MEETING, nội dung, thời điểm (bỏ trống là bây giờ),
+     * callbackDate (yyyy-MM-dd) để đặt ngày nhắc gọi lại. Trả về lead sau khi ghi.
+     */
+    public Map<String, Object> addLog(long id, String type, String content, String at, String callbackDate,
+                                      long actorId, boolean seeAll) throws SQLException {
+        visible(id, actorId, seeAll);
+        if (type == null || type.isBlank()) throw new ValidationException("Chọn loại tương tác (type).");
+        String t = type.trim().toUpperCase(Locale.ROOT);
+        if (!List.of("CALL", "MESSAGE", "MEETING").contains(t)) {
+            throw new ValidationException("Loại tương tác là CALL (gọi), MESSAGE (nhắn) hoặc MEETING (gặp).");
+        }
+        if (content == null || content.isBlank()) throw new ValidationException("Nhập nội dung trao đổi.");
+        if (content.trim().length() > 2000) throw new ValidationException("Nội dung tối đa 2000 ký tự.");
+        LocalDateTime when;
+        try {
+            when = at == null || at.isBlank() ? LocalDateTime.now() : LocalDateTime.parse(at.trim());
+        } catch (DateTimeParseException e) {
+            throw new ValidationException("Thời điểm (at) phải có dạng yyyy-MM-ddTHH:mm.");
+        }
+        if (when.isAfter(LocalDateTime.now().plusMinutes(5))) throw new ValidationException("Thời điểm tương tác không được ở tương lai.");
+        LocalDate callback = date(callbackDate, "callbackDate");
+        if (callback != null && callback.isBefore(LocalDate.now())) throw new ValidationException("Ngày hẹn gọi lại phải từ hôm nay trở đi.");
+        leadDAO.addLog(id, actorId, t, content.trim(), when, callback);
+        return label(leadDAO.findById(id));
+    }
+
+    // ===== S3-03: chuyển lead thành học viên =====
+
+    /** Tạo hồ sơ học viên và tài khoản từ lead ở cột Chốt. sendTo là email nhận thông tin đăng nhập, bỏ trống thì dùng email của lead. */
+    public Map<String, Object> convert(long id, String sendTo, long actorId, boolean seeAll) throws SQLException {
+        Map<String, Object> lead = visible(id, actorId, seeAll);
+        String email = sendTo == null || sendTo.isBlank() ? (String) lead.get("email") : sendTo.trim();
+        if (email == null || email.length() > 150 || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new ApiException(400, "INVALID_EMAIL_FORMAT", "Nhập email hợp lệ để gửi thông tin đăng nhập cho học viên.");
+        }
+        return studentDAO.createFromLead(id, email, actorId);
+    }
+
+    /** Số ngày quá hạn gọi lại; lead đã chốt, từ chối hoặc đã thành học viên không tính. */
+    static int overdueDays(Map<String, Object> lead, LocalDate today) {
+        String callback = (String) lead.get("callbackDate");
+        String status = (String) lead.get("status");
+        if (callback == null || "WON".equals(status) || "REJECTED".equals(status)) return 0;
+        return (int) Math.max(0, java.time.temporal.ChronoUnit.DAYS.between(LocalDate.parse(callback), today));
+    }
+
+    /** Như visible nhưng lead đã chuyển thành học viên thì chỉ còn xem, không sửa được (S3-03). */
+    private Map<String, Object> editable(long id, long actorId, boolean seeAll) throws SQLException {
+        Map<String, Object> lead = visible(id, actorId, seeAll);
+        if (lead.get("studentId") != null) {
+            throw new ConflictException("LEAD_CONVERTED", "Lead đã chuyển thành học viên " + lead.get("studentCode") + " nên không sửa được nữa.");
+        }
+        return lead;
     }
 
     // ===== Kiểm tra dữ liệu =====

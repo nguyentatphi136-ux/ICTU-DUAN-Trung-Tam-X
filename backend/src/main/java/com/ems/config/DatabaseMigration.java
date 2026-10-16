@@ -1,9 +1,5 @@
 package com.ems.config;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
@@ -23,6 +19,7 @@ public class DatabaseMigration {
     public static void runMigration() {
         try (Connection conn = DBConnection.getConnection()) {
             runMigration(conn);
+            resetPasswords(conn);
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "Không thể kết nối CSDL để chạy migration: " + e.getMessage());
         }
@@ -134,8 +131,109 @@ public class DatabaseMigration {
                 )
             """);
 
+            // 4. Bảng của S3: nhật ký chăm sóc lead, học viên, phòng học, môn và phân công của lớp, ghi danh, buổi học.
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS lead_interactions (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    lead_id BIGINT NOT NULL,
+                    counselor_id BIGINT NOT NULL,
+                    interaction_type VARCHAR(20) NOT NULL,
+                    content TEXT NOT NULL,
+                    callback_scheduled_at DATETIME NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS students (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    user_id BIGINT NOT NULL UNIQUE,
+                    student_code VARCHAR(50) NOT NULL UNIQUE,
+                    entry_level VARCHAR(100) NULL,
+                    enrollment_status VARCHAR(20) DEFAULT 'STUDYING',
+                    notes TEXT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS classrooms (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    room_code VARCHAR(50) NOT NULL UNIQUE,
+                    room_name VARCHAR(100) NOT NULL,
+                    capacity INT NULL,
+                    room_type VARCHAR(20) DEFAULT 'PHYSICAL',
+                    meeting_url VARCHAR(255) NULL,
+                    status VARCHAR(20) DEFAULT 'AVAILABLE'
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS class_subjects (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    class_id BIGINT NOT NULL,
+                    subject_id INT NOT NULL,
+                    primary_instructor_id BIGINT NULL,
+                    status VARCHAR(20) DEFAULT 'NOT_STARTED',
+                    CONSTRAINT uk_class_subject UNIQUE (class_id, subject_id)
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS class_subject_assistants (
+                    class_subject_id BIGINT NOT NULL,
+                    ta_user_id BIGINT NOT NULL,
+                    PRIMARY KEY (class_subject_id, ta_user_id)
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS enrollments (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    class_id BIGINT NOT NULL,
+                    student_id BIGINT NOT NULL,
+                    enrollment_date DATE NOT NULL,
+                    status VARCHAR(20) DEFAULT 'ENROLLED',
+                    notes VARCHAR(255) NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT uk_class_student UNIQUE (class_id, student_id)
+                )
+            """);
+            // Lịch từng buổi thuộc S4; S3-07 chỉ đếm buổi đã học để tính tiến độ lớp.
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS class_sessions (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    class_id BIGINT NOT NULL,
+                    class_subject_id BIGINT NOT NULL,
+                    subject_lesson_id INT NULL,
+                    session_number INT NOT NULL,
+                    session_date DATE NOT NULL,
+                    start_time TIME NOT NULL,
+                    end_time TIME NOT NULL,
+                    classroom_id INT NOT NULL,
+                    instructor_id BIGINT NOT NULL,
+                    status VARCHAR(20) DEFAULT 'SCHEDULED',
+                    cancel_reason VARCHAR(255) NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """);
+
             LOGGER.info("Đã kiểm tra và đảm bảo cấu trúc bảng programs và classes thành công.");
         }
+
+        // S3: cột bổ sung so với schema.sql cũ.
+        ensureColumn(conn, "leads", "converted_student_id", "BIGINT NULL");
+        ensureColumn(conn, "leads", "callback_date", "DATE NULL");
+        ensureColumn(conn, "students", "program_id", "INT NULL");
+        ensureColumn(conn, "students", "lead_id", "BIGINT NULL");
+        ensureColumn(conn, "students", "contact_email", "VARCHAR(150) NULL");
+        ensureColumn(conn, "students", "enrolled_at", "DATE NULL");
+        ensureColumn(conn, "classrooms", "location", "VARCHAR(255) NULL");
+        ensureColumn(conn, "class_subjects", "order_index", "INT NOT NULL DEFAULT 1");
+        ensureColumn(conn, "enrollments", "enrolled_by", "BIGINT NULL");
+        // Môn vừa sao chép khi mở lớp chưa có giảng viên; phòng trực tuyến có thể không giới hạn chỗ;
+        // nhật ký chăm sóc ghi cả đổi giai đoạn và chuyển học viên nên loại tương tác không còn là ENUM bốn giá trị.
+        relaxColumn(conn, "class_subjects", "primary_instructor_id", "BIGINT NULL");
+        relaxColumn(conn, "classrooms", "capacity", "INT NULL");
+        relaxColumn(conn, "lead_interactions", "interaction_type", "VARCHAR(20) NOT NULL");
 
         ensureColumn(conn, "subjects", "credit_weight", "DECIMAL(4, 2) NOT NULL DEFAULT 1.00");
         ensureColumn(conn, "subjects", "learning_outcomes", "TEXT NULL");
@@ -153,6 +251,20 @@ public class DatabaseMigration {
         for (String table : new String[] {"users", "programs", "subjects", "leads"}) {
             ensureColumn(conn, table, "deleted_at", "DATETIME NULL");
             ensureColumn(conn, table, "deleted_by", "BIGINT NULL");
+        }
+    }
+
+    /**
+     * Mỗi lần backend khởi động (chạy local), mọi tài khoản về lại mật khẩu chung UserDAO.DEFAULT_PASSWORD và mở khoá.
+     * Đăng nhập bằng mật khẩu này thì bị buộc đổi mật khẩu (LoginApiServlet, SessionAuthFilter).
+     * Chỉ gọi lúc khởi động, không gọi trong runMigration(conn) để kiểm thử giữ nguyên mật khẩu tự tạo.
+     */
+    static void resetPasswords(Connection conn) throws SQLException {
+        if (!hasTable(conn, "users")) return;
+        try (java.sql.PreparedStatement stmt = conn.prepareStatement(
+                "UPDATE users SET password_hash = ?, failed_login_attempts = 0, locked_until = NULL")) {
+            stmt.setString(1, org.mindrot.jbcrypt.BCrypt.hashpw(com.ems.dao.UserDAO.DEFAULT_PASSWORD, org.mindrot.jbcrypt.BCrypt.gensalt(10)));
+            LOGGER.info("Đã đặt lại mật khẩu " + stmt.executeUpdate() + " tài khoản về mật khẩu mặc định.");
         }
     }
 
@@ -187,6 +299,26 @@ public class DatabaseMigration {
         if (!hasTable(conn, table) || hasColumn(conn, table, column)) return;
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("ALTER TABLE " + table + " ADD COLUMN " + column + " " + definition);
+        }
+    }
+
+    /** Đổi định nghĩa cột khi cột đang NOT NULL mà definition cho phép NULL, hoặc cột đang là ENUM. */
+    static void relaxColumn(Connection conn, String table, String column, String definition) throws SQLException {
+        DatabaseMetaData meta = conn.getMetaData();
+        boolean needed = false;
+        for (String t : new String[] {table, table.toUpperCase(Locale.ROOT)}) {
+            for (String c : new String[] {column, column.toUpperCase(Locale.ROOT)}) {
+                try (ResultSet rs = meta.getColumns(conn.getCatalog(), null, t, c)) {
+                    if (rs.next()) {
+                        needed = "ENUM".equalsIgnoreCase(rs.getString("TYPE_NAME"))
+                                || "NO".equals(rs.getString("IS_NULLABLE")) && !definition.contains("NOT NULL");
+                    }
+                }
+            }
+        }
+        if (!needed) return;
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE " + table + " MODIFY COLUMN " + column + " " + definition);
         }
     }
 

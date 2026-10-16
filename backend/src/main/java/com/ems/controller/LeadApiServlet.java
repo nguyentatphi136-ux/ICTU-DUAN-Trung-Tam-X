@@ -1,7 +1,9 @@
 package com.ems.controller;
 
 import com.ems.dao.PermissionDAO;
+import com.ems.dao.UserDAO;
 import com.ems.security.ApiResponse;
+import com.ems.service.EmailService;
 import com.ems.service.LeadService;
 import com.ems.service.LeadService.LeadInput;
 import com.google.gson.JsonElement;
@@ -13,6 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,6 +33,12 @@ import java.util.regex.Pattern;
  * POST   /api/leads/assign                      { leadIds: [1, 2], counselorId, note }
  * DELETE /api/leads/{id}                        chuyển vào thùng rác
  * GET    /api/leads/trash, POST /api/leads/{id}/restore, DELETE /api/leads/{id}/purge (chỉ ADMIN)
+ *
+ * S3-01 GET  /api/leads/funnel?q=                 sáu cột phễu, số lượng mỗi cột, số lead quá hạn gọi lại
+ * S3-01 PUT  /api/leads/{id}/stage                { status, reason }  reason bắt buộc khi sang REJECTED
+ * S3-02 GET  /api/leads/{id}/logs                 nhật ký chăm sóc, mới nhất trước
+ * S3-02 POST /api/leads/{id}/logs                 { type: CALL|MESSAGE|MEETING, content, at, callbackDate }
+ * S3-03 POST /api/leads/{id}/convert              { sendTo }  tạo học viên, tài khoản và gửi email đăng nhập
  * </pre>
  */
 @WebServlet(name = "LeadApiServlet", urlPatterns = {"/api/leads", "/api/leads/*"})
@@ -38,6 +47,9 @@ public class LeadApiServlet extends JsonApiServlet {
     private static final Pattern ITEM = Pattern.compile("^/(\\d+)$");
     private static final Pattern RESTORE = Pattern.compile("^/(\\d+)/restore$");
     private static final Pattern PURGE = Pattern.compile("^/(\\d+)/purge$");
+    private static final Pattern STAGE = Pattern.compile("^/(\\d+)/stage$");
+    private static final Pattern LOGS = Pattern.compile("^/(\\d+)/logs$");
+    private static final Pattern CONVERT = Pattern.compile("^/(\\d+)/convert$");
 
     private transient LeadService service = new LeadService();
     private transient PermissionDAO permissionDAO = new PermissionDAO();
@@ -61,6 +73,11 @@ public class LeadApiServlet extends JsonApiServlet {
                     ApiResponse.success(resp, "COUNSELOR_LIST_SUCCESS", "Tư vấn viên.", service.counselors());
                 } else if ("/trash".equals(path)) {
                     ApiResponse.success(resp, "LEAD_TRASH_SUCCESS", "Lead trong thùng rác.", service.listTrash());
+                } else if ("/funnel".equals(path)) {
+                    ApiResponse.success(resp, "LEAD_FUNNEL_SUCCESS", "Phễu lead.", service.funnel(req.getParameter("q"), actor, seeAll(actor)));
+                } else if ((m = LOGS.matcher(path)).matches()) {
+                    ApiResponse.success(resp, "LEAD_LOGS_SUCCESS", "Nhật ký chăm sóc.",
+                            service.logs(Long.parseLong(m.group(1)), actor, seeAll(actor)));
                 } else if ((m = ITEM.matcher(path)).matches()) {
                     ApiResponse.success(resp, "LEAD_DETAIL_SUCCESS", "Chi tiết lead.",
                             service.get(Long.parseLong(m.group(1)), actor, seeAll(actor)));
@@ -82,12 +99,26 @@ public class LeadApiServlet extends JsonApiServlet {
                 } else if ((m = RESTORE.matcher(path)).matches()) {
                     service.restore(Long.parseLong(m.group(1)));
                     ApiResponse.success(resp, "LEAD_RESTORED", "Đã khôi phục lead.", null);
+                } else if ((m = LOGS.matcher(path)).matches()) {
+                    JsonObject b = body(req);
+                    ApiResponse.created(resp, "LEAD_LOG_CREATED", "Đã ghi nhật ký.", service.addLog(Long.parseLong(m.group(1)),
+                            str(b, "type"), str(b, "content"), str(b, "at"), str(b, "callbackDate"), actor, seeAll(actor)));
+                } else if ((m = CONVERT.matcher(path)).matches()) {
+                    Map<String, Object> student = service.convert(Long.parseLong(m.group(1)), str(body(req), "sendTo"), actor, seeAll(actor));
+                    // Gửi sau khi đã lưu: email lỗi thì học viên vẫn được tạo, giao diện báo để gửi lại thông tin bằng tay.
+                    student.put("emailSent", EmailService.sendActivationEmail((String) student.get("email"), (String) student.get("name"),
+                            UserDAO.DEFAULT_PASSWORD, siteOrigin(req) + "/dang-nhap"));
+                    ApiResponse.created(resp, "LEAD_CONVERTED", "Đã chuyển lead thành học viên " + student.get("code") + ".", student);
                 } else {
                     notFound(resp);
                 }
             }
             case "PUT" -> {
-                if ((m = ITEM.matcher(path)).matches()) {
+                if ((m = STAGE.matcher(path)).matches()) {
+                    JsonObject b = body(req);
+                    ApiResponse.success(resp, "LEAD_STAGE_CHANGED", "Đã đổi giai đoạn.", service.changeStage(Long.parseLong(m.group(1)),
+                            str(b, "status"), str(b, "reason"), actor, seeAll(actor)));
+                } else if ((m = ITEM.matcher(path)).matches()) {
                     ApiResponse.success(resp, "LEAD_UPDATED", "Đã lưu lead.",
                             service.update(Long.parseLong(m.group(1)), input(body(req)), actor, seeAll(actor)));
                 } else {
@@ -111,6 +142,13 @@ public class LeadApiServlet extends JsonApiServlet {
             }
             default -> ApiResponse.error(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED", "Phương thức không được hỗ trợ.");
         }
+    }
+
+    /** Địa chỉ trang web người dùng đang mở (khi chạy Vite thì khác cổng backend), để đặt liên kết đăng nhập trong email. */
+    private static String siteOrigin(HttpServletRequest req) {
+        String origin = req.getHeader("Origin");
+        return origin != null && origin.matches("^https?://[\\w.:-]+$") ? origin
+                : req.getScheme() + "://" + req.getServerName() + ":" + req.getServerPort();
     }
 
     /** Có LEAD_ASSIGN thì thấy mọi lead; không có thì chỉ lead được giao cho mình. */

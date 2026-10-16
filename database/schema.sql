@@ -253,6 +253,7 @@ CREATE TABLE IF NOT EXISTS `leads` (
     `reject_reason` VARCHAR(255) NULL,
     `notes` TEXT NULL,
     `converted_student_id` BIGINT NULL COMMENT 'Liên kết sang học viên khi chốt nhập học',
+    `callback_date` DATE NULL COMMENT 'Ngày hẹn gọi lại gần nhất (S3-02), quá ngày mà lead chưa chốt hay từ chối là quá hạn',
     `deleted_at` DATETIME NULL COMMENT 'Xoá mềm: thời điểm chuyển vào thùng rác, NULL là đang dùng',
     `deleted_by` BIGINT NULL COMMENT 'Người chuyển vào thùng rác',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -268,7 +269,7 @@ CREATE TABLE IF NOT EXISTS `lead_interactions` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `lead_id` BIGINT NOT NULL,
     `counselor_id` BIGINT NOT NULL,
-    `interaction_type` ENUM('CALL', 'MESSAGE', 'MEETING', 'EMAIL') NOT NULL,
+    `interaction_type` VARCHAR(20) NOT NULL COMMENT 'CALL, MESSAGE, MEETING, EMAIL; STAGE đổi giai đoạn, CONVERT chuyển thành học viên (S3-01, S3-03)',
     `content` TEXT NOT NULL,
     `callback_scheduled_at` DATETIME NULL COMMENT 'Lịch hẹn gọi lại',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -301,6 +302,10 @@ CREATE TABLE IF NOT EXISTS `students` (
     `entry_level` VARCHAR(100) NULL COMMENT 'Trình độ đầu vào',
     `enrollment_status` ENUM('STUDYING', 'SUSPENDED', 'DROPPED_OUT', 'GRADUATED') DEFAULT 'STUDYING',
     `notes` TEXT NULL,
+    `program_id` INT NULL COMMENT 'Chương trình nhập học',
+    `lead_id` BIGINT NULL COMMENT 'Lead gốc khi chuyển từ phễu tuyển sinh (S3-03)',
+    `contact_email` VARCHAR(150) NULL COMMENT 'Email liên hệ; email đăng nhập nằm ở users.email',
+    `enrolled_at` DATE NULL COMMENT 'Ngày nhập học',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_students_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
@@ -316,8 +321,9 @@ CREATE TABLE IF NOT EXISTS `classrooms` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `room_code` VARCHAR(50) NOT NULL UNIQUE,
     `room_name` VARCHAR(100) NOT NULL,
-    `capacity` INT NOT NULL DEFAULT 30,
+    `capacity` INT NULL COMMENT 'Số chỗ; NULL là không giới hạn (chỉ phòng trực tuyến)',
     `room_type` ENUM('PHYSICAL', 'ONLINE') DEFAULT 'PHYSICAL',
+    `location` VARCHAR(255) NULL COMMENT 'Vị trí phòng vật lý',
     `meeting_url` VARCHAR(255) NULL COMMENT 'Google Meet / Zoom URL nếu là phòng online',
     `status` ENUM('AVAILABLE', 'MAINTENANCE') DEFAULT 'AVAILABLE'
 ) ENGINE=InnoDB COMMENT='Bảng danh mục phòng học';
@@ -345,8 +351,9 @@ CREATE TABLE IF NOT EXISTS `class_subjects` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `class_id` BIGINT NOT NULL,
     `subject_id` INT NOT NULL,
-    `primary_instructor_id` BIGINT NOT NULL COMMENT 'Giảng viên chính phụ trách môn',
+    `primary_instructor_id` BIGINT NULL COMMENT 'Giảng viên chính phụ trách môn, NULL là chưa phân công',
     `status` ENUM('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED') DEFAULT 'NOT_STARTED',
+    `order_index` INT NOT NULL DEFAULT 1 COMMENT 'Thứ tự môn, sao chép từ lộ trình chương trình lúc mở lớp',
     UNIQUE KEY `uk_class_subject` (`class_id`, `subject_id`),
     CONSTRAINT `fk_cs_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_cs_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE RESTRICT,
@@ -370,6 +377,7 @@ CREATE TABLE IF NOT EXISTS `enrollments` (
     `enrollment_date` DATE NOT NULL,
     `status` ENUM('ENROLLED', 'SUSPENDED', 'TRANSFERRED', 'DROPPED', 'GRADUATED') DEFAULT 'ENROLLED',
     `notes` VARCHAR(255) NULL,
+    `enrolled_by` BIGINT NULL COMMENT 'Người ghi danh (S3-06)',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY `uk_class_student` (`class_id`, `student_id`),
@@ -808,16 +816,16 @@ INSERT INTO `roles` (`id`, `role_code`, `role_name`, `description`) VALUES
 (8, 'GUEST', 'Khách truy cập', 'Xem thông tin và đăng ký tư vấn')
 ON DUPLICATE KEY UPDATE `role_name` = VALUES(`role_name`);
 
--- Seed Users mẫu (Mật khẩu mã hóa BCrypt của chuỗi '123456')
--- BCrypt hash của '123456': $2a$10$7EqJtq98hPqEX7fNZaFWoO... (hoặc tương đương)
+-- Seed Users mẫu (mật khẩu chung Tms@2026, BCrypt). Mỗi lần backend khởi động đều đặt lại về Tms@2026 (DatabaseMigration).
+-- Đăng nhập bằng mật khẩu này thì phải đổi mật khẩu trước khi dùng hệ thống.
 INSERT INTO `users` (`id`, `user_code`, `email`, `password_hash`, `full_name`, `phone`, `status`) VALUES
-(1, 'NV-ADMIN-01', 'admin@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Quản trị viên', '0901234567', 'ACTIVE'),
-(2, 'NV-QLDT-01', 'quanlydaotao@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Phạm Thị Quản', '0912345678', 'ACTIVE'),
-(3, 'NV-GV-01', 'giangvien@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Trần Thị Giảng', '0923456789', 'ACTIVE'),
-(4, 'NV-TG-01', 'trogiang@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Lê Văn Trợ', '0934567890', 'ACTIVE'),
-(5, 'HV-2026-001', 'hocvien@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Nguyễn Văn Học', '0945678901', 'ACTIVE'),
-(6, 'NV-KT-01', 'ketoan@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Đỗ Thị Kế', '0956789012', 'ACTIVE'),
-(7, 'NV-TV-01', 'tuvan@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Hoàng Văn Tư', '0967890123', 'ACTIVE')
+(1, 'NV-ADMIN-01', 'admin@edumanager.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Quản trị viên', '0901234567', 'ACTIVE'),
+(2, 'NV-QLDT-01', 'quanlydaotao@edumanager.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Phạm Thị Quản', '0912345678', 'ACTIVE'),
+(3, 'NV-GV-01', 'giangvien@edumanager.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Trần Thị Giảng', '0923456789', 'ACTIVE'),
+(4, 'NV-TG-01', 'trogiang@edumanager.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Lê Văn Trợ', '0934567890', 'ACTIVE'),
+(5, 'HV-2026-001', 'hocvien@edumanager.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Nguyễn Văn Học', '0945678901', 'ACTIVE'),
+(6, 'NV-KT-01', 'ketoan@edumanager.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Đỗ Thị Kế', '0956789012', 'ACTIVE'),
+(7, 'NV-TV-01', 'tuvan@edumanager.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'Hoàng Văn Tư', '0967890123', 'ACTIVE')
 ON DUPLICATE KEY UPDATE `full_name` = VALUES(`full_name`);
 
 -- Gán quyền tương ứng

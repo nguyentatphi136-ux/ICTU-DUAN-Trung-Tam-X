@@ -60,6 +60,14 @@ public final class PermissionPolicy {
         if ("/api/leads".equals(path) || path.startsWith("/api/leads/")) {
             return "LEAD_MANAGE";
         }
+        // S3-08: giảng viên, trợ giảng xem lớp của chính mình; danh sách đã lọc theo người đăng nhập.
+        if ("GET".equals(method) && "/api/classes/mine".equals(path)) {
+            return "@authenticated";
+        }
+        // S3-04 đến S3-09: hồ sơ học viên, lớp, ghi danh, phân công, phòng học dành cho Quản lý đào tạo.
+        if (path.matches("^/api/(classes|students|rooms)(/.*)?$")) {
+            return "CLASS_MANAGE";
+        }
         if ("POST".equals(method) && ("/api/auth/logout".equals(path) || "/api/auth/change-password".equals(path))) {
             return "@authenticated";
         }
