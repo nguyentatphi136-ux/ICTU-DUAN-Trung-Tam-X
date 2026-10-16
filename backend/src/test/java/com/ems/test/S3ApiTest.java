@@ -140,10 +140,14 @@ class S3ApiTest {
         assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/classes/mine"));
         assertEquals("CLASS_MANAGE", PermissionPolicy.requiredPermission("POST", "/api/classes"));
         assertEquals("CLASS_MANAGE", PermissionPolicy.requiredPermission("PUT", "/api/classes/WEB-K16/subjects/WEB-01"));
-        assertEquals("CLASS_MANAGE", PermissionPolicy.requiredPermission("GET", "/api/students/HV260001"));
+        assertEquals("STUDENT_READ", PermissionPolicy.requiredPermission("GET", "/api/students"));
+        assertEquals("STUDENT_READ", PermissionPolicy.requiredPermission("GET", "/api/students/HV260001"));
+        assertEquals("CLASS_MANAGE", PermissionPolicy.requiredPermission("PUT", "/api/students/HV260001"));
+        assertEquals("CLASS_READ", PermissionPolicy.requiredPermission("GET", "/api/classes"));
+        assertEquals("CLASS_READ", PermissionPolicy.requiredPermission("GET", "/api/rooms"));
         assertEquals("CLASS_MANAGE", PermissionPolicy.requiredPermission("DELETE", "/api/rooms/3"));
         assertEquals("LEAD_MANAGE", PermissionPolicy.requiredPermission("POST", "/api/leads/5/convert"));
-        assertEquals("LEAD_MANAGE", PermissionPolicy.requiredPermission("GET", "/api/leads/funnel"));
+        assertEquals("LEAD_MANAGE|LEAD_READ", PermissionPolicy.requiredPermission("GET", "/api/leads/funnel"));
         assertNull(PermissionPolicy.requiredPermission("GET", "/api/classesX"));
     }
 

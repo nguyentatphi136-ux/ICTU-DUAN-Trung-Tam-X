@@ -70,11 +70,11 @@ public class TrainingProgramAuthTest {
     }
 
     @Test
-    @DisplayName("PermissionPolicy: Các endpoint /api/training-programs yêu cầu quyền PROGRAM_MANAGE")
+    @DisplayName("PermissionPolicy: xem /api/training-programs cần PROGRAM_READ, sửa cần PROGRAM_MANAGE")
     void testPermissionPolicyMapping() {
-        assertEquals("PROGRAM_MANAGE", PermissionPolicy.requiredPermission("GET", "/api/training-programs"));
+        assertEquals("PROGRAM_READ", PermissionPolicy.requiredPermission("GET", "/api/training-programs"));
         assertEquals("PROGRAM_MANAGE", PermissionPolicy.requiredPermission("POST", "/api/training-programs"));
-        assertEquals("PROGRAM_MANAGE", PermissionPolicy.requiredPermission("GET", "/api/training-programs/1"));
+        assertEquals("PROGRAM_READ", PermissionPolicy.requiredPermission("GET", "/api/training-programs/1"));
         assertEquals("PROGRAM_MANAGE", PermissionPolicy.requiredPermission("PUT", "/api/training-programs/1"));
         assertEquals("PROGRAM_MANAGE", PermissionPolicy.requiredPermission("DELETE", "/api/training-programs/1"));
         assertEquals("PROGRAM_MANAGE", PermissionPolicy.requiredPermission("PATCH", "/api/training-programs/1/deactivate"));

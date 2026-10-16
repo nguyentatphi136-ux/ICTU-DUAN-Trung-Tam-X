@@ -21,7 +21,7 @@ export type Permission = 'F' | 'W' | 'W*' | 'R' | 'R*' | '–';
 export type AppModule = {
   name: string;
   icon: IconName;
-  /** Quyền của 6 vai trò đầu trong ROLES. Quản trị hệ thống luôn toàn quyền. */
+  /** Quyền của 6 vai trò đầu trong ROLES. Quyền của Quản trị hệ thống cố định, xem adminPerm. */
   perms: Permission[];
   /** Đường dẫn nếu màn hình đã được làm. */
   to?: string;
@@ -59,15 +59,23 @@ const ROLE_LINKS: Record<number, Record<string, string>> = {
 
 export type MenuItem = { name: string; icon: IconName; to?: string };
 
+/**
+ * Quản trị hệ thống chỉ quản lý tài khoản, vai trò và nhật ký (Product Backlog sheet 4: S1-05, S1-08, S1-09, S1-10,
+ * S2-01, S6-11), không vào các module nghiệp vụ. Riêng xoá vĩnh viễn trong thùng rác vẫn là của Quản trị (mentor S2).
+ */
+export const adminPerm = (moduleName: string): Permission => (moduleName === USERS_MODULE ? 'F' : '–');
+
+const permOf = (roleIndex: number, m: AppModule) => (roleIndex === ADMIN_ROLE ? adminPerm(m.name) : m.perms[roleIndex]);
+
 /** Menu của một vai trò: chỉ gồm module có quyền khác "–". */
 export function menuFor(roleIndex: number): MenuItem[] {
   const home: MenuItem = { name: 'Trang chủ', icon: 'home', to: '/' };
-  const mods = MODULES.filter((m) => roleIndex === ADMIN_ROLE || m.perms[roleIndex] !== '–');
+  const mods = MODULES.filter((m) => permOf(roleIndex, m) !== '–');
   return [home, ...mods.map((m) => ({ name: m.name, icon: m.icon, to: ROLE_LINKS[roleIndex]?.[m.name] ?? m.to }))];
 }
 
 /** Vai trò có được dùng module không (dùng để chặn trang, trả về 403). Quyền thật phải kiểm ở máy chủ. */
 export function canAccess(roleIndex: number, moduleName: string): boolean {
   const m = MODULES.find((x) => x.name === moduleName);
-  return !!m && (roleIndex === ADMIN_ROLE || m.perms[roleIndex] !== '–');
+  return !!m && permOf(roleIndex, m) !== '–';
 }

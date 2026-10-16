@@ -6,7 +6,6 @@ import { useToast } from '../../components/Toast';
 import { Filter, LoadState, Pager, paginate, Pill, Search, usePaging } from '../../components/ui';
 import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
-import { ADMIN_ROLE } from '../../data/permissions';
 import { COUNSELORS, LEAD_STATUSES, leadTone, LEADS, SOURCES, viDate, type Lead } from '../../data/leads';
 import { assignLeads, loadCounselors, loadPublicPrograms, restoreItem, saveLead, searchLeads, trashLead, type Counselor, type PublicProgram } from '../../data/s2api';
 import { moveToTrash, restore } from '../../data/trash';
@@ -37,8 +36,9 @@ export function LeadListPage() {
 
   const role = user?.active ?? -1;
   const counselor = role === 3;
-  const manager = role === 5 || role === ADMIN_ROLE;
-  const canWrite = counselor || manager;
+  // Sheet 2: Tư vấn toàn quyền lead; Quản lý đào tạo chỉ xem, phân công, xoá (S2-10); Kế toán chỉ xem.
+  const manager = role === 5;
+  const canWrite = counselor;
 
   // Có backend: dữ liệu của trang hiện tại, tổng số lead khớp bộ lọc, tư vấn viên và chương trình.
   const [total, setTotal] = useState(0);

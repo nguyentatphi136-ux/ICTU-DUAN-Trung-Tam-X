@@ -40,7 +40,8 @@ export function FunnelPage() {
   const [openId, setOpenId] = useState<number | null>(Number(params.get('lead')) || null);
 
   const role = user?.active ?? -1;
-  const canWrite = role === 3 || role === 5 || role === 6;
+  // Sheet 2: chỉ Tư vấn tuyển sinh sửa lead; Quản lý đào tạo, Kế toán chỉ xem.
+  const canWrite = role === 3;
 
   const [programs, setPrograms] = useState<PublicProgram[]>([]);
   const load = useLoad(async () => {

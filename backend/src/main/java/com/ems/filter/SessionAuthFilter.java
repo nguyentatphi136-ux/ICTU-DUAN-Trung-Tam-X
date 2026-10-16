@@ -94,7 +94,15 @@ public class SessionAuthFilter implements Filter {
         }
         if (!"@authenticated".equals(requiredPermission)) {
             try {
-                if (!permissionDAO.hasPermission(currentUser.getId(), requiredPermission)) {
+                // "A|B": có một trong các quyền là đủ (ví dụ xem thùng rác: quyền module hoặc TRASH_PURGE).
+                boolean allowed = false;
+                for (String permission : requiredPermission.split("\\|")) {
+                    if (permissionDAO.hasPermission(currentUser.getId(), permission)) {
+                        allowed = true;
+                        break;
+                    }
+                }
+                if (!allowed) {
                     ApiResponse.error(resp, HttpServletResponse.SC_FORBIDDEN, "AUTH_FORBIDDEN",
                             "Bạn không có quyền thực hiện chức năng này.", "Về trang làm việc", "/index.html");
                     return;

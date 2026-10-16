@@ -49,20 +49,42 @@ public final class PermissionPolicy {
                 && ("/api/profile".equals(path) || "/api/user/profile".equals(path))) {
             return "@authenticated";
         }
-        if (path.startsWith("/api/training-programs") || "/api/subjects".equals(path) || path.startsWith("/api/subjects/")) {
-            return "PROGRAM_MANAGE";
+        // Nhận xét mentor S2: chỉ Quản trị xoá vĩnh viễn. Quản trị không có quyền module (sheet 4 chỉ giao tài khoản)
+        // nên dùng TRASH_PURGE; xem thùng rác cần quyền module hoặc TRASH_PURGE ("A|B" là một trong hai).
+        if ("DELETE".equals(method) && path.matches("^/api/(training-programs|subjects|leads)/\\d+/purge$")) {
+            return "TRASH_PURGE";
         }
-        // S2-10: phân công, xem tư vấn viên, xoá và thùng rác lead chỉ dành cho người điều phối (Quản trị, Quản lý đào tạo).
-        if (path.matches("^/api/leads/(assign|counselors|trash)$") || path.matches("^/api/leads/\\d+/(restore|purge)$")
+        if ("GET".equals(method) && path.matches("^/api/(training-programs|subjects)/trash$")) {
+            return "PROGRAM_MANAGE|TRASH_PURGE";
+        }
+        if ("GET".equals(method) && "/api/leads/trash".equals(path)) {
+            return "LEAD_ASSIGN|TRASH_PURGE";
+        }
+        // Sheet "2. User Roles": nhiều vai trò được xem (R) chương trình, môn học; chỉ Quản lý đào tạo được sửa.
+        // GET dùng PROGRAM_READ, riêng thùng rác và mọi thao tác ghi vẫn cần PROGRAM_MANAGE.
+        if (path.startsWith("/api/training-programs") || "/api/subjects".equals(path) || path.startsWith("/api/subjects/")) {
+            return "GET".equals(method) && !path.endsWith("/trash") ? "PROGRAM_READ" : "PROGRAM_MANAGE";
+        }
+        // S2-10: phân công, xem tư vấn viên, xoá vào thùng rác và khôi phục lead dành cho người điều phối (Quản lý đào tạo).
+        if (path.matches("^/api/leads/(assign|counselors)$") || path.matches("^/api/leads/\\d+/restore$")
                 || "DELETE".equals(method) && path.matches("^/api/leads/\\d+$")) {
             return "LEAD_ASSIGN";
         }
+        // Sheet 2: Tư vấn toàn quyền lead (LEAD_MANAGE); Kế toán, Quản lý đào tạo chỉ xem (LEAD_READ).
         if ("/api/leads".equals(path) || path.startsWith("/api/leads/")) {
-            return "LEAD_MANAGE";
+            return "GET".equals(method) ? "LEAD_MANAGE|LEAD_READ" : "LEAD_MANAGE";
         }
         // S3-08: giảng viên, trợ giảng xem lớp của chính mình; danh sách đã lọc theo người đăng nhập.
         if ("GET".equals(method) && "/api/classes/mine".equals(path)) {
             return "@authenticated";
+        }
+        // Sheet 2 "Lớp học & thời khoá biểu": trợ giảng, giảng viên, tư vấn xem (R); sửa vẫn cần CLASS_MANAGE.
+        if ("GET".equals(method) && path.matches("^/api/(classes|rooms)(/.*)?$")) {
+            return "CLASS_READ";
+        }
+        // S3-04: xem danh sách, hồ sơ học viên (giảng viên, trợ giảng, tư vấn, kế toán...); sửa vẫn cần CLASS_MANAGE.
+        if ("GET".equals(method) && path.matches("^/api/students(/[^/]+)?$")) {
+            return "STUDENT_READ";
         }
         // S3-04 đến S3-09: hồ sơ học viên, lớp, ghi danh, phân công, phòng học dành cho Quản lý đào tạo.
         if (path.matches("^/api/(classes|students|rooms)(/.*)?$")) {

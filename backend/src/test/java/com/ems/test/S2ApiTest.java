@@ -265,28 +265,40 @@ class S2ApiTest {
     // ===== Phân quyền =====
 
     @Test
-    @DisplayName("Phân quyền: môn học cần PROGRAM_MANAGE; phân công, xoá, thùng rác lead cần LEAD_ASSIGN")
+    @DisplayName("Phân quyền: xem môn học cần PROGRAM_READ, sửa cần PROGRAM_MANAGE; phân công lead cần LEAD_ASSIGN; xoá vĩnh viễn cần TRASH_PURGE")
     void permissionPolicy() {
-        assertEquals("PROGRAM_MANAGE", PermissionPolicy.requiredPermission("GET", "/api/subjects"));
+        assertEquals("PROGRAM_READ", PermissionPolicy.requiredPermission("GET", "/api/subjects"));
+        assertEquals("PROGRAM_READ", PermissionPolicy.requiredPermission("GET", "/api/subjects/WEB-01/lessons"));
+        assertEquals("PROGRAM_READ", PermissionPolicy.requiredPermission("GET", "/api/training-programs/5"));
+        assertEquals("PROGRAM_MANAGE|TRASH_PURGE", PermissionPolicy.requiredPermission("GET", "/api/training-programs/trash"));
+        assertEquals("PROGRAM_MANAGE", PermissionPolicy.requiredPermission("PUT", "/api/training-programs/5"));
         assertEquals("PROGRAM_MANAGE", PermissionPolicy.requiredPermission("POST", "/api/subjects/WEB-01/lessons/clone"));
-        assertEquals("LEAD_MANAGE", PermissionPolicy.requiredPermission("GET", "/api/leads"));
+        assertEquals("LEAD_MANAGE|LEAD_READ", PermissionPolicy.requiredPermission("GET", "/api/leads"));
         assertEquals("LEAD_MANAGE", PermissionPolicy.requiredPermission("PUT", "/api/leads/5"));
         assertEquals("LEAD_ASSIGN", PermissionPolicy.requiredPermission("POST", "/api/leads/assign"));
         assertEquals("LEAD_ASSIGN", PermissionPolicy.requiredPermission("DELETE", "/api/leads/5"));
-        assertEquals("LEAD_ASSIGN", PermissionPolicy.requiredPermission("GET", "/api/leads/trash"));
+        assertEquals("LEAD_ASSIGN|TRASH_PURGE", PermissionPolicy.requiredPermission("GET", "/api/leads/trash"));
+        assertEquals("PROGRAM_MANAGE|TRASH_PURGE", PermissionPolicy.requiredPermission("GET", "/api/subjects/trash"));
+        // Xoá vĩnh viễn: chỉ Quản trị (TRASH_PURGE), Quản trị không có quyền module nghiệp vụ.
+        assertEquals("TRASH_PURGE", PermissionPolicy.requiredPermission("DELETE", "/api/leads/5/purge"));
+        assertEquals("TRASH_PURGE", PermissionPolicy.requiredPermission("DELETE", "/api/subjects/5/purge"));
+        assertEquals("TRASH_PURGE", PermissionPolicy.requiredPermission("DELETE", "/api/training-programs/5/purge"));
+        assertEquals("LEAD_ASSIGN", PermissionPolicy.requiredPermission("POST", "/api/leads/5/restore"));
         assertNull(PermissionPolicy.requiredPermission("GET", "/api/leadsX"));
     }
 
     @Test
-    @DisplayName("Migration: LEAD_ASSIGN chỉ gán ở lần đầu, quyền đã thu hồi không bị gán lại khi khởi động")
+    @DisplayName("Migration: quyền lead gán theo sheet 2 ở lần đầu, quyền đã thu hồi không bị gán lại khi khởi động")
     void seedLeadAssignOnce() throws SQLException {
         exec("INSERT INTO permissions (permission_code, permission_name, module) VALUES ('LEAD_MANAGE', 'Lead', 'ADMISSIONS')");
         try (Connection c = DBConnection.getConnection()) {
             DatabaseMigration.runMigration(c);
         }
         PermissionDAO dao = new PermissionDAO();
-        assertTrue(dao.hasPermission(20, "LEAD_ASSIGN"));
-        assertTrue(dao.hasPermission(20, "LEAD_MANAGE"));
+        assertTrue(dao.hasPermission(20, "LEAD_ASSIGN"), "Quản lý đào tạo phân công lead (S2-10)");
+        assertTrue(dao.hasPermission(20, "LEAD_READ"));
+        assertFalse(dao.hasPermission(20, "LEAD_MANAGE"), "Quản lý đào tạo chỉ xem lead (sheet 2)");
+        assertTrue(dao.hasPermission(10, "LEAD_MANAGE"));
         assertFalse(dao.hasPermission(10, "LEAD_ASSIGN"));
 
         exec("DELETE FROM role_permissions WHERE role_id = 2");

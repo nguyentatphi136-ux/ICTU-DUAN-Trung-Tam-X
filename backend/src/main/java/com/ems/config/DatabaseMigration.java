@@ -2,10 +2,16 @@ package com.ems.config;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -241,7 +247,7 @@ public class DatabaseMigration {
         ensureColumn(conn, "subjects", "credit_weight", "DECIMAL(4, 2) NOT NULL DEFAULT 1.00");
         ensureColumn(conn, "subjects", "learning_outcomes", "TEXT NULL");
         ensureColumn(conn, "subjects", "status", "VARCHAR(20) DEFAULT 'ACTIVE'");
-        seedLeadAssignPermission(conn);
+        applyRolePermissions(conn);
         renameSeedEmails(conn);
 
         // schema.sql cũ đặt tên cột là duration_months, còn DAO và migration S2-04 dùng duration.
@@ -273,30 +279,75 @@ public class DatabaseMigration {
         }
     }
 
+    private static final List<String> BASE = List.of("MENU_VIEW", "DASHBOARD_VIEW", "PROFILE_VIEW");
+
     /**
-     * S2-10: quyền LEAD_ASSIGN (xem mọi lead, phân công, xoá) cho Quản trị và Quản lý đào tạo; Quản lý đào tạo được thêm
-     * LEAD_MANAGE để mở danh sách lead. Chỉ gán ở lần đầu tạo quyền, để quản trị thu hồi ở S1-05 thì khởi động lại không gán lại.
+     * Quyền từng vai trò theo Product Backlog: sheet 2 "User Roles" (ma trận module x vai trò) và sheet 4 (vai trò của
+     * từng story). Quản trị chỉ quản lý tài khoản (S1-05, S1-08, S1-09, S1-10, S2-01) và xoá vĩnh viễn (nhận xét mentor S2).
+     * Quản lý đào tạo chỉ xem lead (R) nhưng phân công được (S2-10). Phải khớp database/schema.sql.
      */
-    static void seedLeadAssignPermission(Connection conn) throws SQLException {
+    static final Map<String, List<String>> ROLE_PERMISSIONS = Map.of(
+            "ADMIN", with("USER_READ", "USER_CREATE", "USER_ROLE_ASSIGN", "ROLE_PERMISSION_READ", "ROLE_PERMISSION_UPDATE", "TRASH_PURGE"),
+            "TRAINING_MANAGER", with("PROGRAM_MANAGE", "PROGRAM_READ", "STUDENT_READ", "CLASS_MANAGE", "CLASS_READ", "SCHEDULE_READ",
+                    "LEAD_READ", "LEAD_ASSIGN", "ATTENDANCE_MANAGE", "ASSIGNMENT_READ", "GRADE_MANAGE", "GRADE_READ", "FINANCE_READ",
+                    "REPORT_VIEW", "USER_READ"),
+            "ADMISSIONS", with("LEAD_MANAGE", "PROGRAM_READ", "STUDENT_READ", "CLASS_READ", "SCHEDULE_READ", "FINANCE_READ", "REPORT_VIEW"),
+            "INSTRUCTOR", with("PROGRAM_READ", "STUDENT_READ", "CLASS_READ", "SCHEDULE_READ", "ATTENDANCE_MANAGE", "ASSIGNMENT_MANAGE",
+                    "GRADE_MANAGE", "GRADE_READ", "REPORT_VIEW"),
+            "TA", with("PROGRAM_READ", "STUDENT_READ", "CLASS_READ", "SCHEDULE_READ", "ATTENDANCE_MANAGE", "ASSIGNMENT_MANAGE", "GRADE_READ"),
+            "ACCOUNTANT", with("LEAD_READ", "STUDENT_READ", "FINANCE_MANAGE", "FINANCE_READ", "REPORT_VIEW"),
+            "STUDENT", with("PROGRAM_READ", "SCHEDULE_READ", "ASSIGNMENT_READ", "GRADE_READ", "FINANCE_READ"),
+            "GUEST", List.of("CONSULTATION_CREATE"));
+
+    /** Quyền thêm sau schema.sql đầu tiên: CSDL cũ chưa có thì tạo. { mã, tên, module, mô tả } */
+    private static final String[][] NEW_PERMISSIONS = {
+            {"LEAD_ASSIGN", "Phân công lead", "ADMISSIONS", "Xem mọi lead, phân công tư vấn viên và xoá lead"},
+            {"LEAD_READ", "Xem lead", "ADMISSIONS", "Xem danh sách lead, phễu và nhật ký chăm sóc"},
+            {"PROGRAM_READ", "Xem chương trình", "PROGRAM", "Xem chương trình, môn học, lộ trình"},
+            {"STUDENT_READ", "Xem hồ sơ học viên", "CLASS", "Xem danh sách và hồ sơ học viên"},
+            {"CLASS_READ", "Xem lớp học", "CLASS", "Xem lớp, ghi danh, người dạy và phòng học"},
+            {"TRASH_PURGE", "Xoá vĩnh viễn", "SYSTEM", "Xem thùng rác các module và xoá vĩnh viễn"}};
+
+    private static List<String> with(String... extra) {
+        List<String> all = new ArrayList<>(BASE);
+        all.addAll(List.of(extra));
+        return all;
+    }
+
+    /**
+     * Gán quyền mọi vai trò đúng ROLE_PERMISSIONS. Chỉ chạy một lần, khi CSDL chưa có quyền CLASS_READ (tạo từ schema.sql
+     * cũ); sau đó quản trị chỉnh ở S1-05 thì khởi động lại không ghi đè.
+     */
+    static void applyRolePermissions(Connection conn) throws SQLException {
         if (!hasTable(conn, "permissions") || !hasTable(conn, "roles") || !hasTable(conn, "role_permissions")) return;
-        try (java.sql.PreparedStatement check = conn.prepareStatement("SELECT 1 FROM permissions WHERE permission_code = 'LEAD_ASSIGN'");
-             ResultSet rs = check.executeQuery()) {
-            if (rs.next()) return;
+        Set<String> existing = new HashSet<>();
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery("SELECT permission_code FROM permissions")) {
+            while (rs.next()) existing.add(rs.getString(1));
         }
-        try (Statement stmt = conn.createStatement()) {
-            stmt.execute("INSERT INTO permissions (permission_code, permission_name, module, description) "
-                    + "VALUES ('LEAD_ASSIGN', 'Phân công lead', 'ADMISSIONS', 'Xem mọi lead, phân công tư vấn viên và xoá lead')");
-        }
-        String grant = "INSERT INTO role_permissions (role_id, permission_id) "
-                + "SELECT r.id, p.id FROM roles r, permissions p WHERE r.role_code = ? AND p.permission_code = ? "
-                + "AND NOT EXISTS (SELECT 1 FROM role_permissions rp WHERE rp.role_id = r.id AND rp.permission_id = p.id)";
-        try (java.sql.PreparedStatement stmt = conn.prepareStatement(grant)) {
-            for (String[] g : new String[][] {{"ADMIN", "LEAD_ASSIGN"}, {"TRAINING_MANAGER", "LEAD_ASSIGN"}, {"TRAINING_MANAGER", "LEAD_MANAGE"}}) {
-                stmt.setString(1, g[0]);
-                stmt.setString(2, g[1]);
-                stmt.executeUpdate();
+        if (existing.contains("CLASS_READ")) return;
+        try (PreparedStatement add = conn.prepareStatement(
+                "INSERT INTO permissions (permission_code, permission_name, module, description) VALUES (?, ?, ?, ?)")) {
+            for (String[] p : NEW_PERMISSIONS) {
+                if (existing.contains(p[0])) continue;
+                for (int i = 0; i < 4; i++) add.setString(i + 1, p[i]);
+                add.executeUpdate();
             }
         }
+        try (PreparedStatement clear = conn.prepareStatement(
+                     "DELETE FROM role_permissions WHERE role_id IN (SELECT id FROM roles WHERE role_code = ?)");
+             PreparedStatement grant = conn.prepareStatement("INSERT INTO role_permissions (role_id, permission_id) "
+                     + "SELECT r.id, p.id FROM roles r, permissions p WHERE r.role_code = ? AND p.permission_code = ?")) {
+            for (Map.Entry<String, List<String>> role : ROLE_PERMISSIONS.entrySet()) {
+                clear.setString(1, role.getKey());
+                clear.executeUpdate();
+                grant.setString(1, role.getKey());
+                for (String permission : role.getValue()) {
+                    grant.setString(2, permission);
+                    grant.executeUpdate();
+                }
+            }
+        }
+        LOGGER.info("Đã gán lại quyền các vai trò theo Product Backlog (sheet 2, 4).");
     }
 
     /** CSDL tạo từ schema.sql cũ có tài khoản mẫu @edumanager.vn; đổi sang email theo mã như frontend (A25200212001@tms.vn...). */

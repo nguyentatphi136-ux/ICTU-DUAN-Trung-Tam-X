@@ -47,7 +47,8 @@ export function StudentProfilePage({ actions }: Props) {
   // Có backend: tải hồ sơ đầy đủ và lớp đang học (để hiện sĩ số, tiến độ).
   const load = useLoad(async () => {
     const st = await loadStudent(code);
-    if (st.cls) await loadClass(st.cls);
+    // Kế toán không có quyền xem lớp (sheet 2): bỏ qua, trang vẫn hiện hồ sơ.
+    if (st.cls) await loadClass(st.cls).catch(() => undefined);
   }, [code]);
   const s = findStudent(code);
   const role = user?.active ?? -1;

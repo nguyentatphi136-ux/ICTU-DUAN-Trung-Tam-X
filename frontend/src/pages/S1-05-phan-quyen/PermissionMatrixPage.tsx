@@ -3,7 +3,7 @@ import { AppLayout } from '../../components/AppLayout';
 import { Link } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { MODULES, ROLES, USERS_MODULE, type Permission } from '../../data/permissions';
+import { adminPerm, MODULES, ROLES, USERS_MODULE, type Permission } from '../../data/permissions';
 import './matrix.css';
 
 const OPTIONS: Permission[] = ['F', 'W', 'W*', 'R', 'R*', '–'];
@@ -16,7 +16,7 @@ const LEGEND: [Permission, string][] = [
 const tone = (p: Permission) => ({ F: 'mx-f', W: 'mx-w', R: 'mx-r', '–': 'mx-n' })[p[0] as 'F' | 'W' | 'R' | '–'];
 const initial = () => MODULES.map((m) => [...m.perms]);
 
-// S1-05. Ma trận module × vai trò. Mỗi ô là danh sách chọn; cột Quản trị hệ thống bị khoá ở toàn quyền.
+// S1-05. Ma trận module × vai trò. Mỗi ô là danh sách chọn; cột Quản trị hệ thống cố định theo adminPerm.
 // Khi tích hợp: GET/PUT /admin/permissions. Máy chủ kiểm quyền mọi API, mặc định là từ chối.
 export function PermissionMatrixPage() {
   const toast = useToast();
@@ -94,8 +94,8 @@ export function PermissionMatrixPage() {
                   </td>
                 ))}
                 <td>
-                  <span className="mx-cell mx-f locked" title="Quản trị hệ thống luôn toàn quyền">
-                    F
+                  <span className={'mx-cell locked ' + tone(adminPerm(m.name))} title="Quản trị hệ thống chỉ quản lý tài khoản (cố định)">
+                    {adminPerm(m.name)}
                     <Icon name="lock" />
                   </span>
                 </td>
@@ -105,7 +105,7 @@ export function PermissionMatrixPage() {
         </table>
       </div>
       <p className="hint mx-foot">
-        * Chỉ trên dữ liệu của chính mình hoặc của lớp mình phụ trách. Mọi chức năng đều kiểm quyền ở tầng server, mặc định là từ chối. Cột Quản trị hệ thống bị khoá ở toàn quyền.
+        * Chỉ trên dữ liệu của chính mình hoặc của lớp mình phụ trách. Mọi chức năng đều kiểm quyền ở tầng server, mặc định là từ chối. Cột Quản trị hệ thống cố định: chỉ quản lý tài khoản, vai trò và nhật ký; riêng xoá vĩnh viễn trong thùng rác vẫn do Quản trị làm.
       </p>
     </AppLayout>
   );

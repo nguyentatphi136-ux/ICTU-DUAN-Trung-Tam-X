@@ -54,8 +54,13 @@ INSERT INTO `permissions` (`permission_code`, `permission_name`, `module`, `desc
 ('ROLE_PERMISSION_UPDATE', 'Cập nhật phân quyền', 'AUTH', 'Gán hoặc thu hồi quyền cho vai trò'),
 ('PROGRAM_MANAGE', 'Quản lý chương trình', 'PROGRAM', 'Quản lý chương trình đào tạo'),
 ('CLASS_MANAGE', 'Quản lý lớp học', 'CLASS', 'Mở lớp và phân công'),
+('PROGRAM_READ', 'Xem chương trình', 'PROGRAM', 'Xem chương trình, môn học, lộ trình'),
+('STUDENT_READ', 'Xem hồ sơ học viên', 'CLASS', 'Xem danh sách và hồ sơ học viên'),
+('CLASS_READ', 'Xem lớp học', 'CLASS', 'Xem lớp, ghi danh, người dạy và phòng học'),
+('TRASH_PURGE', 'Xoá vĩnh viễn', 'SYSTEM', 'Xem thùng rác các module và xoá vĩnh viễn'),
 ('LEAD_MANAGE', 'Quản lý tuyển sinh', 'ADMISSIONS', 'Quản lý khách hàng tiềm năng'),
 ('LEAD_ASSIGN', 'Phân công lead', 'ADMISSIONS', 'Xem mọi lead, phân công tư vấn viên và xoá lead'),
+('LEAD_READ', 'Xem lead', 'ADMISSIONS', 'Xem danh sách lead, phễu và nhật ký chăm sóc'),
 ('ATTENDANCE_MANAGE', 'Quản lý điểm danh', 'ATTENDANCE', 'Điểm danh học viên'),
 ('ASSIGNMENT_MANAGE', 'Quản lý bài tập', 'ASSIGNMENT', 'Giao và quản lý bài tập'),
 ('ASSIGNMENT_READ', 'Xem bài tập', 'ASSIGNMENT', 'Xem và nộp bài tập'),
@@ -68,39 +73,42 @@ INSERT INTO `permissions` (`permission_code`, `permission_name`, `module`, `desc
 ('CONSULTATION_CREATE', 'Gửi yêu cầu tư vấn', 'PUBLIC', 'Đăng ký tư vấn công khai')
 ON DUPLICATE KEY UPDATE `permission_name` = VALUES(`permission_name`);
 
--- ADMIN nhận toàn bộ quyền. Mỗi role nghiệp vụ chỉ nhận đúng tập quyền của mình.
-INSERT INTO `role_permissions` (`role_id`, `permission_id`)
-SELECT r.id, p.id FROM `roles` r CROSS JOIN `permissions` p WHERE r.role_code = 'ADMIN'
-ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
-
+-- Quyền từng vai trò theo Product Backlog: sheet 2 "User Roles" (ma trận module x vai trò) và sheet 4 (vai trò của story).
+-- ADMIN chỉ quản lý tài khoản (S1-05, S1-08, S1-09, S1-10, S2-01) và xoá vĩnh viễn (nhận xét mentor S2).
+-- TRAINING_MANAGER chỉ xem lead (R) nhưng phân công được (S2-10). Phải khớp DatabaseMigration.ROLE_PERMISSIONS.
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_MANAGE','CLASS_MANAGE','SCHEDULE_READ','REPORT_VIEW','LEAD_MANAGE','LEAD_ASSIGN')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','USER_READ','USER_CREATE','USER_ROLE_ASSIGN','ROLE_PERMISSION_READ','ROLE_PERMISSION_UPDATE','TRASH_PURGE')
+WHERE r.role_code = 'ADMIN'
+ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_MANAGE','PROGRAM_READ','STUDENT_READ','CLASS_MANAGE','CLASS_READ','SCHEDULE_READ','LEAD_READ','LEAD_ASSIGN','ATTENDANCE_MANAGE','ASSIGNMENT_READ','GRADE_MANAGE','GRADE_READ','FINANCE_READ','REPORT_VIEW','USER_READ')
 WHERE r.role_code = 'TRAINING_MANAGER'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','LEAD_MANAGE')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','LEAD_MANAGE','PROGRAM_READ','STUDENT_READ','CLASS_READ','SCHEDULE_READ','FINANCE_READ','REPORT_VIEW')
 WHERE r.role_code = 'ADMISSIONS'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','SCHEDULE_READ','ATTENDANCE_MANAGE','ASSIGNMENT_MANAGE','GRADE_MANAGE')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_READ','STUDENT_READ','CLASS_READ','SCHEDULE_READ','ATTENDANCE_MANAGE','ASSIGNMENT_MANAGE','GRADE_MANAGE','GRADE_READ','REPORT_VIEW')
 WHERE r.role_code = 'INSTRUCTOR'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','SCHEDULE_READ','ATTENDANCE_MANAGE','ASSIGNMENT_MANAGE')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_READ','STUDENT_READ','CLASS_READ','SCHEDULE_READ','ATTENDANCE_MANAGE','ASSIGNMENT_MANAGE','GRADE_READ')
 WHERE r.role_code = 'TA'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','SCHEDULE_READ','ASSIGNMENT_READ','GRADE_READ','FINANCE_READ')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_READ','SCHEDULE_READ','ASSIGNMENT_READ','GRADE_READ','FINANCE_READ')
 WHERE r.role_code = 'STUDENT'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','FINANCE_MANAGE','REPORT_VIEW')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','LEAD_READ','STUDENT_READ','FINANCE_MANAGE','FINANCE_READ','REPORT_VIEW')
 WHERE r.role_code = 'ACCOUNTANT'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)

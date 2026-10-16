@@ -151,9 +151,9 @@ public class LeadApiServlet extends JsonApiServlet {
                 : req.getScheme() + "://" + req.getServerName() + ":" + req.getServerPort();
     }
 
-    /** Có LEAD_ASSIGN thì thấy mọi lead; không có thì chỉ lead được giao cho mình. */
+    /** Có LEAD_ASSIGN hoặc LEAD_READ (Kế toán, Quản lý đào tạo xem theo sheet 2) thì thấy mọi lead; tư vấn viên chỉ thấy lead của mình. */
     private boolean seeAll(long actorId) throws SQLException {
-        return permissionDAO.hasPermission(actorId, "LEAD_ASSIGN");
+        return permissionDAO.hasPermission(actorId, "LEAD_ASSIGN") || permissionDAO.hasPermission(actorId, "LEAD_READ");
     }
 
     private static LeadInput input(JsonObject b) {
