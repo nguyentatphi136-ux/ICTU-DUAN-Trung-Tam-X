@@ -52,6 +52,14 @@ Status is the state found **before** fixes. Each report's "Verification result" 
 
 Remaining backend FAILs: CSP missing; Swagger UI public.
 
+Re-scan 2026-10-16 23:35 (:8085, after the API-only backend change and later commits): **1 FAIL / 0 WARN / 9 PASS**.
+Only CSP is still missing. Swagger/`/api-docs` and the old JSP pages are no longer served (404 JSON).
+`/api/admin/users;.json` and `/api/students;.js` still return 401.
+
+Found after the first audit: a real Gmail app password was hardcoded as the `SMTP_PASSWORD` default in
+`EmailService.java` (removed in commit `b8b457c`). It is still in git history of a public repo, so it **must be
+revoked** in the Google account; deleting it from the code is not enough.
+
 Frontend (:5173, Vite dev server, unchanged): 5 FAIL / 3 WARN / 9 PASS. The header FAILs come from the Vite dev server and have to be fixed in the production host's config. The Swagger FAIL is the backend behind the proxy.
 
 All results are **local only** and say nothing yet about any deployment.
