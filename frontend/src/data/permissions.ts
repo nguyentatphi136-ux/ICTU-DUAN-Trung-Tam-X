@@ -57,7 +57,8 @@ const ROLE_LINKS: Record<number, Record<string, string>> = {
   4: { 'Học phí & công nợ': '/hoc-phi/cong-no', 'Báo cáo & dashboard': '/hoc-phi/bao-cao' },
 };
 
-export type MenuItem = { name: string; icon: IconName; to?: string };
+/** exact: chỉ sáng khi đang ở đúng trang này (các mục Quản trị cùng nằm dưới /quan-tri). */
+export type MenuItem = { name: string; icon: IconName; to?: string; exact?: boolean };
 
 /**
  * Quản trị hệ thống chỉ quản lý tài khoản, vai trò và nhật ký (Product Backlog sheet 4: S1-05, S1-08, S1-09, S1-10,
@@ -67,9 +68,19 @@ export const adminPerm = (moduleName: string): Permission => (moduleName === USE
 
 const permOf = (roleIndex: number, m: AppModule) => (roleIndex === ADMIN_ROLE ? adminPerm(m.name) : m.perms[roleIndex]);
 
+/** Menu Quản trị: mỗi chức năng (story) một mục riêng thay vì gộp chung module "Người dùng & nhật ký". */
+const ADMIN_MENU: MenuItem[] = [
+  { name: 'Tài khoản', icon: 'users', to: '/quan-tri/tai-khoan', exact: true }, // S1-08, S1-09, S1-10
+  { name: 'Phân quyền', icon: 'shield', to: '/quan-tri/phan-quyen', exact: true }, // S1-05
+  { name: 'Nhập người dùng từ Excel', icon: 'upload', to: '/quan-tri/nhap-excel', exact: true }, // S2-01
+  { name: 'Nhật ký thao tác', icon: 'clock', to: '/quan-tri/nhat-ky', exact: true }, // S6-11
+  { name: 'Thùng rác', icon: 'trash', to: '/quan-tri/thung-rac', exact: true }, // xoá vĩnh viễn (mentor S2)
+];
+
 /** Menu của một vai trò: chỉ gồm module có quyền khác "–". */
 export function menuFor(roleIndex: number): MenuItem[] {
   const home: MenuItem = { name: 'Trang chủ', icon: 'home', to: '/' };
+  if (roleIndex === ADMIN_ROLE) return [home, ...ADMIN_MENU];
   const mods = MODULES.filter((m) => permOf(roleIndex, m) !== '–');
   return [home, ...mods.map((m) => ({ name: m.name, icon: m.icon, to: ROLE_LINKS[roleIndex]?.[m.name] ?? m.to }))];
 }
