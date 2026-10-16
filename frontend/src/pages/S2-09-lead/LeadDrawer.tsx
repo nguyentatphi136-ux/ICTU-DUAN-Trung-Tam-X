@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { ConfirmDialog, Drawer } from '../../components/ui';
+import { apiEnabled } from '../../data/api';
+import { samePhoneLeads } from '../../data/s2api';
 import { LEAD_STATUSES, samePhone, SOURCES, type Lead, type LeadStatus } from '../../data/leads';
 import { PROGRAMS } from '../../data/training';
 import { isPhone, PHONE_MSG } from '../../data/validate';
@@ -14,10 +16,13 @@ type Props = {
   onClose: () => void;
   onSave: (l: Lead) => void;
   onDelete: (l: Lead) => void;
+  /** Tên chương trình cho ô "Chương trình quan tâm"; mặc định lấy từ dữ liệu mẫu. */
+  programs?: string[];
 };
 
 // S2-09. Thêm và sửa lead. Số điện thoại trùng lead đã có thì cảnh báo, vẫn cho lưu nếu người dùng muốn.
-export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, onSave, onDelete }: Props) {
+// Có backend: kiểm tra trùng bằng /api/leads/check-phone (tìm trong mọi lead, không chỉ trang đang xem).
+export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, onSave, onDelete, programs = PROGRAMS.map((p) => p.name) }: Props) {
   const [f, setF] = useState({
     name: lead?.name ?? '',
     phone: lead?.phone ?? '',
@@ -33,7 +38,19 @@ export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, 
     setF((x) => ({ ...x, [k]: e.target.value }));
     setErrors((x) => ({ ...x, [k]: '' }));
   };
-  const dup = f.phone.replace(/\D/g, '').length >= 10 ? leads.find((l) => l.id !== lead?.id && samePhone(l.phone, f.phone)) : undefined;
+  const phoneDigits = f.phone.replace(/\D/g, '');
+  const [remoteDup, setRemoteDup] = useState<Lead>();
+  useEffect(() => {
+    setRemoteDup(undefined);
+    if (!apiEnabled || phoneDigits.length < 10) return;
+    let alive = true;
+    const t = setTimeout(() => samePhoneLeads(phoneDigits, lead?.id).then((l) => alive && setRemoteDup(l[0]), () => {}), 300);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [phoneDigits, lead?.id]);
+  const dup = apiEnabled ? remoteDup : phoneDigits.length >= 10 ? leads.find((l) => l.id !== lead?.id && samePhone(l.phone, f.phone)) : undefined;
 
   function save() {
     const e: Record<string, string> = {};
@@ -137,7 +154,7 @@ export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, 
         </div>
         <div className="grid2">
           {select('source', 'Nguồn', SOURCES)}
-          {select('program', 'Chương trình quan tâm', PROGRAMS.map((p) => p.name))}
+          {select('program', 'Chương trình quan tâm', f.program && !programs.includes(f.program) ? [...programs, f.program] : programs)}
         </div>
         {lead && select('status', 'Trạng thái', LEAD_STATUSES)}
         <div className="field">

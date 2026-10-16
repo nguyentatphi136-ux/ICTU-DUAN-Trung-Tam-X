@@ -3,14 +3,17 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Box, ConfirmDialog, Drawer, Filter, Pager, paginate, RowMenu, Search, usePaging } from '../../components/ui';
+import { Box, ConfirmDialog, Drawer, Filter, LoadState, Pager, paginate, RowMenu, Search, usePaging } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
 import { CURRICULUM, LESSONS, PROGRAMS, programsUsing, SUBJECTS, type Subject } from '../../data/training';
+import { loadTraining, restoreItem, saveSubject, trashSubject } from '../../data/s2api';
 import { moveToTrash, restore } from '../../data/trash';
 import { MODULE, TrainingTabs, useCanEditTraining } from '../../components/TrainingTabs';
 
 // S2-05. Môn học dùng lại được ở nhiều chương trình: cột Dùng trong ghi tên chương trình, gán chương trình ngay trong form.
 // Môn đã có lớp học thì không có nút xoá. Xoá là chuyển vào thùng rác, gỡ môn khỏi các lộ trình (khôi phục thì gắn lại).
+// Có backend: đọc và ghi qua /api/subjects, lưu xong thì tải lại môn học và lộ trình.
 export function SubjectListPage() {
   const toast = useToast();
   const navigate = useNavigate();
@@ -22,6 +25,10 @@ export function SubjectListPage() {
   const [editing, setEditing] = useState<Subject | 'new' | null>(null);
   const [deleting, setDeleting] = useState<Subject | null>(null);
   const { user } = useAuth();
+  const load = useLoad(async () => {
+    await loadTraining();
+    setItems([...SUBJECTS]);
+  });
 
   const filtered = useMemo(() => {
     const k = q.trim().toLowerCase();
@@ -36,7 +43,25 @@ export function SubjectListPage() {
     SUBJECTS.splice(0, SUBJECTS.length, ...list);
     setItems(list);
   };
-  const trash = (s: Subject) => {
+  /** Có backend: gửi thay đổi rồi tải lại; trả false nếu máy chủ từ chối (đã báo lỗi). */
+  const sync = async (work: () => Promise<unknown>) => {
+    try {
+      await work();
+      await loadTraining();
+      setItems([...SUBJECTS]);
+      return true;
+    } catch (e) {
+      toast('Chưa lưu được', (e as Error).message);
+      return false;
+    }
+  };
+  const trash = async (s: Subject) => {
+    if (apiEnabled) {
+      setDeleting(null);
+      if (await sync(() => trashSubject(s.code)))
+        toast('Đã chuyển vào thùng rác', s.name, { label: 'Hoàn tác', onClick: () => void sync(() => restoreItem('subject', s.id!)) });
+      return;
+    }
     const id = moveToTrash({ kind: 'subject', item: s, usedIn: [] }, s.name, user?.name ?? '');
     setItems([...SUBJECTS]);
     setDeleting(null);
@@ -63,6 +88,7 @@ export function SubjectListPage() {
         )}
       </div>
       <TrainingTabs />
+      <LoadState {...load} />
       <div className="bar">
         <Search placeholder="Tìm theo mã hoặc tên môn" value={q} onChange={(v) => (setQ(v), setPage(1))} />
         <Filter label="Chương trình" value={program} options={PROGRAMS.map((p) => p.name)} onChange={(v) => (setProgram(v), setPage(1))} width={260} />
@@ -127,7 +153,12 @@ export function SubjectListPage() {
           subject={editing === 'new' ? null : editing}
           items={items}
           onClose={() => setEditing(null)}
-          onSave={(s, programs) => {
+          onSave={async (s, programs) => {
+            if (apiEnabled) {
+              if (!(await sync(() => saveSubject(s, programs, editing === 'new' ? undefined : editing.code)))) return;
+              toast('Đã lưu môn học', s.name);
+              return setEditing(null);
+            }
             if (editing !== 'new' && editing.code !== s.code) renameSubject(editing.code, s.code);
             assignPrograms(s.code, programs);
             commit(editing === 'new' ? [...items, s] : items.map((x) => (x.code === editing.code ? s : x)));

@@ -17,6 +17,8 @@ public class TrainingProgramResponse {
     private String status;
     private String createdAt;
     private String updatedAt;
+    /** Số lớp đang chạy; còn lớp chạy thì không được xoá (S2-04). */
+    private int runningClasses;
 
     public TrainingProgramResponse() {
     }
@@ -39,6 +41,14 @@ public class TrainingProgramResponse {
             resp.setUpdatedAt(sdf.format(program.getUpdatedAt()));
         }
         return resp;
+    }
+
+    public int getRunningClasses() {
+        return runningClasses;
+    }
+
+    public void setRunningClasses(int runningClasses) {
+        this.runningClasses = runningClasses;
     }
 
     public Integer getId() {

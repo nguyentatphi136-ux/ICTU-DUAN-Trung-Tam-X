@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
-import { Search } from '../../components/ui';
-import { api, ApiError, apiEnabled, json } from '../../data/api';
+import { LoadState, Search } from '../../components/ui';
+import { ApiError, apiEnabled, useLoad } from '../../data/api';
+import { addToCurriculum, loadTraining, removeFromCurriculum, reorderCurriculum, setPrereq } from '../../data/s2api';
 import { saveAll } from '../../data/store';
 import { CURRICULUM, PROGRAMS, SUBJECTS, type CurriculumItem } from '../../data/training';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
@@ -17,8 +18,8 @@ type SaveState = { kind: 'saving' | 'saved' | 'error'; text: string } | null;
 
 // S2-06. Lộ trình môn của một chương trình: kéo thả hoặc bấm mũi tên lên/xuống để đổi thứ tự (dùng được cả
 // bàn phím và màn cảm ứng), thêm bằng nút +, gỡ bằng ×. Môn tiên quyết chỉ chọn được từ các môn đứng trước.
-// Có backend: đổi thứ tự gọi PUT /api/training-programs/:code/subjects, chỉ báo "Đã lưu" khi máy chủ nhận.
-// Chưa có backend: lưu vào dữ liệu mẫu, giữ qua tải trang.
+// Có backend: mỗi thay đổi (thứ tự, thêm, gỡ, môn tiên quyết) gửi lên /api/training-programs/:code/subjects,
+// chỉ báo "Đã lưu" khi máy chủ nhận; máy chủ từ chối thì trả về như cũ. Chưa có backend: lưu vào dữ liệu mẫu.
 export function CurriculumPage() {
   const code = useParams().code ?? '';
   const program = PROGRAMS.find((p) => p.code === code);
@@ -28,31 +29,46 @@ export function CurriculumPage() {
   const [dragging, setDragging] = useState<number | null>(null);
   const [over, setOver] = useState<number | null>(null);
   const [q, setQ] = useState('');
+  const load = useLoad(async () => {
+    await loadTraining();
+    setItems(CURRICULUM[code] ?? []);
+  }, [code]);
 
+  if (apiEnabled && (load.loading || load.error))
+    return (
+      <AppLayout crumb={[MODULE, 'Chương trình']} module={MODULE}>
+        <LoadState {...load} />
+      </AppLayout>
+    );
   if (!program) return <ErrorPage code="404" />;
 
-  const commit = (list: CurriculumItem[], reorder = false) => {
+  /** send: lệnh gửi lên máy chủ khi có backend, trả về lộ trình mới do máy chủ tính. */
+  const commit = (list: CurriculumItem[], send: () => Promise<CurriculumItem[]>) => {
     const prev = items;
     // Môn tiên quyết phải đứng trước: bỏ những môn không còn đứng trước sau khi đổi thứ tự hoặc gỡ.
     const fixed = list.map((it, i) => ({ ...it, prereq: it.prereq.filter((p) => list.slice(0, i).some((x) => x.code === p)) }));
     CURRICULUM[code] = fixed;
     setItems(fixed);
     saveAll();
-    if (!apiEnabled || !reorder) return setSave({ kind: 'saved', text: 'Đã lưu lúc ' + hhmm() });
-    setSave({ kind: 'saving', text: 'Đang lưu thứ tự…' });
-    api(`/api/training-programs/${encodeURIComponent(code)}/subjects`, json('PUT', { subjectCodes: fixed.map((x) => x.code) }))
-      .then(() => setSave({ kind: 'saved', text: 'Đã lưu thứ tự lúc ' + hhmm() }))
+    if (!apiEnabled) return setSave({ kind: 'saved', text: 'Đã lưu lúc ' + hhmm() });
+    setSave({ kind: 'saving', text: 'Đang lưu…' });
+    send()
+      .then((server) => {
+        CURRICULUM[code] = server;
+        setItems(server);
+        setSave({ kind: 'saved', text: 'Đã lưu lúc ' + hhmm() });
+      })
       .catch((e: ApiError) => {
         CURRICULUM[code] = prev;
         setItems(prev);
-        setSave({ kind: 'error', text: 'Chưa lưu được thứ tự: ' + e.message });
+        setSave({ kind: 'error', text: 'Chưa lưu được: ' + e.message });
       });
   };
   const move = (from: number, to: number) => {
     if (from === to || to < 0 || to >= items.length) return;
     const list = [...items];
     list.splice(to, 0, list.splice(from, 1)[0]);
-    commit(list, true);
+    commit(list, () => reorderCurriculum(code, list.map((x) => x.code)));
   };
   const endDrag = () => {
     setDragging(null);
@@ -121,7 +137,7 @@ export function CurriculumPage() {
                   value={it.prereq}
                   options={items.slice(0, i).map((x) => x.code)}
                   disabled={!canEdit}
-                  onChange={(prereq) => commit(items.map((x, j) => (j === i ? { ...x, prereq } : x)))}
+                  onChange={(prereq) => commit(items.map((x, j) => (j === i ? { ...x, prereq } : x)), () => setPrereq(code, it.code, prereq))}
                 />
                 {canEdit && (
                   <span className="cu-moves">
@@ -131,7 +147,7 @@ export function CurriculumPage() {
                     <button type="button" className="icon-btn" aria-label={'Đưa ' + (s?.name ?? it.code) + ' xuống dưới'} disabled={i === items.length - 1} onClick={() => move(i, i + 1)}>
                       <Icon name="down" />
                     </button>
-                    <button type="button" className="icon-btn" aria-label={'Gỡ ' + (s?.name ?? it.code)} onClick={() => commit(items.filter((_, j) => j !== i))}>
+                    <button type="button" className="icon-btn" aria-label={'Gỡ ' + (s?.name ?? it.code)} onClick={() => commit(items.filter((_, j) => j !== i), () => removeFromCurriculum(code, it.code))}>
                       <Icon name="x" />
                     </button>
                   </span>
@@ -154,7 +170,7 @@ export function CurriculumPage() {
                     {s.code} · {s.sessions} buổi
                   </span>
                 </div>
-                <button type="button" className="btn cu-plus" aria-label={'Thêm ' + s.name} onClick={() => commit([...items, { code: s.code, prereq: [] }])}>
+                <button type="button" className="btn cu-plus" aria-label={'Thêm ' + s.name} onClick={() => commit([...items, { code: s.code, prereq: [] }], () => addToCurriculum(code, s.code))}>
                   <Icon name="plus" />
                 </button>
               </div>

@@ -3,9 +3,11 @@ import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { MODULE as TRAINING_MODULE, TrainingTabs } from '../../components/TrainingTabs';
-import { ConfirmDialog, Pager, paginate, Pill, Search, usePaging } from '../../components/ui';
+import { ConfirmDialog, LoadState, Pager, paginate, Pill, Search, usePaging } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
 import { ADMIN_ROLE, USERS_MODULE } from '../../data/permissions';
+import { loadTrash, purgeFromTrash, restoreItem, type ServerTrashItem, type ServerTrashKind } from '../../data/s2api';
 import { KIND_LABEL, purge, restore, TRASH, type TrashEntry, type TrashKind } from '../../data/trash';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
 
@@ -21,13 +23,18 @@ const when = (iso: string) => new Date(iso).toLocaleString('vi-VN', { dateStyle:
 
 // Thùng rác (nhận xét mentor): bản ghi bị xoá nằm đây, khôi phục về chỗ cũ hoặc xoá vĩnh viễn.
 // Khôi phục: người có quyền sửa module. Xoá vĩnh viễn: chỉ Quản trị hệ thống, có hộp xác nhận đỏ.
+// Có backend: đọc thùng rác trên máy chủ (chương trình, môn học, lead, tài khoản). Buổi học xoá hẳn nên không có ở đây.
+type Row = Pick<TrashEntry, 'id' | 'kind' | 'label' | 'deletedAt' | 'deletedBy'> & { server?: ServerTrashItem };
+const fromServer = (t: ServerTrashItem): Row => ({ id: t.kind + ':' + t.serverId, kind: t.kind, label: t.label, deletedAt: t.deletedAt, deletedBy: t.deletedBy, server: t });
+
 export function TrashPage({ area }: { area: Area }) {
   const conf = AREAS[area];
   const { user } = useAuth();
   const toast = useToast();
-  const [items, setItems] = useState<TrashEntry[]>(() => TRASH.filter((t) => conf.kinds.includes(t.kind)));
+  const [items, setItems] = useState<Row[]>(() => TRASH.filter((t) => conf.kinds.includes(t.kind)));
+  const load = useLoad(async () => setItems((await loadTrash(conf.kinds.filter((k) => k !== 'lesson') as ServerTrashKind[])).map(fromServer)), [area]);
   const [q, setQ] = useState('');
-  const [purging, setPurging] = useState<TrashEntry | null>(null);
+  const [purging, setPurging] = useState<Row | null>(null);
   const { page, setPage, size, setSize } = usePaging();
 
   const filtered = useMemo(() => {
@@ -40,7 +47,17 @@ export function TrashPage({ area }: { area: Area }) {
   const isAdmin = user.active === ADMIN_ROLE;
   if (!isAdmin && !conf.editors.includes(user.active)) return <ErrorPage code="403" />;
 
-  const reload = () => setItems(TRASH.filter((t) => conf.kinds.includes(t.kind)));
+  const reload = () => (apiEnabled ? load.reload() : setItems(TRASH.filter((t) => conf.kinds.includes(t.kind))));
+  /** Có backend: gửi lệnh lên máy chủ; trả lý do nếu bị từ chối. Không có backend: thao tác trên dữ liệu mẫu. */
+  const run = async (t: Row, server: (s: ServerTrashItem) => Promise<unknown>, local: (id: string) => string | null | void) => {
+    if (!t.server) return local(t.id) || null;
+    try {
+      await server(t.server);
+      return null;
+    } catch (e) {
+      return (e as Error).message;
+    }
+  };
 
   return (
     <AppLayout crumb={conf.crumb} module={conf.module}>
@@ -51,6 +68,7 @@ export function TrashPage({ area }: { area: Area }) {
         </div>
       </div>
       {area === 'training' && <TrainingTabs />}
+      <LoadState {...load} />
       <div className="bar">
         <Search placeholder="Tìm theo tên" value={q} onChange={(v) => (setQ(v), setPage(1))} />
       </div>
@@ -80,8 +98,8 @@ export function TrashPage({ area }: { area: Area }) {
                       type="button"
                       className="btn"
                       style={{ height: 34 }}
-                      onClick={() => {
-                        const why = restore(t.id);
+                      onClick={async () => {
+                        const why = await run(t, (s) => restoreItem(s.kind, s.serverId), restore);
                         if (why) return toast('Chưa khôi phục được', why);
                         reload();
                         toast('Đã khôi phục', t.label);
@@ -118,8 +136,12 @@ export function TrashPage({ area }: { area: Area }) {
           permanent
           title="Xoá vĩnh viễn?"
           onClose={() => setPurging(null)}
-          onConfirm={() => {
-            purge(purging.id);
+          onConfirm={async () => {
+            const why = await run(purging, purgeFromTrash, purge);
+            if (why) {
+              setPurging(null);
+              return toast('Chưa xoá được', why);
+            }
             reload();
             setPurging(null);
             toast('Đã xoá vĩnh viễn', purging.label);

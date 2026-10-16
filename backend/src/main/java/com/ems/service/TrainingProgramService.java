@@ -72,9 +72,8 @@ public class TrainingProgramService {
         List<TrainingProgram> items = (List<TrainingProgram>) searchResult.get("items");
         long total = (long) searchResult.get("total");
 
-        List<TrainingProgramResponse> responseList = items.stream()
-                .map(TrainingProgramResponse::fromEntity)
-                .toList();
+        List<TrainingProgramResponse> responseList = new java.util.ArrayList<>();
+        for (TrainingProgram p : items) responseList.add(withRunningClasses(p));
 
         return new TrainingProgramPageResponse(responseList, total, page, pageSize);
     }
@@ -87,7 +86,13 @@ public class TrainingProgramService {
         if (program == null) {
             throw new ResourceNotFoundException("Không tìm thấy chương trình đào tạo với ID: " + id);
         }
-        return TrainingProgramResponse.fromEntity(program);
+        return withRunningClasses(program);
+    }
+
+    private TrainingProgramResponse withRunningClasses(TrainingProgram program) throws SQLException {
+        TrainingProgramResponse resp = TrainingProgramResponse.fromEntity(program);
+        resp.setRunningClasses(trainingProgramDAO.countRunningClassesByProgramId(program.getId()));
+        return resp;
     }
 
     /**

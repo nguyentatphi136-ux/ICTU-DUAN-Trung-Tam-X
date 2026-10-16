@@ -25,6 +25,7 @@ Mã lỗi: `SUBJECT_CODE_CONFLICT` (409, mã đã dùng, kể cả môn trong th
 
 | Phương thức | Đường dẫn | Ghi chú |
 |---|---|---|
+| GET | `/api/training-programs?size=500` | Danh sách chương trình (S2-04), mỗi chương trình có thêm `runningClasses` |
 | GET | `/api/training-programs/{code}/subjects` | `[{ code, name, sessions, order, prereq: ["WEB-01"] }]` |
 | PUT | `/api/training-programs/{code}/subjects` | `{ subjectCodes }`, đổi thứ tự (đã có từ trước). Môn tiên quyết không còn đứng trước sẽ bị bỏ |
 | POST | `/api/training-programs/{code}/subjects` | `{ subjectCode }`, thêm vào cuối. 409 `SUBJECT_ALREADY_IN_PROGRAM` |
@@ -66,7 +67,7 @@ Cần quyền `LEAD_MANAGE`. Người có thêm quyền `LEAD_ASSIGN` (Quản tr
 | POST | `/api/leads` | LEAD_MANAGE | `{ name, phone, email, source, programCode, status, note }` |
 | PUT | `/api/leads/{id}` | LEAD_MANAGE | Cùng thân như POST |
 | GET | `/api/leads/counselors` | LEAD_ASSIGN | `[{ id, name, email, openLeads }]` |
-| POST | `/api/leads/assign` | LEAD_ASSIGN | `{ leadIds, counselorId, note }`. Trả `{ assigned }` là số lead thực sự đổi người phụ trách |
+| POST | `/api/leads/assign` | LEAD_ASSIGN | `{ leadIds, counselorId, note }`. Trả `{ assigned }` là số lead thực sự đổi người phụ trách. Lead `NEW` chuyển sang `CONSULTING` |
 | DELETE | `/api/leads/{id}` | LEAD_ASSIGN | Chuyển vào thùng rác |
 | GET | `/api/leads/trash` | LEAD_ASSIGN | |
 | POST | `/api/leads/{id}/restore` | LEAD_ASSIGN | |

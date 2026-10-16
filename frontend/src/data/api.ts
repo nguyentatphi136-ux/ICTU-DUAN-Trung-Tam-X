@@ -1,3 +1,5 @@
+import { useEffect, useState } from 'react';
+
 // Gọi backend Java khi có biến môi trường VITE_API_URL (ví dụ http://localhost:8080).
 // Vite chuyển tiếp /api sang địa chỉ đó (vite.config.js) nên cookie phiên dùng chung một origin.
 // Không đặt VITE_API_URL thì các trang chạy bằng dữ liệu mẫu trong data/*.ts như trước.
@@ -37,3 +39,25 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const json = (method: string, data: unknown): RequestInit => ({ method, body: JSON.stringify(data) });
+
+/**
+ * Có backend: chạy load khi mở trang và mỗi khi deps đổi; trả loading, error và reload() để tải lại.
+ * Không có backend: không làm gì, trang dùng dữ liệu mẫu như cũ.
+ */
+export function useLoad(load: () => Promise<unknown>, deps: unknown[] = []) {
+  const [state, setState] = useState({ loading: apiEnabled, error: '' });
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    if (!apiEnabled) return;
+    let alive = true;
+    setState((s) => ({ ...s, loading: true }));
+    load().then(
+      () => alive && setState({ loading: false, error: '' }),
+      (e: Error) => alive && setState({ loading: false, error: e.message }),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [...deps, tick]);
+  return { ...state, reload: () => setTick((t) => t + 1) };
+}

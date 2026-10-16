@@ -2,8 +2,9 @@
 // /training/subjects/:code/sessions. Mảng ở đây được sửa trực tiếp để các trang dùng chung một nguồn khi chưa có API.
 import { persisted } from './store';
 
-export type Program = { code: string; name: string; description: string; hours: number; fee: number; runningClasses: number; active: boolean };
-export type Subject = { code: string; name: string; sessions: number; weight: number; outcome: string; openedClasses: number };
+/** id: mã số trên máy chủ, chỉ có khi chạy với backend. */
+export type Program = { id?: number; code: string; name: string; description: string; hours: number; fee: number; runningClasses: number; active: boolean };
+export type Subject = { id?: number; code: string; name: string; sessions: number; weight: number; outcome: string; openedClasses: number };
 export type CurriculumItem = { code: string; prereq: string[] };
 export type Lesson = { topic: string; goal: string };
 

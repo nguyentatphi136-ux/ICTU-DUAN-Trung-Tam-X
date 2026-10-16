@@ -9,7 +9,8 @@ export type Lead = {
   source: string;
   program: string;
   status: LeadStatus;
-  /** Tên tư vấn viên phụ trách, rỗng là chưa phân công. */
+  /** Tên tư vấn viên phụ trách, rỗng là chưa phân công. ownerId chỉ có khi chạy với backend. */
+  ownerId?: number;
   owner: string;
   createdAt: string; // yyyy-mm-dd
   note?: string;

@@ -141,7 +141,7 @@ class S2ApiServletTest {
 
         Result assigned = call(s, "POST", "/assign", "{\"leadIds\":[" + id + "],\"counselorId\":10,\"note\":\"Cuối tuần\"}", 20L);
         assertEquals(1, assigned.json().getAsJsonObject("data").get("assigned").getAsInt());
-        Result mine = call(s, "GET", "", null, 10L, Map.of("status", "NEW", "owner", "10"));
+        Result mine = call(s, "GET", "", null, 10L, Map.of("status", "CONSULTING", "owner", "10"));
         assertEquals(1, mine.json().getAsJsonObject("data").get("total").getAsInt());
 
         assertEquals(400, call(s, "GET", "", null, 20L, Map.of("from", "28/09/2026")).status());

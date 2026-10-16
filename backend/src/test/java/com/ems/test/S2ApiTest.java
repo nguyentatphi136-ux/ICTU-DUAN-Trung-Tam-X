@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -138,7 +137,9 @@ class S2ApiTest {
         @SuppressWarnings("unchecked")
         Map<String, Object> db = ((List<Map<String, Object>>) page.get("items")).get(0);
         assertEquals(1, db.get("openedClasses"));
-        assertEquals("WEB-FS", ((List<Map<String, Object>>) db.get("programs")).get(0).get("code"));
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> programs = (List<Map<String, Object>>) db.get("programs");
+        assertEquals("WEB-FS", programs.get(0).get("code"));
     }
 
     // ===== S2-06 lộ trình =====
@@ -222,6 +223,7 @@ class S2ApiTest {
         assertEquals(0, count("SELECT COUNT(*) FROM lead_assignments"), "Lỗi giữa chừng thì không giao lead nào");
 
         assertEquals(2, leads.assign(List.of(a, b), 10L, "Lead cuối tuần", 20).get("assigned"));
+        assertEquals("CONSULTING", leads.get(b, 20, true).get("status"), "Lead Mới được giao thì sang Đang chăm sóc");
         assertEquals(0, leads.assign(List.of(a), 10L, null, 20).get("assigned"), "Giao lại cho đúng người cũ thì bỏ qua");
         leads.assign(List.of(a), 11L, null, 20);
 

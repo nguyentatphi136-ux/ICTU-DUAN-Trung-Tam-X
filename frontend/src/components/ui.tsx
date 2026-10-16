@@ -62,6 +62,26 @@ export function Box({ icon, tone, title, children }: { icon: IconName; tone?: 'o
   );
 }
 
+/** Trạng thái tải dữ liệu từ máy chủ (useLoad trong data/api.ts): đang tải, hoặc lỗi kèm nút Thử lại. */
+export function LoadState({ loading, error, reload }: { loading: boolean; error: string; reload: () => void }) {
+  if (error)
+    return (
+      <div style={{ marginBottom: 16 }}>
+        <Box icon="alert" tone="bad" title="Không tải được dữ liệu từ máy chủ">
+          {error}{' '}
+          <button type="button" className="link" onClick={reload}>
+            Thử lại
+          </button>
+        </Box>
+      </div>
+    );
+  return loading ? (
+    <p className="hint" role="status" style={{ marginBottom: 12 }}>
+      Đang tải dữ liệu…
+    </p>
+  ) : null;
+}
+
 export const PAGE_SIZES = [10, 20, 50];
 
 /** Trang hiện tại và số dòng mỗi trang; đổi số dòng thì về trang 1. */

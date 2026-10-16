@@ -1,17 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Box, ConfirmDialog, Modal, Pill } from '../../components/ui';
+import { Box, ConfirmDialog, LoadState, Modal, Pill } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
 import { LESSONS, SUBJECTS, type Lesson } from '../../data/training';
+import { addLesson, cloneLessons, deleteLesson, loadLessons, loadTraining, updateLesson } from '../../data/s2api';
 import { moveToTrash, restore } from '../../data/trash';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
 import { MODULE, useCanEditTraining } from '../../components/TrainingTabs';
 
 // S2-07. Buổi học của một môn: số thứ tự, chủ đề, mục tiêu. Không khai báo quá số buổi của môn.
-// Nhân bản danh sách buổi từ môn khác, cảnh báo trước khi ghi đè. Khi tích hợp: /training/subjects/:code/sessions.
+// Nhân bản danh sách buổi từ môn khác, cảnh báo trước khi ghi đè.
+// Có backend: đọc và ghi qua /api/subjects/:code/lessons; xoá buổi là xoá hẳn (máy chủ chưa có thùng rác cho buổi học).
 export function SessionsPage() {
   const code = useParams().code ?? '';
   const subject = SUBJECTS.find((s) => s.code === code);
@@ -22,14 +25,39 @@ export function SessionsPage() {
   const [cloning, setCloning] = useState(false);
   const [deleting, setDeleting] = useState<number | null>(null);
   const { user } = useAuth();
+  const load = useLoad(async () => {
+    await loadTraining();
+    setLessons(await loadLessons(code));
+  }, [code]);
 
+  if (apiEnabled && (load.loading || load.error))
+    return (
+      <AppLayout crumb={[MODULE, 'Môn học']} module={MODULE}>
+        <LoadState {...load} />
+      </AppLayout>
+    );
   if (!subject) return <ErrorPage code="404" />;
 
   const commit = (list: Lesson[]) => {
     LESSONS[code] = list;
     setLessons(list);
   };
-  const trash = (i: number) => {
+  /** Có backend: gửi lên máy chủ và hiện danh sách máy chủ trả về; trả false nếu bị từ chối (đã báo lỗi). */
+  const sync = async (send: () => Promise<Lesson[]>) => {
+    try {
+      setLessons(await send());
+      return true;
+    } catch (e) {
+      toast('Chưa lưu được', (e as Error).message);
+      return false;
+    }
+  };
+  const trash = async (i: number) => {
+    if (apiEnabled) {
+      setDeleting(null);
+      if (await sync(() => deleteLesson(code, i))) toast('Đã xoá buổi học', `Buổi ${i + 1}: ${lessons[i].topic}`);
+      return;
+    }
     const l = lessons[i];
     const id = moveToTrash({ kind: 'lesson', item: l, subject: code, index: i }, `${subject.name} · Buổi ${i + 1}: ${l.topic}`, user?.name ?? '');
     setLessons([...(LESSONS[code] ?? [])]);
@@ -124,8 +152,10 @@ export function SessionsPage() {
           index={editing === 'new' ? lessons.length : editing}
           lesson={editing === 'new' ? undefined : lessons[editing]}
           onClose={() => setEditing(null)}
-          onSave={(l) => {
-            commit(editing === 'new' ? [...lessons, l] : lessons.map((x, j) => (j === editing ? l : x)));
+          onSave={async (l) => {
+            if (apiEnabled) {
+              if (!(await sync(() => (editing === 'new' ? addLesson(code, l) : updateLesson(code, editing, l))))) return;
+            } else commit(editing === 'new' ? [...lessons, l] : lessons.map((x, j) => (j === editing ? l : x)));
             setEditing(null);
           }}
         />
@@ -136,15 +166,17 @@ export function SessionsPage() {
           targetSessions={subject.sessions}
           current={lessons.length}
           onClose={() => setCloning(false)}
-          onClone={(list) => {
-            commit(list.slice(0, subject.sessions));
+          onClone={async (from, list) => {
+            if (apiEnabled) {
+              if (!(await sync(() => cloneLessons(code, from)))) return;
+            } else commit(list.slice(0, subject.sessions));
             setCloning(false);
             toast('Đã nhân bản danh sách buổi', `${Math.min(list.length, subject.sessions)} buổi`);
           }}
         />
       )}
       {deleting !== null && lessons[deleting] && (
-        <ConfirmDialog title="Chuyển buổi học vào thùng rác?" onClose={() => setDeleting(null)} onConfirm={() => trash(deleting)}>
+        <ConfirmDialog title={apiEnabled ? 'Xoá buổi học?' : 'Chuyển buổi học vào thùng rác?'} permanent={apiEnabled} onClose={() => setDeleting(null)} onConfirm={() => trash(deleting)}>
           Buổi <b>{deleting + 1}: {lessons[deleting].topic}</b> sẽ bị gỡ, các buổi sau được đánh số lại.
         </ConfirmDialog>
       )}
@@ -194,10 +226,17 @@ function LessonModal({ index, lesson, onClose, onSave }: { index: number; lesson
   );
 }
 
-function CloneDialog({ target, targetSessions, current, onClose, onClone }: { target: string; targetSessions: number; current: number; onClose: () => void; onClone: (l: Lesson[]) => void }) {
-  const sources = SUBJECTS.filter((s) => s.code !== target && LESSONS[s.code]?.length);
+type CloneProps = { target: string; targetSessions: number; current: number; onClose: () => void; onClone: (from: string, l: Lesson[]) => void };
+
+function CloneDialog({ target, targetSessions, current, onClose, onClone }: CloneProps) {
+  // Có backend: chưa biết trước môn nào đã có buổi, nên liệt kê mọi môn và tải buổi của môn đang chọn.
+  const sources = SUBJECTS.filter((s) => s.code !== target && (apiEnabled || LESSONS[s.code]?.length));
   const [from, setFrom] = useState(sources[0]?.code ?? '');
-  const list = LESSONS[from] ?? [];
+  const [fetched, setFetched] = useState<Lesson[]>([]);
+  useEffect(() => {
+    if (apiEnabled && from) loadLessons(from).then(setFetched, () => setFetched([]));
+  }, [from]);
+  const list = apiEnabled ? fetched : (LESSONS[from] ?? []);
   const n = Math.min(list.length, targetSessions);
   return (
     <Modal onClose={onClose} label="Nhân bản danh sách buổi">
@@ -208,7 +247,7 @@ function CloneDialog({ target, targetSessions, current, onClose, onClone }: { ta
           <select id="cl-from" value={from} onChange={(e) => setFrom(e.target.value)}>
             {sources.map((s) => (
               <option key={s.code} value={s.code}>
-                {s.code} · {s.name} · {LESSONS[s.code].length} buổi
+                {s.code} · {s.name}{apiEnabled ? '' : ` · ${LESSONS[s.code].length} buổi`}
               </option>
             ))}
           </select>
@@ -232,7 +271,7 @@ function CloneDialog({ target, targetSessions, current, onClose, onClone }: { ta
         <button type="button" className="btn" style={{ width: 100 }} onClick={onClose}>
           Huỷ
         </button>
-        <button type="button" className="btn primary" style={{ width: 150 }} disabled={!n} onClick={() => onClone(list)}>
+        <button type="button" className="btn primary" style={{ width: 150 }} disabled={!n} onClick={() => onClone(from, list)}>
           <Icon name="copy" size={16} />
           Nhân bản
         </button>

@@ -4,8 +4,10 @@ import { COUNSELORS, type Lead } from '../../data/leads';
 import './assign.css';
 
 // S2-10. Phân công một hoặc nhiều lead cho một tư vấn viên, mở từ thanh thao tác hàng loạt của danh sách lead (S2-09). Số lead đang giữ giúp chia việc đều.
-// Khi tích hợp: POST /admissions/leads/assign { ids, counselorId, note }; máy chủ ghi lịch sử chuyển giao.
-export function AssignDialog({ leads, load, onClose, onAssign }: { leads: Lead[]; load: (c: string) => number; onClose: () => void; onAssign: (c: string) => void }) {
+// Có backend: trang cha gửi POST /api/leads/assign { leadIds, counselorId, note }; máy chủ ghi lịch sử chuyển giao.
+type Props = { leads: Lead[]; load: (c: string) => number; onClose: () => void; onAssign: (c: string, note: string) => void; counselors?: string[] };
+
+export function AssignDialog({ leads, load, onClose, onAssign, counselors = COUNSELORS }: Props) {
   const [pick, setPick] = useState('');
   const [note, setNote] = useState('');
   return (
@@ -19,7 +21,7 @@ export function AssignDialog({ leads, load, onClose, onAssign }: { leads: Lead[]
       <div className="field">
         <label>Giao cho tư vấn viên</label>
         <div className="ld-options" role="radiogroup">
-          {COUNSELORS.map((c) => (
+          {counselors.map((c) => (
             <label key={c} className={'ld-option' + (pick === c ? ' on' : '')}>
               <input type="radio" name="counselor" checked={pick === c} onChange={() => setPick(c)} />
               <b>{c}</b>
@@ -41,7 +43,7 @@ export function AssignDialog({ leads, load, onClose, onAssign }: { leads: Lead[]
         <button type="button" className="btn" style={{ width: 100 }} onClick={onClose}>
           Huỷ
         </button>
-        <button type="button" className="btn primary" style={{ width: 150 }} disabled={!pick} onClick={() => onAssign(pick)}>
+        <button type="button" className="btn primary" style={{ width: 150 }} disabled={!pick} onClick={() => onAssign(pick, note.trim())}>
           Phân công
         </button>
       </div>

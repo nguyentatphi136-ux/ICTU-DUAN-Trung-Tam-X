@@ -5,7 +5,9 @@ import { Badge } from '../../components/CardPage';
 import { Icon, type IconName } from '../../components/Icon';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { Box } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { LEADS } from '../../data/leads';
+import { loadPublicPrograms, submitConsultation } from '../../data/s2api';
 import { PROGRAMS } from '../../data/training';
 import { EMAIL_RE, isPhone, PHONE_MSG } from '../../data/validate';
 import '../S1-01-dang-nhap/login.css';
@@ -19,19 +21,24 @@ const PROMISES: [IconName, string][] = [
 type Form = { name: string; phone: string; email: string; program: string; message: string };
 
 // S2-08. Biểu mẫu công khai, không cần đăng nhập. Gửi thành công tạo một lead trạng thái Mới, chưa phân công.
-// Ô "Tôi không phải người máy" là chỗ đặt CAPTCHA thật. Khi tích hợp: POST /public/consultations (kèm token CAPTCHA).
+// Ô "Tôi không phải người máy" là chỗ đặt CAPTCHA thật. Có backend: lấy chương trình từ /api/public/programs,
+// gửi POST /api/public/consultations (máy chủ giới hạn 5 lần mỗi 15 phút cho một địa chỉ IP).
 export function ConsultationPage() {
   useTitle('Đăng ký tư vấn');
   const [f, setF] = useState<Form>({ name: '', phone: '', email: '', program: '', message: '' });
   const [human, setHuman] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof Form | 'human', string>>>({});
   const [sent, setSent] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [serverError, setServerError] = useState('');
+  const [programs, setPrograms] = useState(() => PROGRAMS.filter((p) => p.active).map((p) => ({ code: p.code, name: p.name })));
+  const load = useLoad(async () => setPrograms(await loadPublicPrograms()));
   const set = (k: keyof Form) => (e: { target: { value: string } }) => {
     setF((x) => ({ ...x, [k]: e.target.value }));
     setErrors((x) => ({ ...x, [k]: '' }));
   };
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     const err: typeof errors = {};
     if (!f.name.trim()) err.name = 'Vui lòng nhập họ và tên';
@@ -41,6 +48,20 @@ export function ConsultationPage() {
     if (!human) err.human = 'Vui lòng xác nhận bạn không phải người máy';
     setErrors(err);
     if (Object.keys(err).length) return;
+    if (apiEnabled) {
+      setSending(true);
+      setServerError('');
+      try {
+        const programCode = programs.find((p) => p.name === f.program)?.code ?? '';
+        await submitConsultation({ name: f.name.trim().toUpperCase(), phone: f.phone.trim(), email: f.email.trim(), programCode, message: f.message.trim() });
+        setSent(true);
+      } catch (ex) {
+        setServerError((ex as Error).message);
+      } finally {
+        setSending(false);
+      }
+      return;
+    }
     LEADS.unshift({
       id: Math.max(...LEADS.map((l) => l.id)) + 1,
       name: f.name.trim().toUpperCase(),
@@ -129,12 +150,12 @@ export function ConsultationPage() {
               <div className={'inp' + (errors.program ? ' bad' : '')}>
                 <select id="ct-program" value={f.program} onChange={set('program')} className={f.program ? undefined : 'ph'}>
                   <option value="">Chọn chương trình</option>
-                  {PROGRAMS.filter((p) => p.active).map((p) => (
+                  {programs.map((p) => (
                     <option key={p.code}>{p.name}</option>
                   ))}
                 </select>
               </div>
-              {errors.program && <p className="err">{errors.program}</p>}
+              {(errors.program || load.error) && <p className="err">{errors.program || 'Chưa tải được danh sách chương trình: ' + load.error}</p>}
             </div>
             <div className="field">
               <label htmlFor="ct-message">Lời nhắn (không bắt buộc)</label>
@@ -155,10 +176,14 @@ export function ConsultationPage() {
               <Icon name="shield" size={20} />
             </label>
             {errors.human && <p className="err">{errors.human}</p>}
-            <button type="submit" className="btn primary block ct-submit">
-              Gửi đăng ký
+            {serverError && <p className="err">{serverError}</p>}
+            <button type="submit" className="btn primary block ct-submit" disabled={sending}>
+              {sending ? 'Đang gửi…' : 'Gửi đăng ký'}
             </button>
             <p className="hint ct-note">Thông tin của bạn chỉ dùng để trung tâm liên hệ tư vấn.</p>
+            <p className="hint ct-note">
+              Đã có tài khoản? <Link to="/dang-nhap">Đăng nhập</Link>
+            </p>
           </form>
         </section>
       </main>
