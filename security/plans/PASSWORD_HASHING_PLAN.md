@@ -12,7 +12,7 @@
 ## Verification goals
 
 - [x] BCrypt only
-- [ ] A restart doesn't change any `password_hash` unless the opt-in flag is set
+- [x] A restart doesn't change any `password_hash` unless the opt-in flag is set
 - [ ] No shared initial password
 
 ## Manual verification (for the human)

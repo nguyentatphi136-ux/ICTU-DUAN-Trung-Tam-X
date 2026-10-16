@@ -19,7 +19,10 @@ public class DatabaseMigration {
     public static void runMigration() {
         try (Connection conn = DBConnection.getConnection()) {
             runMigration(conn);
-            resetPasswords(conn);
+            // Chỉ máy nào tự bật trong backend/.env mới đặt lại mật khẩu; mặc định tắt để CSDL dùng chung không bị đổi.
+            if ("true".equalsIgnoreCase(DBConnection.setting("RESET_PASSWORDS_ON_START", "false"))) {
+                resetPasswords(conn);
+            }
         } catch (SQLException e) {
             LOGGER.log(Level.WARNING, "Không thể kết nối CSDL để chạy migration: " + e.getMessage());
         }
@@ -256,7 +259,8 @@ public class DatabaseMigration {
     }
 
     /**
-     * Mỗi lần backend khởi động (chạy local), mọi tài khoản về lại mật khẩu chung UserDAO.DEFAULT_PASSWORD và mở khoá.
+     * Khi RESET_PASSWORDS_ON_START=true (backend/.env), mỗi lần backend khởi động mọi tài khoản về lại mật khẩu chung
+     * UserDAO.DEFAULT_PASSWORD và mở khoá.
      * Đăng nhập bằng mật khẩu này thì bị buộc đổi mật khẩu (LoginApiServlet, SessionAuthFilter).
      * Chỉ gọi lúc khởi động, không gọi trong runMigration(conn) để kiểm thử giữ nguyên mật khẩu tự tạo.
      */

@@ -34,7 +34,7 @@ Status is the state found **before** fixes. Each report's "Verification result" 
 
 1. **Auth bypass with a `;.json` path parameter** (AUTH_MIDDLEWARE): anonymous access to every `/api/*` route, including rewriting role permissions. Confirmed live. **Fixed** in `SessionAuthFilter`, with a regression test, verified on a patched server.
 2. **Backdoor admin login** with the public default password `Tms@2026` (`admin` or `A25200212001@tms.vn`) through the in-memory `UserStore` fallback, even when the DB says the password is wrong. Confirmed live. **Fixed**: the fallback now runs only when the DB can't be reached.
-3. **Every account reset to `Tms@2026` on each backend start** (`DatabaseMigration.resetPasswords`). **Not fixed. Needs a team decision** (see the PASSWORD_HASHING plan).
+3. **Every account reset to `Tms@2026` on each backend start** (`DatabaseMigration.resetPasswords`). **Fixed**: the reset now runs only when `RESET_PASSWORDS_ON_START=true` is in that machine's `backend/.env`.
 
 ## Other fixes applied
 
@@ -67,7 +67,7 @@ All results are **local only** and say nothing yet about any deployment.
 
 - Restart your own backend (:8085) so it loads the fixes.
 - With MySQL up: a student calling `GET /api/admin/users` gets 403, and admin login with `Tms@2026` after a password change gets 401.
-- Decide on the startup `resetPasswords` and on public `/api-docs`.
+- If you want the old reset-on-start behaviour locally, add `RESET_PASSWORDS_ON_START=true` to your own `backend/.env`.
 - Add CSP (report-only first) and HSTS on the real host, and set the cookie `Secure` under HTTPS.
 - Import an Excel row whose name is `<img src=x onerror=alert(1)>`. The preview must show it as text.
 - Run gitleaks on the history and rotate anything it finds.

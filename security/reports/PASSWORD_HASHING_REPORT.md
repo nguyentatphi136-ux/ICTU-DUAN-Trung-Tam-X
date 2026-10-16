@@ -5,7 +5,7 @@
 ## Findings
 
 - The hashing itself is good: BCrypt cost 10 (`jbcrypt 0.4`) everywhere a password is stored (`AdminDAO`, `ResetPasswordServlet`, `StudentDAO`, `UserDAO`). Reset tokens are random UUIDs, stored as SHA-256, expire after 30 minutes and are single-use inside a transaction. That's fine for tokens.
-- **CRITICAL, NOT FIXED (needs a team decision):** `config/DatabaseMigration.runMigration()`, called on every startup by `AppStartupListener`, runs `resetPasswords(conn)`:
+- **CRITICAL, FIXED (opt-in flag):** `config/DatabaseMigration.runMigration()`, called on every startup by `AppStartupListener`, runs `resetPasswords(conn)`:
   ```java
   UPDATE users SET password_hash = <bcrypt("Tms@2026")>, failed_login_attempts = 0, locked_until = NULL
   ```
@@ -27,4 +27,4 @@ BCrypt everywhere, no MD5/SHA for passwords, a sound reset-token design, and a f
 
 ## Verification result
 
-Not fixed. Waiting on your decision.
+Fixed. `resetPasswords` now runs only when `RESET_PASSWORDS_ON_START=true` is set (backend/.env). Default is off, so a restart keeps changed passwords. The shared initial password for new accounts is still open.

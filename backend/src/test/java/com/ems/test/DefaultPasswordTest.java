@@ -10,7 +10,7 @@ import java.sql.Statement;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Khởi động backend đặt mọi tài khoản về Tms@2026; đổi mật khẩu không được quay lại mật khẩu mặc định. */
+/** Khởi động backend với RESET_PASSWORDS_ON_START=true đặt mọi tài khoản về Tms@2026; đổi mật khẩu không được quay lại mật khẩu mặc định. */
 class DefaultPasswordTest {
 
     @Test
@@ -24,9 +24,16 @@ class DefaultPasswordTest {
             s.execute("INSERT INTO user_roles (user_id, role_id) VALUES (1, 1)");
         }
 
-        DatabaseMigration.runMigration();
-
         UserDAO dao = new UserDAO();
+        DatabaseMigration.runMigration();
+        assertNull(dao.authenticate("a@x.vn", UserDAO.DEFAULT_PASSWORD), "Không bật RESET_PASSWORDS_ON_START thì giữ mật khẩu");
+
+        System.setProperty("RESET_PASSWORDS_ON_START", "true");
+        try {
+            DatabaseMigration.runMigration();
+        } finally {
+            System.clearProperty("RESET_PASSWORDS_ON_START");
+        }
         assertNotNull(dao.authenticate("a@x.vn", UserDAO.DEFAULT_PASSWORD));
         IllegalArgumentException e = assertThrows(IllegalArgumentException.class,
                 () -> dao.changePassword(1, UserDAO.DEFAULT_PASSWORD + "x1", UserDAO.DEFAULT_PASSWORD, UserDAO.DEFAULT_PASSWORD));
