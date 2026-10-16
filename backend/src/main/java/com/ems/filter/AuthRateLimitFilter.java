@@ -29,7 +29,8 @@ public class AuthRateLimitFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
-        String path = httpRequest.getRequestURI().substring(httpRequest.getContextPath().length());
+        // getServletPath() bỏ tham số ";..." nên không đổi khoá giới hạn bằng cách thêm ";x" vào đường dẫn.
+        String path = httpRequest.getServletPath() + (httpRequest.getPathInfo() == null ? "" : httpRequest.getPathInfo());
         String key = httpRequest.getRemoteAddr() + ":" + path;
         long now = Instant.now().toEpochMilli();
         // Đăng ký tư vấn (S2-08) là biểu mẫu công khai nên giới hạn chặt như quên mật khẩu.

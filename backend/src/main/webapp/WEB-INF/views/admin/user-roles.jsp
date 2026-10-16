@@ -35,7 +35,7 @@
                 <a class="nav-link active" href="${pageContext.request.contextPath}/admin/users/roles">Phân quyền vai trò</a>
             </div>
             <div class="d-flex align-items-center text-white">
-                <span class="me-3">Xin chào, <strong>${sessionScope.currentUser.name}</strong> 
+                <span class="me-3">Xin chào, <strong><c:out value="${sessionScope.currentUser.name}"/></strong> 
                     <span class="badge bg-danger ms-1">Admin</span>
                 </span>
                 <a href="${pageContext.request.contextPath}/logout" class="btn btn-outline-danger btn-sm">
@@ -73,7 +73,7 @@
         </c:if>
         <c:if test="${not empty errorMessage}">
             <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>${errorMessage}
+                <i class="bi bi-exclamation-triangle-fill me-2"></i><c:out value="${errorMessage}"/>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         </c:if>
@@ -102,12 +102,12 @@
                                 <tr>
                                     <td class="text-muted fw-bold">#${u.id}</td>
                                     <td>
-                                        <div class="fw-bold">${u.name}</div>
+                                        <div class="fw-bold"><c:out value="${u.name}"/></div>
                                         <c:if test="${u.id == sessionScope.currentUser.id}">
                                             <span class="badge bg-light text-dark border"><i class="bi bi-person-check me-1"></i>Tài khoản của bạn</span>
                                         </c:if>
                                     </td>
-                                    <td><code>${u.email}</code></td>
+                                    <td><code><c:out value="${u.email}"/></code></td>
                                     <td>
                                         <c:choose>
                                             <c:when test="${u.status == 'ACTIVE' || u.status == 'active'}">

@@ -5,6 +5,7 @@ import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.WebResourceRoot;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.tomcat.util.http.Rfc6265CookieProcessor;
 import org.apache.catalina.webresources.DirResourceSet;
 import org.apache.catalina.webresources.StandardRoot;
 
@@ -30,6 +31,10 @@ public class TomcatBootstrap {
         resources.addPreResources(new DirResourceSet(resources, "/WEB-INF/classes",
                 new File("target/classes").getAbsolutePath(), "/"));
         ctx.setResources(resources);
+        // Cookie phiên JSESSIONID kèm SameSite=Lax để trang web khác không gửi POST mang phiên của người dùng (CSRF).
+        Rfc6265CookieProcessor cookies = new Rfc6265CookieProcessor();
+        cookies.setSameSiteCookies("Lax");
+        ctx.setCookieProcessor(cookies);
 
         tomcat.start();
         if (tomcat.getConnector().getState() != LifecycleState.STARTED) {

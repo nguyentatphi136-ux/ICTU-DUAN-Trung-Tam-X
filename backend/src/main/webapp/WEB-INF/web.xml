@@ -7,10 +7,6 @@
 
     <display-name>Education Management System</display-name>
 
-    <welcome-file-list>
-        <welcome-file>login.jsp</welcome-file>
-    </welcome-file-list>
-
     <!-- Cấu hình thời gian sống của Session: 480 phút = 8 giờ (IDTTX-33, IDTTX-36) -->
     <session-config>
         <session-timeout>480</session-timeout>

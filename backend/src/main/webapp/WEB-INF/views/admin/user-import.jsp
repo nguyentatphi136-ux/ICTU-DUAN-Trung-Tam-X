@@ -43,7 +43,7 @@
                 <a class="nav-link active" href="${pageContext.request.contextPath}/admin/user-import">Nhập Excel</a>
             </div>
             <div class="d-flex align-items-center text-white">
-                <span class="me-3">Xin chào, <strong>${sessionScope.currentUser != null ? sessionScope.currentUser.name : 'Quản trị viên'}</strong> 
+                <span class="me-3">Xin chào, <strong><c:out value="${sessionScope.currentUser != null ? sessionScope.currentUser.name : 'Quản trị viên'}"/></strong> 
                     <span class="badge bg-danger ms-1">Admin</span>
                 </span>
                 <a href="${pageContext.request.contextPath}/logout" class="btn btn-outline-danger btn-sm">
@@ -86,7 +86,7 @@
         </c:if>
         <c:if test="${not empty errorMessage}">
             <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i> ${errorMessage}
+                <i class="bi bi-exclamation-triangle-fill me-2"></i> <c:out value="${errorMessage}"/>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         </c:if>
@@ -99,7 +99,7 @@
                         <h6 class="mb-0 fw-bold text-success">
                             <i class="bi bi-file-earmark-check-fill me-2"></i> Báo cáo tổng kết đợt nhập: <code>${summary.batchCode}</code>
                         </h6>
-                        <span class="badge bg-secondary">${summary.fileName}</span>
+                        <span class="badge bg-secondary"><c:out value="${summary.fileName}"/></span>
                     </div>
                 </div>
                 <div class="card-body">
@@ -140,9 +140,9 @@
                                     <c:forEach var="err" items="${summary.errorItems}">
                                         <tr class="table-danger">
                                             <td class="text-center fw-bold">${err.rowIndex}</td>
-                                            <td>${err.fullName}</td>
-                                            <td><code>${err.email}</code></td>
-                                            <td class="text-danger fw-semibold">${err.reason}</td>
+                                            <td><c:out value="${err.fullName}"/></td>
+                                            <td><code><c:out value="${err.email}"/></code></td>
+                                            <td class="text-danger fw-semibold"><c:out value="${err.reason}"/></td>
                                         </tr>
                                     </c:forEach>
                                 </tbody>
@@ -198,7 +198,7 @@
                             <h6 class="mb-1 fw-bold text-dark">
                                 <i class="bi bi-table text-primary me-2"></i> Kết quả xem trước dữ liệu (Xem trước & Báo lỗi từng dòng)
                             </h6>
-                            <span class="text-muted small">Tệp: <strong>${uploadedFileName}</strong></span>
+                            <span class="text-muted small">Tệp: <strong><c:out value="${uploadedFileName}"/></strong></span>
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <span class="badge bg-primary">Tổng: ${preview.totalRows} dòng</span>
@@ -224,8 +224,8 @@
                                     <c:forEach var="row" items="${preview.rows}">
                                         <tr class="${row.isValid ? 'row-valid' : 'row-error'}">
                                             <td class="text-center fw-bold text-secondary">${row.rowIndex}</td>
-                                            <td class="fw-semibold">${row.fullName}</td>
-                                            <td><code>${row.email}</code></td>
+                                            <td class="fw-semibold"><c:out value="${row.fullName}"/></td>
+                                            <td><code><c:out value="${row.email}"/></code></td>
                                             <td>${row.phone != null ? row.phone : '-'}</td>
                                             <td><span class="badge bg-secondary">${row.role}</span></td>
                                             <td class="text-center">
@@ -244,7 +244,7 @@
                                                         <span class="text-success small fw-medium">Sẵn sàng nhập</span>
                                                     </c:when>
                                                     <c:otherwise>
-                                                        <span class="text-danger small fw-semibold">${row.errorMessage}</span>
+                                                        <span class="text-danger small fw-semibold"><c:out value="${row.errorMessage}"/></span>
                                                     </c:otherwise>
                                                 </c:choose>
                                             </td>
@@ -260,7 +260,7 @@
                         </a>
                         <form action="${pageContext.request.contextPath}/admin/user-import" method="post">
                             <input type="hidden" name="action" value="confirmImport">
-                            <input type="hidden" name="fileName" value="${uploadedFileName}">
+                            <input type="hidden" name="fileName" value="<c:out value='${uploadedFileName}'/>">
                             <button type="submit" class="btn btn-success fw-bold px-4" ${preview.validRows == 0 ? 'disabled' : ''}>
                                 <i class="bi bi-check-circle-fill me-1"></i> Xác nhận nhập ${preview.validRows} dòng hợp lệ (${preview.errorRows} lỗi bỏ qua)
                             </button>

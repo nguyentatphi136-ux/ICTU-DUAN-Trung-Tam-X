@@ -41,7 +41,7 @@
                 </c:if>
             </div>
             <div class="d-flex align-items-center text-white">
-                <span class="me-3">Xin chào, <strong>${sessionScope.currentUser.name}</strong> 
+                <span class="me-3">Xin chào, <strong><c:out value="${sessionScope.currentUser.name}"/></strong> 
                     <c:forEach var="role" items="${sessionScope.currentUser.roles}">
                         <span class="badge bg-primary ms-1">${role}</span>
                     </c:forEach>
@@ -58,12 +58,12 @@
         <div class="hero-banner">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h2 class="fw-bold mb-2">Xin chào, ${sessionScope.currentUser.name}!</h2>
+                    <h2 class="fw-bold mb-2">Xin chào, <c:out value="${sessionScope.currentUser.name}"/>!</h2>
                     <p class="mb-0 text-white-50">Chào mừng bạn đến với Cổng thông tin Quản lý Đào tạo Trung tâm (EMS). Hệ thống được xây dựng trên nền tảng Java Servlet, JSP và kiến trúc MVC chuẩn mực.</p>
                 </div>
                 <div class="col-md-4 text-md-end mt-3 mt-md-0">
                     <span class="badge bg-light text-dark px-3 py-2 fs-6">
-                        <i class="bi bi-person-badge me-1"></i> ${sessionScope.currentUser.email}
+                        <i class="bi bi-person-badge me-1"></i> <c:out value="${sessionScope.currentUser.email}"/>
                     </span>
                 </div>
             </div>

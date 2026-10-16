@@ -59,16 +59,19 @@ public class LoginApiServlet extends HttpServlet {
         }
 
         User user = null;
+        boolean databaseDown = false;
         try {
             user = userDAO.authenticate(email, password);
         } catch (SQLException exception) {
+            databaseDown = true;
             getServletContext().log("Không thể kết nối MySQL, chuyển sang xác thực dự phòng.", exception);
         }
         // Còn dùng mật khẩu mặc định thì phải đổi trước khi làm việc. Tài khoản dự phòng không có CSDL để đổi nên bỏ qua.
         boolean mustChangePassword = user != null && UserDAO.DEFAULT_PASSWORD.equals(password);
 
-        // Dự phòng xác thực in-memory UserStore (IDTTX-20, IDTTX-24) khi DB chưa sẵn sàng
-        if (user == null) {
+        // Dự phòng xác thực in-memory UserStore (IDTTX-20, IDTTX-24) chỉ khi DB chưa sẵn sàng. CSDL trả về "sai mật khẩu"
+        // thì không thử tiếp, nếu không mật khẩu mặc định công khai luôn đăng nhập được tài khoản quản trị id 1.
+        if (user == null && databaseDown) {
             user = com.ems.service.UserStore.authenticate(email, password);
         }
 
