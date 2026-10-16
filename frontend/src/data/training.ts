@@ -8,13 +8,13 @@ export type Subject = { id?: number; code: string; name: string; sessions: numbe
 export type CurriculumItem = { code: string; prereq: string[] };
 export type Lesson = { topic: string; goal: string };
 
-export const PROGRAMS: Program[] = persisted('programs', [
-  { code: 'WEB-FS', name: 'Lập trình web Full-stack', description: '', hours: 240, fee: 28000000, runningClasses: 3, active: true },
-  { code: 'DATA-01', name: 'Phân tích dữ liệu', description: '', hours: 180, fee: 22000000, runningClasses: 2, active: true },
-  { code: 'UIUX-01', name: 'Thiết kế UI/UX', description: '', hours: 150, fee: 18500000, runningClasses: 1, active: true },
-  { code: 'JAVA-BE', name: 'Lập trình Java Backend', description: '', hours: 200, fee: 24000000, runningClasses: 1, active: true },
-  { code: 'TEST-01', name: 'Kiểm thử phần mềm', description: '', hours: 120, fee: 15000000, runningClasses: 0, active: true },
-  { code: 'PHP-OLD', name: 'Lập trình PHP cơ bản', description: '', hours: 120, fee: 12000000, runningClasses: 0, active: false },
+export const PROGRAMS: Program[] = persisted('programs.v2', [
+  { code: 'WEB-FS', name: 'Lập trình web Full-stack', description: '', hours: 240, fee: 9500000, runningClasses: 3, active: true },
+  { code: 'DATA-01', name: 'Phân tích dữ liệu', description: '', hours: 180, fee: 5500000, runningClasses: 2, active: true },
+  { code: 'UIUX-01', name: 'Thiết kế UI/UX', description: '', hours: 150, fee: 5000000, runningClasses: 1, active: true },
+  { code: 'JAVA-BE', name: 'Lập trình Java Backend', description: '', hours: 200, fee: 6000000, runningClasses: 1, active: true },
+  { code: 'TEST-01', name: 'Kiểm thử phần mềm', description: '', hours: 120, fee: 3000000, runningClasses: 0, active: true },
+  { code: 'PHP-OLD', name: 'Lập trình PHP cơ bản', description: '', hours: 120, fee: 3000000, runningClasses: 0, active: false },
 ]);
 
 export const SUBJECTS: Subject[] = persisted('subjects', [

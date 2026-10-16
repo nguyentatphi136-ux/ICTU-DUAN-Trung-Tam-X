@@ -11,9 +11,9 @@ export type AuditEntry = { id: number; at: string; by: string; role: string; ent
 const d = (n: number, t: string) => addDays(TODAY, n) + 'T' + t;
 
 // Bản ghi mẫu để trang Nhật ký thao tác (S6-11) có dữ liệu ngay.
-export const AUDIT: AuditEntry[] = persisted('audit', [
+export const AUDIT: AuditEntry[] = persisted('audit.v2', [
   { id: 7, at: d(-1, '10:12'), by: 'VU DUC LONG', role: 'Giảng viên', entity: 'Điểm', action: 'Sửa điểm', target: 'HV260101 · WEB-K15 · Bài 11', changes: [{ field: 'Điểm', before: '8,0', after: '8,5' }], note: 'Chấm lại phần kiểm thử.' },
-  { id: 6, at: d(-2, '16:40'), by: 'DO THI MAI', role: 'Kế toán', entity: 'Học phí', action: 'Ghi nhận thanh toán', target: 'HV260142 · Đợt 1', changes: [{ field: 'Trạng thái', before: 'Chưa đóng', after: 'Đã đóng 9.000.000 ₫' }] },
+  { id: 6, at: d(-2, '16:40'), by: 'DO THI MAI', role: 'Kế toán', entity: 'Học phí', action: 'Ghi nhận thanh toán', target: 'HV260142 · Đợt 1', changes: [{ field: 'Trạng thái', before: 'Chưa đóng', after: 'Đã đóng 3.420.000 ₫' }] },
   { id: 5, at: d(-2, '09:05'), by: 'TRAN QUOC BAO', role: 'Quản trị hệ thống', entity: 'Vai trò', action: 'Thêm vai trò', target: 'IST25200212045 · VU DUC LONG', changes: [{ field: 'Vai trò', before: 'Giảng viên', after: 'Giảng viên, Trợ giảng' }] },
   { id: 4, at: d(-3, '14:22'), by: 'LE HOANG NAM', role: 'Quản lý đào tạo', entity: 'Điểm danh', action: 'Sửa điểm danh', target: 'HV260017 · WEB-K15 buổi 20', changes: [{ field: 'Trạng thái', before: 'Có mặt', after: 'Vắng không phép' }], note: 'Giảng viên báo đánh nhầm.' },
   { id: 3, at: d(-4, '11:30'), by: 'DO THI MAI', role: 'Kế toán', entity: 'Học phí', action: 'Miễn giảm', target: 'HV260088 · Đợt 2', changes: [{ field: 'Mức giảm', before: '0%', after: '10%' }], note: 'Học bổng khuyến học.' },

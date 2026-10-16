@@ -6,23 +6,25 @@ import { STUDENTS } from './students';
 
 export type FeeVersion = { v: number; amount: number; from: string; to?: string };
 
-export const FEES: Record<string, FeeVersion[]> = persisted('fees', {
+// Mức học phí: mỗi chương trình tối đa 10 triệu, tính ra mỗi môn khoảng 3 triệu trở xuống.
+// Khoá lưu đổi thành fees.v2 để trình duyệt đã lưu số cũ nạp lại số mới.
+export const FEES: Record<string, FeeVersion[]> = persisted('fees.v2', {
   'Lập trình web Full-stack': [
-    { v: 1, amount: 24000000, from: '2025-06-01', to: '2025-12-31' },
-    { v: 2, amount: 26000000, from: '2026-01-01', to: '2026-06-30' },
-    { v: 3, amount: 28000000, from: '2026-07-01', to: '2026-12-31' },
-    { v: 4, amount: 30000000, from: '2027-01-01' },
+    { v: 1, amount: 8500000, from: '2025-06-01', to: '2025-12-31' },
+    { v: 2, amount: 9000000, from: '2026-01-01', to: '2026-06-30' },
+    { v: 3, amount: 9500000, from: '2026-07-01', to: '2026-12-31' },
+    { v: 4, amount: 10000000, from: '2027-01-01' },
   ],
   'Phân tích dữ liệu': [
-    { v: 1, amount: 20000000, from: '2025-07-01', to: '2026-06-30' },
-    { v: 2, amount: 22000000, from: '2026-07-01' },
+    { v: 1, amount: 5000000, from: '2025-07-01', to: '2026-06-30' },
+    { v: 2, amount: 5500000, from: '2026-07-01' },
   ],
-  'Thiết kế UI/UX': [{ v: 1, amount: 18000000, from: '2025-06-01' }],
+  'Thiết kế UI/UX': [{ v: 1, amount: 5000000, from: '2025-06-01' }],
   'Lập trình Java Backend': [
-    { v: 1, amount: 24000000, from: '2025-09-01', to: '2026-06-30' },
-    { v: 2, amount: 26000000, from: '2026-07-01' },
+    { v: 1, amount: 5500000, from: '2025-09-01', to: '2026-06-30' },
+    { v: 2, amount: 6000000, from: '2026-07-01' },
   ],
-  'Kiểm thử phần mềm': [{ v: 1, amount: 15000000, from: '2025-06-01' }],
+  'Kiểm thử phần mềm': [{ v: 1, amount: 3000000, from: '2025-06-01' }],
 });
 
 /** Biểu phí có hiệu lực vào ngày cho trước. */

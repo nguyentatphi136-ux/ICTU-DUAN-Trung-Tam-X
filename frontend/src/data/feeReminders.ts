@@ -12,7 +12,7 @@ export const BEFORE_DAYS = 3;
 export type FeeMail = { at: string; student: string; name: string; email: string; no: number; program: string; kind: 'Trước hạn' | 'Quá hạn'; days: number; owed: number; amount: number; paid: number; due: string; app: boolean; mail: boolean };
 
 /** Email đã gửi, mới nhất ở đầu. */
-export const FEE_MAILS: FeeMail[] = persisted('fee-mails', []);
+export const FEE_MAILS: FeeMail[] = persisted('fee-mails.v2', []);
 /** Đợt đã nhắc theo ngày: "2026-10-06" → ["HV260142#2", ...]. Mỗi đợt tối đa một lần mỗi ngày. */
 const SENT: Record<string, string[]> = persisted('fee-reminders-sent', {});
 

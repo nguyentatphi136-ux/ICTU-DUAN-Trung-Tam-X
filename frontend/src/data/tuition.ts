@@ -70,13 +70,13 @@ if (kiet) {
     student: kiet.code,
     discount: { kind: '%', value: 10, reason: 'Học bổng đầu vào' },
     items: [
-      { no: 1, label: 'Khi nhập học', amount: 10080000, due: '2026-10-05' },
-      { no: 2, label: 'Trước buổi 20', amount: 7560000, due: '2026-11-25' },
-      { no: 3, label: 'Trước buổi 40', amount: 7560000, due: '2027-01-15' },
+      { no: 1, label: 'Khi nhập học', amount: 3420000, due: '2026-10-05' },
+      { no: 2, label: 'Trước buổi 20', amount: 2565000, due: '2026-11-25' },
+      { no: 3, label: 'Trước buổi 40', amount: 2565000, due: '2027-01-15' },
     ],
   };
-  RAW.push({ student: kiet.code, no: 1, amount: 10080000, at: '2026-10-05', time: '10:15', method: 'Chuyển khoản', by: 'DO THI MAI', ref: 'VCB · FT26278104452' });
-  RAW.push({ student: kiet.code, no: 2, amount: 3000000, at: TODAY, time: '09:42', method: 'Tiền mặt', by: 'DO THI MAI', note: 'Đóng trước một phần' });
+  RAW.push({ student: kiet.code, no: 1, amount: 3420000, at: '2026-10-05', time: '10:15', method: 'Chuyển khoản', by: 'DO THI MAI', ref: 'VCB · FT26278104452' });
+  RAW.push({ student: kiet.code, no: 2, amount: 1000000, at: TODAY, time: '09:42', method: 'Tiền mặt', by: 'DO THI MAI', note: 'Đóng trước một phần' });
 }
 
 for (const s of STUDENTS) {
@@ -85,7 +85,7 @@ for (const s of STUDENTS) {
   if (s.cls === 'WEB-K16' && s.code !== 'HV260131' && s.code !== 'HV260128') continue;
   const n = seq(s.code);
   const d: Discount | undefined =
-    n % 5 === 0 ? { kind: '%', value: 10, reason: 'Học bổng đầu vào' } : n % 7 === 0 ? { kind: '%', value: 20, reason: 'Ưu đãi đăng ký nhóm 3 người' } : n % 11 === 0 ? { kind: 'đ', value: 2000000, reason: 'Giảm cho học viên cũ' } : undefined;
+    n % 5 === 0 ? { kind: '%', value: 10, reason: 'Học bổng đầu vào' } : n % 7 === 0 ? { kind: '%', value: 20, reason: 'Ưu đãi đăng ký nhóm 3 người' } : n % 11 === 0 ? { kind: 'đ', value: 500000, reason: 'Giảm cho học viên cũ' } : undefined;
   const t = TEMPLATES[n % 4 === 0 ? 0 : 1];
   seed(s, d, t, (it, idx) => {
     if (s.status === 'Đã tốt nghiệp') return it.amount;
@@ -98,12 +98,12 @@ for (const s of STUDENTS) {
 }
 
 RAW.sort((a, b) => (a.at + a.time).localeCompare(b.at + b.time));
-export const PLANS: Record<string, Plan> = persisted('plans', PLAN_SEED);
+export const PLANS: Record<string, Plan> = persisted('plans.v2', PLAN_SEED);
 export const PAYMENTS: Payment[] = persisted(
-  'payments',
+  'payments.v2',
   RAW.map((p, i) => ({ ...p, id: `BL-${p.at.slice(0, 4)}-${pad(i + 1, 6)}` })),
 );
-export const ADJUSTMENTS: Adjustment[] = persisted('adjustments', []);
+export const ADJUSTMENTS: Adjustment[] = persisted('adjustments.v2', []);
 
 // ---------- Tính toán ----------
 /** Số tiền thực của khoản thu sau các bút toán điều chỉnh. */

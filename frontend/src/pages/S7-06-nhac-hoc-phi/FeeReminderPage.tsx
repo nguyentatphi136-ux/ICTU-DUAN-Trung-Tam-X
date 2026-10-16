@@ -13,7 +13,7 @@ import '../S7-01-bieu-phi/fees.css';
 import './mail.css';
 
 type Sample = Omit<FeeMail, 'at' | 'app' | 'mail'>;
-const SAMPLE: Sample = { student: 'HV260142', name: 'DO TUAN KIET', email: 'kiet.dt@gmail.com', no: 2, program: 'Lập trình web Full-stack', kind: 'Trước hạn', days: 3, owed: 4560000, amount: 7560000, paid: 3000000, due: '2026-11-25' };
+const SAMPLE: Sample = { student: 'HV260142', name: 'DO TUAN KIET', email: 'kiet.dt@gmail.com', no: 2, program: 'Lập trình web Full-stack', kind: 'Trước hạn', days: 3, owed: 1565000, amount: 2565000, paid: 1000000, due: '2026-11-25' };
 
 /** Mẫu email nhắc học phí, dùng cho cả xem trước và xem lại email đã gửi. */
 export function FeeMailView({ m }: { m: Sample }) {
