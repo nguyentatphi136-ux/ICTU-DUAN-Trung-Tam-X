@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
+import { useToast } from '../../components/Toast';
 import { LoadState, Search } from '../../components/ui';
 import { ApiError, apiEnabled, useLoad } from '../../data/api';
 import { addToCurriculum, loadTraining, removeFromCurriculum, reorderCurriculum, setPrereq } from '../../data/s2api';
@@ -24,6 +25,7 @@ export function CurriculumPage() {
   const code = useParams().code ?? '';
   const program = PROGRAMS.find((p) => p.code === code);
   const canEdit = useCanEditTraining();
+  const toast = useToast();
   const [items, setItems] = useState<CurriculumItem[]>(() => CURRICULUM[code] ?? []);
   const [save, setSave] = useState<SaveState>(null);
   const [dragging, setDragging] = useState<number | null>(null);
@@ -69,6 +71,7 @@ export function CurriculumPage() {
     const list = [...items];
     list.splice(to, 0, list.splice(from, 1)[0]);
     commit(list, () => reorderCurriculum(code, list.map((x) => x.code)));
+    toast('Đã đổi thứ tự môn học', `${subject(list[to].code)?.name ?? list[to].code} chuyển sang vị trí thứ ${to + 1}`);
   };
   const endDrag = () => {
     setDragging(null);
@@ -125,7 +128,11 @@ export function CurriculumPage() {
                   endDrag();
                 }}
               >
-                {canEdit && <Icon name="grip" />}
+                {canEdit && (
+                  <span className="cu-grip" title="Kéo thả để đổi vị trí môn học">
+                    <Icon name="grip" size={16} />
+                  </span>
+                )}
                 <span className="cu-num">{i + 1}</span>
                 <div className="cu-name">
                   <b>{s?.name ?? it.code}</b>

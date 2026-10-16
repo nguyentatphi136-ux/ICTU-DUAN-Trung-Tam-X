@@ -29,8 +29,26 @@ export function roleIndex(raw: string): number {
   return ROLE_KEYS[key] ?? -1;
 }
 
-/** Số 9 chữ số do Excel làm mất số 0 đầu được thêm lại; ô ngày dạng số sê-ri Excel đổi sang YYYY-MM-DD. */
-export const fixPhone = (p: string) => (/^[35789]\d{8}$/.test(digits(p)) ? '0' + digits(p) : digits(p));
+/**
+ * Chuẩn hoá số điện thoại từ Excel: bỏ dấu nháy, ngoặc, đuôi ".0" của ô kiểu số, đổi +84/84 về 0,
+ * thêm lại số 0 đầu bị Excel làm mất. Ô ngày dạng số sê-ri Excel đổi sang YYYY-MM-DD.
+ */
+export function fixPhone(p: string) {
+  let d = digits(p.trim().replace(/\.0$/, '').replace(/['"‘’“”()]/g, ''));
+  if (/^\+?84\d{9}$/.test(d)) d = '0' + d.replace(/^\+?84/, '');
+  return /^[35789]\d{8}$/.test(d) ? '0' + d : d;
+}
+
+/** Lý do số điện thoại (đã qua fixPhone) không phải số di động Việt Nam, để người nhập biết sửa chỗ nào. */
+export function phoneIssue(p: string): string {
+  if (/\D/.test(p)) return 'Số điện thoại chứa ký tự lạ (chỉ nhận chữ số)';
+  if (p.length < 10) return `Số điện thoại thiếu số (${p.length}/10 số)`;
+  if (p.length > 10) return `Số điện thoại quá dài (${p.length} số, số di động có 10 số)`;
+  const prefix = p.slice(0, 2);
+  if (prefix === '01') return 'Đầu số 01x cũ đã ngừng dùng từ năm 2018, hãy dùng đầu 03, 05, 07, 08, 09';
+  if (prefix === '02') return 'Số cố định (đầu 02x), hệ thống chỉ nhận số di động đầu 03, 05, 07, 08, 09';
+  return `Đầu số ${prefix} không phải số di động Việt Nam (03, 05, 07, 08, 09)`;
+}
 const fixDate = (v: string) => (/^\d{4,5}(\.\d+)?$/.test(v) ? new Date(Date.UTC(1899, 11, 30) + Math.round(Number(v)) * 86400000).toISOString().slice(0, 10) : v);
 
 /** Dòng tiêu đề -> vị trí cột (giống UserImportParser.columnIndexes ở máy chủ). */
@@ -78,7 +96,7 @@ export function evaluate(raws: Raw[]): ImportRow[] {
     else if (emails.has(r.email)) dup.push('Email đã được dùng cho tài khoản khác');
     seenEmails.add(r.email);
     if (r.phone) {
-      if (!PHONE_RE.test(r.phone)) invalid.push('Số điện thoại không đúng chuẩn di động VN');
+      if (!PHONE_RE.test(r.phone)) invalid.push(phoneIssue(r.phone));
       else if (seenPhones.has(r.phone)) dup.push('Số điện thoại bị trùng với một dòng khác trong tệp');
       else if (phones.has(r.phone)) dup.push('Số điện thoại đã được dùng cho tài khoản ' + phones.get(r.phone));
       seenPhones.add(r.phone);

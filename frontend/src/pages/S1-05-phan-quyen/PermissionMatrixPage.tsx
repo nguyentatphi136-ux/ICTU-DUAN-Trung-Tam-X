@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AppLayout } from '../../components/AppLayout';
+import { Link } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { MODULES, ROLES, USERS_MODULE, type Permission } from '../../data/permissions';
@@ -31,6 +32,10 @@ export function PermissionMatrixPage() {
         <div>
           <h2>Ma trận phân quyền</h2>
         </div>
+        <Link to="/quan-tri/tai-khoan" className="btn">
+          <Icon name="users" size={16} />
+          Danh sách tài khoản
+        </Link>
         <button type="button" className="btn" disabled={!dirty} onClick={() => setPerms(saved)} style={{ width: 150 }}>
           Huỷ thay đổi
         </button>

@@ -5,6 +5,7 @@ import { Icon } from '../../components/Icon';
 import { Box, Pager, paginate, Pill, Search, usePaging } from '../../components/ui';
 import { api, ApiError, apiEnabled, json } from '../../data/api';
 import { ROLES, USERS_MODULE } from '../../data/permissions';
+import { download as saveBlob, toXlsx } from '../../data/xlsx';
 import { COLUMNS, evaluate, importOk, MAX_ROWS, TEMPLATE_ROWS, toRaws, type ImportRow, type RowStatus } from './mockImport';
 import { readSheet } from './readSheet';
 import './import.css';
@@ -163,12 +164,16 @@ export function ImportUsersPage() {
               <Icon name="file" size={22} />
             </span>
             <div>
-              <b>Tệp mẫu mau-nhap-nguoi-dung.csv</b>
-              <p>Mở bằng Excel rồi lưu lại dạng .xlsx. Cột bắt buộc: Họ và tên, Email. Vai trò ghi bằng tiếng Việt, ví dụ Học viên, Giảng viên.</p>
+              <b>Tệp mẫu mau-nhap-nguoi-dung.xlsx</b>
+              <p>Cột bắt buộc: Họ và tên, Email. Vai trò ghi bằng tiếng Việt, ví dụ Học viên, Giảng viên.</p>
             </div>
-            <button type="button" className="btn" style={{ width: 170 }} onClick={() => download('mau-nhap-nguoi-dung.csv', [COLUMNS, ...TEMPLATE_ROWS])}>
+            <button type="button" className="btn" style={{ width: 180 }} onClick={() => saveBlob(toXlsx([COLUMNS, ...TEMPLATE_ROWS], 'Danh sách người dùng'), 'mau-nhap-nguoi-dung.xlsx')}>
               <Icon name="dl" size={16} />
-              Tải tệp mẫu
+              Tải mẫu Excel (.xlsx)
+            </button>
+            <button type="button" className="btn" style={{ width: 120 }} onClick={() => download('mau-nhap-nguoi-dung.csv', [COLUMNS, ...TEMPLATE_ROWS])}>
+              <Icon name="dl" size={16} />
+              Tải .csv
             </button>
           </div>
         </>

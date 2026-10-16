@@ -65,6 +65,10 @@ export function UserListPage() {
           <h2>Tài khoản người dùng</h2>
           <p>{users.length} tài khoản</p>
         </div>
+        <Link to="/quan-tri/phan-quyen" className="btn">
+          <Icon name="shield" size={16} />
+          Ma trận phân quyền
+        </Link>
         {/* S6-11 */}
         <Link to="/quan-tri/nhat-ky" className="btn">
           <Icon name="file" size={16} />

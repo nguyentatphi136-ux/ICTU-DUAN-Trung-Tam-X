@@ -74,6 +74,11 @@ export function LoginPage() {
       setWrong(false);
       return;
     }
+    await attempt(email, password);
+  }
+
+  /** Đăng nhập bằng email, mật khẩu đã nhập hoặc bằng nút đăng nhập nhanh; sai thì cùng bộ đếm khoá tạm. */
+  async function attempt(email: string, password: string) {
     setLoading(true);
     const result = await login(email, password);
     setLoading(false);
@@ -221,6 +226,28 @@ export function LoginPage() {
                 <button className="lg-btn" type="submit" disabled={locked || loading}>
                   {loading ? 'Đang đăng nhập…' : 'Đăng nhập'}
                 </button>
+
+                <div className="lg-quick">
+                  <span>Đăng nhập nhanh bằng tài khoản mẫu</span>
+                  <div>
+                    {DEMO_ACCOUNTS.map((a) => (
+                      <button
+                        key={a.email}
+                        type="button"
+                        disabled={locked || loading}
+                        title={a.email}
+                        onClick={() => {
+                          setEmail(a.email);
+                          setPassword(DEMO_PASSWORD);
+                          setErrors({});
+                          void attempt(a.email, DEMO_PASSWORD);
+                        }}
+                      >
+                        {ROLES[a.roles[0]]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </form>
 
               <div className="lg-or">Hoặc tiếp tục với</div>

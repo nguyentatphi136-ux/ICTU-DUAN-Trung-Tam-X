@@ -81,6 +81,12 @@
 .lg-page .lg-alert + form{margin-top:16px}
 .lg-page .lg-btn:disabled{opacity:.55; filter:grayscale(.5); cursor:not-allowed; transform:none; box-shadow:none}
 .lg-page .lg-field input:disabled{background:var(--hover); color:var(--muted)}
+.lg-page .lg-quick{margin-top:14px; font-size:13px; color:var(--muted)}
+.lg-page .lg-quick>div{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px}
+.lg-page .lg-quick button{padding:5px 10px; border:1px solid var(--line); border-radius:6px; background:var(--surface);
+  color:var(--ink); font:inherit; font-size:12px; font-weight:500; cursor:pointer}
+.lg-page .lg-quick button:hover:not(:disabled){border-color:var(--blue); color:var(--blue)}
+.lg-page .lg-quick button:disabled{opacity:.5; cursor:not-allowed}
 .lg-page .lg-demo{margin-top:18px; font-size:13px; color:var(--muted)}
 .lg-page .lg-demo summary{cursor:pointer; color:var(--blue); font-weight:500}
 .lg-page .lg-demo table{margin-top:8px; border-collapse:collapse; width:100%}
