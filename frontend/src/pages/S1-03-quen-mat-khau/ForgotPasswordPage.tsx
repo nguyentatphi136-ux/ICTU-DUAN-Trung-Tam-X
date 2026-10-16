@@ -6,6 +6,7 @@ import { Icon } from '../../components/Icon';
 import { PasswordField } from '../../components/PasswordField';
 import { isStrongPassword, PasswordRules } from '../../components/PasswordRules';
 import { Box } from '../../components/ui';
+import { api, ApiError, apiEnabled, json } from '../../data/api';
 import { EMAIL_RE } from '../../data/validate';
 
 const LINK_SECONDS = 30 * 60;
@@ -19,7 +20,7 @@ const BackToLogin = () => (
 );
 
 // S1-03 bước 1 và 2: nhập email, báo đã gửi. Cùng một thông báo cho mọi email để không dò được ai có tài khoản.
-// Khi tích hợp: POST /auth/forgot-password { email }.
+// Có backend: POST /api/auth/forgot-password; chưa cấu hình SMTP thì liên kết in ra terminal của backend.
 export function ForgotPasswordPage() {
   useTitle('Quên mật khẩu');
   const [email, setEmail] = useState('');
@@ -33,14 +34,24 @@ export function ForgotPasswordPage() {
     return () => window.clearInterval(t);
   }, [sentAt]);
 
+  async function send() {
+    try {
+      if (apiEnabled) await api('/api/auth/forgot-password', json('POST', { email: email.trim() }));
+      setError('');
+      setSentAt(Date.now());
+      setNow(Date.now());
+    } catch (err) {
+      setSentAt(0);
+      setError((err as ApiError).message);
+    }
+  }
+
   function submit(e: FormEvent) {
     e.preventDefault();
     const v = email.trim();
     if (!v) return setError('Vui lòng nhập email');
     if (!EMAIL_RE.test(v)) return setError('Email không đúng định dạng');
-    setError('');
-    setSentAt(Date.now());
-    setNow(Date.now());
+    void send();
   }
 
   if (sentAt) {
@@ -54,7 +65,7 @@ export function ForgotPasswordPage() {
         <Box icon="clock" title={left ? `Liên kết hết hạn sau ${mmss(left)}` : 'Liên kết đã hết hạn'}>
           Chỉ sử dụng được một lần.
         </Box>
-        <button type="button" className="btn block" onClick={() => setSentAt(Date.now())}>
+        <button type="button" className="btn block" onClick={() => void send()}>
           Gửi lại liên kết
         </button>
         <a
@@ -105,8 +116,8 @@ export function ForgotPasswordPage() {
   );
 }
 
-// S1-03 bước 3 đến 5: mở từ liên kết trong email. token "het-han" mô phỏng liên kết quá 30 phút hoặc đã dùng.
-// Khi tích hợp: POST /auth/reset-password { token, password }; máy chủ trả 410 nếu liên kết hết hiệu lực.
+// S1-03 bước 3 đến 5: mở từ liên kết trong email (/dat-lai-mat-khau?token=...).
+// Không có backend: token "het-han" mô phỏng liên kết quá 30 phút hoặc đã dùng.
 export function ResetPasswordPage() {
   useTitle('Đặt lại mật khẩu');
   const [params] = useSearchParams();
@@ -114,7 +125,21 @@ export function ResetPasswordPage() {
   const [pw, setPw] = useState('');
   const [confirm, setConfirm] = useState('');
   const [done, setDone] = useState(false);
-  const expired = params.get('token') === 'het-han' || !params.get('token');
+  const [dead, setDead] = useState(false);
+  const [error, setError] = useState('');
+  const token = params.get('token');
+  const expired = dead || token === 'het-han' || !token;
+
+  async function save() {
+    try {
+      if (apiEnabled) await api('/api/auth/reset-password', json('POST', { token, password: pw, confirmPassword: confirm }));
+      setDone(true);
+    } catch (err) {
+      // Liên kết sai, hết hạn hoặc đã dùng thì về màn "không còn hiệu lực"; lỗi khác hiện dưới biểu mẫu.
+      if ((err as ApiError).code === 'AUTH_RESET_TOKEN_INVALID') setDead(true);
+      else setError((err as ApiError).message);
+    }
+  }
   const mismatch = confirm.length > 0 && confirm !== pw;
   const valid = isStrongPassword(pw) && confirm === pw;
 
@@ -158,13 +183,14 @@ export function ResetPasswordPage() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (valid) setDone(true);
+          if (valid) void save();
         }}
         noValidate
       >
         <PasswordField id="rp-new" label="Mật khẩu mới" value={pw} onChange={setPw} placeholder="Nhập mật khẩu mới" />
         <PasswordField id="rp-confirm" label="Xác nhận mật khẩu" value={confirm} onChange={setConfirm} placeholder="Nhập lại mật khẩu" error={mismatch ? 'Mật khẩu xác nhận không khớp' : undefined} />
         <PasswordRules value={pw} />
+        {error && <p className="err">{error}</p>}
         <button className="btn primary block" type="submit" disabled={!valid}>
           Cập nhật mật khẩu
         </button>

@@ -26,9 +26,9 @@ public class EmailService {
      */
     public static boolean sendActivationEmail(String toEmail, String fullName, String tempPassword, String loginLink) {
         String host = setting("SMTP_HOST", "smtp.gmail.com");
-        String username = setting("SMTP_USERNAME", "tatphi2006@gmail.com");
-        String password = setting("SMTP_PASSWORD", "tcjotoxtkhfwyldn");
-        String from = setting("SMTP_FROM", "tatphi2006@gmail.com");
+        String username = setting("SMTP_USERNAME", "");
+        String password = setting("SMTP_PASSWORD", "");
+        String from = setting("SMTP_FROM", "");
         if (host.isBlank() || from.isBlank()) {
             LOGGER.warning("Chưa cấu hình SMTP_HOST hoặc SMTP_FROM; không gửi được email kích hoạt.");
             return false;
@@ -87,11 +87,12 @@ public class EmailService {
      */
     public static boolean sendPasswordResetEmail(String toEmail, String resetLink) {
         String host = setting("SMTP_HOST", "smtp.gmail.com");
-        String username = setting("SMTP_USERNAME", "tatphi2006@gmail.com");
-        String password = setting("SMTP_PASSWORD", "tcjotoxtkhfwyldn");
-        String from = setting("SMTP_FROM", "tatphi2006@gmail.com");
+        String username = setting("SMTP_USERNAME", "");
+        String password = setting("SMTP_PASSWORD", "");
+        String from = setting("SMTP_FROM", "");
         if (host.isBlank() || from.isBlank()) {
-            LOGGER.warning("Chưa cấu hình SMTP_HOST hoặc SMTP_FROM; không gửi được email khôi phục.");
+            // Máy chạy thử chưa có SMTP: in liên kết ra terminal của backend để mở thẳng trên trình duyệt.
+            System.out.println("Chưa cấu hình SMTP, liên kết đặt lại mật khẩu cho " + toEmail + ": " + resetLink);
             return false;
         }
 
@@ -140,9 +141,9 @@ public class EmailService {
      */
     public static boolean sendPasswordResetOtpEmail(String toEmail, String otp) {
         String host = setting("SMTP_HOST", "smtp.gmail.com");
-        String username = setting("SMTP_USERNAME", "tatphi2006@gmail.com");
-        String password = setting("SMTP_PASSWORD", "tcjotoxtkhfwyldn");
-        String from = setting("SMTP_FROM", "tatphi2006@gmail.com");
+        String username = setting("SMTP_USERNAME", "");
+        String password = setting("SMTP_PASSWORD", "");
+        String from = setting("SMTP_FROM", "");
 
         try {
             String port = setting("SMTP_PORT", "587");
