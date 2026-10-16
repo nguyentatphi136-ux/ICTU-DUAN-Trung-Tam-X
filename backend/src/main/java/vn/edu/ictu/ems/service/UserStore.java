@@ -1,6 +1,5 @@
 package vn.edu.ictu.ems.service;
 
-import vn.edu.ictu.ems.constant.RoleConstant;
 import com.ems.model.User;
 
 import java.util.*;

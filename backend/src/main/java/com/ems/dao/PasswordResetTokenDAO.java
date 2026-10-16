@@ -8,7 +8,6 @@ import java.sql.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.HexFormat;
-import java.util.Date;
 
 /**
  * Mục 12 & 13: JDBC & CRUD, Transaction
