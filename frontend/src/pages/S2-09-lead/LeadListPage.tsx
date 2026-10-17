@@ -15,8 +15,15 @@ import { LeadDrawer } from './LeadDrawer';
 import './lead.css';
 
 const MODULE = 'Tuyển sinh & lead';
-const RANGES: Record<string, string> = { '2026-09': '01/09 – 30/09/2026', '2026-08': '01/08 – 31/08/2026' };
 const UNASSIGNED = 'Chưa phân công';
+
+const nowYear = Number(TODAY.slice(0, 4)) || 2026;
+const nowMonth = Number(TODAY.slice(5, 7)) || 10;
+const lastDayThisMonth = new Date(nowYear, nowMonth, 0).getDate();
+const pad = (n: number) => String(n).padStart(2, '0');
+const thisMonthStart = `${nowYear}-${pad(nowMonth)}-01`;
+const thisMonthEnd = `${nowYear}-${pad(nowMonth)}-${pad(lastDayThisMonth)}`;
+const thisMonthLabel = `Tháng ${pad(nowMonth)}/${nowYear}`;
 
 // S2-09 danh sách lead, thêm và sửa; S2-10 phân công một hoặc nhiều lead (thư mục S2-10-phan-cong-lead); S2-11 tìm theo tên, số điện thoại và bộ lọc.
 // Tư vấn viên chỉ thấy lead được giao cho mình, không có ô chọn và nút Phân công. Chỉ Quản lý đào tạo xoá được lead.
@@ -29,11 +36,46 @@ export function LeadListPage() {
   const [status, setStatus] = useState('');
   const [source, setSource] = useState('');
   const [owner, setOwner] = useState('');
-  const [range, setRange] = useState('');
+  const [rangePreset, setRangePreset] = useState('');
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   const { page, setPage, size, setSize } = usePaging();
   const [picked, setPicked] = useState<number[]>([]);
   const [editing, setEditing] = useState<Lead | 'new' | null>(null);
   const [assigning, setAssigning] = useState(false);
+
+  const applyPreset = (presetKey: string) => {
+    setRangePreset(presetKey);
+    setPage(1);
+    if (!presetKey) {
+      setFrom('');
+      setTo('');
+    } else if (presetKey === 'today') {
+      setFrom(TODAY);
+      setTo(TODAY);
+    } else if (presetKey === 'this-month') {
+      setFrom(thisMonthStart);
+      setTo(thisMonthEnd);
+    } else if (presetKey === '2026-09') {
+      setFrom('2026-09-01');
+      setTo('2026-09-30');
+    } else if (presetKey === '2026-08') {
+      setFrom('2026-08-01');
+      setTo('2026-08-31');
+    }
+  };
+
+  const rangeLabel = useMemo(() => {
+    if (!from && !to) return 'Mọi thời gian';
+    if (from === TODAY && to === TODAY) return 'Hôm nay';
+    if (from === '2026-09-01' && to === '2026-09-30') return '01/09 – 30/09/2026';
+    if (from === '2026-08-01' && to === '2026-08-31') return '01/08 – 31/08/2026';
+    if (from === thisMonthStart && to === thisMonthEnd) return `Tháng này (${thisMonthLabel})`;
+    if (from && to) return `${viDate(from)} – ${viDate(to)}`;
+    if (from) return `Từ ${viDate(from)}`;
+    if (to) return `Đến ${viDate(to)}`;
+    return 'Mọi thời gian';
+  }, [from, to]);
 
   const role = user?.active ?? -1;
   const counselor = role === 3;
@@ -68,13 +110,12 @@ export function LeadListPage() {
     if (manager) setCounselors(await loadCounselors());
   }, [manager]);
   const list = useLoad(async () => {
-    const last = range ? new Date(Number(range.slice(0, 4)), Number(range.slice(5, 7)), 0).getDate() : 0;
     const ownerParam = owner === UNASSIGNED ? 'none' : owner ? String(counselors.find((c) => c.name === owner)?.id ?? '') : '';
-    const res = await searchLeads({ q: qSent, status, source, owner: ownerParam, from: range && range + '-01', to: range && `${range}-${last}`, page, size });
+    const res = await searchLeads({ q: qSent, status, source, owner: ownerParam, from, to, page, size });
     res.items.forEach((l) => (known.current[l.id] = l));
     setLeads(res.items);
     setTotal(res.total);
-  }, [qSent, status, source, owner, range, page, size]);
+  }, [qSent, status, source, owner, from, to, page, size]);
 
   const filtered = useMemo(() => {
     if (apiEnabled) return leads;
@@ -90,10 +131,11 @@ export function LeadListPage() {
         (!k || l.name.toLowerCase().includes(k) || (digits.length > 2 && l.phone.replace(/\D/g, '').includes(digits))) &&
         (!status || l.status === status) &&
         (!source || l.source === source) &&
-        (!range || l.createdAt.startsWith(range))
+        (!from || l.createdAt >= from) &&
+        (!to || l.createdAt <= to)
       );
     });
-  }, [leads, q, status, source, owner, range]);
+  }, [leads, q, status, source, owner, from, to]);
   const view = apiEnabled
     ? { items: leads, page, pages: Math.max(1, Math.ceil(total / size)), from: total ? (page - 1) * size + 1 : 0, to: Math.min(page * size, total) }
     : paginate(filtered, page, size);
@@ -147,22 +189,63 @@ export function LeadListPage() {
       </div>
       <LoadState loading={list.loading} error={list.error || side.error} reload={() => (list.reload(), side.reload())} />
       <div className="bar">
-        <Search placeholder="Tìm theo tên hoặc số điện thoại" value={q} onChange={filter(setQ)} width={296} />
-        <Filter label="Trạng thái" value={status} options={LEAD_STATUSES} onChange={filter(setStatus)} width={196} />
-        <Filter label="Nguồn" value={source} options={SOURCES} onChange={filter(setSource)} width={196} />
-        <Filter label="Phụ trách" value={owner} options={[UNASSIGNED, ...counselorNames]} onChange={filter(setOwner)} width={196} />
-        <label className="filter" style={{ width: 196 }}>
-          <span>{RANGES[range] ?? 'Mọi thời gian'}</span>
+        <Search placeholder="Tìm theo tên hoặc số điện thoại" value={q} onChange={filter(setQ)} width={260} />
+        <Filter label="Trạng thái" value={status} options={LEAD_STATUSES} onChange={filter(setStatus)} width={170} />
+        <Filter label="Nguồn" value={source} options={SOURCES} onChange={filter(setSource)} width={160} />
+        <Filter label="Phụ trách" value={owner} options={[UNASSIGNED, ...counselorNames]} onChange={filter(setOwner)} width={170} />
+        <label className="filter" style={{ width: 180 }} title="Chọn nhanh khoảng thời gian">
+          <span>{rangeLabel}</span>
           <Icon name="down" />
-          <select value={range} onChange={(e) => filter(setRange)(e.target.value)} aria-label="Khoảng thời gian">
+          <select value={rangePreset} onChange={(e) => applyPreset(e.target.value)} aria-label="Khoảng thời gian nhanh">
             <option value="">Mọi thời gian</option>
-            {Object.entries(RANGES).map(([v, label]) => (
-              <option key={v} value={v}>
-                {label}
-              </option>
-            ))}
+            <option value="today">Hôm nay ({viDate(TODAY)})</option>
+            <option value="this-month">{thisMonthLabel} (Hiện tại)</option>
+            <option value="2026-09">01/09 – 30/09/2026</option>
+            <option value="2026-08">01/08 – 31/08/2026</option>
+            <option value="custom">Tuỳ chọn khoảng ngày...</option>
           </select>
         </label>
+        <div className="cl-range ld-range" role="group" aria-label="Khung thời gian bắt đầu và kết thúc" title="Chọn thời điểm bắt đầu và kết thúc">
+          <input
+            type="date"
+            value={from}
+            title="Thời điểm bắt đầu (Từ ngày)"
+            aria-label="Thời điểm bắt đầu"
+            onChange={(e) => {
+              setFrom(e.target.value);
+              setRangePreset('custom');
+              setPage(1);
+            }}
+          />
+          <span>–</span>
+          <input
+            type="date"
+            value={to}
+            title="Thời điểm kết thúc (Đến ngày)"
+            aria-label="Thời điểm kết thúc"
+            onChange={(e) => {
+              setTo(e.target.value);
+              setRangePreset('custom');
+              setPage(1);
+            }}
+          />
+          {(from || to) && (
+            <button
+              type="button"
+              className="ld-clear-date"
+              onClick={() => {
+                setFrom('');
+                setTo('');
+                setRangePreset('');
+                setPage(1);
+              }}
+              title="Xoá khoảng thời gian"
+              aria-label="Xoá khoảng thời gian"
+            >
+              ✕
+            </button>
+          )}
+        </div>
       </div>
 
       {manager && picked.length > 0 && (

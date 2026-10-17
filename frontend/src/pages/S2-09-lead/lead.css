@@ -6,3 +6,6 @@
 .inp.warn input{border-color:var(--warn)}
 .ld-dup{margin-top:-6px}
 .link{border:0;background:none;color:var(--blue);font-weight:500;padding:0;display:block;margin-top:6px}
+.ld-range input{width:125px}
+.ld-clear-date{border:0;background:none;color:var(--muted);cursor:pointer;padding:2px 6px;font-size:14px;border-radius:var(--r);line-height:1}
+.ld-clear-date:hover{color:var(--red,#ef4444);background:var(--soft)}
