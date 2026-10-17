@@ -4,6 +4,8 @@
 
 import { api, apiEnabled } from '../../data/api';
 import type { Account } from '../../data/auth';
+import { USERS } from '../../data/users';
+import { STUDENTS } from '../../data/students';
 
 export type { Account };
 
@@ -84,10 +86,90 @@ export async function login(email: string, password: string): Promise<Account | 
       return null;
     }
   }
-  const rawEmail = email.trim().toLowerCase();
-  const normalizedEmail = ALIASES[rawEmail] || rawEmail;
-  const found = DEMO_ACCOUNTS.find((a) => a.email.toLowerCase() === normalizedEmail);
-  const passwordMatch = password === DEMO_PASSWORD || password === '123456' || password === 'Tms@2026';
-  const ok = found && passwordMatch ? { ...found, mustChangePassword: false } : null;
-  return new Promise((resolve) => window.setTimeout(() => resolve(ok), 200));
+
+  const raw = email.trim().toLowerCase();
+  const normalized = ALIASES[raw] || raw;
+
+  // 1. Kiểm tra trong danh sách DEMO_ACCOUNTS chuẩn
+  const demoFound = DEMO_ACCOUNTS.find((a) => a.email.toLowerCase() === normalized);
+  if (demoFound) {
+    const ok = password === DEMO_PASSWORD || password === '123456' || password === 'Tms@2026';
+    return new Promise((resolve) => window.setTimeout(() => resolve(ok ? { ...demoFound, mustChangePassword: false } : null), 150));
+  }
+
+  // 2. Kiểm tra trong danh sách người dùng USERS (bao gồm cả tài khoản SV vừa tạo)
+  const u = USERS.find((x) => {
+    const em = x.email.toLowerCase();
+    const contact = x.contactEmail?.toLowerCase() || '';
+    const code = x.code?.toLowerCase() || '';
+    const userPrefix = em.split('@')[0];
+    return (
+      em === raw ||
+      contact === raw ||
+      code === raw ||
+      userPrefix === raw ||
+      em === normalized
+    );
+  });
+
+  if (u) {
+    if (u.status === 'Đã khoá') {
+      return new Promise((resolve) => window.setTimeout(() => resolve(null), 150));
+    }
+    const tempPass = u.tempPassword || 'Tms@2026';
+    const birthPass = u.birth
+      ? `${u.email.split('@')[0]}@${u.birth.slice(8, 10)}${u.birth.slice(5, 7)}${u.birth.slice(2, 4)}`
+      : '';
+    const isPassValid =
+      password === tempPass ||
+      password === 'Tms@2026' ||
+      password === '123456' ||
+      password === DEMO_PASSWORD ||
+      (birthPass && password === birthPass);
+
+    if (isPassValid) {
+      return new Promise((resolve) =>
+        window.setTimeout(
+          () =>
+            resolve({
+              email: u.email,
+              name: u.displayName || u.name,
+              roles: u.roles && u.roles.length ? u.roles : [0],
+              mustChangePassword: u.status === 'Chờ kích hoạt',
+            }),
+          150
+        )
+      );
+    }
+  }
+
+  // 3. Kiểm tra trong danh sách học viên STUDENTS
+  const st = STUDENTS.find((s) => {
+    const l = s.login.toLowerCase();
+    const e = s.email.toLowerCase();
+    const c = s.code.toLowerCase();
+    const prefix = l.split('@')[0];
+    return l === raw || e === raw || c === raw || prefix === raw;
+  });
+
+  if (st) {
+    const isPassValid = password === 'Tms@2026' || password === '123456' || password === DEMO_PASSWORD;
+    if (isPassValid) {
+      return new Promise((resolve) =>
+        window.setTimeout(
+          () =>
+            resolve({
+              email: st.login,
+              name: st.name,
+              roles: [0], // Học viên
+              mustChangePassword: st.status === 'Mới nhập học',
+            }),
+          150
+        )
+      );
+    }
+  }
+
+  return new Promise((resolve) => window.setTimeout(() => resolve(null), 150));
 }
+

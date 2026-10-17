@@ -65,6 +65,7 @@ export function UserDrawer({ user, users, onClose, onSave, onLock }: Props) {
       hometown: hometown.trim() || undefined,
       address: address.trim() || undefined,
       roles,
+      tempPassword: isNew ? tempPassword : user?.tempPassword,
     });
   }
 

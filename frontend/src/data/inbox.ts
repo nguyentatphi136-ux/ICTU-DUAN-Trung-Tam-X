@@ -2,7 +2,8 @@
 import type { User } from './auth';
 import { CLASS_NOTICES } from './classNotices';
 import { classesOf } from './classes';
-import { TODAY } from './funnel';
+import { FUNNEL, TODAY } from './funnel';
+import { isLeadAssignedToUser, isUserMatch } from './leadReminders';
 import { NOTICES, type Notice } from './notifications';
 import { saveAll } from './store';
 import { STUDENTS } from './students';
@@ -16,10 +17,29 @@ function myClasses(u: User) {
 export function inboxOf(u: User): Notice[] {
   const cls = myClasses(u);
   return NOTICES.filter((n) => {
-    if (n.to.users?.includes(u.name)) return true;
+    // 1. Thông báo lớp học (học viên / giảng viên trong lớp)
     if (n.to.cls && cls.has(n.to.cls)) return true;
-    // Tư vấn tuyển sinh (3), Quản lý đào tạo (5) và Quản trị viên (6) đều nhận thông báo nhắc lịch chăm sóc Lead
-    if (n.kind === 'Lead' && (u.active === 3 || u.active === 5 || u.active === 6)) return true;
+
+    // 2. Thông báo Lead: nhật ký của ai thì người đó nhận (chỉ người phụ trách hoặc người ghi nhật ký)
+    if (n.kind === 'Lead') {
+      if (n.ref?.startsWith('lead-cb-')) {
+        const leadId = Number(n.ref.split('-')[2]);
+        const lead = FUNNEL.find((x) => x.id === leadId);
+        if (lead) {
+          return isLeadAssignedToUser(lead, u);
+        }
+      }
+      if (n.to.users && n.to.users.length > 0) {
+        return n.to.users.some((target) => isUserMatch(target, u));
+      }
+      return false;
+    }
+
+    // 3. Các loại thông báo khác gửi đích danh
+    if (n.to.users && n.to.users.length > 0) {
+      return n.to.users.some((target) => isUserMatch(target, u));
+    }
+
     return false;
   }).sort((a, b) => b.at.localeCompare(a.at));
 }

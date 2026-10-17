@@ -34,19 +34,21 @@ export function NotificationBell() {
   useEffect(() => {
     runReminders();
     runFeeReminders();
+    if (!user) return;
+
     const handleDue = (lead: { name: string; phone: string; callback?: string }) => {
       toast('🔔 ĐẾN HẸN GỌI LẠI KHÁCH HÀNG', `${lead.name} (${lead.phone}) · Hẹn: ${ddmm(lead.callback || '')}`);
     };
 
-    runLeadReminders(handleDue);
+    runLeadReminders(handleDue, user);
 
     // Quét định kỳ thời gian thực mỗi 3 giây
     const timer = setInterval(() => {
-      runLeadReminders(handleDue);
+      runLeadReminders(handleDue, user);
     }, 3000);
 
     return () => clearInterval(timer);
-  }, [toast]);
+  }, [user, toast]);
   useEffect(() => {
     if (!open) return;
     const f = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);

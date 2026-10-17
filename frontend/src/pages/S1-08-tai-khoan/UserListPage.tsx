@@ -12,6 +12,8 @@ import { moveToTrash, restore } from '../../data/trash';
 import { ADMIN_ROLE, ROLES, USERS_MODULE } from '../../data/permissions';
 import { createUser, loadUserDetail, loadUsers, saveUser, setLocked, trashUser } from '../../data/s1api';
 import { restoreItem } from '../../data/s2api';
+import { saveAll } from '../../data/store';
+import { dispatchActivationEmail } from '../../data/email';
 import { statusTone, USERS, type Status, type UserRow } from '../../data/users';
 import { LockDialog } from './LockDialog';
 import { UserDetail } from './UserDetail';
@@ -62,7 +64,12 @@ export function UserListPage() {
   }, [users, q, role, status]);
   const view = paginate(filtered, page, size);
 
-  const update = (u: UserRow) => setUsers((list) => list.map((x) => (x.id === u.id ? u : x)));
+  const update = (u: UserRow) => {
+    const idx = USERS.findIndex((x) => x.id === u.id);
+    if (idx >= 0) USERS[idx] = u;
+    saveAll();
+    setUsers((list) => list.map((x) => (x.id === u.id ? u : x)));
+  };
   const trash = async (u: UserRow) => {
     if (apiEnabled) {
       try {
@@ -228,8 +235,29 @@ export function UserListPage() {
               return load.reload();
             }
             if (editing === 'new') {
-              setUsers((list) => [{ ...u, id: Math.max(...list.map((x) => x.id)) + 1 }, ...list]);
-              toast('Đã tạo tài khoản', `Email kích hoạt đã gửi tới ${u.email}.`);
+              const pass = u.tempPassword || 'Tms@2026';
+              const newId = Math.max(0, ...USERS.map((x) => x.id)) + 1;
+              const newUser: UserRow = {
+                ...u,
+                id: newId,
+                status: 'Chờ kích hoạt',
+                tempPassword: pass,
+              };
+              USERS.unshift(newUser);
+              saveAll();
+              setUsers([...USERS]);
+              void dispatchActivationEmail({
+                toEmail: u.email,
+                fullName: u.displayName || u.name,
+                loginEmail: u.email,
+                tempPassword: pass,
+                roleName: ROLES[u.roles[0]] || 'Học viên',
+              }).then((r) => {
+                if (r.success) {
+                  toast('Email kích hoạt đã gửi', `Thông tin đăng nhập đã gửi tới hộp thư ${u.email}`);
+                }
+              });
+              toast('Đã tạo tài khoản', `Tài khoản: ${u.email} · Mật khẩu tạm: ${pass}. Email kích hoạt đang gửi tới ${u.email}.`);
             } else {
               // S6-11: đổi vai trò được ghi nhật ký thao tác.
               const before = editing.roles.map((r) => ROLES[r]).join(', ');

@@ -217,7 +217,7 @@ export function FunnelPage() {
             if (callback && isCallbackDue(callback)) {
               runLeadReminders((lead) => {
                 toast('🔔 ĐẾN HẸN GỌI LẠI KHÁCH HÀNG', `${lead.name} (${lead.phone}) · Hẹn: ${ddmm(lead.callback || '')}`);
-              });
+              }, user);
             }
             toast('Đã lưu nhật ký', callback ? `Nhắc gọi lại: ${ddmm(callback)}.` : panel.name);
           }}
@@ -227,8 +227,12 @@ export function FunnelPage() {
         <ConvertDialog
           lead={converting}
           onClose={() => setConverting(null)}
-          onDone={(code, sentTo, emailSent) => {
-            const sub = emailSent ? 'Email kích hoạt đã gửi tới ' + sentTo + '.' : `Chưa gửi được email tới ${sentTo}, hãy báo học viên mật khẩu tạm bằng cách khác.`;
+          onDone={(code, sentTo, emailSent, tempPass, loginEmail) => {
+            const passText = tempPass ? ` · Mật khẩu: ${tempPass}` : '';
+            const accText = loginEmail ? `Tài khoản: ${loginEmail}${passText}. ` : '';
+            const sub = emailSent
+              ? `${accText}Email kích hoạt đã gửi tới ${sentTo}.`
+              : `${accText}Chưa gửi được email tới ${sentTo}, hãy thông báo mật khẩu tạm trực tiếp cho học viên.`;
             setConverting(null);
             if (apiEnabled) return void sync(Promise.resolve(), 'Đã tạo học viên ' + code, sub);
             addLog(converting, { kind: 'Chuyển thành học viên', at: now(), by: user!.name, text: `Tạo hồ sơ ${code} và tài khoản đăng nhập.` });

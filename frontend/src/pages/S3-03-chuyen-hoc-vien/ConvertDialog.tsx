@@ -5,12 +5,18 @@ import { Box, Modal } from '../../components/ui';
 import { apiEnabled } from '../../data/api';
 import { TODAY, type FunnelLead } from '../../data/funnel';
 import { convertLead } from '../../data/s3api';
+import { saveAll } from '../../data/store';
+import { dispatchActivationEmail } from '../../data/email';
 import { loginOf, nextStudentCode, STUDENTS, type Student } from '../../data/students';
 import { USERS } from '../../data/users';
 import { EMAIL_RE } from '../../data/validate';
 import './convert.css';
 
-type Props = { lead: FunnelLead; onClose: () => void; onDone: (code: string, sentTo: string, emailSent: boolean) => void };
+type Props = {
+  lead: FunnelLead;
+  onClose: () => void;
+  onDone: (code: string, sentTo: string, emailSent: boolean, tempPassword?: string, loginEmail?: string) => void;
+};
 
 // S3-03. Chuyển lead đã chốt thành hồ sơ học viên: dữ liệu lấy từ lead, mã học viên và email đăng nhập do hệ thống sinh.
 // Có backend: POST /api/leads/:id/convert { sendTo } tạo hồ sơ, tài khoản Học viên và gửi email kích hoạt trong một lần.
@@ -31,6 +37,7 @@ export function ConvertDialog({ lead, onClose, onDone }: Props) {
         (e: Error) => (setBusy(false), setError(e.message)),
       );
     }
+    const tempPassword = 'Tms@2026';
     const s: Student = {
       code,
       name: lead.name,
@@ -47,8 +54,30 @@ export function ConvertDialog({ lead, onClose, onDone }: Props) {
       leadId: lead.id,
     };
     STUDENTS.unshift(s);
-    USERS.unshift({ id: Math.max(...USERS.map((u) => u.id)) + 1, name: s.name, email: login, phone: s.phone, roles: [0], status: 'Chờ kích hoạt' });
-    onDone(s.code, s.email, true);
+    const newId = Math.max(0, ...USERS.map((u) => u.id)) + 1;
+    USERS.unshift({
+      id: newId,
+      name: s.name,
+      displayName: s.name,
+      email: login,
+      contactEmail: sendTo.trim(),
+      phone: s.phone,
+      roles: [0],
+      status: 'Chờ kích hoạt',
+      tempPassword,
+      code: s.code,
+    });
+    saveAll();
+
+    void dispatchActivationEmail({
+      toEmail: sendTo.trim(),
+      fullName: s.name,
+      loginEmail: login,
+      tempPassword,
+      roleName: 'Học viên',
+    });
+
+    onDone(s.code, s.email, true, tempPassword, login);
   }
 
   const facts: [string, string][] = [

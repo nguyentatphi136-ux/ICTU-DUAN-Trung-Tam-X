@@ -61,8 +61,8 @@ export function LoginPage() {
   function validate() {
     const next: typeof errors = {};
     const v = email.trim();
-    if (!v) next.email = 'Vui lòng nhập email';
-    else if (!EMAIL_RE.test(v)) next.email = 'Email không đúng định dạng';
+    if (!v) next.email = 'Vui lòng nhập email hoặc tên đăng nhập';
+    else if (!EMAIL_RE.test(v) && !/^[A-Za-z0-9_.-]+$/.test(v)) next.email = 'Email hoặc tên đăng nhập không hợp lệ';
     if (!password) next.password = 'Vui lòng nhập mật khẩu';
     setErrors(next);
     return !next.email && !next.password;
@@ -174,13 +174,13 @@ export function LoginPage() {
 
               <form onSubmit={onSubmit} noValidate>
                 <label className="lg-f" htmlFor="email">
-                  Email
+                  Email hoặc Tên đăng nhập / Mã SV
                 </label>
                 <div className={'lg-field' + (errors.email ? ' lg-invalid' : '')}>
                   <input
                     id="email"
-                    type="email"
-                    placeholder="S25200212123@tms.vn"
+                    type="text"
+                    placeholder="email@tms.vn hoặc HV26... / s2520..."
                     autoComplete="username"
                     value={email}
                     disabled={locked}

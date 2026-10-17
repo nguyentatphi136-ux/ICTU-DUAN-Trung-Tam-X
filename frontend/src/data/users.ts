@@ -21,6 +21,8 @@ export type UserRow = {
   code?: string;
   gender?: string;
   createdAt?: string;
+  tempPassword?: string;
+  contactEmail?: string;
 };
 
 const SEED: Omit<UserRow, 'id'>[] = [
