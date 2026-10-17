@@ -25,6 +25,8 @@ class DefaultPasswordTest {
         }
 
         UserDAO dao = new UserDAO();
+        // Đặt rõ "false": system property thắng biến môi trường, máy có RESET_PASSWORDS_ON_START=true trong .env vẫn chạy đúng.
+        System.setProperty("RESET_PASSWORDS_ON_START", "false");
         DatabaseMigration.runMigration();
         assertNull(dao.authenticate("a@x.vn", UserDAO.DEFAULT_PASSWORD), "Không bật RESET_PASSWORDS_ON_START thì giữ mật khẩu");
 

@@ -223,7 +223,7 @@ public class AdminApiServlet extends HttpServlet {
                     final String userTempPass = (String) created.get("tempPassword");
                     String appBase = System.getenv("APP_BASE_URL");
                     if (appBase == null || appBase.isBlank()) appBase = "http://localhost:5173";
-                    final String loginLink = appBase + "/login.html";
+                    final String loginLink = appBase.replaceAll("/+$", "") + "/dang-nhap";
                     java.util.concurrent.CompletableFuture.runAsync(() ->
                             EmailService.sendActivationEmail(userEmail, userName, userTempPass, loginLink)
                     );

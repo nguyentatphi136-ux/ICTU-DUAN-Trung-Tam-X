@@ -30,7 +30,8 @@ public class EmailService {
         String password = setting("SMTP_PASSWORD", "");
         String from = setting("SMTP_FROM", "");
         if (host.isBlank() || from.isBlank()) {
-            LOGGER.warning("Chưa cấu hình SMTP_HOST hoặc SMTP_FROM; không gửi được email kích hoạt.");
+            // Máy chạy thử chưa có SMTP: in thông tin đăng nhập ra terminal của backend để quản trị chuyển cho người dùng.
+            System.out.println("Chưa cấu hình SMTP, tài khoản mới " + toEmail + " có mật khẩu tạm: " + tempPassword + " (đăng nhập tại " + loginLink + ")");
             return false;
         }
 
