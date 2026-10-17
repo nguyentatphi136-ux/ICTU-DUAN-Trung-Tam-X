@@ -48,6 +48,18 @@ export function LeadListPage() {
   const known = useRef<Record<number, Lead>>({});
   const [qSent, setQSent] = useState('');
   useEffect(() => {
+    setLeads([...LEADS]);
+    const onUpdated = () => {
+      setLeads([...LEADS]);
+    };
+    window.addEventListener('tms:lead-updated', onUpdated);
+    window.addEventListener('storage', onUpdated);
+    return () => {
+      window.removeEventListener('tms:lead-updated', onUpdated);
+      window.removeEventListener('storage', onUpdated);
+    };
+  }, []);
+  useEffect(() => {
     const t = setTimeout(() => setQSent(q), 300);
     return () => clearTimeout(t);
   }, [q]);

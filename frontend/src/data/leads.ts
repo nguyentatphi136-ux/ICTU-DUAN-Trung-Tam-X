@@ -26,16 +26,16 @@ export const COUNSELORS = ['TRAN THU HA', 'NGO THANH TU', 'DANG BAO VY'];
 export const leadTone = (s: LeadStatus): 'info' | 'wait' | 'ok' | undefined =>
   s === 'Mới' ? 'info' : s === 'Đã liên hệ' || s === 'Đang tư vấn' || s === 'Hẹn học thử' ? 'wait' : s === 'Chốt' || s === 'Đã nhập học' ? 'ok' : undefined;
 
-const SEED: Omit<Lead, 'id'>[] = [
-  { name: 'PHAM THI HANH', phone: '0912 480 227', source: 'Biểu mẫu web', program: 'Lập trình web Full-stack', status: 'Mới', owner: 'TRAN THU HA', createdAt: '2026-09-28' },
-  { name: 'DO QUANG MINH', phone: '0987 115 630', source: 'Facebook', program: 'Phân tích dữ liệu', status: 'Mới', owner: 'TRAN THU HA', createdAt: '2026-09-28' },
-  { name: 'LE NGOC ANH', phone: '0938 772 041', source: 'Biểu mẫu web', program: 'Thiết kế UI/UX', status: 'Mới', owner: 'TRAN THU HA', createdAt: '2026-09-27' },
-  { name: 'TRAN VAN HUNG', phone: '0903 664 518', source: 'Giới thiệu', program: 'Lập trình web Full-stack', status: 'Đang tư vấn', owner: 'TRAN THU HA', createdAt: '2026-09-25' },
-  { name: 'NGUYEN BAO CHAU', phone: '0965 209 384', source: 'Zalo', program: 'Lập trình Java Backend', status: 'Đã liên hệ', owner: 'TRAN THU HA', createdAt: '2026-09-24' },
-  { name: 'VU THANH DAT', phone: '0919 530 276', source: 'Facebook', program: 'Kiểm thử phần mềm', status: 'Đã nhập học', owner: 'TRAN THU HA', createdAt: '2026-09-20' },
-  { name: 'HOANG MAI LAN', phone: '0977 418 902', source: 'Biểu mẫu web', program: 'Phân tích dữ liệu', status: 'Từ chối', owner: 'DANG BAO VY', createdAt: '2026-09-18' },
-  { name: 'BUI DUC ANH', phone: '0944 861 357', source: 'Giới thiệu', program: 'Thiết kế UI/UX', status: 'Đang tư vấn', owner: 'TRAN THU HA', createdAt: '2026-09-15' },
-];
+const SEED: Omit<Lead, 'id'>[] = FUNNEL.map((f, i) => ({
+  name: f.name,
+  phone: f.phone,
+  email: f.email,
+  source: f.source || 'Biểu mẫu web',
+  program: f.program,
+  status: (f.student ? 'Đã nhập học' : f.stage) as LeadStatus,
+  owner: f.owner || 'TRAN THU HA',
+  createdAt: `2026-09-${String(Math.max(1, 28 - (i % 20))).padStart(2, '0')}`,
+}));
 
 const NAMES = ['NGUYEN THU TRANG', 'TRAN MINH KHOA', 'LE THANH HUONG', 'PHAM DUC LONG', 'HOANG BAO NGOC', 'VU QUANG HUY', 'DANG THI MAI', 'BUI GIA HAN'];
 const PROGRAMS = ['Lập trình web Full-stack', 'Phân tích dữ liệu', 'Thiết kế UI/UX', 'Lập trình Java Backend', 'Kiểm thử phần mềm'];
@@ -59,14 +59,80 @@ export const LEADS: Lead[] = persisted('leads.v2', [...Array(128)].map((_, i): L
 /**
  * Đồng bộ hai chiều giữa LEADS (Danh sách) và FUNNEL (Bảng phễu).
  * Bất cứ lead nào có ở một bên mà thiếu ở bên kia đều được tự động bổ sung.
+ * Khớp chuẩn xác theo số điện thoại (samePhone) hoặc tên để tránh lệch ID.
  */
 export function syncAllLeadsAndFunnel() {
   let changed = false;
 
-  // 1. Đồng bộ từ LEADS sang FUNNEL
+  // 1. Đồng bộ và chuẩn hóa từ FUNNEL sang LEADS
+  for (const f of FUNNEL) {
+    let l = LEADS.find((x) => samePhone(x.phone, f.phone));
+    if (!l && f.name) {
+      l = LEADS.find((x) => x.name.trim().toLowerCase() === f.name.trim().toLowerCase());
+    }
+    if (!l) {
+      l = LEADS.find((x) => x.id === f.id);
+    }
+
+    const targetStatus: LeadStatus = (f.student ? 'Đã nhập học' : f.stage) as LeadStatus;
+
+    if (l) {
+      if (l.id !== f.id) {
+        const occupant = LEADS.find((x) => x.id === f.id && x !== l);
+        if (occupant) {
+          occupant.id = Math.max(...LEADS.map((x) => x.id), ...FUNNEL.map((x) => x.id)) + 1;
+        }
+        l.id = f.id;
+        changed = true;
+      }
+      if (l.status !== targetStatus) {
+        l.status = targetStatus;
+        changed = true;
+      }
+      if (l.name !== f.name) {
+        l.name = f.name;
+        changed = true;
+      }
+      if (f.owner && l.owner !== f.owner) {
+        l.owner = f.owner;
+        changed = true;
+      }
+      if (f.program && l.program !== f.program) {
+        l.program = f.program;
+        changed = true;
+      }
+    } else {
+      LEADS.push({
+        id: f.id,
+        name: f.name,
+        phone: f.phone,
+        email: f.email,
+        source: f.source || 'Biểu mẫu web',
+        program: f.program,
+        status: targetStatus,
+        owner: f.owner || 'TRAN THU HA',
+        createdAt: TODAY,
+      });
+      changed = true;
+    }
+  }
+
+  // 2. Đồng bộ từ LEADS sang FUNNEL
   for (const l of LEADS) {
-    const found = FUNNEL.find((f) => f.id === l.id);
-    if (!found) {
+    let f = FUNNEL.find((x) => samePhone(x.phone, l.phone));
+    if (!f && l.name) {
+      f = FUNNEL.find((x) => x.name.trim().toLowerCase() === l.name.trim().toLowerCase());
+    }
+    if (!f) {
+      f = FUNNEL.find((x) => x.id === l.id);
+    }
+
+    if (f) {
+      if (f.id !== l.id) {
+        f.id = l.id;
+        changed = true;
+      }
+    } else {
       FUNNEL.push({
         id: l.id,
         name: l.name,
@@ -77,25 +143,6 @@ export function syncAllLeadsAndFunnel() {
         owner: l.owner || 'TRAN THU HA',
         stage: (l.status === 'Đã nhập học' ? 'Chốt' : l.status) as Stage || 'Mới',
         student: l.status === 'Đã nhập học' ? 'HV' + l.id : undefined,
-      });
-      changed = true;
-    }
-  }
-
-  // 2. Đồng bộ từ FUNNEL sang LEADS
-  for (const f of FUNNEL) {
-    const found = LEADS.find((l) => l.id === f.id);
-    if (!found) {
-      LEADS.push({
-        id: f.id,
-        name: f.name,
-        phone: f.phone,
-        email: f.email,
-        source: f.source || 'Biểu mẫu web',
-        program: f.program,
-        status: f.student ? 'Đã nhập học' : f.stage,
-        owner: f.owner || 'TRAN THU HA',
-        createdAt: TODAY,
       });
       changed = true;
     }
@@ -135,7 +182,7 @@ export function addLead(data: Omit<Lead, 'id'> & { id?: number }): Lead {
     student: lead.status === 'Đã nhập học' ? 'HV' + newId : undefined,
   };
 
-  const existingIdx = FUNNEL.findIndex((f) => f.id === newId);
+  const existingIdx = FUNNEL.findIndex((f) => f.id === newId || samePhone(f.phone, lead.phone));
   if (existingIdx >= 0) {
     FUNNEL[existingIdx] = funnelLead;
   } else {
@@ -143,17 +190,21 @@ export function addLead(data: Omit<Lead, 'id'> & { id?: number }): Lead {
   }
 
   saveAll();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('tms:lead-updated', { detail: { id: newId } }));
+  }
   return lead;
 }
 
 /** Cập nhật thông tin lead ở cả hai bảng */
 export function updateLead(data: Lead) {
-  const idx = LEADS.findIndex((l) => l.id === data.id);
+  const idx = LEADS.findIndex((l) => l.id === data.id || samePhone(l.phone, data.phone));
   if (idx >= 0) {
     LEADS[idx] = { ...data };
   }
-  const f = FUNNEL.find((x) => x.id === data.id);
+  const f = FUNNEL.find((x) => x.id === data.id || samePhone(x.phone, data.phone));
   if (f) {
+    f.id = data.id;
     f.name = data.name;
     f.phone = data.phone;
     f.email = data.email;
@@ -165,18 +216,26 @@ export function updateLead(data: Lead) {
       f.student = f.student || ('HV' + data.id);
     } else {
       f.stage = data.status as Stage;
+      f.student = undefined;
     }
   }
   saveAll();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('tms:lead-updated', { detail: { id: data.id } }));
+  }
 }
 
 /** Xoá lead khỏi cả hai bảng */
 export function removeLead(id: number) {
+  const target = LEADS.find((l) => l.id === id);
   const lIdx = LEADS.findIndex((l) => l.id === id);
   if (lIdx >= 0) LEADS.splice(lIdx, 1);
-  const fIdx = FUNNEL.findIndex((f) => f.id === id);
+  const fIdx = FUNNEL.findIndex((f) => f.id === id || (target && samePhone(f.phone, target.phone)));
   if (fIdx >= 0) FUNNEL.splice(fIdx, 1);
   saveAll();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('tms:lead-updated', { detail: { id } }));
+  }
 }
 
 /** Đồng bộ trạng thái từ Bảng phễu (Kanban) sang Danh sách lead */
@@ -186,12 +245,18 @@ export function syncFunnelStage(id: number, stage: Stage, reason?: string, stude
     f.stage = stage;
     f.reason = reason;
     if (studentCode) f.student = studentCode;
+    else if (stage !== 'Chốt') f.student = undefined;
   }
-  const l = LEADS.find((x) => x.id === id);
+  // Tìm lead trong LEADS: ưu tiên số điện thoại của f nếu có, sau đó tìm theo id
+  const l = LEADS.find((x) => (f && samePhone(x.phone, f.phone)) || x.id === id);
   if (l) {
+    if (f && l.id !== f.id) l.id = f.id;
     l.status = studentCode ? 'Đã nhập học' : stage;
   }
   saveAll();
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('tms:lead-updated', { detail: { id, stage } }));
+  }
 }
 
 export const samePhone = (a: string, b: string) => a.replace(/\D/g, '') === b.replace(/\D/g, '');

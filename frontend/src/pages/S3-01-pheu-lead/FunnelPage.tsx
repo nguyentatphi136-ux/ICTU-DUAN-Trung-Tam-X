@@ -1,4 +1,4 @@
-import { useMemo, useState, type DragEvent } from 'react';
+import { useEffect, useMemo, useState, type DragEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
@@ -42,6 +42,19 @@ export function FunnelPage() {
   const role = user?.active ?? -1;
   // Sheet 2: chỉ Tư vấn tuyển sinh sửa lead; Quản lý đào tạo, Kế toán chỉ xem.
   const canWrite = role === 3;
+
+  useEffect(() => {
+    setLeads([...FUNNEL]);
+    const handleUpdate = () => {
+      setLeads([...FUNNEL]);
+    };
+    window.addEventListener('tms:lead-updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('tms:lead-updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
 
   const [programs, setPrograms] = useState<PublicProgram[]>([]);
   const load = useLoad(async () => {
