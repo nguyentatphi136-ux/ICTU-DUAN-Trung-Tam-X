@@ -10,10 +10,11 @@ import { useAuth } from '../../data/auth';
 import { TODAY } from '../../data/funnel';
 import { moveToTrash, restore } from '../../data/trash';
 import { ADMIN_ROLE, ROLES, USERS_MODULE } from '../../data/permissions';
-import { createUser, loadUsers, saveUser, setLocked, trashUser } from '../../data/s1api';
+import { createUser, loadUserDetail, loadUsers, saveUser, setLocked, trashUser } from '../../data/s1api';
 import { restoreItem } from '../../data/s2api';
 import { statusTone, USERS, type Status, type UserRow } from '../../data/users';
 import { LockDialog } from './LockDialog';
+import { UserDetail } from './UserDetail';
 import { UserDrawer } from './UserDrawer';
 
 const STATUSES: Status[] = ['Hoạt động', 'Chờ kích hoạt', 'Đã khoá'];
@@ -30,6 +31,7 @@ export function UserListPage() {
   const [editing, setEditing] = useState<UserRow | 'new' | null>(null);
   const [locking, setLocking] = useState<UserRow | null>(null);
   const [deleting, setDeleting] = useState<UserRow | null>(null);
+  const [viewing, setViewing] = useState<UserRow | null>(null);
   const { user: me } = useAuth();
   // Sheet 2: Quản lý đào tạo chỉ xem (R) "Người dùng & nhật ký"; tạo, sửa, khoá là việc của Quản trị (S1-08, S1-09, S1-10).
   const canWrite = me?.active === ADMIN_ROLE;
@@ -38,6 +40,16 @@ export function UserListPage() {
     await loadUsers();
     setUsers([...USERS]);
   });
+
+  // Có backend: danh sách chỉ có thông tin gọn, mở xem hoặc sửa thì tải thông tin chi tiết của tài khoản đó.
+  const withDetail = async (u: UserRow, open: (d: UserRow) => void) => {
+    if (!apiEnabled) return open(u);
+    try {
+      open(await loadUserDetail(u.id));
+    } catch (e) {
+      toast('Chưa tải được thông tin tài khoản', (e as Error).message);
+    }
+  };
 
   const filtered = useMemo(() => {
     const k = q.trim().toLowerCase().replace(/\s/g, '');
@@ -134,10 +146,16 @@ export function UserListPage() {
               {view.items.map((u) => (
                 <tr key={u.id}>
                   <td>
-                    <span className="person">
+                    <button
+                      type="button"
+                      className="person"
+                      title="Xem thông tin chi tiết"
+                      style={{ background: 'none', border: 0, padding: 0, color: 'inherit', font: 'inherit', cursor: 'pointer', textAlign: 'left' }}
+                      onClick={() => void withDetail(u, setViewing)}
+                    >
                       <span className="initial">{initial(u.name)}</span>
                       {u.name}
-                    </span>
+                    </button>
                   </td>
                   <td>{u.email}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{u.phone}</td>
@@ -152,16 +170,19 @@ export function UserListPage() {
                     <Pill tone={statusTone(u.status)}>{u.status}</Pill>
                   </td>
                   <td style={{ width: 56 }}>
-                    {canWrite && (
-                      <RowMenu
-                        actions={[
-                          { label: 'Sửa', onClick: () => setEditing(u) },
-                          u.status === 'Đã khoá' ? { label: 'Mở khoá', onClick: () => setLocking(u) } : { label: 'Khoá', danger: true, onClick: () => setLocking(u) },
-                          // Không tự chuyển tài khoản của mình vào thùng rác (máy chủ cũng chặn).
-                          ...(u.email === me?.email ? [] : [{ label: 'Chuyển vào thùng rác', danger: true, onClick: () => setDeleting(u) }]),
-                        ]}
-                      />
-                    )}
+                    <RowMenu
+                      actions={[
+                        { label: 'Xem chi tiết', onClick: () => void withDetail(u, setViewing) },
+                        ...(canWrite
+                          ? [
+                              { label: 'Sửa', onClick: () => void withDetail(u, setEditing) },
+                              u.status === 'Đã khoá' ? { label: 'Mở khoá', onClick: () => setLocking(u) } : { label: 'Khoá', danger: true, onClick: () => setLocking(u) },
+                              // Không tự chuyển tài khoản của mình vào thùng rác (máy chủ cũng chặn).
+                              ...(u.email === me?.email ? [] : [{ label: 'Chuyển vào thùng rác', danger: true, onClick: () => setDeleting(u) }]),
+                            ]
+                          : []),
+                      ]}
+                    />
                   </td>
                 </tr>
               ))}
@@ -192,13 +213,17 @@ export function UserListPage() {
           onSave={async (u) => {
             if (apiEnabled) {
               try {
-                if (editing === 'new') await createUser(u);
-                else await saveUser(editing, u);
+                if (editing === 'new') {
+                  const created = await createUser(u);
+                  toast('Đã tạo tài khoản', `Mật khẩu tạm ${created?.tempPassword ?? ''}, đã gửi kèm email kích hoạt tới ${u.email}. Người dùng phải đổi ở lần đăng nhập đầu.`);
+                } else {
+                  await saveUser(editing, u);
+                  toast('Đã lưu thay đổi', u.name);
+                }
               } catch (e) {
                 // Ví dụ 409 EMAIL_ALREADY_EXISTS hoặc số điện thoại trùng: giữ ngăn mở để sửa lại.
                 return toast('Chưa lưu được', (e as Error).message);
               }
-              toast(editing === 'new' ? 'Đã tạo tài khoản' : 'Đã lưu thay đổi', editing === 'new' ? `Email kích hoạt kèm mật khẩu tạm đã gửi tới ${u.email}.` : u.name);
               setEditing(null);
               return load.reload();
             }
@@ -216,6 +241,20 @@ export function UserListPage() {
             }
             setEditing(null);
           }}
+        />
+      )}
+      {viewing && (
+        <UserDetail
+          user={viewing}
+          onClose={() => setViewing(null)}
+          onEdit={
+            canWrite
+              ? () => {
+                  setEditing(viewing);
+                  setViewing(null);
+                }
+              : undefined
+          }
         />
       )}
       {locking && (

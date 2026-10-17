@@ -35,6 +35,10 @@ public final class PermissionPolicy {
         if ("PUT".equals(method) && path.matches("^/api/admin/users/\\d+/status$")) {
             return "USER_ROLE_ASSIGN";
         }
+        // Xem chi tiết một tài khoản (S1-08): ai được xem danh sách tài khoản thì xem được chi tiết.
+        if ("GET".equals(method) && path.matches("^/api/admin/users/\\d+$")) {
+            return "USER_READ";
+        }
         if ("PUT".equals(method) && path.matches("^/api/admin/users/\\d+$")) {
             return "USER_ROLE_ASSIGN";
         }

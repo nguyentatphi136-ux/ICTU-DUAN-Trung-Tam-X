@@ -131,7 +131,7 @@ export function ConvertBlock({ lead, canWrite, onConvert }: { lead: FunnelLead; 
     return (
       <div className="cv-done">
         <Box icon="check" tone="ok" title={'Đã chuyển thành học viên ' + lead.student}>
-          {s ? `Tài khoản ${s.login} đã được tạo. Email kích hoạt đã gửi tới ${s.email}.` : `Tài khoản ${lead.student.toLowerCase()}@tms.vn đã được tạo.`}
+          {s ? `Tài khoản ${s.login} đã được tạo. Email kích hoạt đã gửi tới ${s.email}.` : `Tài khoản ${lead.student}@tms.vn đã được tạo.`}
         </Box>
         <Link to={'/hoc-vien/' + lead.student} className="btn" style={{ width: 200 }}>
           Mở hồ sơ học viên

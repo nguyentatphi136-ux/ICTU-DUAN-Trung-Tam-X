@@ -130,6 +130,13 @@ public class AdminDAO {
      */
     public Map<String, Object> createUser(long actorId, String userCode, String email, String fullName,
                                          String phone, List<String> roleCodes, String tempPassword) throws SQLException {
+        return createUser(actorId, userCode, email, fullName, phone, roleCodes, tempPassword, null, null, null);
+    }
+
+    /** Như trên, kèm ngày sinh (yyyy-mm-dd), quê quán, địa chỉ hiện tại. Có ngày sinh thì mật khẩu tạm theo tempPasswordFor. */
+    public Map<String, Object> createUser(long actorId, String userCode, String email, String fullName, String phone,
+                                         List<String> roleCodes, String tempPassword, String dateOfBirth, String hometown,
+                                         String address) throws SQLException {
         if (email == null || !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
             throw new IllegalArgumentException("Địa chỉ email không hợp lệ.");
         }
@@ -137,19 +144,21 @@ public class AdminDAO {
             throw new IllegalArgumentException("Vui lòng nhập họ và tên người dùng.");
         }
 
-        String normalizedEmail = email.trim().toLowerCase(java.util.Locale.ROOT);
+        // Email lưu đúng như người nhập (A25200212001@tms.vn); trùng và đăng nhập so không phân biệt hoa thường.
+        String normalizedEmail = email.trim();
         String normalizedPhone = UserDAO.normalizePhone(phone);
         if (!UserDAO.isValidVietnamPhone(normalizedPhone)) {
             throw new IllegalArgumentException("Số điện thoại không đúng định dạng di động Việt Nam (10 số, bắt đầu 03, 05, 07, 08, 09).");
         }
+        java.sql.Date dob = parseDateOfBirth(dateOfBirth);
         String finalPassword = (tempPassword != null && !tempPassword.trim().isEmpty())
-                ? tempPassword.trim() : generateTempPassword();
+                ? tempPassword.trim() : tempPasswordFor(normalizedEmail, dob == null ? null : dob.toString());
 
         try (Connection connection = DBConnection.getConnection()) {
             connection.setAutoCommit(false);
             try {
                 // Kiểm tra trùng email
-                try (PreparedStatement checkStmt = connection.prepareStatement("SELECT id FROM users WHERE email = ?")) {
+                try (PreparedStatement checkStmt = connection.prepareStatement("SELECT id FROM users WHERE LOWER(email) = LOWER(?)")) {
                     checkStmt.setString(1, normalizedEmail);
                     try (ResultSet rs = checkStmt.executeQuery()) {
                         if (rs.next()) {
@@ -167,14 +176,20 @@ public class AdminDAO {
 
                 String hashed = BCrypt.hashpw(finalPassword, BCrypt.gensalt(10));
                 long newUserId = 0;
-                String insertSql = "INSERT INTO users (user_code, email, password_hash, full_name, phone, status, created_at, updated_at) "
-                        + "VALUES (?, ?, ?, ?, ?, 'ACTIVE', NOW(), NOW())";
+                // must_change_password: mật khẩu tạm phải đổi ở lần đăng nhập đầu (S1-08).
+                String insertSql = "INSERT INTO users (user_code, email, password_hash, full_name, display_name, phone, date_of_birth, "
+                        + "hometown, address, must_change_password, status, created_at, updated_at) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, 'ACTIVE', NOW(), NOW())";
                 try (PreparedStatement insertStmt = connection.prepareStatement(insertSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
                     insertStmt.setString(1, finalUserCode);
                     insertStmt.setString(2, normalizedEmail);
                     insertStmt.setString(3, hashed);
                     insertStmt.setString(4, UserDAO.normalizeName(fullName));
-                    insertStmt.setString(5, normalizedPhone.isEmpty() ? null : normalizedPhone);
+                    insertStmt.setString(5, fullName.trim().replaceAll("\\s+", " "));
+                    insertStmt.setString(6, normalizedPhone.isEmpty() ? null : normalizedPhone);
+                    insertStmt.setDate(7, dob);
+                    insertStmt.setString(8, blankToNull(hometown));
+                    insertStmt.setString(9, blankToNull(address));
                     insertStmt.executeUpdate();
                     try (ResultSet generated = insertStmt.getGeneratedKeys()) {
                         if (generated.next()) newUserId = generated.getLong(1);
@@ -223,6 +238,12 @@ public class AdminDAO {
      * Chức năng S1-08: Sửa thông tin tài khoản người dùng
      */
     public Map<String, Object> updateUserDetails(long actorId, long targetId, String fullName, String phone) throws SQLException {
+        return updateUserDetails(actorId, targetId, fullName, phone, null, null, null);
+    }
+
+    /** Như trên, kèm ngày sinh, quê quán, địa chỉ: null là giữ nguyên, chuỗi rỗng là xoá. */
+    public Map<String, Object> updateUserDetails(long actorId, long targetId, String fullName, String phone, String dateOfBirth,
+                                                 String hometown, String address) throws SQLException {
         if (fullName == null || fullName.trim().isEmpty()) {
             throw new IllegalArgumentException("Họ và tên không được để trống.");
         }
@@ -235,8 +256,11 @@ public class AdminDAO {
             try {
                 String oldName = null;
                 String oldPhone = null;
+                java.sql.Date dob;
+                String finalHometown;
+                String finalAddress;
                 try (PreparedStatement checkStmt = connection.prepareStatement(
-                        "SELECT full_name, phone FROM users WHERE id = ? AND deleted_at IS NULL FOR UPDATE")) {
+                        "SELECT full_name, phone, date_of_birth, hometown, address FROM users WHERE id = ? AND deleted_at IS NULL FOR UPDATE")) {
                     checkStmt.setLong(1, targetId);
                     try (ResultSet rs = checkStmt.executeQuery()) {
                         if (!rs.next()) {
@@ -245,6 +269,9 @@ public class AdminDAO {
                         }
                         oldName = rs.getString("full_name");
                         oldPhone = rs.getString("phone");
+                        dob = dateOfBirth == null ? rs.getDate("date_of_birth") : parseDateOfBirth(dateOfBirth);
+                        finalHometown = hometown == null ? rs.getString("hometown") : blankToNull(hometown);
+                        finalAddress = address == null ? rs.getString("address") : blankToNull(address);
                     }
                 }
 
@@ -252,10 +279,15 @@ public class AdminDAO {
                     throw new ConflictException("PHONE_DUPLICATE", "Số điện thoại đã được dùng cho tài khoản khác.");
                 }
                 try (PreparedStatement updateStmt = connection.prepareStatement(
-                        "UPDATE users SET full_name = ?, phone = ?, updated_at = NOW() WHERE id = ?")) {
+                        "UPDATE users SET full_name = ?, display_name = ?, phone = ?, date_of_birth = ?, hometown = ?, address = ?, "
+                                + "updated_at = NOW() WHERE id = ?")) {
                     updateStmt.setString(1, UserDAO.normalizeName(fullName));
-                    updateStmt.setString(2, normalizedPhone.isEmpty() ? null : normalizedPhone);
-                    updateStmt.setLong(3, targetId);
+                    updateStmt.setString(2, fullName.trim().replaceAll("\\s+", " "));
+                    updateStmt.setString(3, normalizedPhone.isEmpty() ? null : normalizedPhone);
+                    updateStmt.setDate(4, dob);
+                    updateStmt.setString(5, finalHometown);
+                    updateStmt.setString(6, finalAddress);
+                    updateStmt.setLong(7, targetId);
                     updateStmt.executeUpdate();
                 }
 
@@ -277,7 +309,33 @@ public class AdminDAO {
         }
     }
 
-    private String generateTempPassword() {
+    /**
+     * Mật khẩu tạm của tài khoản mới: <tên đăng nhập>@<ngày sinh ddMMyy>, ví dụ A25200212070@tms.vn sinh 17/06/2005
+     * thành A25200212070@170605. Chưa có ngày sinh thì sinh ngẫu nhiên. Người dùng phải đổi ở lần đăng nhập đầu.
+     */
+    public static String tempPasswordFor(String email, String dateOfBirth) {
+        if (dateOfBirth == null || dateOfBirth.isBlank()) return generateTempPassword();
+        java.time.LocalDate d = java.time.LocalDate.parse(dateOfBirth.trim());
+        return email.substring(0, email.indexOf('@')) + "@" + d.format(java.time.format.DateTimeFormatter.ofPattern("ddMMyy"));
+    }
+
+    /** Ngày sinh dạng yyyy-mm-dd; rỗng là không có; sai định dạng hoặc ở tương lai thì báo lỗi. */
+    static java.sql.Date parseDateOfBirth(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            java.time.LocalDate d = java.time.LocalDate.parse(value.trim());
+            if (d.isAfter(java.time.LocalDate.now())) throw new IllegalArgumentException("Ngày sinh không được ở tương lai.");
+            return java.sql.Date.valueOf(d);
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new IllegalArgumentException("Ngày sinh không hợp lệ (định dạng yyyy-mm-dd).");
+        }
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static String generateTempPassword() {
         String chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
         SecureRandom random = new SecureRandom();
         StringBuilder sb = new StringBuilder("Edu@");
@@ -592,7 +650,7 @@ public class AdminDAO {
                                                   Set<String> seenEmails, Set<String> seenPhones) throws SQLException {
         String fullName = text(raw, "fullName");
         if (fullName.isEmpty()) fullName = text(raw, "name");
-        String email = text(raw, "email").toLowerCase(java.util.Locale.ROOT);
+        String email = text(raw, "email");
         String phone = importPhone(raw.get("phone"));
         String roleRaw = text(raw, "role");
         String role = roleCode(roleRaw);
@@ -611,11 +669,11 @@ public class AdminDAO {
             add.accept("INVALID", "Thiếu địa chỉ email");
         } else if (!email.matches(EMAIL_REGEX)) {
             add.accept("INVALID", "Định dạng email không hợp lệ");
-        } else if (!seenEmails.add(email)) {
+        } else if (!seenEmails.add(email.toLowerCase(java.util.Locale.ROOT))) {
             add.accept("DUPLICATE", "Email bị trùng với một dòng khác trong tệp");
         } else {
             try (PreparedStatement stmt = connection.prepareStatement(
-                    "SELECT full_name, deleted_at FROM users WHERE email = ?")) {
+                    "SELECT full_name, deleted_at FROM users WHERE LOWER(email) = LOWER(?)")) {
                 stmt.setString(1, email);
                 try (ResultSet rs = stmt.executeQuery()) {
                     if (rs.next()) {
@@ -736,7 +794,7 @@ public class AdminDAO {
             String[] tempPasswords = new String[okRows.size()];
             String[] hashes = new String[okRows.size()];
             java.util.stream.IntStream.range(0, okRows.size()).parallel().forEach(k -> {
-                tempPasswords[k] = generateTempPassword();
+                tempPasswords[k] = tempPasswordFor((String) okRows.get(k).get("email"), (String) okRows.get(k).get("dateOfBirth"));
                 hashes[k] = BCrypt.hashpw(tempPasswords[k], BCrypt.gensalt(10));
             });
 
@@ -753,8 +811,9 @@ public class AdminDAO {
                     connection.setAutoCommit(false);
                     long newUserId = 0;
                     try (PreparedStatement stmt = connection.prepareStatement(
-                            "INSERT INTO users (user_code, email, password_hash, full_name, phone, date_of_birth, gender, address, status, created_at, updated_at) "
-                                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'ACTIVE', NOW(), NOW())", PreparedStatement.RETURN_GENERATED_KEYS)) {
+                            "INSERT INTO users (user_code, email, password_hash, full_name, phone, date_of_birth, gender, address, "
+                                    + "display_name, must_change_password, status, created_at, updated_at) "
+                                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, 'ACTIVE', NOW(), NOW())", PreparedStatement.RETURN_GENERATED_KEYS)) {
                         stmt.setString(1, userCode);
                         stmt.setString(2, email);
                         stmt.setString(3, hashes[k]);
@@ -764,6 +823,7 @@ public class AdminDAO {
                         stmt.setString(7, (String) eval.get("gender"));
                         String address = (String) eval.get("address");
                         stmt.setString(8, address.isEmpty() ? null : address);
+                        stmt.setString(9, ((String) eval.get("fullName")).trim().replaceAll("\\s+", " "));
                         stmt.executeUpdate();
                         try (ResultSet rs = stmt.getGeneratedKeys()) {
                             if (rs.next()) newUserId = rs.getLong(1);

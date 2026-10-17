@@ -249,6 +249,10 @@ public class DatabaseMigration {
         ensureColumn(conn, "subjects", "status", "VARCHAR(20) DEFAULT 'ACTIVE'");
         applyRolePermissions(conn);
         renameSeedEmails(conn);
+        // S1-08: họ tên viết như người nhập, quê quán, cờ bắt đổi mật khẩu tạm ở lần đăng nhập đầu.
+        ensureColumn(conn, "users", "display_name", "VARCHAR(150) NULL");
+        ensureColumn(conn, "users", "hometown", "VARCHAR(255) NULL");
+        ensureColumn(conn, "users", "must_change_password", "BOOLEAN NOT NULL DEFAULT FALSE");
         normalizeUserNames(conn);
 
         // schema.sql cũ đặt tên cột là duration_months, còn DAO và migration S2-04 dùng duration.
@@ -383,6 +387,12 @@ public class DatabaseMigration {
     /** Họ tên người dùng lưu IN HOA, không dấu (UserDAO.normalizeName); đổi các tên đã lưu từ trước. */
     static void normalizeUserNames(Connection conn) throws SQLException {
         if (!hasTable(conn, "users")) return;
+        // Giữ họ tên gốc (có dấu) ở display_name trước khi đổi full_name sang in hoa không dấu.
+        if (hasColumn(conn, "users", "display_name")) {
+            try (Statement stmt = conn.createStatement()) {
+                stmt.executeUpdate("UPDATE users SET display_name = full_name WHERE display_name IS NULL");
+            }
+        }
         Map<Long, String> changed = new java.util.LinkedHashMap<>();
         try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery("SELECT id, full_name FROM users")) {
             while (rs.next()) {

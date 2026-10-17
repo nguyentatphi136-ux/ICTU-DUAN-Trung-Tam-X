@@ -13,6 +13,14 @@ export type UserRow = {
   /** Lớp đang phụ trách, cần bàn giao khi khoá. */
   classes?: string[];
   lockReason?: string;
+  /** Thông tin chi tiết (S1-08): họ tên viết như người nhập, ngày sinh yyyy-mm-dd, quê quán, địa chỉ hiện tại. */
+  displayName?: string;
+  birth?: string;
+  hometown?: string;
+  address?: string;
+  code?: string;
+  gender?: string;
+  createdAt?: string;
 };
 
 const SEED: Omit<UserRow, 'id'>[] = [

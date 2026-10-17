@@ -53,10 +53,11 @@ public class UserDAO {
                 String fullName;
                 String phone;
                 String status;
+                boolean mustChange;
                 int failures;
                 Instant lockedUntil;
-                String sql = "SELECT id, user_code, email, password_hash, full_name, phone, status, "
-                        + "failed_login_attempts, locked_until FROM users WHERE email = ? AND deleted_at IS NULL FOR UPDATE";
+                String sql = "SELECT id, user_code, email, password_hash, full_name, phone, status, must_change_password, "
+                        + "failed_login_attempts, locked_until FROM users WHERE LOWER(email) = ? AND deleted_at IS NULL FOR UPDATE";
                 try (PreparedStatement statement = connection.prepareStatement(sql)) {
                     statement.setString(1, normalizedEmail);
                     try (ResultSet result = statement.executeQuery()) {
@@ -72,6 +73,7 @@ public class UserDAO {
                         fullName = result.getString("full_name");
                         phone = result.getString("phone");
                         status = result.getString("status");
+                        mustChange = result.getBoolean("must_change_password");
                         failures = result.getInt("failed_login_attempts");
                         Timestamp lockTime = result.getTimestamp("locked_until");
                         lockedUntil = lockTime == null ? null : lockTime.toInstant();
@@ -128,6 +130,7 @@ public class UserDAO {
                 user.setFullName(fullName);
                 user.setPhone(phone);
                 user.setStatus(status);
+                user.setMustChangePassword(mustChange);
                 user.setRoles(roles);
                 user.setPrimaryRole(roles.get(0));
                 connection.commit();
@@ -195,7 +198,7 @@ public class UserDAO {
 
                 String newHash = BCrypt.hashpw(newPassword, BCrypt.gensalt(10));
                 try (PreparedStatement updateStmt = connection.prepareStatement(
-                        "UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?")) {
+                        "UPDATE users SET password_hash = ?, must_change_password = FALSE, updated_at = NOW() WHERE id = ?")) {
                     updateStmt.setString(1, newHash);
                     updateStmt.setLong(2, userId);
                     updateStmt.executeUpdate();
@@ -285,7 +288,7 @@ public class UserDAO {
      */
     public Map<String, Object> getUserProfile(long userId) throws SQLException {
         try (Connection connection = DBConnection.getConnection()) {
-            String sql = "SELECT id, user_code, email, full_name, phone, date_of_birth, gender, address, avatar_url, status, created_at "
+            String sql = "SELECT id, user_code, email, full_name, display_name, phone, date_of_birth, gender, hometown, address, avatar_url, status, locked_reason, created_at "
                     + "FROM users WHERE id = ? AND deleted_at IS NULL";
             try (PreparedStatement stmt = connection.prepareStatement(sql)) {
                 stmt.setLong(1, userId);
@@ -303,8 +306,8 @@ public class UserDAO {
     public Map<String, Object> getUserProfileByEmail(String email) throws SQLException {
         if (email == null || email.trim().isEmpty()) return null;
         try (Connection connection = DBConnection.getConnection()) {
-            String sql = "SELECT id, user_code, email, full_name, phone, date_of_birth, gender, address, avatar_url, status, created_at "
-                    + "FROM users WHERE email = ? AND deleted_at IS NULL";
+            String sql = "SELECT id, user_code, email, full_name, display_name, phone, date_of_birth, gender, hometown, address, avatar_url, status, locked_reason, created_at "
+                    + "FROM users WHERE LOWER(email) = ? AND deleted_at IS NULL";
             try (PreparedStatement stmt = connection.prepareStatement(sql)) {
                 stmt.setString(1, email.trim().toLowerCase(java.util.Locale.ROOT));
                 try (ResultSet rs = stmt.executeQuery()) {
@@ -322,6 +325,10 @@ public class UserDAO {
         profile.put("userCode", rs.getString("user_code"));
         profile.put("email", rs.getString("email"));
         profile.put("fullName", rs.getString("full_name"));
+        // Họ tên viết như người nhập (có dấu); tài khoản cũ chưa có thì dùng tên in hoa.
+        profile.put("displayName", rs.getString("display_name") != null ? rs.getString("display_name") : rs.getString("full_name"));
+        profile.put("hometown", rs.getString("hometown") != null ? rs.getString("hometown") : "");
+        profile.put("lockedReason", rs.getString("locked_reason"));
         profile.put("phone", rs.getString("phone") != null ? rs.getString("phone") : "");
         profile.put("dateOfBirth", rs.getDate("date_of_birth") != null ? rs.getDate("date_of_birth").toString() : "");
         profile.put("gender", rs.getString("gender") != null ? rs.getString("gender") : "OTHER");
@@ -400,13 +407,14 @@ public class UserDAO {
                 }
 
                 try (PreparedStatement updateStmt = connection.prepareStatement(
-                        "UPDATE users SET full_name = ?, phone = ?, date_of_birth = ?, gender = ?, address = ?, updated_at = NOW() WHERE id = ?")) {
+                        "UPDATE users SET full_name = ?, display_name = ?, phone = ?, date_of_birth = ?, gender = ?, address = ?, updated_at = NOW() WHERE id = ?")) {
                     updateStmt.setString(1, normalizeName(fullName));
-                    updateStmt.setString(2, normalizedPhone.isEmpty() ? null : normalizedPhone);
-                    updateStmt.setDate(3, dobDate);
-                    updateStmt.setString(4, normalizedGender);
-                    updateStmt.setString(5, address == null || address.isBlank() ? null : address.trim());
-                    updateStmt.setLong(6, userId);
+                    updateStmt.setString(2, fullName.trim().replaceAll("\\s+", " "));
+                    updateStmt.setString(3, normalizedPhone.isEmpty() ? null : normalizedPhone);
+                    updateStmt.setDate(4, dobDate);
+                    updateStmt.setString(5, normalizedGender);
+                    updateStmt.setString(6, address == null || address.isBlank() ? null : address.trim());
+                    updateStmt.setLong(7, userId);
                     updateStmt.executeUpdate();
                 }
 

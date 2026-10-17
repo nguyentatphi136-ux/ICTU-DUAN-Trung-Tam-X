@@ -14,9 +14,10 @@ import './profile.css';
 
 const MAX_BYTES = 2 * 1024 * 1024;
 type Info = { name: string; phone: string; birth: string; address: string };
-type ApiProfile = { fullName: string; phone: string; dateOfBirth: string; address: string };
+type ApiProfile = { fullName: string; displayName?: string; phone: string; dateOfBirth: string; address: string };
 
-const fromApi = (p: ApiProfile): Info => ({ name: p.fullName, phone: p.phone, birth: p.dateOfBirth, address: p.address });
+// Ô họ tên hiện họ tên viết như người nhập (có dấu); máy chủ lưu thêm bản IN HOA không dấu dùng trong danh sách.
+const fromApi = (p: ApiProfile): Info => ({ name: p.displayName || p.fullName, phone: p.phone, birth: p.dateOfBirth, address: p.address });
 const me = (email: string) => USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
 
 /** Hồ sơ trong dữ liệu mẫu: họ tên, số điện thoại ở USERS; ngày sinh, địa chỉ ở PROFILES. */
@@ -62,7 +63,7 @@ export function ProfilePage() {
   };
 
   async function save() {
-    const name = userName(info.name);
+    const name = info.name.trim().replace(/\s+/g, ' ');
     const e: typeof errors = {};
     if (!name) e.name = 'Nhập họ và tên';
     if (info.birth && info.birth > new Date().toISOString().slice(0, 10)) e.birth = 'Ngày sinh không được ở tương lai';
@@ -88,7 +89,7 @@ export function ProfilePage() {
     }
     const mine = me(user!.email);
     if (phoneOwner(next.phone, mine?.id ?? -1)) return setPhoneError('Số điện thoại đã được dùng cho tài khoản khác');
-    if (mine) Object.assign(mine, { name: next.name, phone: next.phone });
+    if (mine) Object.assign(mine, { name: userName(next.name), displayName: next.name, phone: next.phone });
     PROFILES[user!.email] = { birth: next.birth, address: next.address };
     saveAll();
     done(next);
@@ -97,7 +98,7 @@ export function ProfilePage() {
   function done(next: Info) {
     setSaved(next);
     setInfo(next);
-    updateUser({ name: next.name });
+    updateUser({ name: userName(next.name) });
     toast('Đã lưu hồ sơ', 'Thông tin cá nhân đã được cập nhật.');
   }
 

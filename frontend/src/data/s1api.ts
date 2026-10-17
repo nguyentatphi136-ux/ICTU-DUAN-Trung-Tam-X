@@ -8,6 +8,7 @@ export const ROLE_CODES = ['STUDENT', 'TA', 'INSTRUCTOR', 'ADMISSIONS', 'ACCOUNT
 const STATUS: Record<string, Status> = { ACTIVE: 'Hoạt động', PENDING: 'Chờ kích hoạt', LOCKED: 'Đã khoá' };
 
 type ApiUser = { id: number; email: string; fullName: string; phone?: string; status?: string; lockedReason?: string | null; roles?: string[] };
+type ApiDetail = ApiUser & { userCode?: string; displayName?: string; dateOfBirth?: string; hometown?: string; address?: string; gender?: string; createdAt?: string };
 export type AssignedClass = { classCode: string; className: string };
 
 const toUser = (u: ApiUser): UserRow => ({
@@ -33,13 +34,31 @@ export async function loadUsers() {
   USERS.splice(0, USERS.length, ...out);
 }
 
-/** S1-08: máy chủ tạo mật khẩu tạm và gửi email kích hoạt. */
-export const createUser = (u: UserRow) =>
-  api('/api/admin/users', json('POST', { fullName: u.name, email: u.email, phone: u.phone, roles: codes(u.roles) }));
+/** S1-08: thông tin chi tiết một tài khoản (họ tên viết thường, ngày sinh, quê quán, địa chỉ...). */
+export async function loadUserDetail(id: number): Promise<UserRow> {
+  const d = await api<ApiDetail>(`/api/admin/users/${id}`);
+  return {
+    ...toUser(d),
+    displayName: d.displayName || d.fullName,
+    birth: d.dateOfBirth || undefined,
+    hometown: d.hometown || undefined,
+    address: d.address || undefined,
+    code: d.userCode,
+    gender: d.gender,
+    createdAt: d.createdAt,
+  };
+}
 
-/** S1-08 sửa họ tên, số điện thoại; S1-09 thay bộ vai trò. Chỉ gửi phần thay đổi. */
+/** Họ tên gửi lên như người nhập; máy chủ lưu bản IN HOA không dấu và giữ bản gốc ở displayName. */
+const details = (u: UserRow) => ({ fullName: u.displayName ?? u.name, phone: u.phone, dateOfBirth: u.birth ?? '', hometown: u.hometown ?? '', address: u.address ?? '' });
+
+/** S1-08: máy chủ tạo mật khẩu tạm <tên đăng nhập>@<ngày sinh ddMMyy>, gửi email kích hoạt; trả lại mật khẩu tạm. */
+export const createUser = (u: UserRow) =>
+  api<{ tempPassword?: string }>('/api/admin/users', json('POST', { ...details(u), email: u.email, roles: codes(u.roles) }));
+
+/** S1-08 sửa thông tin (họ tên, số điện thoại, ngày sinh, quê quán, địa chỉ); S1-09 thay bộ vai trò khi có thay đổi. */
 export async function saveUser(before: UserRow, u: UserRow) {
-  if (u.name !== before.name || u.phone !== before.phone) await api(`/api/admin/users/${u.id}`, json('PUT', { fullName: u.name, phone: u.phone }));
+  await api(`/api/admin/users/${u.id}`, json('PUT', details(u)));
   if (!sameRoles(u.roles, before.roles)) await api(`/api/admin/users/${u.id}/roles`, json('PUT', { roleCodes: codes(u.roles) }));
 }
 

@@ -73,16 +73,17 @@ public class StudentDAO {
                 }
 
                 String code = nextCode(conn);
-                String login = code.toLowerCase(Locale.ROOT) + "@tms.vn";
+                String login = code + "@tms.vn";
                 long userId;
                 try (PreparedStatement stmt = conn.prepareStatement(
-                        "INSERT INTO users (user_code, email, password_hash, full_name, phone, status) VALUES (?, ?, ?, ?, ?, 'ACTIVE')",
+                        "INSERT INTO users (user_code, email, password_hash, full_name, display_name, phone, status) VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')",
                         Statement.RETURN_GENERATED_KEYS)) {
                     stmt.setString(1, code);
                     stmt.setString(2, login);
                     stmt.setString(3, BCrypt.hashpw(UserDAO.DEFAULT_PASSWORD, BCrypt.gensalt(10)));
                     stmt.setString(4, UserDAO.normalizeName(name));
-                    stmt.setString(5, phone);
+                    stmt.setString(5, name == null ? null : name.trim());
+                    stmt.setString(6, phone);
                     stmt.executeUpdate();
                     userId = generatedId(stmt);
                 }

@@ -37,6 +37,7 @@ public class AdminApiServlet extends HttpServlet {
     private static final Pattern USER_PURGE_PATH = Pattern.compile("^/users/(\\d+)/purge$");
     private final PermissionDAO permissionDAO = new PermissionDAO();
     private final AdminDAO adminDAO = new AdminDAO();
+    private final com.ems.dao.UserDAO userDAO = new com.ems.dao.UserDAO();
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
@@ -63,7 +64,11 @@ public class AdminApiServlet extends HttpServlet {
                     } catch (NumberFormatException ignored) {}
                     yield adminDAO.searchUsers(q, role, status, page, pageSize);
                 }
-                default -> null;
+                // GET /users/{id}: thông tin chi tiết một tài khoản (họ tên viết thường, ngày sinh, quê quán, địa chỉ...).
+                default -> {
+                    Matcher detail = USER_DETAIL_PATH.matcher(path);
+                    yield detail.matches() ? userDAO.getUserProfile(Long.parseLong(detail.group(1))) : null;
+                }
             };
             if (data == null) {
                 ApiResponse.error(response, 404, "API_NOT_FOUND", "Không tìm thấy chức năng.",
@@ -97,7 +102,8 @@ public class AdminApiServlet extends HttpServlet {
                 String fullName = body != null && body.has("fullName") ? body.get("fullName").getAsString()
                         : (body != null && body.has("name") ? body.get("name").getAsString() : null);
                 String phone = body != null && body.has("phone") ? body.get("phone").getAsString() : null;
-                Map<String, Object> updated = adminDAO.updateUserDetails(actorId, targetId, fullName, phone);
+                Map<String, Object> updated = adminDAO.updateUserDetails(actorId, targetId, fullName, phone,
+                        text(body, "dateOfBirth"), text(body, "hometown"), text(body, "address"));
                 if (updated == null) {
                     ApiResponse.error(response, 404, "USER_NOT_FOUND", "Không tìm thấy tài khoản.",
                             "Quay lại quản lý tài khoản", "/admin.html#tai-khoan");
@@ -217,7 +223,8 @@ public class AdminApiServlet extends HttpServlet {
                 }
 
                 try {
-                    Map<String, Object> created = adminDAO.createUser(actorId, userCode, email, fullName, phone, roleCodes, tempPassword);
+                    Map<String, Object> created = adminDAO.createUser(actorId, userCode, email, fullName, phone, roleCodes, tempPassword,
+                            text(body, "dateOfBirth"), text(body, "hometown"), text(body, "address"));
                     final String userEmail = (String) created.get("email");
                     final String userName = (String) created.get("fullName");
                     final String userTempPass = (String) created.get("tempPassword");
@@ -341,6 +348,11 @@ public class AdminApiServlet extends HttpServlet {
         } catch (SQLException exception) {
             serviceUnavailable(response);
         }
+    }
+
+    /** Giá trị chuỗi của trường; không có trường (hoặc null) thì trả null để DAO giữ nguyên giá trị cũ. */
+    private static String text(JsonObject body, String key) {
+        return body == null || !body.has(key) || body.get(key).isJsonNull() ? null : body.get(key).getAsString();
     }
 
     private List<String> stringArray(JsonObject body, String key) {

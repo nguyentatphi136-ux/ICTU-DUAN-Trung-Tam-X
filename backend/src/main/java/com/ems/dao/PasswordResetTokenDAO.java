@@ -20,7 +20,7 @@ public class PasswordResetTokenDAO {
      * Tìm người dùng theo Email (để phục vụ quên mật khẩu)
      */
     public User findUserByEmail(String email) {
-        String sql = "SELECT id, user_code, email, full_name, status FROM users WHERE email = ? AND status = 'ACTIVE'";
+        String sql = "SELECT id, user_code, email, full_name, status FROM users WHERE LOWER(email) = ? AND status = 'ACTIVE'";
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -93,7 +93,7 @@ public class PasswordResetTokenDAO {
      * Đảm bảo tính toàn vẹn ACID (Mục 13: Transaction)
      */
     public boolean resetPasswordWithTransaction(Long userId, String token, String hashedPassword) {
-        String updatePassSql = "UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?";
+        String updatePassSql = "UPDATE users SET password_hash = ?, must_change_password = FALSE, updated_at = NOW() WHERE id = ?";
         String findTokenSql = "SELECT id, user_id FROM password_reset_tokens "
             + "WHERE token_hash = ? AND expires_at > NOW() AND used_at IS NULL FOR UPDATE";
         String markTokenSql = "UPDATE password_reset_tokens SET used_at = NOW() WHERE id = ? AND used_at IS NULL";

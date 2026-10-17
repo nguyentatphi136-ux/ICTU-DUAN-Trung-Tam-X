@@ -75,7 +75,7 @@ class S3ApiTest {
         Map<String, Object> student = leads.convert(100, null, 10, false);
         String code = (String) student.get("code");
         assertEquals(String.format("HV%02d0001", LocalDate.now().getYear() % 100), code);
-        assertEquals(code.toLowerCase() + "@tms.vn", student.get("login"));
+        assertEquals(code + "@tms.vn", student.get("login"), "Email đăng nhập giữ nguyên chữ hoa của mã học viên");
         assertEquals("kiet@gmail.com", student.get("email"));
         assertNotNull(new UserDAO().authenticate((String) student.get("login"), UserDAO.DEFAULT_PASSWORD), "tài khoản học viên đăng nhập được");
         assertEquals(code, leads.get(100, 10, false).get("studentCode"));

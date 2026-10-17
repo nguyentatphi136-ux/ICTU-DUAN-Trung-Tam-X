@@ -67,7 +67,8 @@ public class LoginApiServlet extends HttpServlet {
             getServletContext().log("Không thể kết nối MySQL, chuyển sang xác thực dự phòng.", exception);
         }
         // Còn dùng mật khẩu mặc định thì phải đổi trước khi làm việc. Tài khoản dự phòng không có CSDL để đổi nên bỏ qua.
-        boolean mustChangePassword = user != null && UserDAO.DEFAULT_PASSWORD.equals(password);
+        // Mật khẩu mặc định, hoặc tài khoản mới còn dùng mật khẩu tạm (S1-08): phải đổi ở lần đăng nhập này.
+        boolean mustChangePassword = user != null && (UserDAO.DEFAULT_PASSWORD.equals(password) || user.isMustChangePassword());
 
         // Dự phòng xác thực in-memory UserStore (IDTTX-20, IDTTX-24) chỉ khi DB chưa sẵn sàng. CSDL trả về "sai mật khẩu"
         // thì không thử tiếp, nếu không mật khẩu mặc định công khai luôn đăng nhập được tài khoản quản trị id 1.

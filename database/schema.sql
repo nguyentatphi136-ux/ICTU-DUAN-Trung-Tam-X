@@ -31,16 +31,19 @@ CREATE TABLE IF NOT EXISTS `users` (
     `user_code` VARCHAR(50) NOT NULL UNIQUE COMMENT 'Mã nhân sự / tài khoản',
     `email` VARCHAR(150) NOT NULL UNIQUE,
     `password_hash` VARCHAR(255) NOT NULL COMMENT 'Mật khẩu mã hóa BCrypt/Argon2',
-    `full_name` VARCHAR(100) NOT NULL,
+    `full_name` VARCHAR(100) NOT NULL COMMENT 'Họ tên IN HOA, không dấu',
+    `display_name` VARCHAR(150) NULL COMMENT 'Họ tên viết như người nhập (có dấu)',
     `phone` VARCHAR(20) NULL,
     `date_of_birth` DATE NULL,
     `gender` ENUM('MALE', 'FEMALE', 'OTHER') DEFAULT 'OTHER',
+    `hometown` VARCHAR(255) NULL COMMENT 'Quê quán',
     `address` VARCHAR(255) NULL,
     `avatar_url` VARCHAR(255) NULL,
     `status` ENUM('ACTIVE', 'LOCKED', 'PENDING') DEFAULT 'ACTIVE' COMMENT 'Trạng thái hoạt động',
     `locked_reason` VARCHAR(255) NULL COMMENT 'Lý do khóa tài khoản',
     `failed_login_attempts` INT NOT NULL DEFAULT 0,
     `locked_until` DATETIME NULL,
+    `must_change_password` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Mật khẩu tạm, phải đổi ở lần đăng nhập đầu',
     `deleted_at` DATETIME NULL COMMENT 'Xoá mềm: thời điểm chuyển vào thùng rác, NULL là đang dùng',
     `deleted_by` BIGINT NULL COMMENT 'Người chuyển vào thùng rác',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -818,14 +821,14 @@ ON DUPLICATE KEY UPDATE `role_name` = VALUES(`role_name`);
 
 -- Seed Users mẫu (mật khẩu chung Tms@2026, BCrypt). Mỗi lần backend khởi động đều đặt lại về Tms@2026 (DatabaseMigration).
 -- Đăng nhập bằng mật khẩu này thì phải đổi mật khẩu trước khi dùng hệ thống.
-INSERT INTO `users` (`id`, `user_code`, `email`, `password_hash`, `full_name`, `phone`, `status`) VALUES
-(1, 'NV-ADMIN-01', 'A25200212001@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'QUAN TRI VIEN', '0901234567', 'ACTIVE'),
-(2, 'NV-QLDT-01', 'TM25200212002@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'PHAM THI QUAN', '0912345678', 'ACTIVE'),
-(3, 'NV-GV-01', 'IST25200212045@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'TRAN THI GIANG', '0923456789', 'ACTIVE'),
-(4, 'NV-TG-01', 'TA25200212007@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'LE VAN TRO', '0934567890', 'ACTIVE'),
-(5, 'HV-2026-001', 'S25200212101@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'NGUYEN VAN HOC', '0945678901', 'ACTIVE'),
-(6, 'NV-KT-01', 'ACT25200212003@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'DO THI KE', '0956789012', 'ACTIVE'),
-(7, 'NV-TV-01', 'AMS25200212012@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'HOANG VAN TU', '0967890123', 'ACTIVE')
+INSERT INTO `users` (`id`, `user_code`, `email`, `password_hash`, `full_name`, `display_name`, `phone`, `status`) VALUES
+(1, 'NV-ADMIN-01', 'A25200212001@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'QUAN TRI VIEN', 'Quản trị viên', '0901234567', 'ACTIVE'),
+(2, 'NV-QLDT-01', 'TM25200212002@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'PHAM THI QUAN', 'Phạm Thị Quản', '0912345678', 'ACTIVE'),
+(3, 'NV-GV-01', 'IST25200212045@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'TRAN THI GIANG', 'Trần Thị Giảng', '0923456789', 'ACTIVE'),
+(4, 'NV-TG-01', 'TA25200212007@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'LE VAN TRO', 'Lê Văn Trợ', '0934567890', 'ACTIVE'),
+(5, 'HV-2026-001', 'S25200212101@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'NGUYEN VAN HOC', 'Nguyễn Văn Học', '0945678901', 'ACTIVE'),
+(6, 'NV-KT-01', 'ACT25200212003@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'DO THI KE', 'Đỗ Thị Kế', '0956789012', 'ACTIVE'),
+(7, 'NV-TV-01', 'AMS25200212012@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'HOANG VAN TU', 'Hoàng Văn Tư', '0967890123', 'ACTIVE')
 ON DUPLICATE KEY UPDATE `full_name` = VALUES(`full_name`);
 
 -- Gán quyền tương ứng

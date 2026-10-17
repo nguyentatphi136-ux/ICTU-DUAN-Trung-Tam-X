@@ -23,6 +23,8 @@ public class User implements Serializable {
     private String dateOfBirth;
     private String gender;
     private String address;
+    /** Tài khoản mới (mật khẩu tạm) phải đổi mật khẩu ở lần đăng nhập đầu. */
+    private boolean mustChangePassword;
 
     public User() {
     }
@@ -157,6 +159,14 @@ public class User implements Serializable {
 
     public String getAddress() {
         return address;
+    }
+
+    public boolean isMustChangePassword() {
+        return mustChangePassword;
+    }
+
+    public void setMustChangePassword(boolean mustChangePassword) {
+        this.mustChangePassword = mustChangePassword;
     }
 
     public void setAddress(String address) {
