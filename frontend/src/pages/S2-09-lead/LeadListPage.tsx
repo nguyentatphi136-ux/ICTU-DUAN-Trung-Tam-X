@@ -66,16 +66,18 @@ export function LeadListPage() {
   };
 
   const rangeLabel = useMemo(() => {
-    if (!from && !to) return 'Mọi thời gian';
-    if (from === TODAY && to === TODAY) return 'Hôm nay';
-    if (from === '2026-09-01' && to === '2026-09-30') return '01/09 – 30/09/2026';
-    if (from === '2026-08-01' && to === '2026-08-31') return '01/08 – 31/08/2026';
-    if (from === thisMonthStart && to === thisMonthEnd) return `Tháng này (${thisMonthLabel})`;
-    if (from && to) return `${viDate(from)} – ${viDate(to)}`;
-    if (from) return `Từ ${viDate(from)}`;
-    if (to) return `Đến ${viDate(to)}`;
+    if (rangePreset === 'custom') {
+      if (from && to) return `${viDate(from)} – ${viDate(to)}`;
+      if (from) return `Từ ${viDate(from)}`;
+      if (to) return `Đến ${viDate(to)}`;
+      return 'Tuỳ chọn khoảng ngày...';
+    }
+    if (rangePreset === 'today') return 'Hôm nay';
+    if (rangePreset === '2026-09') return '01/09 – 30/09/2026';
+    if (rangePreset === '2026-08') return '01/08 – 31/08/2026';
+    if (rangePreset === 'this-month') return `Tháng này (${thisMonthLabel})`;
     return 'Mọi thời gian';
-  }, [from, to]);
+  }, [rangePreset, from, to]);
 
   const role = user?.active ?? -1;
   const counselor = role === 3;
@@ -205,31 +207,29 @@ export function LeadListPage() {
             <option value="custom">Tuỳ chọn khoảng ngày...</option>
           </select>
         </label>
-        <div className="cl-range ld-range" role="group" aria-label="Khung thời gian bắt đầu và kết thúc" title="Chọn thời điểm bắt đầu và kết thúc">
-          <input
-            type="date"
-            value={from}
-            title="Thời điểm bắt đầu (Từ ngày)"
-            aria-label="Thời điểm bắt đầu"
-            onChange={(e) => {
-              setFrom(e.target.value);
-              setRangePreset('custom');
-              setPage(1);
-            }}
-          />
-          <span>–</span>
-          <input
-            type="date"
-            value={to}
-            title="Thời điểm kết thúc (Đến ngày)"
-            aria-label="Thời điểm kết thúc"
-            onChange={(e) => {
-              setTo(e.target.value);
-              setRangePreset('custom');
-              setPage(1);
-            }}
-          />
-          {(from || to) && (
+        {rangePreset === 'custom' && (
+          <div className="cl-range ld-range" role="group" aria-label="Khung thời gian bắt đầu và kết thúc" title="Chọn thời điểm bắt đầu và kết thúc">
+            <input
+              type="date"
+              value={from}
+              title="Thời điểm bắt đầu (Từ ngày)"
+              aria-label="Thời điểm bắt đầu"
+              onChange={(e) => {
+                setFrom(e.target.value);
+                setPage(1);
+              }}
+            />
+            <span>–</span>
+            <input
+              type="date"
+              value={to}
+              title="Thời điểm kết thúc (Đến ngày)"
+              aria-label="Thời điểm kết thúc"
+              onChange={(e) => {
+                setTo(e.target.value);
+                setPage(1);
+              }}
+            />
             <button
               type="button"
               className="ld-clear-date"
@@ -239,13 +239,13 @@ export function LeadListPage() {
                 setRangePreset('');
                 setPage(1);
               }}
-              title="Xoá khoảng thời gian"
-              aria-label="Xoá khoảng thời gian"
+              title="Đóng tuỳ chọn thời gian"
+              aria-label="Đóng tuỳ chọn thời gian"
             >
               ✕
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {manager && picked.length > 0 && (
