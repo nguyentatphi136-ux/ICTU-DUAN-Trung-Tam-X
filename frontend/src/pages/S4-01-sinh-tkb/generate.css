@@ -1,0 +1,29 @@
+/* S4-01, S4-02. Các bước sinh thời khoá biểu, chọn thứ và ca, ngày nghỉ lễ, bảng xem trước. */
+.gt-steps{list-style:none;display:flex;gap:32px;margin-bottom:20px;flex-wrap:wrap}
+.gt-steps li{display:flex;align-items:center;gap:10px;color:var(--muted);font-weight:500}
+.gt-steps span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--chip);color:var(--muted);font-size:13px;font-weight:600}
+.gt-steps .on{color:var(--ink)}.gt-steps .on span{background:var(--grad);color:#fff}
+.gt-steps .done span{background:var(--ok-bg);color:var(--green)}
+.gt-grid{display:grid;grid-template-columns:1fr 400px;gap:16px;align-items:start}
+.gt-side{display:flex;flex-direction:column;gap:16px}
+.gt-days,.gt-shifts{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.gt-days button{width:56px;height:40px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--ink);font-weight:500}
+.gt-shifts button:not(.link){height:40px;padding:0 14px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--ink)}
+.gt-days .on,.gt-shifts .on:not(.link){background:var(--soft);border-color:var(--blue);color:var(--blue);font-weight:600}
+.gt-shifts .link{border:0;background:none;color:var(--muted);text-decoration:underline}.gt-shifts .link.on{color:var(--blue)}
+.gt-time{display:flex;align-items:center;gap:8px;margin-top:8px}
+.gt-time input{height:40px;border:1px solid var(--line);border-radius:var(--r);padding:0 10px;font:inherit;color:var(--ink);background:var(--surface)}
+.gt-row{display:grid;grid-template-columns:1fr 160px 1fr;gap:16px}
+.gt-map{margin-top:6px}
+.gt-warn{color:var(--warn);margin-bottom:12px}
+.gt-hol{list-style:none;margin:12px 0}
+.gt-hol li{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.gt-hol span{color:var(--muted)}
+.gt-add{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.gt-add input{height:36px;border:1px solid var(--line);border-radius:var(--r);padding:0 10px;font:inherit;color:var(--ink);background:var(--surface);flex:1;min-width:130px}
+.gt-add .link{display:inline-flex;align-items:center;gap:4px}
+.gt-tabs{margin-bottom:12px}.gt-tabs button{border:0;background:none;font:inherit}
+tr.gt-skip td{background:var(--hover);color:var(--muted)}
+@media(max-width:1100px){.gt-grid{grid-template-columns:1fr}.gt-row{grid-template-columns:1fr}}
+.gt-clash{margin-bottom:16px}.gt-clash .check-list{margin-top:8px;color:var(--bad);font-weight:600}
+.gt-bad{display:flex;flex-direction:column;gap:6px;max-width:280px}.gt-bad small{display:block;color:var(--bad);font-size:12px;line-height:1.4;margin-top:2px}

@@ -1,0 +1,12 @@
+/* S7-07. Học phí của tôi: các đợt dạng hàng, xuống dòng thành thẻ trên điện thoại. */
+.mf-next span{display:block}.mf-next b{margin:4px 0;color:var(--warn)}.mf-next.bad b{color:var(--bad)}
+.mf-item{display:grid;grid-template-columns:80px 1.4fr 1fr 1fr 170px;align-items:center;gap:12px;padding:14px 16px;border-top:1px solid var(--line);font-size:14px}
+.mf-amt span{display:block;font-size:12px}
+.mf-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;margin-top:16px;align-items:start}
+.mf-how h3{margin-bottom:6px}.mf-how dl{margin-top:12px}.mf-how dt{color:var(--muted);font-size:12px;margin-top:10px}.mf-how dd{margin:2px 0 0;font-weight:600}
+@media(max-width:900px){
+  .mf-grid{grid-template-columns:1fr}
+  .mf-item{grid-template-columns:1fr auto;gap:4px 12px}.mf-item>b{grid-column:1}.mf-item>div:last-child{grid-column:2;grid-row:1}
+  .mf-hide{display:none}
+  .mf-stats .stat b{font-size:18px}.mf-grid>*{min-width:0}
+}

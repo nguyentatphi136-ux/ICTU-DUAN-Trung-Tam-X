@@ -1,0 +1,17 @@
+/* S4-08. Đơn xin phép vắng: form gửi đơn, danh sách đơn đã gửi, bảng duyệt và ô chi tiết. */
+.lv-grid{display:grid;grid-template-columns:minmax(0,1fr) 520px;gap:16px;align-items:start}
+.lv-grid.wide{grid-template-columns:minmax(0,1fr) 460px}
+.lv-form{padding:20px 24px}
+.lv-drop{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;border:1px dashed var(--line);border-radius:var(--r);padding:18px;margin:6px 0 10px;cursor:pointer;text-align:center}
+.lv-drop:hover{border-color:var(--blue)}.lv-drop svg{color:var(--blue)}.lv-drop small{color:var(--muted)}
+.lv-drop input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.lv-file{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:var(--r);padding:8px 10px;margin-bottom:16px}
+.lv-file span{flex:1;color:var(--blue);font-weight:500}.lv-file small{color:var(--muted)}
+.lv-list{display:flex;flex-direction:column;gap:10px}
+.lv-item{padding:14px 18px}.lv-item small{color:var(--muted)}.lv-item p{margin-top:4px}
+.lv-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.lv-dec{font-size:13px;margin-top:6px}.lv-dec.ok{color:var(--green)}.lv-dec.off{color:var(--bad)}
+.lv-sub{display:block;color:var(--muted);font-size:12px}
+table.rows tr.on td{background:var(--soft)}
+.lv-tabs button{border:0;background:none;font:inherit}
+@media(max-width:1100px){.lv-grid,.lv-grid.wide{grid-template-columns:1fr}}

@@ -1,0 +1,10 @@
+/* S3-05. Form mở lớp mới: chọn hình thức học, vòng đời lớp, bảng môn sao chép từ chương trình. */
+.oc-mode{display:flex;width:100%}.oc-mode button{flex:1;border:0;background:none;font:inherit}
+.oc-life{list-style:none;display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.oc-life li{padding:4px 12px;border-radius:var(--r);background:var(--chip);font-size:13px}
+.oc-life li:not(.or):not(:last-child):not(:nth-child(3))::after{content:'→';margin-left:10px;color:var(--muted)}
+.oc-life .on{background:var(--soft);color:var(--blue);font-weight:600}
+.oc-life .or{background:none;color:var(--muted)}
+.oc-life .off{background:var(--bad-bg);color:var(--bad)}
+.oc-subj-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.oc-subj th,.oc-subj td{padding:9px 14px}

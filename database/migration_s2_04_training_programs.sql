@@ -55,9 +55,9 @@ ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 
 -- 6. Dữ liệu mẫu (Seed Data)
 INSERT INTO `programs` (`id`, `program_code`, `program_name`, `description`, `duration`, `standard_tuition`, `status`) VALUES
-(1, 'JAVA-WEB', 'Chương trình Java Web Chuyên nghiệp', 'Đào tạo Java Core, Servlet, JSP, Spring Boot và Microservices', 240, 15000000.00, 'ACTIVE'),
-(2, 'REACT-FRONTEND', 'Khóa học Lập trình Frontend React', 'Đào tạo HTML/CSS, JavaScript ES6+, TypeScript, ReactJS & Redux', 180, 12000000.00, 'ACTIVE'),
-(3, 'PYTHON-DATA', 'Lập trình Python & Phân tích Dữ liệu', 'Đào tạo Python cơ bản, Pandas, NumPy và Machine Learning ứng dụng', 200, 14000000.00, 'ACTIVE')
+(1, 'JAVA-WEB', 'Chương trình Java Web Chuyên nghiệp', 'Đào tạo Java Core, Servlet, JSP, Spring Boot và Microservices', 240, 9000000.00, 'ACTIVE'),
+(2, 'REACT-FRONTEND', 'Khóa học Lập trình Frontend React', 'Đào tạo HTML/CSS, JavaScript ES6+, TypeScript, ReactJS & Redux', 180, 7500000.00, 'ACTIVE'),
+(3, 'PYTHON-DATA', 'Lập trình Python & Phân tích Dữ liệu', 'Đào tạo Python cơ bản, Pandas, NumPy và Machine Learning ứng dụng', 200, 8500000.00, 'ACTIVE')
 ON DUPLICATE KEY UPDATE `program_name` = VALUES(`program_name`);
 
 -- 7. Lớp học mẫu để kiểm tra ràng buộc business rule khi xoá

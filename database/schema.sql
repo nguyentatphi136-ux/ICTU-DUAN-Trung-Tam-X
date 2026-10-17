@@ -31,16 +31,21 @@ CREATE TABLE IF NOT EXISTS `users` (
     `user_code` VARCHAR(50) NOT NULL UNIQUE COMMENT 'Mã nhân sự / tài khoản',
     `email` VARCHAR(150) NOT NULL UNIQUE,
     `password_hash` VARCHAR(255) NOT NULL COMMENT 'Mật khẩu mã hóa BCrypt/Argon2',
-    `full_name` VARCHAR(100) NOT NULL,
+    `full_name` VARCHAR(100) NOT NULL COMMENT 'Họ tên IN HOA, không dấu',
+    `display_name` VARCHAR(150) NULL COMMENT 'Họ tên viết như người nhập (có dấu)',
     `phone` VARCHAR(20) NULL,
     `date_of_birth` DATE NULL,
     `gender` ENUM('MALE', 'FEMALE', 'OTHER') DEFAULT 'OTHER',
+    `hometown` VARCHAR(255) NULL COMMENT 'Quê quán',
     `address` VARCHAR(255) NULL,
     `avatar_url` VARCHAR(255) NULL,
     `status` ENUM('ACTIVE', 'LOCKED', 'PENDING') DEFAULT 'ACTIVE' COMMENT 'Trạng thái hoạt động',
     `locked_reason` VARCHAR(255) NULL COMMENT 'Lý do khóa tài khoản',
     `failed_login_attempts` INT NOT NULL DEFAULT 0,
     `locked_until` DATETIME NULL,
+    `must_change_password` BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Mật khẩu tạm, phải đổi ở lần đăng nhập đầu',
+    `deleted_at` DATETIME NULL COMMENT 'Xoá mềm: thời điểm chuyển vào thùng rác, NULL là đang dùng',
+    `deleted_by` BIGINT NULL COMMENT 'Người chuyển vào thùng rác',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX `idx_users_email` (`email`),
@@ -173,9 +178,11 @@ CREATE TABLE IF NOT EXISTS `programs` (
     `program_code` VARCHAR(50) NOT NULL UNIQUE,
     `program_name` VARCHAR(150) NOT NULL,
     `description` TEXT NULL,
-    `duration_months` INT NOT NULL DEFAULT 6,
+    `duration` INT NOT NULL DEFAULT 60 COMMENT 'Tổng thời lượng (giờ hoặc buổi > 0)',
     `standard_tuition` DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
     `status` ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE',
+    `deleted_at` DATETIME NULL COMMENT 'Xoá mềm: thời điểm chuyển vào thùng rác, NULL là đang dùng',
+    `deleted_by` BIGINT NULL COMMENT 'Người chuyển vào thùng rác',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB COMMENT='Bảng danh mục chương trình đào tạo';
@@ -190,6 +197,8 @@ CREATE TABLE IF NOT EXISTS `subjects` (
     `min_pass_score` DECIMAL(4, 2) NOT NULL DEFAULT 5.00 COMMENT 'Điểm đạt tối thiểu',
     `learning_outcomes` TEXT NULL COMMENT 'Chuẩn đầu ra môn học',
     `status` ENUM('ACTIVE', 'INACTIVE') DEFAULT 'ACTIVE',
+    `deleted_at` DATETIME NULL COMMENT 'Xoá mềm: thời điểm chuyển vào thùng rác, NULL là đang dùng',
+    `deleted_by` BIGINT NULL COMMENT 'Người chuyển vào thùng rác',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB COMMENT='Bảng danh mục môn học';
@@ -218,6 +227,17 @@ CREATE TABLE IF NOT EXISTS `subject_lessons` (
     CONSTRAINT `fk_sl_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB COMMENT='Bảng danh mục các buổi học chuẩn theo môn';
 
+-- 2.5 Bảng Môn tiên quyết trong lộ trình (S2-06). Một môn có thể cần nhiều môn tiên quyết, ví dụ BE-01 cần WEB-02 và DB-01.
+CREATE TABLE IF NOT EXISTS `program_subject_prereqs` (
+    `program_id` INT NOT NULL,
+    `subject_id` INT NOT NULL,
+    `prereq_subject_id` INT NOT NULL COMMENT 'Môn phải học trước, đứng trước subject_id trong lộ trình',
+    PRIMARY KEY (`program_id`, `subject_id`, `prereq_subject_id`),
+    CONSTRAINT `fk_psp_program` FOREIGN KEY (`program_id`) REFERENCES `programs` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_psp_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_psp_prereq` FOREIGN KEY (`prereq_subject_id`) REFERENCES `subjects` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB COMMENT='Bảng môn tiên quyết của từng môn trong lộ trình chương trình';
+
 
 -- =============================================================================
 -- PHÂN HỆ 3: TUYỂN SINH, PHỄU KHÁCH HÀNG & HỒ SƠ HỌC VIÊN (Sprint 2 & 3)
@@ -236,6 +256,9 @@ CREATE TABLE IF NOT EXISTS `leads` (
     `reject_reason` VARCHAR(255) NULL,
     `notes` TEXT NULL,
     `converted_student_id` BIGINT NULL COMMENT 'Liên kết sang học viên khi chốt nhập học',
+    `callback_date` DATE NULL COMMENT 'Ngày hẹn gọi lại gần nhất (S3-02), quá ngày mà lead chưa chốt hay từ chối là quá hạn',
+    `deleted_at` DATETIME NULL COMMENT 'Xoá mềm: thời điểm chuyển vào thùng rác, NULL là đang dùng',
+    `deleted_by` BIGINT NULL COMMENT 'Người chuyển vào thùng rác',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_leads_program` FOREIGN KEY (`interested_program_id`) REFERENCES `programs` (`id`) ON DELETE SET NULL,
@@ -249,7 +272,7 @@ CREATE TABLE IF NOT EXISTS `lead_interactions` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `lead_id` BIGINT NOT NULL,
     `counselor_id` BIGINT NOT NULL,
-    `interaction_type` ENUM('CALL', 'MESSAGE', 'MEETING', 'EMAIL') NOT NULL,
+    `interaction_type` VARCHAR(20) NOT NULL COMMENT 'CALL, MESSAGE, MEETING, EMAIL; STAGE đổi giai đoạn, CONVERT chuyển thành học viên (S3-01, S3-03)',
     `content` TEXT NOT NULL,
     `callback_scheduled_at` DATETIME NULL COMMENT 'Lịch hẹn gọi lại',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -257,6 +280,22 @@ CREATE TABLE IF NOT EXISTS `lead_interactions` (
     CONSTRAINT `fk_li_counselor` FOREIGN KEY (`counselor_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
     INDEX `idx_callback_time` (`callback_scheduled_at`)
 ) ENGINE=InnoDB COMMENT='Bảng lịch sử chăm sóc và tương tác khách hàng';
+
+-- 3.2.1 Bảng Lịch sử phân công Lead (S2-10): ai giao, từ ai sang ai, lúc nào
+CREATE TABLE IF NOT EXISTS `lead_assignments` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `lead_id` BIGINT NOT NULL,
+    `from_counselor_id` BIGINT NULL COMMENT 'Người phụ trách trước đó, NULL là lead chưa phân công',
+    `to_counselor_id` BIGINT NOT NULL,
+    `assigned_by` BIGINT NULL COMMENT 'Người thực hiện phân công',
+    `note` VARCHAR(255) NULL,
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_la_lead` FOREIGN KEY (`lead_id`) REFERENCES `leads` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_la_from` FOREIGN KEY (`from_counselor_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+    CONSTRAINT `fk_la_to` FOREIGN KEY (`to_counselor_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_la_by` FOREIGN KEY (`assigned_by`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+    INDEX `idx_la_lead_time` (`lead_id`, `created_at`)
+) ENGINE=InnoDB COMMENT='Bảng lịch sử chuyển giao lead giữa các tư vấn viên';
 
 -- 3.3 Bảng Hồ sơ Học viên chi tiết (Students Profile)
 CREATE TABLE IF NOT EXISTS `students` (
@@ -266,6 +305,10 @@ CREATE TABLE IF NOT EXISTS `students` (
     `entry_level` VARCHAR(100) NULL COMMENT 'Trình độ đầu vào',
     `enrollment_status` ENUM('STUDYING', 'SUSPENDED', 'DROPPED_OUT', 'GRADUATED') DEFAULT 'STUDYING',
     `notes` TEXT NULL,
+    `program_id` INT NULL COMMENT 'Chương trình nhập học',
+    `lead_id` BIGINT NULL COMMENT 'Lead gốc khi chuyển từ phễu tuyển sinh (S3-03)',
+    `contact_email` VARCHAR(150) NULL COMMENT 'Email liên hệ; email đăng nhập nằm ở users.email',
+    `enrolled_at` DATE NULL COMMENT 'Ngày nhập học',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_students_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
@@ -281,8 +324,9 @@ CREATE TABLE IF NOT EXISTS `classrooms` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `room_code` VARCHAR(50) NOT NULL UNIQUE,
     `room_name` VARCHAR(100) NOT NULL,
-    `capacity` INT NOT NULL DEFAULT 30,
+    `capacity` INT NULL COMMENT 'Số chỗ; NULL là không giới hạn (chỉ phòng trực tuyến)',
     `room_type` ENUM('PHYSICAL', 'ONLINE') DEFAULT 'PHYSICAL',
+    `location` VARCHAR(255) NULL COMMENT 'Vị trí phòng vật lý',
     `meeting_url` VARCHAR(255) NULL COMMENT 'Google Meet / Zoom URL nếu là phòng online',
     `status` ENUM('AVAILABLE', 'MAINTENANCE') DEFAULT 'AVAILABLE'
 ) ENGINE=InnoDB COMMENT='Bảng danh mục phòng học';
@@ -310,8 +354,9 @@ CREATE TABLE IF NOT EXISTS `class_subjects` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `class_id` BIGINT NOT NULL,
     `subject_id` INT NOT NULL,
-    `primary_instructor_id` BIGINT NOT NULL COMMENT 'Giảng viên chính phụ trách môn',
+    `primary_instructor_id` BIGINT NULL COMMENT 'Giảng viên chính phụ trách môn, NULL là chưa phân công',
     `status` ENUM('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED') DEFAULT 'NOT_STARTED',
+    `order_index` INT NOT NULL DEFAULT 1 COMMENT 'Thứ tự môn, sao chép từ lộ trình chương trình lúc mở lớp',
     UNIQUE KEY `uk_class_subject` (`class_id`, `subject_id`),
     CONSTRAINT `fk_cs_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_cs_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE RESTRICT,
@@ -335,6 +380,7 @@ CREATE TABLE IF NOT EXISTS `enrollments` (
     `enrollment_date` DATE NOT NULL,
     `status` ENUM('ENROLLED', 'SUSPENDED', 'TRANSFERRED', 'DROPPED', 'GRADUATED') DEFAULT 'ENROLLED',
     `notes` VARCHAR(255) NULL,
+    `enrolled_by` BIGINT NULL COMMENT 'Người ghi danh (S3-06)',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY `uk_class_student` (`class_id`, `student_id`),
@@ -773,16 +819,16 @@ INSERT INTO `roles` (`id`, `role_code`, `role_name`, `description`) VALUES
 (8, 'GUEST', 'Khách truy cập', 'Xem thông tin và đăng ký tư vấn')
 ON DUPLICATE KEY UPDATE `role_name` = VALUES(`role_name`);
 
--- Seed Users mẫu (Mật khẩu mã hóa BCrypt của chuỗi '123456')
--- BCrypt hash của '123456': $2a$10$7EqJtq98hPqEX7fNZaFWoO... (hoặc tương đương)
-INSERT INTO `users` (`id`, `user_code`, `email`, `password_hash`, `full_name`, `phone`, `status`) VALUES
-(1, 'NV-ADMIN-01', 'admin@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Quản trị viên', '0901234567', 'ACTIVE'),
-(2, 'NV-QLDT-01', 'quanlydaotao@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Phạm Thị Quản', '0912345678', 'ACTIVE'),
-(3, 'NV-GV-01', 'giangvien@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Trần Thị Giảng', '0923456789', 'ACTIVE'),
-(4, 'NV-TG-01', 'trogiang@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Lê Văn Trợ', '0934567890', 'ACTIVE'),
-(5, 'HV-2026-001', 'hocvien@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Nguyễn Văn Học', '0945678901', 'ACTIVE'),
-(6, 'NV-KT-01', 'ketoan@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Đỗ Thị Kế', '0956789012', 'ACTIVE'),
-(7, 'NV-TV-01', 'tuvan@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Hoàng Văn Tư', '0967890123', 'ACTIVE')
+-- Seed Users mẫu (mật khẩu chung Tms@2026, BCrypt). Mỗi lần backend khởi động đều đặt lại về Tms@2026 (DatabaseMigration).
+-- Đăng nhập bằng mật khẩu này thì phải đổi mật khẩu trước khi dùng hệ thống.
+INSERT INTO `users` (`id`, `user_code`, `email`, `password_hash`, `full_name`, `display_name`, `phone`, `status`) VALUES
+(1, 'NV-ADMIN-01', 'A25200212001@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'QUAN TRI VIEN', 'Quản trị viên', '0901234567', 'ACTIVE'),
+(2, 'NV-QLDT-01', 'TM25200212002@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'PHAM THI QUAN', 'Phạm Thị Quản', '0912345678', 'ACTIVE'),
+(3, 'NV-GV-01', 'IST25200212045@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'TRAN THI GIANG', 'Trần Thị Giảng', '0923456789', 'ACTIVE'),
+(4, 'NV-TG-01', 'TA25200212007@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'LE VAN TRO', 'Lê Văn Trợ', '0934567890', 'ACTIVE'),
+(5, 'HV-2026-001', 'S25200212101@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'NGUYEN VAN HOC', 'Nguyễn Văn Học', '0945678901', 'ACTIVE'),
+(6, 'NV-KT-01', 'ACT25200212003@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'DO THI KE', 'Đỗ Thị Kế', '0956789012', 'ACTIVE'),
+(7, 'NV-TV-01', 'AMS25200212012@tms.vn', '$2a$10$D8SCTLJc7UfvPqtPy9oMr.n9ljUenuiwhjYaroG9ELaQbJFc4OIKa', 'HOANG VAN TU', 'Hoàng Văn Tư', '0967890123', 'ACTIVE')
 ON DUPLICATE KEY UPDATE `full_name` = VALUES(`full_name`);
 
 -- Gán quyền tương ứng
@@ -808,7 +854,14 @@ INSERT INTO `permissions` (`permission_code`, `permission_name`, `module`, `desc
 ('ROLE_PERMISSION_UPDATE', 'Cập nhật phân quyền', 'AUTH', 'Gán hoặc thu hồi quyền cho vai trò'),
 ('PROGRAM_MANAGE', 'Quản lý chương trình', 'PROGRAM', 'Quản lý chương trình đào tạo'),
 ('CLASS_MANAGE', 'Quản lý lớp học', 'CLASS', 'Mở lớp và phân công'),
+('PROGRAM_READ', 'Xem chương trình', 'PROGRAM', 'Xem chương trình, môn học, lộ trình'),
+('STUDENT_READ', 'Xem hồ sơ học viên', 'CLASS', 'Xem danh sách và hồ sơ học viên'),
+('CLASS_READ', 'Xem lớp học', 'CLASS', 'Xem lớp, ghi danh, người dạy và phòng học'),
+('STUDENT_WRITE', 'Sửa hồ sơ học viên', 'CLASS', 'Sửa thông tin cá nhân, trình độ đầu vào, ghi chú của học viên'),
+('TRASH_PURGE', 'Xoá vĩnh viễn', 'SYSTEM', 'Xem thùng rác các module và xoá vĩnh viễn'),
 ('LEAD_MANAGE', 'Quản lý tuyển sinh', 'ADMISSIONS', 'Quản lý khách hàng tiềm năng'),
+('LEAD_ASSIGN', 'Phân công lead', 'ADMISSIONS', 'Xem mọi lead, phân công tư vấn viên và xoá lead'),
+('LEAD_READ', 'Xem lead', 'ADMISSIONS', 'Xem danh sách lead, phễu và nhật ký chăm sóc'),
 ('ATTENDANCE_MANAGE', 'Quản lý điểm danh', 'ATTENDANCE', 'Điểm danh học viên'),
 ('ASSIGNMENT_MANAGE', 'Quản lý bài tập', 'ASSIGNMENT', 'Giao và quản lý bài tập'),
 ('ASSIGNMENT_READ', 'Xem bài tập', 'ASSIGNMENT', 'Xem và nộp bài tập'),
@@ -821,39 +874,42 @@ INSERT INTO `permissions` (`permission_code`, `permission_name`, `module`, `desc
 ('CONSULTATION_CREATE', 'Gửi yêu cầu tư vấn', 'PUBLIC', 'Đăng ký tư vấn công khai')
 ON DUPLICATE KEY UPDATE `permission_name` = VALUES(`permission_name`);
 
--- ADMIN nhận toàn bộ quyền. Mỗi role nghiệp vụ chỉ nhận đúng tập quyền của mình.
-INSERT INTO `role_permissions` (`role_id`, `permission_id`)
-SELECT r.id, p.id FROM `roles` r CROSS JOIN `permissions` p WHERE r.role_code = 'ADMIN'
-ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
-
+-- Quyền từng vai trò theo Product Backlog: sheet 2 "User Roles" (ma trận module x vai trò) và sheet 4 (vai trò của story).
+-- ADMIN chỉ quản lý tài khoản (S1-05, S1-08, S1-09, S1-10, S2-01) và xoá vĩnh viễn (nhận xét mentor S2).
+-- TRAINING_MANAGER chỉ xem lead (R) nhưng phân công được (S2-10). Phải khớp DatabaseMigration.ROLE_PERMISSIONS.
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_MANAGE','CLASS_MANAGE','SCHEDULE_READ','REPORT_VIEW')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','USER_READ','USER_CREATE','USER_ROLE_ASSIGN','ROLE_PERMISSION_READ','ROLE_PERMISSION_UPDATE','TRASH_PURGE')
+WHERE r.role_code = 'ADMIN'
+ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_MANAGE','PROGRAM_READ','STUDENT_READ','STUDENT_WRITE','CLASS_MANAGE','CLASS_READ','SCHEDULE_READ','LEAD_READ','LEAD_ASSIGN','ATTENDANCE_MANAGE','ASSIGNMENT_READ','GRADE_MANAGE','GRADE_READ','FINANCE_READ','REPORT_VIEW','USER_READ')
 WHERE r.role_code = 'TRAINING_MANAGER'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','LEAD_MANAGE')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','LEAD_MANAGE','PROGRAM_READ','STUDENT_READ','STUDENT_WRITE','CLASS_READ','SCHEDULE_READ','FINANCE_READ','REPORT_VIEW')
 WHERE r.role_code = 'ADMISSIONS'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','SCHEDULE_READ','ATTENDANCE_MANAGE','ASSIGNMENT_MANAGE','GRADE_MANAGE')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_READ','STUDENT_READ','CLASS_READ','SCHEDULE_READ','ATTENDANCE_MANAGE','ASSIGNMENT_MANAGE','GRADE_MANAGE','GRADE_READ','REPORT_VIEW')
 WHERE r.role_code = 'INSTRUCTOR'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','SCHEDULE_READ','ATTENDANCE_MANAGE','ASSIGNMENT_MANAGE')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_READ','STUDENT_READ','CLASS_READ','SCHEDULE_READ','ATTENDANCE_MANAGE','ASSIGNMENT_MANAGE','GRADE_READ')
 WHERE r.role_code = 'TA'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','SCHEDULE_READ','ASSIGNMENT_READ','GRADE_READ','FINANCE_READ')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_READ','SCHEDULE_READ','ASSIGNMENT_READ','GRADE_READ','FINANCE_READ')
 WHERE r.role_code = 'STUDENT'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','FINANCE_MANAGE','REPORT_VIEW')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','LEAD_READ','STUDENT_READ','FINANCE_MANAGE','FINANCE_READ','REPORT_VIEW')
 WHERE r.role_code = 'ACCOUNTANT'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
