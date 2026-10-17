@@ -10,7 +10,12 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.sql.SQLException;
 
-@WebServlet("/api/me/menu")
+/**
+ * GET /api/me/menu         menu cũ theo bảng menus (MENU_VIEW).
+ * GET /api/me/permissions  quyền theo từng vai trò của người đang đăng nhập; frontend dựng menu bên trái từ đây,
+ *                          nên đổi quyền ở S1-05 thì menu đổi theo ở lần mở trang kế tiếp.
+ */
+@WebServlet({"/api/me/menu", "/api/me/permissions"})
 public class MenuApiServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private final PermissionDAO permissionDAO = new PermissionDAO();
@@ -20,6 +25,11 @@ public class MenuApiServlet extends HttpServlet {
             throws IOException {
         User user = (User) request.getSession(false).getAttribute("currentUser");
         try {
+            if ("/api/me/permissions".equals(request.getServletPath())) {
+                ApiResponse.success(response, "PERMISSION_LIST_SUCCESS", "Quyền của bạn theo từng vai trò.",
+                        permissionDAO.permissionsByRoleForUser(user.getId()));
+                return;
+            }
             ApiResponse.success(response, "MENU_LIST_SUCCESS", "Lấy danh sách menu thành công.",
                     permissionDAO.menuForUser(user.getId()));
         } catch (SQLException exception) {

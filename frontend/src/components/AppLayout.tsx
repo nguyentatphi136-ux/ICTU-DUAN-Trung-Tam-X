@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { SESSION_EXPIRED } from '../data/api';
+import { api, apiEnabled, SESSION_EXPIRED } from '../data/api';
 import { useAuth } from '../data/auth';
 import { canAccess, menuFor, ROLES } from '../data/permissions';
+import { ROLE_CODES } from '../data/s1api';
 import { ErrorPage } from '../pages/S1-07-trang-loi/ErrorPage';
 import { Icon } from './Icon';
 import { NotificationBell } from './NotificationBell';
@@ -23,7 +24,7 @@ export const moduleHref = (name: string, to?: string) => to ?? '/module/' + slug
 // S1-06. Layout chung: sidebar trái 248px theo vai trò, thanh trên 64px có tên và vai trò, menu người dùng.
 // Chưa đăng nhập thì chuyển về trang đăng nhập và quay lại đúng trang sau khi đăng nhập (S1-02).
 export function AppLayout({ crumb, module, children }: Props) {
-  const { user, switchRole } = useAuth();
+  const { user, switchRole, updateUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -38,6 +39,13 @@ export function AppLayout({ crumb, module, children }: Props) {
     window.addEventListener(SESSION_EXPIRED, expired);
     return () => window.removeEventListener(SESSION_EXPIRED, expired);
   }, [navigate, user?.email, location.pathname]);
+  // Menu theo quyền máy chủ: tải lại mỗi lần mở trang, đổi quyền ở S1-05 thì lần mở trang kế tiếp menu đổi theo.
+  useEffect(() => {
+    if (!apiEnabled || !user || user.mustChangePassword) return;
+    api<Record<string, string[]>>('/api/me/permissions')
+      .then((p) => JSON.stringify(p) !== JSON.stringify(user.perms) && updateUser({ perms: p }))
+      .catch(() => undefined);
+  }, [location.pathname]);
   useEffect(() => {
     if (!menu) return;
     const f = (e: MouseEvent) => !menuRef.current?.contains(e.target as Node) && setMenu(false);
@@ -47,10 +55,12 @@ export function AppLayout({ crumb, module, children }: Props) {
 
   if (!user) return <Navigate to="/dang-nhap" replace state={{ from: location.pathname + location.search }} />;
   if (user.mustChangePassword) return <Navigate to="/doi-mat-khau" replace state={{ from: location.pathname + location.search }} />;
-  if (module && !canAccess(user.active, module)) return <ErrorPage code="403" />;
+  // Chưa tải xong quyền máy chủ (hoặc không có backend) thì codes là undefined: dùng ma trận sheet 2.
+  const codes = apiEnabled ? user.perms?.[ROLE_CODES[user.active]] : undefined;
+  if (module && !canAccess(user.active, module, codes)) return <ErrorPage code="403" />;
 
   const multi = user.roles.length > 1;
-  const items = menuFor(user.active);
+  const items = menuFor(user.active, codes);
   const logout = () => {
     // Trang đăng nhập mới xoá phiên, để chuyển trang xong trước rồi mới mất user (tránh bị chuyển hướng kiểu "chưa đăng nhập").
     navigate('/dang-nhap', { replace: true, state: { loggedOut: true } });

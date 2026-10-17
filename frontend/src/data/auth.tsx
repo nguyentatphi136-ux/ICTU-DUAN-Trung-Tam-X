@@ -5,7 +5,8 @@ import { api, apiEnabled } from './api';
 // Lưu trong sessionStorage để tải lại trang không mất phiên. Khi có backend: thay bằng token và GET /auth/me.
 /** roles là chỉ số trong ROLES (src/data/permissions.ts), xếp theo quyền giảm dần: phần tử đầu là vai trò khi vừa đăng nhập. */
 /** mustChangePassword: đăng nhập bằng mật khẩu mặc định, phải đổi mật khẩu trước khi vào hệ thống. */
-export type Account = { email: string; name: string; roles: number[]; mustChangePassword?: boolean };
+/** perms: mã quyền máy chủ theo mã vai trò (GET /api/me/permissions), dùng để dựng menu; chỉ có khi chạy với backend. */
+export type Account = { email: string; name: string; roles: number[]; mustChangePassword?: boolean; perms?: Record<string, string[]> };
 export type User = Account & { active: number };
 
 type Auth = {
@@ -14,7 +15,7 @@ type Auth = {
   signOut: () => void;
   switchRole: (role: number) => void;
   /** Cập nhật tên hiển thị sau khi lưu hồ sơ (S2-02). */
-  updateUser: (patch: Partial<Pick<User, 'name' | 'mustChangePassword'>>) => void;
+  updateUser: (patch: Partial<Pick<User, 'name' | 'mustChangePassword' | 'perms'>>) => void;
 };
 
 const KEY = 'tms.user';

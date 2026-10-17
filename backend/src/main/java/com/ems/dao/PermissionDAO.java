@@ -149,6 +149,25 @@ public class PermissionDAO {
         }
     }
 
+    /** Quyền theo từng vai trò người dùng đang giữ: { "INSTRUCTOR": ["CLASS_READ", ...], ... }. Frontend dựng menu theo vai trò đang dùng. */
+    public Map<String, List<String>> permissionsByRoleForUser(long userId) throws SQLException {
+        Map<String, List<String>> byRole = new LinkedHashMap<>();
+        String sql = "SELECT r.role_code, p.permission_code FROM user_roles ur JOIN roles r ON r.id = ur.role_id "
+                + "LEFT JOIN role_permissions rp ON rp.role_id = r.id LEFT JOIN permissions p ON p.id = rp.permission_id "
+                + "WHERE ur.user_id = ? ORDER BY r.id, p.permission_code";
+        try (Connection connection = DBConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            statement.setLong(1, userId);
+            try (ResultSet result = statement.executeQuery()) {
+                while (result.next()) {
+                    List<String> codes = byRole.computeIfAbsent(result.getString("role_code"), k -> new ArrayList<>());
+                    if (result.getString("permission_code") != null) codes.add(result.getString("permission_code"));
+                }
+            }
+        }
+        return byRole;
+    }
+
     public List<Map<String, Object>> menuForUser(long userId) throws SQLException {
         List<Map<String, Object>> menu = new ArrayList<>();
         String sql = "SELECT DISTINCT m.menu_code, m.title, m.href, m.icon, m.sort_order FROM users u "

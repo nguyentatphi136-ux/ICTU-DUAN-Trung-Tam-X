@@ -68,25 +68,43 @@ export const adminPerm = (moduleName: string): Permission => (moduleName === USE
 
 const permOf = (roleIndex: number, m: AppModule) => (roleIndex === ADMIN_ROLE ? adminPerm(m.name) : m.perms[roleIndex]);
 
-/** Menu Quản trị: mỗi chức năng (story) một mục riêng thay vì gộp chung module "Người dùng & nhật ký". */
-const ADMIN_MENU: MenuItem[] = [
-  { name: 'Tài khoản', icon: 'users', to: '/quan-tri/tai-khoan', exact: true }, // S1-08, S1-09, S1-10
-  { name: 'Phân quyền', icon: 'shield', to: '/quan-tri/phan-quyen', exact: true }, // S1-05
-  { name: 'Nhập người dùng từ Excel', icon: 'upload', to: '/quan-tri/nhap-excel', exact: true }, // S2-01
-  { name: 'Nhật ký thao tác', icon: 'clock', to: '/quan-tri/nhat-ky', exact: true }, // S6-11
-  { name: 'Thùng rác', icon: 'trash', to: '/quan-tri/thung-rac', exact: true }, // xoá vĩnh viễn (mentor S2)
+/**
+ * Mã quyền máy chủ của các module đã có API: vai trò có một trong các mã thì module hiện ra, nên đổi quyền ở S1-05
+ * thì menu đổi theo. Module chưa có API (điểm danh, bài tập, học phí...) vẫn theo ma trận sheet 2.
+ */
+const MODULE_CODES: Record<string, string[]> = {
+  'Chương trình & môn học': ['PROGRAM_READ', 'PROGRAM_MANAGE'],
+  'Tuyển sinh & lead': ['LEAD_READ', 'LEAD_MANAGE', 'LEAD_ASSIGN'],
+  'Hồ sơ học viên': ['STUDENT_READ', 'STUDENT_WRITE'],
+  'Lớp học & thời khoá biểu': ['CLASS_READ', 'CLASS_MANAGE', 'SCHEDULE_READ'],
+  [USERS_MODULE]: ['USER_READ'],
+};
+
+/** codes: mã quyền máy chủ của vai trò đang dùng; không có (chạy không backend) thì theo ma trận sheet 2. */
+const visible = (roleIndex: number, m: AppModule, codes?: string[]) =>
+  codes && MODULE_CODES[m.name] ? MODULE_CODES[m.name].some((c) => codes.includes(c)) : permOf(roleIndex, m) !== '–';
+
+/** Menu Quản trị: mỗi chức năng (story) một mục riêng thay vì gộp chung module "Người dùng & nhật ký". code: quyền cần có. */
+const ADMIN_MENU: (MenuItem & { code?: string })[] = [
+  { name: 'Tài khoản', icon: 'users', to: '/quan-tri/tai-khoan', exact: true, code: 'USER_READ' }, // S1-08, S1-09, S1-10
+  { name: 'Phân quyền', icon: 'shield', to: '/quan-tri/phan-quyen', exact: true, code: 'ROLE_PERMISSION_READ' }, // S1-05
+  { name: 'Nhập người dùng từ Excel', icon: 'upload', to: '/quan-tri/nhap-excel', exact: true, code: 'USER_CREATE' }, // S2-01
+  { name: 'Nhật ký thao tác', icon: 'clock', to: '/quan-tri/nhat-ky', exact: true }, // S6-11, chưa có quyền riêng
+  { name: 'Thùng rác', icon: 'trash', to: '/quan-tri/thung-rac', exact: true, code: 'TRASH_PURGE' }, // xoá vĩnh viễn (mentor S2)
 ];
 
-/** Menu của một vai trò: chỉ gồm module có quyền khác "–". */
-export function menuFor(roleIndex: number): MenuItem[] {
+/** Menu của một vai trò: chỉ gồm module vai trò đó được dùng. */
+export function menuFor(roleIndex: number, codes?: string[]): MenuItem[] {
   const home: MenuItem = { name: 'Trang chủ', icon: 'home', to: '/' };
-  if (roleIndex === ADMIN_ROLE) return [home, ...ADMIN_MENU];
-  const mods = MODULES.filter((m) => permOf(roleIndex, m) !== '–');
-  return [home, ...mods.map((m) => ({ name: m.name, icon: m.icon, to: ROLE_LINKS[roleIndex]?.[m.name] ?? m.to }))];
+  const mods = MODULES.filter((m) => visible(roleIndex, m, codes)).map((m) => ({ name: m.name, icon: m.icon, to: ROLE_LINKS[roleIndex]?.[m.name] ?? m.to }));
+  if (roleIndex !== ADMIN_ROLE) return [home, ...mods];
+  // Quản trị: các mục tài khoản tách riêng thay cho module "Người dùng & nhật ký", cộng module nghiệp vụ nếu được cấp quyền ở S1-05.
+  const admin = ADMIN_MENU.filter((i) => !codes || !i.code || codes.includes(i.code));
+  return [home, ...admin, ...mods.filter((m) => m.name !== USERS_MODULE)];
 }
 
 /** Vai trò có được dùng module không (dùng để chặn trang, trả về 403). Quyền thật phải kiểm ở máy chủ. */
-export function canAccess(roleIndex: number, moduleName: string): boolean {
+export function canAccess(roleIndex: number, moduleName: string, codes?: string[]): boolean {
   const m = MODULES.find((x) => x.name === moduleName);
-  return !!m && permOf(roleIndex, m) !== '–';
+  return !!m && visible(roleIndex, m, codes);
 }

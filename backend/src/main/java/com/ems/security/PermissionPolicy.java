@@ -6,6 +6,7 @@ import java.util.Map;
 public final class PermissionPolicy {
     private static final Map<String, String> API_PERMISSIONS = Map.ofEntries(
             Map.entry("GET /api/me/menu", "MENU_VIEW"),
+            Map.entry("GET /api/me/permissions", "@authenticated"),
             Map.entry("GET /api/admin/users", "USER_READ"),
             Map.entry("POST /api/admin/users", "USER_CREATE"),
             Map.entry("GET /api/admin/roles", "ROLE_PERMISSION_READ"),
