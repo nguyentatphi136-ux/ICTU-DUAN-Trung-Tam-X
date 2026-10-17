@@ -8,7 +8,7 @@ import { useAuth } from '../../data/auth';
 import { ROLES } from '../../data/permissions';
 import { saveAll } from '../../data/store';
 import { phoneOwner, PROFILES, USERS } from '../../data/users';
-import { digits, isPhone, PHONE_MSG } from '../../data/validate';
+import { digits, isPhone, PHONE_MSG, userName } from '../../data/validate';
 import { AvatarCropDialog } from './AvatarCropDialog';
 import './profile.css';
 
@@ -62,7 +62,7 @@ export function ProfilePage() {
   };
 
   async function save() {
-    const name = info.name.trim();
+    const name = userName(info.name);
     const e: typeof errors = {};
     if (!name) e.name = 'Nhập họ và tên';
     if (info.birth && info.birth > new Date().toISOString().slice(0, 10)) e.birth = 'Ngày sinh không được ở tương lai';

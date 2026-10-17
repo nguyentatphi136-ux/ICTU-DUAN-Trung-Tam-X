@@ -173,7 +173,7 @@ public class AdminDAO {
                     insertStmt.setString(1, finalUserCode);
                     insertStmt.setString(2, normalizedEmail);
                     insertStmt.setString(3, hashed);
-                    insertStmt.setString(4, fullName.trim());
+                    insertStmt.setString(4, UserDAO.normalizeName(fullName));
                     insertStmt.setString(5, normalizedPhone.isEmpty() ? null : normalizedPhone);
                     insertStmt.executeUpdate();
                     try (ResultSet generated = insertStmt.getGeneratedKeys()) {
@@ -205,7 +205,7 @@ public class AdminDAO {
                 result.put("id", newUserId);
                 result.put("userCode", finalUserCode);
                 result.put("email", normalizedEmail);
-                result.put("fullName", fullName.trim());
+                result.put("fullName", UserDAO.normalizeName(fullName));
                 result.put("phone", normalizedPhone);
                 result.put("status", "ACTIVE");
                 result.put("roles", validRoles);
@@ -253,7 +253,7 @@ public class AdminDAO {
                 }
                 try (PreparedStatement updateStmt = connection.prepareStatement(
                         "UPDATE users SET full_name = ?, phone = ?, updated_at = NOW() WHERE id = ?")) {
-                    updateStmt.setString(1, fullName.trim());
+                    updateStmt.setString(1, UserDAO.normalizeName(fullName));
                     updateStmt.setString(2, normalizedPhone.isEmpty() ? null : normalizedPhone);
                     updateStmt.setLong(3, targetId);
                     updateStmt.executeUpdate();
@@ -267,7 +267,7 @@ public class AdminDAO {
 
                 Map<String, Object> result = new LinkedHashMap<>();
                 result.put("id", targetId);
-                result.put("fullName", fullName.trim());
+                result.put("fullName", UserDAO.normalizeName(fullName));
                 result.put("phone", normalizedPhone);
                 return result;
             } catch (SQLException | RuntimeException e) {
@@ -758,7 +758,7 @@ public class AdminDAO {
                         stmt.setString(1, userCode);
                         stmt.setString(2, email);
                         stmt.setString(3, hashes[k]);
-                        stmt.setString(4, (String) eval.get("fullName"));
+                        stmt.setString(4, UserDAO.normalizeName((String) eval.get("fullName")));
                         stmt.setString(5, phone.isEmpty() ? null : phone);
                         stmt.setDate(6, dob.isEmpty() ? null : java.sql.Date.valueOf(dob));
                         stmt.setString(7, (String) eval.get("gender"));

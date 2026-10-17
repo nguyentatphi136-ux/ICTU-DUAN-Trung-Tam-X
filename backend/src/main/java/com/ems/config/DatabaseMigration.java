@@ -249,6 +249,7 @@ public class DatabaseMigration {
         ensureColumn(conn, "subjects", "status", "VARCHAR(20) DEFAULT 'ACTIVE'");
         applyRolePermissions(conn);
         renameSeedEmails(conn);
+        normalizeUserNames(conn);
 
         // schema.sql cũ đặt tên cột là duration_months, còn DAO và migration S2-04 dùng duration.
         if (hasColumn(conn, "programs", "duration_months") && !hasColumn(conn, "programs", "duration")) {
@@ -377,6 +378,28 @@ public class DatabaseMigration {
             }
         }
         LOGGER.info("Đã gán lại quyền các vai trò theo Product Backlog (sheet 2, 4).");
+    }
+
+    /** Họ tên người dùng lưu IN HOA, không dấu (UserDAO.normalizeName); đổi các tên đã lưu từ trước. */
+    static void normalizeUserNames(Connection conn) throws SQLException {
+        if (!hasTable(conn, "users")) return;
+        Map<Long, String> changed = new java.util.LinkedHashMap<>();
+        try (Statement stmt = conn.createStatement(); ResultSet rs = stmt.executeQuery("SELECT id, full_name FROM users")) {
+            while (rs.next()) {
+                String name = rs.getString("full_name");
+                String upper = com.ems.dao.UserDAO.normalizeName(name);
+                if (name != null && !name.equals(upper)) changed.put(rs.getLong("id"), upper);
+            }
+        }
+        if (changed.isEmpty()) return;
+        try (PreparedStatement stmt = conn.prepareStatement("UPDATE users SET full_name = ? WHERE id = ?")) {
+            for (Map.Entry<Long, String> e : changed.entrySet()) {
+                stmt.setString(1, e.getValue());
+                stmt.setLong(2, e.getKey());
+                stmt.executeUpdate();
+            }
+        }
+        LOGGER.info("Đã đổi họ tên " + changed.size() + " người dùng sang chữ in hoa không dấu.");
     }
 
     /** CSDL tạo từ schema.sql cũ có tài khoản mẫu @edumanager.vn; đổi sang email theo mã như frontend (A25200212001@tms.vn...). */

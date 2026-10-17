@@ -6,3 +6,6 @@ export const PHONE_MSG = 'Số điện thoại di động gồm 10 chữ số, b
 /** Bỏ khoảng trắng, dấu chấm, gạch nối trước khi kiểm hoặc so sánh. */
 export const digits = (phone: string) => phone.replace(/[\s.-]/g, '');
 export const isPhone = (phone: string) => PHONE_RE.test(digits(phone));
+/** Họ tên người dùng viết IN HOA, không dấu (cùng luật với UserDAO.normalizeName): "Trần Thị Giảng" thành "TRAN THI GIANG". */
+export const userName = (name: string) =>
+  name.replace(/đ/g, 'd').replace(/Đ/g, 'D').normalize('NFD').replace(/\p{M}/gu, '').trim().replace(/\s+/g, ' ').toUpperCase();

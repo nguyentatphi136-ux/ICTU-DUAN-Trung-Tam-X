@@ -4,7 +4,7 @@ import { Box, Drawer, initial, Pill } from '../../components/ui';
 import { useAuth } from '../../data/auth';
 import { ADMIN_ROLE, ROLES } from '../../data/permissions';
 import { phoneOwner } from '../../data/users';
-import { EMAIL_RE, isPhone, PHONE_MSG } from '../../data/validate';
+import { EMAIL_RE, isPhone, PHONE_MSG, userName } from '../../data/validate';
 import { statusTone, type UserRow } from '../../data/users';
 
 
@@ -43,7 +43,7 @@ export function UserDrawer({ user, users, onClose, onSave, onLock }: Props) {
     if (!roles.length) e.roles = 'Chọn ít nhất một vai trò';
     setErrors(e);
     if (Object.keys(e).length) return;
-    onSave({ id: user?.id ?? 0, status: 'Chờ kích hoạt', ...user, name: name.trim().toUpperCase(), email: email.trim(), phone: phone.trim(), roles });
+    onSave({ id: user?.id ?? 0, status: 'Chờ kích hoạt', ...user, name: userName(name), email: email.trim(), phone: phone.trim(), roles });
   }
 
   const field = (id: string, label: string, value: string, set: (v: string) => void, opts: { icon?: 'mail'; disabled?: boolean; hint?: string } = {}) => (

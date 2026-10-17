@@ -192,7 +192,7 @@ class S2MentorFixesTest {
         insertUser("other@tms.vn", "Người Khác", "0987654321");
 
         Map<String, Object> saved = userDAO.updateUserProfile(me, "Tên Mới", "0912 345 678", "2004-03-14", "female", "Hà Nội");
-        assertEquals("Tên Mới", saved.get("fullName"));
+        assertEquals("TEN MOI", saved.get("fullName"), "Họ tên lưu in hoa, không dấu");
         assertEquals("0912345678", saved.get("phone"));
         assertEquals("2004-03-14", saved.get("dateOfBirth"));
         assertEquals("FEMALE", saved.get("gender"));

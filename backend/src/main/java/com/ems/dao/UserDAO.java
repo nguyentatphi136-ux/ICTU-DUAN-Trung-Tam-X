@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.LinkedHashMap;
+import java.text.Normalizer;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
@@ -250,6 +252,13 @@ public class UserDAO {
         return VN_PHONE_PATTERN.matcher(normalizePhone(phone)).matches();
     }
 
+    /** Họ tên người dùng lưu IN HOA, không dấu, một khoảng trắng giữa các chữ: "Trần  Thị Giảng" thành "TRAN THI GIANG". */
+    public static String normalizeName(String name) {
+        if (name == null) return null;
+        String noMarks = Normalizer.normalize(name.replace('đ', 'd').replace('Đ', 'D'), Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        return noMarks.trim().replaceAll("\\s+", " ").toUpperCase(Locale.ROOT);
+    }
+
     public static String normalizePhone(String phone) {
         return phone == null ? "" : phone.trim().replaceAll("[\\s.-]", "");
     }
@@ -392,7 +401,7 @@ public class UserDAO {
 
                 try (PreparedStatement updateStmt = connection.prepareStatement(
                         "UPDATE users SET full_name = ?, phone = ?, date_of_birth = ?, gender = ?, address = ?, updated_at = NOW() WHERE id = ?")) {
-                    updateStmt.setString(1, fullName.trim());
+                    updateStmt.setString(1, normalizeName(fullName));
                     updateStmt.setString(2, normalizedPhone.isEmpty() ? null : normalizedPhone);
                     updateStmt.setDate(3, dobDate);
                     updateStmt.setString(4, normalizedGender);

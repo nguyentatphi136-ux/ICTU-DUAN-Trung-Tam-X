@@ -81,7 +81,7 @@ public class StudentDAO {
                     stmt.setString(1, code);
                     stmt.setString(2, login);
                     stmt.setString(3, BCrypt.hashpw(UserDAO.DEFAULT_PASSWORD, BCrypt.gensalt(10)));
-                    stmt.setString(4, name);
+                    stmt.setString(4, UserDAO.normalizeName(name));
                     stmt.setString(5, phone);
                     stmt.executeUpdate();
                     userId = generatedId(stmt);
@@ -120,7 +120,7 @@ public class StudentDAO {
                 result.put("studentId", studentId);
                 result.put("code", code);
                 result.put("login", login);
-                result.put("name", name);
+                result.put("name", UserDAO.normalizeName(name));
                 result.put("email", contactEmail);
                 return result;
             } catch (SQLException | RuntimeException e) {
@@ -274,7 +274,7 @@ public class StudentDAO {
                 }
                 try (PreparedStatement stmt = conn.prepareStatement(
                         "UPDATE users SET full_name = ?, phone = ?, date_of_birth = ?, address = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")) {
-                    stmt.setString(1, name);
+                    stmt.setString(1, UserDAO.normalizeName(name));
                     stmt.setString(2, phone);
                     stmt.setDate(3, birth == null ? null : Date.valueOf(birth));
                     stmt.setString(4, address);
