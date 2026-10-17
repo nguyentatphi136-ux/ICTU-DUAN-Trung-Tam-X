@@ -29,7 +29,7 @@ public class AuthRateLimitFilter implements Filter {
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
             throws IOException, ServletException {
         HttpServletRequest httpRequest = (HttpServletRequest) request;
-        String path = httpRequest.getRequestURI().substring(httpRequest.getContextPath().length());
+        String path = SessionAuthFilter.normalizedPath(httpRequest);
         String key = httpRequest.getRemoteAddr() + ":" + path;
         long now = Instant.now().toEpochMilli();
         int limit = "/api/auth/forgot-password".equals(path) ? 5 : 30;

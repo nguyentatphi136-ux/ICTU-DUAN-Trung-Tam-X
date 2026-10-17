@@ -36,9 +36,9 @@ public class SessionAuthFilter implements Filter {
         req.setCharacterEncoding("UTF-8");
         resp.setCharacterEncoding("UTF-8");
 
-        String contextPath = req.getContextPath();
-        String uri = req.getRequestURI();
-        String path = uri.substring(contextPath.length());
+        // Dùng đường dẫn đã được Tomcat chuẩn hoá (bỏ ";..." và giải mã %xx), không dùng getRequestURI().
+        // Nếu dùng URI thô, "/api/admin/users;.html" sẽ bị coi là file tĩnh và lọt qua kiểm tra đăng nhập.
+        String path = normalizedPath(req);
 
         // 1. Cho phép truy cập tài nguyên công khai không cần đăng nhập
         if (isPublicPath(path)) {
@@ -109,11 +109,21 @@ public class SessionAuthFilter implements Filter {
                 || path.startsWith("/api-docs") || path.startsWith("/api/docs")) {
             return true;
         }
+        // API không bao giờ được coi là tài nguyên tĩnh
+        if (path.startsWith("/api/")) {
+            return false;
+        }
         // Tài nguyên tĩnh
         return path.startsWith("/assets/") || path.startsWith("/css/") || path.startsWith("/js/")
                 || path.endsWith(".css") || path.endsWith(".js") || path.endsWith(".png")
                 || path.endsWith(".jpg") || path.endsWith(".svg") || path.endsWith(".ico")
                 || path.endsWith(".json") || path.endsWith(".html");
+    }
+
+    static String normalizedPath(HttpServletRequest req) {
+        String servletPath = req.getServletPath() == null ? "" : req.getServletPath();
+        String pathInfo = req.getPathInfo() == null ? "" : req.getPathInfo();
+        return servletPath + pathInfo;
     }
 
     private void redirectToLogin(HttpServletRequest req, HttpServletResponse resp, String errorReason) throws IOException {
