@@ -8,7 +8,7 @@ import { ago, isRead, markRead } from '../../data/inbox';
 import type { Notice } from '../../data/notifications';
 import './inbox.css';
 
-const KINDS: Notice['kind'][] = ['Bài tập', 'Điểm', 'Lịch học', 'Điểm danh', 'Học phí', 'Thông báo lớp', 'Khảo sát'];
+const KINDS: Notice['kind'][] = ['Lead', 'Bài tập', 'Điểm', 'Lịch học', 'Điểm danh', 'Học phí', 'Thông báo lớp', 'Khảo sát'];
 const PAGE = 10;
 
 // S6-10. Danh sách thông báo đầy đủ: lọc chưa đọc và theo loại, đánh dấu đã đọc từng thông báo hoặc tất cả.

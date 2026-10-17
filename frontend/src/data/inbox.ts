@@ -15,7 +15,13 @@ function myClasses(u: User) {
 
 export function inboxOf(u: User): Notice[] {
   const cls = myClasses(u);
-  return NOTICES.filter((n) => n.to.users?.includes(u.name) || (n.to.cls && cls.has(n.to.cls))).sort((a, b) => b.at.localeCompare(a.at));
+  return NOTICES.filter((n) => {
+    if (n.to.users?.includes(u.name)) return true;
+    if (n.to.cls && cls.has(n.to.cls)) return true;
+    // Tư vấn tuyển sinh (3), Quản lý đào tạo (5) và Quản trị viên (6) đều nhận thông báo nhắc lịch chăm sóc Lead
+    if (n.kind === 'Lead' && (u.active === 3 || u.active === 5 || u.active === 6)) return true;
+    return false;
+  }).sort((a, b) => b.at.localeCompare(a.at));
 }
 
 export const isRead = (n: Notice, u: User) => n.readBy.includes(u.name);

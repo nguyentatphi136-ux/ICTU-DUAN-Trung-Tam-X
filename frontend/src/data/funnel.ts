@@ -33,8 +33,15 @@ export const STAGES: Stage[] = ['Mới', 'Đã liên hệ', 'Đang tư vấn', '
 
 export const REJECT_REASONS = ['Học phí cao', 'Lịch học không phù hợp', 'Đã chọn trung tâm khác', 'Không liên lạc được', 'Chưa có nhu cầu lúc này', 'Lý do khác'];
 
-/** Ngày "hôm nay": ngày cố định của dữ liệu mẫu, hoặc ngày thật khi có backend. */
-export const TODAY = apiEnabled ? new Date().toLocaleDateString('sv-SE') : '2026-10-06';
+/** Ngày "hôm nay": ngày thực tế của máy tính (Real-time). */
+export const TODAY = new Date().toLocaleDateString('sv-SE');
+
+export const nowTime = () => new Date().toTimeString().slice(0, 5);
+export const nowIso = () => {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
 
 export const stageTone = (s: Stage): 'ok' | 'wait' | 'off' | 'info' | undefined =>
   s === 'Mới' ? 'info' : s === 'Đang tư vấn' || s === 'Hẹn học thử' ? 'wait' : s === 'Chốt' ? 'ok' : s === 'Từ chối' ? 'off' : undefined;
@@ -44,10 +51,18 @@ const days = (from: string, to: string) => Math.round((Date.parse(to) - Date.par
 /** Số ngày quá hạn gọi lại, 0 nếu chưa quá hạn. Lead đã chốt hoặc từ chối không tính. */
 export function overdueDays(l: FunnelLead) {
   if (!l.callback || l.stage === 'Chốt' || l.stage === 'Từ chối') return 0;
-  return Math.max(0, days(l.callback, TODAY));
+  const cbDate = l.callback.slice(0, 10);
+  return Math.max(0, days(cbDate, TODAY));
 }
 
-export const ddmm = (iso: string) => iso.slice(8, 10) + '/' + iso.slice(5, 7);
+export const ddmm = (iso: string) => {
+  if (!iso) return '';
+  const datePart = iso.slice(8, 10) + '/' + iso.slice(5, 7);
+  if (iso.includes('T')) {
+    return `${iso.slice(11, 16)} ngày ${datePart}`;
+  }
+  return datePart;
+};
 
 type Seed = Omit<FunnelLead, 'id' | 'source' | 'owner'> & Partial<Pick<FunnelLead, 'source' | 'owner'>>;
 

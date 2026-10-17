@@ -13,7 +13,7 @@ export type Audience = {
 export type Notice = {
   id: number;
   at: string;
-  kind: 'Lịch học' | 'Bài tập' | 'Điểm' | 'Điểm danh' | 'Học phí' | 'Thông báo lớp' | 'Khảo sát';
+  kind: 'Lịch học' | 'Bài tập' | 'Điểm' | 'Điểm danh' | 'Học phí' | 'Thông báo lớp' | 'Khảo sát' | 'Lead';
   title: string;
   body: string;
   /** Màn hình liên quan, bấm vào thông báo thì mở. */

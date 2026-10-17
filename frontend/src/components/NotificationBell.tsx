@@ -3,12 +3,15 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../data/auth';
 import { ago, inboxOf, isRead, markRead } from '../data/inbox';
 import { onNotice, type Notice } from '../data/notifications';
-import { runFeeReminders } from '../data/feeReminders';
 import { runReminders } from '../data/prefs';
+import { runFeeReminders } from '../data/feeReminders';
+import { runLeadReminders } from '../data/leadReminders';
+import { ddmm } from '../data/funnel';
+import { useToast } from './Toast';
 import { Icon, type IconName } from './Icon';
 import './bell.css';
 
-export const KIND_ICON: Record<Notice['kind'], IconName> = { 'Lịch học': 'cal', 'Bài tập': 'edit', Điểm: 'award', 'Điểm danh': 'check', 'Học phí': 'wallet', 'Thông báo lớp': 'chat', 'Khảo sát': 'chat' };
+export const KIND_ICON: Record<Notice['kind'], IconName> = { 'Lịch học': 'cal', 'Bài tập': 'edit', Điểm: 'award', 'Điểm danh': 'check', 'Học phí': 'wallet', 'Thông báo lớp': 'chat', 'Khảo sát': 'chat', Lead: 'phone' };
 
 /** Thông báo của người dùng, tự cập nhật khi có thông báo mới sinh ra ở nơi khác (S6-09). */
 export function useInbox() {
@@ -24,12 +27,26 @@ export function useInbox() {
 export function NotificationBell() {
   const { user, list, unread, refresh } = useInbox();
   const navigate = useNavigate();
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     runReminders();
     runFeeReminders();
-  }, []);
+    const handleDue = (lead: { name: string; phone: string; callback?: string }) => {
+      toast('🔔 ĐẾN HẸN GỌI LẠI KHÁCH HÀNG', `${lead.name} (${lead.phone}) · Hẹn: ${ddmm(lead.callback || '')}`);
+    };
+
+    runLeadReminders(handleDue);
+
+    // Quét định kỳ thời gian thực mỗi 3 giây
+    const timer = setInterval(() => {
+      runLeadReminders(handleDue);
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [toast]);
   useEffect(() => {
     if (!open) return;
     const f = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);

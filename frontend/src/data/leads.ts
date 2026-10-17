@@ -23,6 +23,15 @@ export const LEAD_STATUSES: LeadStatus[] = [...STAGES];
 export const SOURCES = ['Biểu mẫu web', 'Facebook', 'Zalo', 'Giới thiệu'];
 export const COUNSELORS = ['TRAN THU HA', 'NGO THANH TU', 'DANG BAO VY'];
 
+export function samePhone(a?: string, b?: string) {
+  if (!a || !b) return false;
+  return a.replace(/\D/g, '') === b.replace(/\D/g, '');
+}
+
+export function viDate(iso: string) {
+  return (iso || '').split('-').reverse().join('/');
+}
+
 export const leadTone = (s: LeadStatus): 'info' | 'wait' | 'ok' | undefined =>
   s === 'Mới' ? 'info' : s === 'Đã liên hệ' || s === 'Đang tư vấn' || s === 'Hẹn học thử' ? 'wait' : s === 'Chốt' || s === 'Đã nhập học' ? 'ok' : undefined;
 
@@ -258,6 +267,3 @@ export function syncFunnelStage(id: number, stage: Stage, reason?: string, stude
     window.dispatchEvent(new CustomEvent('tms:lead-updated', { detail: { id, stage } }));
   }
 }
-
-export const samePhone = (a: string, b: string) => a.replace(/\D/g, '') === b.replace(/\D/g, '');
-export const viDate = (iso: string) => iso.split('-').reverse().join('/');

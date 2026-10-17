@@ -1,9 +1,9 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Icon, type IconName } from '../../components/Icon';
 import { Drawer, LoadState, Pill } from '../../components/ui';
 import { useLoad } from '../../data/api';
 import { loadLeadLogs } from '../../data/s3api';
-import { logsOf, overdueDays, STAGES, stageTone, TODAY, viDateTime, type CareLog, type FunnelLead, type LogKind, type Stage } from '../../data/funnel';
+import { logsOf, nowIso, overdueDays, STAGES, stageTone, TODAY, viDateTime, type CareLog, type FunnelLead, type LogKind, type Stage } from '../../data/funnel';
 import './care.css';
 
 type Props = {
@@ -28,11 +28,17 @@ const ICONS: Record<LogKind, IconName> = { Gọi: 'phone', Nhắn: 'chat', Gặp
 // S3-02. Bấm vào thẻ lead để mở ngăn bên: ghi lần tương tác mới (gọi, nhắn, gặp), đặt ngày nhắc gọi lại, xem nhật ký mới nhất ở trên.
 export function LeadPanel({ lead, canWrite, me, onClose, onLog, onMove, extra }: Props) {
   const [kind, setKind] = useState<LogKind>('Gọi');
-  // Mặc định là giờ hiện tại: máy chủ không nhận thời điểm tương tác ở tương lai.
-  const [at, setAt] = useState(TODAY + 'T' + new Date().toTimeString().slice(0, 5));
+  // Luôn lấy thời điểm thực tế hiện tại (Real-time).
+  const [at, setAt] = useState(nowIso);
   const [text, setText] = useState('');
   const [callback, setCallback] = useState('');
   const [error, setError] = useState('');
+
+  // Tự động cập nhật thời gian thực tế mỗi khi mở ngăn hoặc đổi lead
+  useEffect(() => {
+    setAt(nowIso());
+  }, [lead.id]);
+
   // Có backend: tải nhật ký của lead khi mở ngăn; sau mỗi lần ghi, trang phễu tải lại vào cùng LOGS.
   const load = useLoad(() => loadLeadLogs(lead.id), [lead.id]);
   const late = lead.student ? 0 : overdueDays(lead);
@@ -41,11 +47,11 @@ export function LeadPanel({ lead, canWrite, me, onClose, onLog, onMove, extra }:
 
   function save() {
     if (!text.trim()) return setError('Ghi lại nội dung trao đổi với khách');
-    if (callback && callback < TODAY) return setError('Ngày nhắc gọi lại phải từ hôm nay trở đi');
     onLog({ kind, at, by: me, text: text.trim() }, callback || undefined);
     setText('');
     setCallback('');
     setError('');
+    setAt(nowIso());
   }
 
   return (
@@ -98,11 +104,57 @@ export function LeadPanel({ lead, canWrite, me, onClose, onLog, onMove, extra }:
             </div>
           </div>
           <div className="cr-row end">
-            <div className="field">
-              <label htmlFor="cr-cb">Nhắc gọi lại vào ngày</label>
-              <div className="inp lead" style={{ width: 240 }}>
+            <div className="field" style={{ flex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexWrap: 'wrap', gap: 4 }}>
+                <label htmlFor="cr-cb" style={{ margin: 0, fontWeight: 600 }}>Nhắc gọi lại (Real-time)</label>
+                <div style={{ display: 'flex', gap: 4 }}>
+                  <button
+                    type="button"
+                    style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: 'var(--bg-sub, #f1f5f9)', border: '1px solid var(--border, #cbd5e1)', cursor: 'pointer', color: 'var(--primary, #2563eb)' }}
+                    onClick={() => setCallback(nowIso())}
+                    title="Đặt hẹn vào đúng phút hiện tại để chuông reo thông báo ngay"
+                  >
+                    Ngay bây giờ
+                  </button>
+                  <button
+                    type="button"
+                    style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: 'var(--bg-sub, #f1f5f9)', border: '1px solid var(--border, #cbd5e1)', cursor: 'pointer', color: 'var(--primary, #2563eb)' }}
+                    onClick={() => {
+                      const d = new Date(Date.now() + 60 * 1000);
+                      const pad = (n: number) => String(n).padStart(2, '0');
+                      setCallback(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
+                    }}
+                    title="Đặt hẹn sau 1 phút nữa để xem hệ thống đếm giờ và tự động báo chuông"
+                  >
+                    +1 phút
+                  </button>
+                  <button
+                    type="button"
+                    style={{ fontSize: 11, padding: '2px 7px', borderRadius: 4, background: 'var(--bg-sub, #f1f5f9)', border: '1px solid var(--border, #cbd5e1)', cursor: 'pointer', color: 'var(--primary, #2563eb)' }}
+                    onClick={() => setCallback(TODAY)}
+                    title="Đặt hẹn trong ngày hôm nay"
+                  >
+                    Hôm nay
+                  </button>
+                  {callback && (
+                    <button
+                      type="button"
+                      style={{ fontSize: 11, padding: '2px 6px', borderRadius: 4, background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}
+                      onClick={() => setCallback('')}
+                    >
+                      Bỏ hẹn
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="inp lead" style={{ width: '100%', maxWidth: 280 }}>
                 <Icon name="cal" />
-                <input id="cr-cb" type="date" min={TODAY} value={callback} onChange={(e) => setCallback(e.target.value)} />
+                <input
+                  id="cr-cb"
+                  type={callback.includes('T') ? 'datetime-local' : 'date'}
+                  value={callback}
+                  onChange={(e) => setCallback(e.target.value)}
+                />
               </div>
             </div>
             <button type="button" className="btn primary" style={{ width: 140, marginBottom: 16 }} onClick={save}>

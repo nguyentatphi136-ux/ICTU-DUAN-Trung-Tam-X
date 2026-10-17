@@ -10,6 +10,8 @@ import { loadPublicPrograms, saveLead, type PublicProgram } from '../../data/s2a
 import { addLeadLog, loadFunnel, loadLeadLogs, moveLead } from '../../data/s3api';
 import { addLog, ddmm, FUNNEL, overdueDays, STAGES, stageTone, TODAY, type FunnelLead, type Stage } from '../../data/funnel';
 import { addLead, syncFunnelStage, LEADS } from '../../data/leads';
+import { notify } from '../../data/notifications';
+import { isCallbackDue, runLeadReminders } from '../../data/leadReminders';
 import { LeadDrawer } from '../S2-09-lead/LeadDrawer';
 import { LeadPanel } from '../S3-02-nhat-ky-cham-soc/LeadPanel';
 import { ConvertBlock, ConvertDialog } from '../S3-03-chuyen-hoc-vien/ConvertDialog';
@@ -38,6 +40,11 @@ export function FunnelPage() {
   const [params] = useSearchParams();
   // ?lead=<id> mở sẵn ngăn của lead đó (dùng cho liên kết từ trang khác và mục lục màn hình).
   const [openId, setOpenId] = useState<number | null>(Number(params.get('lead')) || null);
+
+  useEffect(() => {
+    const p = Number(params.get('lead'));
+    if (p) setOpenId(p);
+  }, [params]);
 
   const role = user?.active ?? -1;
   // Sheet 2: chỉ Tư vấn tuyển sinh sửa lead; Quản lý đào tạo, Kế toán chỉ xem.
@@ -204,10 +211,15 @@ export function FunnelPage() {
           onClose={() => setOpenId(null)}
           onMove={(to) => move(panel, to)}
           onLog={(log, callback) => {
-            if (apiEnabled) return void sync(addLeadLog(panel.id, log, callback), 'Đã lưu nhật ký', callback ? `Nhắc gọi lại ngày ${ddmm(callback)}.` : panel.name);
+            if (apiEnabled) return void sync(addLeadLog(panel.id, log, callback), 'Đã lưu nhật ký', callback ? `Nhắc gọi lại ${ddmm(callback)}.` : panel.name);
             addLog(panel, log);
             commit(leads.map((x) => (x.id === panel.id ? { ...x, callback } : x)));
-            toast('Đã lưu nhật ký', callback ? `Nhắc gọi lại ngày ${ddmm(callback)}.` : panel.name);
+            if (callback && isCallbackDue(callback)) {
+              runLeadReminders((lead) => {
+                toast('🔔 ĐẾN HẸN GỌI LẠI KHÁCH HÀNG', `${lead.name} (${lead.phone}) · Hẹn: ${ddmm(lead.callback || '')}`);
+              });
+            }
+            toast('Đã lưu nhật ký', callback ? `Nhắc gọi lại: ${ddmm(callback)}.` : panel.name);
           }}
         />
       )}
