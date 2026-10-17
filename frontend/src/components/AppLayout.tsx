@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, Navigate, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { api, apiEnabled, SESSION_EXPIRED } from '../data/api';
 import { useAuth } from '../data/auth';
 import { canAccess, menuFor, ROLES } from '../data/permissions';
+import { ROLE_CODES } from '../data/s1api';
 import { ErrorPage } from '../pages/S1-07-trang-loi/ErrorPage';
 import { Icon } from './Icon';
+import { NotificationBell } from './NotificationBell';
+import { ThemeToggle } from './ThemeToggle';
+import { useTitle } from './ui';
 
 type Props = {
   /** Đường dẫn trên thanh trên, phần tử cuối là trang hiện tại. */
@@ -19,14 +24,28 @@ export const moduleHref = (name: string, to?: string) => to ?? '/module/' + slug
 // S1-06. Layout chung: sidebar trái 248px theo vai trò, thanh trên 64px có tên và vai trò, menu người dùng.
 // Chưa đăng nhập thì chuyển về trang đăng nhập và quay lại đúng trang sau khi đăng nhập (S1-02).
 export function AppLayout({ crumb, module, children }: Props) {
-  const { user, switchRole } = useAuth();
+  const { user, switchRole, updateUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [menu, setMenu] = useState(false);
+  useTitle(crumb[crumb.length - 1]);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setOpen(false), [location.pathname]);
+  // S1-02: phiên hết hạn phía máy chủ thì về trang đăng nhập kèm thông báo, đăng nhập lại thì quay về đúng trang này.
+  useEffect(() => {
+    const expired = () => navigate('/dang-nhap', { replace: true, state: { expired: true, email: user?.email, from: location.pathname } });
+    window.addEventListener(SESSION_EXPIRED, expired);
+    return () => window.removeEventListener(SESSION_EXPIRED, expired);
+  }, [navigate, user?.email, location.pathname]);
+  // Menu theo quyền máy chủ: tải lại mỗi lần mở trang, đổi quyền ở S1-05 thì lần mở trang kế tiếp menu đổi theo.
+  useEffect(() => {
+    if (!apiEnabled || !user || user.mustChangePassword) return;
+    api<Record<string, string[]>>('/api/me/permissions')
+      .then((p) => JSON.stringify(p) !== JSON.stringify(user.perms) && updateUser({ perms: p }))
+      .catch(() => undefined);
+  }, [location.pathname]);
   useEffect(() => {
     if (!menu) return;
     const f = (e: MouseEvent) => !menuRef.current?.contains(e.target as Node) && setMenu(false);
@@ -35,10 +54,13 @@ export function AppLayout({ crumb, module, children }: Props) {
   }, [menu]);
 
   if (!user) return <Navigate to="/dang-nhap" replace state={{ from: location.pathname + location.search }} />;
-  if (module && !canAccess(user.active, module)) return <ErrorPage code="403" />;
+  if (user.mustChangePassword) return <Navigate to="/doi-mat-khau" replace state={{ from: location.pathname + location.search }} />;
+  // Chưa tải xong quyền máy chủ (hoặc không có backend) thì codes là undefined: dùng ma trận sheet 2.
+  const codes = apiEnabled ? user.perms?.[ROLE_CODES[user.active]] : undefined;
+  if (module && !canAccess(user.active, module, codes)) return <ErrorPage code="403" />;
 
   const multi = user.roles.length > 1;
-  const items = menuFor(user.active);
+  const items = menuFor(user.active, codes);
   const logout = () => {
     // Trang đăng nhập mới xoá phiên, để chuyển trang xong trước rồi mới mất user (tránh bị chuyển hướng kiểu "chưa đăng nhập").
     navigate('/dang-nhap', { replace: true, state: { loggedOut: true } });
@@ -94,7 +116,7 @@ export function AppLayout({ crumb, module, children }: Props) {
         {multi && <div className="me-roles">{roleList}</div>}
         <nav className="nav">
           {items.map((m) => (
-            <NavLink key={m.name} to={moduleHref(m.name, m.to)} end={m.to === '/'} className={({ isActive }) => (isActive || isUnder(location.pathname, m.to) ? 'on' : undefined)}>
+            <NavLink key={m.name} to={moduleHref(m.name, m.to)} end={m.to === '/'} className={({ isActive }) => (isActive || (!m.exact && (isUnder(location.pathname, m.to) || (!!module && m.name === module))) ? 'on' : undefined)}>
               <Icon name={m.icon} />
               {m.name}
             </NavLink>
@@ -111,6 +133,12 @@ export function AppLayout({ crumb, module, children }: Props) {
           <button type="button" className="burger" aria-label="Mở menu" onClick={() => setOpen(true)}>
             <Icon name="menu" />
           </button>
+          <Link to="/" className="logo top-logo">
+            <span>
+              <Icon name="cap" />
+            </span>
+            TMS.
+          </Link>
           <div className="crumb">
             {crumb.map((c, i) => (
               <span key={c} className={i < crumb.length - 1 ? 'up' : undefined}>
@@ -119,7 +147,8 @@ export function AppLayout({ crumb, module, children }: Props) {
               </span>
             ))}
           </div>
-          <Icon name="bell" />
+          <ThemeToggle />
+          <NotificationBell />
           <div className="um" ref={menuRef}>
             <button type="button" className="um-btn" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
               <span className="who">
@@ -144,6 +173,7 @@ export function AppLayout({ crumb, module, children }: Props) {
                 <div className="um-links">
                   <Link to="/ho-so">Hồ sơ cá nhân</Link>
                   <Link to="/doi-mat-khau">Đổi mật khẩu</Link>
+                  <Link to="/cai-dat">Cài đặt thông báo</Link>
                   <button type="button" className="danger" onClick={logout}>
                     Đăng xuất
                     <small>Kết thúc phiên trên máy chủ ngay</small>

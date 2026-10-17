@@ -1,0 +1,16 @@
+/* S8-06. Kết quả khảo sát: thanh ngang theo câu, mỗi lớp một màu. */
+.rs-bar{align-items:center}
+.rs-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px;align-items:start}
+.rs-grid h3{font-size:15px;margin-bottom:8px}
+.rs-legend{display:flex;flex-wrap:wrap;gap:16px;margin-bottom:12px;font-size:13px;color:var(--muted)}
+.rs-legend span::before{content:'';display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;background:var(--c)}
+.k0{--c:var(--blue)}.k1{--c:var(--navy-soft)}.k2{--c:var(--green)}
+.rs-q{display:grid;grid-template-columns:220px 1fr;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line);font-size:14px}
+.rs-q>div{display:flex;flex-direction:column;gap:4px}
+.rs-bar-row{display:flex;align-items:center;gap:8px}.rs-bar-row i{display:block;height:12px;width:var(--w);background:var(--c);border-radius:0 4px 4px 0}
+.rs-bar-row b{font-size:13px}.rs-bar-row.low b{color:var(--bad)}
+.rs-gap{margin-top:12px;color:var(--warn);font-size:14px}
+.rs-texts p{margin:12px 0 8px}.rs-cls{margin-bottom:12px}
+.rs-tag{display:inline-block;background:var(--soft);color:var(--blue);border-radius:999px;padding:1px 10px;font-size:12px;font-weight:600;margin-bottom:6px}
+.rs-texts blockquote{margin:0 0 8px;padding:10px 12px;background:var(--hover);border-radius:var(--r);font-size:14px}
+@media(max-width:1000px){.rs-grid{grid-template-columns:1fr}.rs-q{grid-template-columns:1fr}}

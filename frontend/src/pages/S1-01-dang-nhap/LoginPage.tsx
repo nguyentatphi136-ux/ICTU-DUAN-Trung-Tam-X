@@ -1,12 +1,14 @@
+import { useTitle } from '../../components/ui';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../data/auth';
 import { ROLES } from '../../data/permissions';
+import { EMAIL_RE } from '../../data/validate';
 import { Icon } from '../../components/Icon';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { DEMO_ACCOUNTS, DEMO_PASSWORD, LOCK_SECONDS, MAX_ATTEMPTS, login } from './mockAuth';
 import './login.css';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const mmss = (s: number) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 
 const FEATURES = [
@@ -16,9 +18,11 @@ const FEATURES = [
 ] as const;
 
 // S1-01. Đăng nhập bằng email và mật khẩu: validate, báo sai thông tin, khoá tạm, chuyển trang theo vai trò.
-type LoginState = { from?: string; loggedOut?: boolean; expired?: boolean; email?: string } | null;
+/** draft: trang trước đó đã lưu nháp nội dung đang nhập dở (S1-02). */
+type LoginState = { from?: string; loggedOut?: boolean; expired?: boolean; draft?: boolean; email?: string } | null;
 
 export function LoginPage() {
+  useTitle('Đăng nhập');
   const { signIn, signOut } = useAuth();
   const navigate = useNavigate();
   const state = useLocation().state as LoginState;
@@ -71,6 +75,11 @@ export function LoginPage() {
       setWrong(false);
       return;
     }
+    await attempt(email, password);
+  }
+
+  /** Đăng nhập bằng email, mật khẩu đã nhập hoặc bằng nút đăng nhập nhanh; sai thì cùng bộ đếm khoá tạm. */
+  async function attempt(email: string, password: string) {
     setLoading(true);
     const result = await login(email, password);
     setLoading(false);
@@ -78,6 +87,11 @@ export function LoginPage() {
       setFails(0);
       setWrong(false);
       signIn(result);
+      // Còn mật khẩu mặc định: đổi mật khẩu trước, xong mới về trang định vào.
+      if (result.mustChangePassword) {
+        navigate('/doi-mat-khau', { replace: true, state: { from: state?.from } });
+        return;
+      }
       // S1-02: quay lại đúng trang đang làm dở trước khi phiên hết hạn, nếu không thì về trang chủ của vai trò.
       navigate(state?.from ?? '/', { replace: true, state: state?.from ? { restored: true } : undefined });
       return;
@@ -97,6 +111,7 @@ export function LoginPage() {
   return (
     <div className="lg-page">
       <main className="lg-card">
+        <ThemeToggle className="theme-in" />
         <section className="lg-left">
           <div className="lg-logo">
             <span>
@@ -138,37 +153,16 @@ export function LoginPage() {
               {state?.expired && !locked && !wrong && (
                 <div className="lg-alert lg-info" role="status">
                   <strong>Phiên đăng nhập đã hết hạn</strong>
-                  Vui lòng đăng nhập lại. Nội dung bạn đang nhập dở đã được lưu nháp và sẽ được khôi phục sau khi đăng nhập.
+                  {state.draft
+                    ? 'Vui lòng đăng nhập lại. Nội dung bạn đang nhập dở đã được lưu nháp và sẽ được khôi phục sau khi đăng nhập.'
+                    : 'Vui lòng đăng nhập lại để quay về đúng trang bạn đang làm.'}
                 </div>
               )}
 
               {locked && (
                 <div className="lg-alert lg-lock" role="alert">
-                  <div>
-                    <strong>Tài khoản tạm khóa</strong>
-                    Bạn đã nhập sai {MAX_ATTEMPTS} lần. Vui lòng thử lại sau {mmss(lockLeft)}.
-                  </div>
-                  <button
-                    type="button"
-                    style={{
-                      marginTop: 8,
-                      background: '#fff',
-                      border: '1px solid #ef4444',
-                      borderRadius: 4,
-                      padding: '4px 10px',
-                      color: '#b91c1c',
-                      fontSize: 12,
-                      cursor: 'pointer',
-                      fontWeight: 600,
-                    }}
-                    onClick={() => {
-                      setLockedUntil(0);
-                      setFails(0);
-                      setWrong(false);
-                    }}
-                  >
-                    Bấm để mở khóa ngay
-                  </button>
+                  <strong>Tài khoản tạm khóa</strong>
+                  Bạn đã nhập sai {MAX_ATTEMPTS} lần. Vui lòng thử lại sau {mmss(lockLeft)}.
                 </div>
               )}
               {!locked && wrong && (
@@ -236,49 +230,23 @@ export function LoginPage() {
                   {loading ? 'Đang đăng nhập…' : 'Đăng nhập'}
                 </button>
 
-                <div style={{ marginTop: 14 }}>
-                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6, fontWeight: 500 }}>
-                    Đăng nhập nhanh 1 chạm:
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {[
-                      { label: 'Admin (Quản trị)', email: 'admin@tms.vn' },
-                      { label: 'Quản lý ĐT', email: 'daotao@tms.vn' },
-                      { label: 'Giảng viên', email: 'giangvien@tms.vn' },
-                      { label: 'Tư vấn Lead', email: 'tuvan@tms.vn' },
-                      { label: 'Kế toán', email: 'ketoan@tms.vn' },
-                      { label: 'Học viên', email: 'hocvien@tms.vn' },
-                    ].map((btn) => (
+                <div className="lg-quick">
+                  <span>Đăng nhập nhanh bằng tài khoản mẫu</span>
+                  <div>
+                    {DEMO_ACCOUNTS.map((a) => (
                       <button
-                        key={btn.email}
+                        key={a.email}
                         type="button"
-                        style={{
-                          padding: '5px 10px',
-                          background: '#f8fafc',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: 6,
-                          fontSize: 12,
-                          cursor: 'pointer',
-                          color: '#0f172a',
-                          fontWeight: 500,
-                        }}
-                        onClick={async () => {
-                          setEmail(btn.email);
+                        disabled={locked || loading}
+                        title={a.email}
+                        onClick={() => {
+                          setEmail(a.email);
                           setPassword(DEMO_PASSWORD);
                           setErrors({});
-                          setWrong(false);
-                          setLockedUntil(0);
-                          setFails(0);
-                          setLoading(true);
-                          const res = await login(btn.email, DEMO_PASSWORD);
-                          setLoading(false);
-                          if (res) {
-                            signIn(res);
-                            navigate(state?.from ?? '/', { replace: true });
-                          }
+                          void attempt(a.email, DEMO_PASSWORD);
                         }}
                       >
-                        {btn.label}
+                        {ROLES[a.roles[0]]}
                       </button>
                     ))}
                   </div>

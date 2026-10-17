@@ -7,7 +7,7 @@ const FRAME = 220;
 const OUT = 256;
 
 // S2-03. Cắt ảnh vuông ở giữa khung, thu phóng bằng thanh trượt, xem trước bản 96px và 40px.
-// ponytail: chưa kéo được vị trí ảnh, chỉ cắt ở giữa; thêm kéo khi người dùng cần chọn vùng khác.
+// Lưu ý: chưa kéo được vị trí ảnh, chỉ cắt ở giữa; thêm kéo khi người dùng cần chọn vùng khác.
 export function AvatarCropDialog({ file, onClose, onSave }: { file: File; onClose: () => void; onSave: (dataUrl: string) => void }) {
   const [url, setUrl] = useState('');
   const [img, setImg] = useState<HTMLImageElement | null>(null);

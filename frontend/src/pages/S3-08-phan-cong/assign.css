@@ -1,0 +1,15 @@
+/* S3-08. Trang lớp và bảng phân công: ô chọn giảng viên có tìm kiếm, thẻ trợ giảng. */
+.cd-title{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.cd-facts{grid-template-columns:repeat(3,1fr)}
+.as-scroll{overflow:visible}
+.as-table td{vertical-align:middle}
+.as-pick{position:relative;display:inline-block}
+.as-btn{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;min-width:200px;height:36px;padding:0 10px 0 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);color:var(--ink);font-weight:500}
+.as-btn svg{width:16px;height:16px;color:var(--muted)}
+.as-btn.empty{color:var(--muted);font-weight:400;border-style:dashed}
+.as-menu{left:0;right:auto;top:40px;width:280px}
+.as-menu .inp{margin:2px 2px 6px}.as-menu .inp input{height:38px}.as-menu .inp.lead>svg{top:10px}
+.as-menu button b{display:block;font-size:14px;font-weight:600}.as-menu button small{color:var(--muted);font-size:12px}
+.as-none{padding:8px 12px}
+.as-note{border-top:1px solid var(--line);margin-top:6px;padding:8px 12px 2px}
+@media(max-width:900px){.cd-facts{grid-template-columns:1fr 1fr}.as-scroll{overflow-x:auto}}

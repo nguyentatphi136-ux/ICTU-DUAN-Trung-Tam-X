@@ -22,8 +22,20 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+# Playwright CLI output (may contain credentials)
+.playwright-cli/
 
 # Maven target directory
 target/
 .idea/
 *.iml
+
+# Cấu hình riêng từng máy
+.env
+
+# Thư mục của công cụ AI (skill, cấu hình chạy), chỉ dùng trên máy từng người
+.agents/
+.claude/
+
+# File TypeScript tự sinh khi build
+*.tsbuildinfo
