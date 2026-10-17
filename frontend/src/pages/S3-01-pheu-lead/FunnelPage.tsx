@@ -9,7 +9,7 @@ import { useAuth } from '../../data/auth';
 import { loadPublicPrograms, saveLead, type PublicProgram } from '../../data/s2api';
 import { addLeadLog, loadFunnel, loadLeadLogs, moveLead } from '../../data/s3api';
 import { addLog, ddmm, FUNNEL, overdueDays, STAGES, stageTone, TODAY, type FunnelLead, type Stage } from '../../data/funnel';
-import { LEADS } from '../../data/leads';
+import { addLead, syncFunnelStage, LEADS } from '../../data/leads';
 import { LeadDrawer } from '../S2-09-lead/LeadDrawer';
 import { LeadPanel } from '../S3-02-nhat-ky-cham-soc/LeadPanel';
 import { ConvertBlock, ConvertDialog } from '../S3-03-chuyen-hoc-vien/ConvertDialog';
@@ -26,7 +26,7 @@ const SHOWN = 3;
 export function FunnelPage() {
   const { user } = useAuth();
   const toast = useToast();
-  const [leads, setLeads] = useState(FUNNEL);
+  const [leads, setLeads] = useState(() => [...FUNNEL]);
   const [q, setQ] = useState('');
   const [onlyLate, setOnlyLate] = useState(false);
   const [open, setOpen] = useState<Stage[]>([]);
@@ -52,7 +52,7 @@ export function FunnelPage() {
 
   const commit = (list: FunnelLead[]) => {
     FUNNEL.splice(0, FUNNEL.length, ...list);
-    setLeads(list);
+    setLeads([...FUNNEL]);
   };
   /** Có backend: gọi API, tải lại phễu và nhật ký của lead đang mở rồi báo; lỗi thì báo lý do máy chủ trả về. */
   const sync = (call: Promise<unknown>, title: string, sub?: string, after?: () => void) =>
@@ -85,7 +85,8 @@ export function FunnelPage() {
     if (to === 'Từ chối') return setRejecting(l);
     if (apiEnabled) return void sync(moveLead(l.id, to), 'Đã chuyển giai đoạn', `${l.name}: ${l.stage} → ${to}`);
     logStage(l, to);
-    commit(leads.map((x) => (x.id === l.id ? { ...x, stage: to, reason: undefined } : x)));
+    syncFunnelStage(l.id, to);
+    setLeads([...FUNNEL]);
     toast('Đã chuyển giai đoạn', `${l.name}: ${l.stage} → ${to}`);
   }
   const panel = leads.find((l) => l.id === openId);
@@ -173,7 +174,8 @@ export function FunnelPage() {
           onConfirm={(reason) => {
             if (apiEnabled) return void sync(moveLead(rejecting.id, 'Từ chối', reason), 'Đã chuyển sang Từ chối', `${rejecting.name}: ${reason}`, () => setRejecting(null));
             logStage(rejecting, 'Từ chối', reason);
-            commit(leads.map((x) => (x.id === rejecting.id ? { ...x, stage: 'Từ chối', reason } : x)));
+            syncFunnelStage(rejecting.id, 'Từ chối', reason);
+            setLeads([...FUNNEL]);
             toast('Đã chuyển sang Từ chối', `${rejecting.name}: ${reason}`);
             setRejecting(null);
           }}
@@ -205,7 +207,8 @@ export function FunnelPage() {
             setConverting(null);
             if (apiEnabled) return void sync(Promise.resolve(), 'Đã tạo học viên ' + code, sub);
             addLog(converting, { kind: 'Chuyển thành học viên', at: now(), by: user!.name, text: `Tạo hồ sơ ${code} và tài khoản đăng nhập.` });
-            commit(leads.map((x) => (x.id === converting.id ? { ...x, student: code, callback: undefined } : x)));
+            syncFunnelStage(converting.id, 'Chốt', undefined, code);
+            setLeads([...FUNNEL]);
             toast('Đã tạo học viên ' + code, sub);
           }}
         />
@@ -222,9 +225,9 @@ export function FunnelPage() {
           programs={apiEnabled ? programs.map((p) => p.name) : undefined}
           onSave={(l) => {
             if (apiEnabled) return void sync(saveLead(l, programs), 'Đã thêm lead', l.name, () => setAdding(false));
-            const owner = role === 3 ? user!.name : '';
-            LEADS.unshift({ ...l, id: Math.max(...LEADS.map((x) => x.id)) + 1, owner });
-            commit([...leads, { id: Math.max(...leads.map((x) => x.id)) + 1, name: l.name, phone: l.phone, email: l.email, program: l.program, source: l.source, owner, stage: 'Mới' }]);
+            const owner = l.owner || (role === 3 ? user!.name : '') || 'TRAN THU HA';
+            addLead({ ...l, owner, createdAt: TODAY });
+            setLeads([...FUNNEL]);
             toast('Đã thêm lead', l.name);
             setAdding(false);
           }}

@@ -6,7 +6,8 @@ import { useToast } from '../../components/Toast';
 import { Filter, LoadState, Pager, paginate, Pill, Search, usePaging } from '../../components/ui';
 import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
-import { COUNSELORS, LEAD_STATUSES, leadTone, LEADS, SOURCES, viDate, type Lead } from '../../data/leads';
+import { COUNSELORS, LEAD_STATUSES, leadTone, LEADS, SOURCES, viDate, addLead, updateLead, removeLead, type Lead } from '../../data/leads';
+import { TODAY } from '../../data/funnel';
 import { assignLeads, loadCounselors, loadPublicPrograms, restoreItem, saveLead, searchLeads, trashLead, type Counselor, type PublicProgram } from '../../data/s2api';
 import { moveToTrash, restore } from '../../data/trash';
 import { AssignDialog } from '../S2-10-phan-cong-lead/AssignDialog';
@@ -23,7 +24,7 @@ const UNASSIGNED = 'Chưa phân công';
 export function LeadListPage() {
   const { user } = useAuth();
   const toast = useToast();
-  const [leads, setLeads] = useState(LEADS);
+  const [leads, setLeads] = useState(() => [...LEADS]);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [source, setSource] = useState('');
@@ -67,21 +68,31 @@ export function LeadListPage() {
     if (apiEnabled) return leads;
     const k = q.trim().toLowerCase();
     const digits = k.replace(/\D/g, '');
-    return leads.filter(
-      (l) =>
-        (!counselor || l.owner === user?.name) &&
+    return leads.filter((l) => {
+      // Khi chọn "Phụ trách", nếu owner rỗng (Tất cả), cho phép xem tất cả lead
+      const matchOwner = !owner
+        ? true
+        : (owner === UNASSIGNED ? !l.owner : l.owner === owner);
+      return (
+        matchOwner &&
         (!k || l.name.toLowerCase().includes(k) || (digits.length > 2 && l.phone.replace(/\D/g, '').includes(digits))) &&
         (!status || l.status === status) &&
         (!source || l.source === source) &&
-        (!owner || (owner === UNASSIGNED ? !l.owner : l.owner === owner)) &&
-        (!range || l.createdAt.startsWith(range)),
-    );
-  }, [leads, q, status, source, owner, range, counselor, user]);
+        (!range || l.createdAt.startsWith(range))
+      );
+    });
+  }, [leads, q, status, source, owner, range]);
   const view = apiEnabled
     ? { items: leads, page, pages: Math.max(1, Math.ceil(total / size)), from: total ? (page - 1) * size + 1 : 0, to: Math.min(page * size, total) }
     : paginate(filtered, page, size);
   const count = apiEnabled ? total : filtered.length;
-  const counselorNames = apiEnabled ? counselors.map((c) => c.name) : COUNSELORS;
+  const counselorNames = useMemo(() => {
+    const base = apiEnabled ? counselors.map((c) => c.name) : COUNSELORS;
+    if (user?.name && !base.includes(user.name)) {
+      return [user.name, ...base];
+    }
+    return base;
+  }, [apiEnabled, counselors, user]);
 
   const commit = (list: Lead[]) => {
     LEADS.splice(0, LEADS.length, ...list);
@@ -127,7 +138,7 @@ export function LeadListPage() {
         <Search placeholder="Tìm theo tên hoặc số điện thoại" value={q} onChange={filter(setQ)} width={296} />
         <Filter label="Trạng thái" value={status} options={LEAD_STATUSES} onChange={filter(setStatus)} width={196} />
         <Filter label="Nguồn" value={source} options={SOURCES} onChange={filter(setSource)} width={196} />
-        {!counselor && <Filter label="Phụ trách" value={owner} options={[UNASSIGNED, ...counselorNames]} onChange={filter(setOwner)} width={196} />}
+        <Filter label="Phụ trách" value={owner} options={[UNASSIGNED, ...counselorNames]} onChange={filter(setOwner)} width={196} />
         <label className="filter" style={{ width: 196 }}>
           <span>{RANGES[range] ?? 'Mọi thời gian'}</span>
           <Icon name="down" />
@@ -239,12 +250,14 @@ export function LeadListPage() {
               return;
             }
             const id = moveToTrash({ kind: 'lead', item: l }, l.name, user?.name ?? '');
+            removeLead(l.id);
             setLeads([...LEADS]);
             setEditing(null);
             toast('Đã chuyển vào thùng rác', l.name, {
               label: 'Hoàn tác',
               onClick: () => {
                 restore(id);
+                addLead(l);
                 setLeads([...LEADS]);
               },
             });
@@ -257,8 +270,14 @@ export function LeadListPage() {
                 return toast('Chưa lưu được', (e as Error).message);
               }
               list.reload();
-            } else if (editing === 'new') commit([{ ...l, id: Math.max(...leads.map((x) => x.id)) + 1, owner: counselor ? user!.name : '' }, ...leads]);
-            else commit(leads.map((x) => (x.id === l.id ? l : x)));
+            } else if (editing === 'new') {
+              const owner = l.owner || (counselor ? user!.name : '') || 'TRAN THU HA';
+              addLead({ ...l, owner, createdAt: TODAY });
+              setLeads([...LEADS]);
+            } else {
+              updateLead(l);
+              setLeads([...LEADS]);
+            }
             toast('Đã lưu lead', l.name);
             setEditing(null);
           }}
@@ -283,8 +302,17 @@ export function LeadListPage() {
               }
               list.reload();
               side.reload();
-            } else
-              commit(leads.map((l) => (picked.includes(l.id) ? { ...l, owner: c, status: l.status === 'Mới' ? 'Đang tư vấn' : l.status } : l)));
+            } else {
+              picked.forEach((id) => {
+                const lead = LEADS.find((x) => x.id === id);
+                if (lead) {
+                  lead.owner = c;
+                  if (lead.status === 'Mới') lead.status = 'Đang tư vấn';
+                  updateLead(lead);
+                }
+              });
+              setLeads([...LEADS]);
+            }
             toast(`Đã phân công ${picked.length} lead`, `Giao cho ${c}.`);
             setPicked([]);
             setAssigning(false);
