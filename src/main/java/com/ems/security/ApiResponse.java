@@ -45,11 +45,26 @@ public final class ApiResponse {
             String actionLabel,
             String actionHref
     ) throws IOException {
+        errorWithDetails(response, status, code, message, null, actionLabel, actionHref);
+    }
+
+    public static void errorWithDetails(
+            HttpServletResponse response,
+            int status,
+            String code,
+            String message,
+            Object details,
+            String actionLabel,
+            String actionHref
+    ) throws IOException {
         response.setStatus(status);
         response.setContentType("application/json;charset=UTF-8");
         Map<String, Object> errorBody = new LinkedHashMap<>();
         errorBody.put("code", code);
         errorBody.put("message", message);
+        if (details != null) {
+            errorBody.put("details", details);
+        }
         String label = (actionLabel != null && !actionLabel.isBlank()) ? actionLabel : "Quay lại";
         String href = (actionHref != null && !actionHref.isBlank()) ? actionHref : "/index.html";
         errorBody.put("action", Map.of("label", label, "href", href));

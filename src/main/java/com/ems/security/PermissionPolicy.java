@@ -17,7 +17,9 @@ public final class PermissionPolicy {
             Map.entry("POST /api/classes", "CLASS_MANAGE"),
             Map.entry("GET /api/classes", "CLASS_MANAGE"),
             Map.entry("GET /api/programs", "PROGRAM_MANAGE"),
-            Map.entry("POST /api/programs", "PROGRAM_MANAGE")
+            Map.entry("POST /api/programs", "PROGRAM_MANAGE"),
+            Map.entry("GET /api/rooms", "ROOM_VIEW"),
+            Map.entry("POST /api/rooms", "ROOM_MANAGE")
     );
 
     private PermissionPolicy() {}
@@ -30,6 +32,21 @@ public final class PermissionPolicy {
         }
         if (path.matches("^/api/programs(/.*)?$")) {
             return "PROGRAM_MANAGE";
+        }
+        if ("GET".equals(method) && path.matches("^/api/rooms/\\d+$")) {
+            return "ROOM_VIEW";
+        }
+        if ("GET".equals(method) && path.matches("^/api/rooms/\\d+/validate-capacity$")) {
+            return "ROOM_VIEW";
+        }
+        if ("POST".equals(method) && path.matches("^/api/rooms/\\d+/validate-capacity$")) {
+            return "ROOM_VIEW";
+        }
+        if ("PUT".equals(method) && path.matches("^/api/rooms/\\d+$")) {
+            return "ROOM_MANAGE";
+        }
+        if ("DELETE".equals(method) && path.matches("^/api/rooms/\\d+$")) {
+            return "ROOM_MANAGE";
         }
         if ("PUT".equals(method) && path.matches("^/api/admin/roles/[A-Z_]+/permissions$")) {
             return "ROLE_PERMISSION_UPDATE";
@@ -65,7 +82,13 @@ public final class PermissionPolicy {
     }
 
     public static boolean allows(Collection<String> permissions, String required) {
-        return permissions != null && required != null && permissions.contains(required);
+        if (permissions == null || required == null) return false;
+        if (permissions.contains(required)) return true;
+        if (("ROOM_VIEW".equals(required) || "ROOM_MANAGE".equals(required))
+                && (permissions.contains("CLASS_MANAGE") || permissions.contains("ADMIN"))) {
+            return true;
+        }
+        return false;
     }
 
     public static boolean mayReplaceRoles(

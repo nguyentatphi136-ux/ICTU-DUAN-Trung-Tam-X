@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: com.ems.test.ClassApiServletSecurityTest
--------------------------------------------------------------------------------
-Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.758 s -- in com.ems.test.ClassApiServletSecurityTest

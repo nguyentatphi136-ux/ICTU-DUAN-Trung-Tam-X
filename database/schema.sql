@@ -281,10 +281,17 @@ CREATE TABLE IF NOT EXISTS `classrooms` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `room_code` VARCHAR(50) NOT NULL UNIQUE,
     `room_name` VARCHAR(100) NOT NULL,
-    `capacity` INT NOT NULL DEFAULT 30,
+    `capacity` INT NULL DEFAULT 30,
     `room_type` ENUM('PHYSICAL', 'ONLINE') DEFAULT 'PHYSICAL',
+    `location` VARCHAR(255) NULL COMMENT 'Vị trí phòng vật lý (tòa nhà, tầng...)',
     `meeting_url` VARCHAR(255) NULL COMMENT 'Google Meet / Zoom URL nếu là phòng online',
-    `status` ENUM('AVAILABLE', 'MAINTENANCE') DEFAULT 'AVAILABLE'
+    `description` TEXT NULL COMMENT 'Mô tả chi tiết phòng học',
+    `is_active` BOOLEAN NOT NULL DEFAULT TRUE COMMENT 'Trạng thái hoạt động',
+    `status` ENUM('AVAILABLE', 'MAINTENANCE') DEFAULT 'AVAILABLE',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_room_type` (`room_type`),
+    INDEX `idx_room_active` (`is_active`)
 ) ENGINE=InnoDB COMMENT='Bảng danh mục phòng học';
 
 -- 4.2 Bảng Lớp học (Classes)
@@ -809,6 +816,8 @@ INSERT INTO `permissions` (`permission_code`, `permission_name`, `module`, `desc
 ('ROLE_PERMISSION_UPDATE', 'Cập nhật phân quyền', 'AUTH', 'Gán hoặc thu hồi quyền cho vai trò'),
 ('PROGRAM_MANAGE', 'Quản lý chương trình', 'PROGRAM', 'Quản lý chương trình đào tạo'),
 ('CLASS_MANAGE', 'Quản lý lớp học', 'CLASS', 'Mở lớp và phân công'),
+('ROOM_VIEW', 'Xem phòng học', 'ROOM', 'Đọc danh sách và chi tiết phòng học'),
+('ROOM_MANAGE', 'Quản lý phòng học', 'ROOM', 'Thêm, sửa, xóa và kiểm tra sức chứa phòng học'),
 ('LEAD_MANAGE', 'Quản lý tuyển sinh', 'ADMISSIONS', 'Quản lý khách hàng tiềm năng'),
 ('ATTENDANCE_MANAGE', 'Quản lý điểm danh', 'ATTENDANCE', 'Điểm danh học viên'),
 ('ASSIGNMENT_MANAGE', 'Quản lý bài tập', 'ASSIGNMENT', 'Giao và quản lý bài tập'),
@@ -829,7 +838,7 @@ ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_MANAGE','CLASS_MANAGE','SCHEDULE_READ','REPORT_VIEW')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_MANAGE','CLASS_MANAGE','ROOM_VIEW','ROOM_MANAGE','SCHEDULE_READ','REPORT_VIEW')
 WHERE r.role_code = 'TRAINING_MANAGER'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)

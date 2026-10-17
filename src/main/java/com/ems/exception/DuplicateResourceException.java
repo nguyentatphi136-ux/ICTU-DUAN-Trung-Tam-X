@@ -1,22 +1,16 @@
 package com.ems.exception;
 
 /**
- * Ngoại lệ khi dữ liệu bị trùng lặp (ví dụ: mã lớp đã tồn tại) -> HTTP 409 Conflict
+ * Ngoại lệ khi dữ liệu bị trùng lặp (ví dụ: mã lớp, mã phòng đã tồn tại) -> HTTP 409 Conflict
  */
-public class DuplicateResourceException extends RuntimeException {
-    private final int statusCode;
+public class DuplicateResourceException extends ApiException {
+    private static final long serialVersionUID = 1L;
 
     public DuplicateResourceException(String message) {
-        super(message);
-        this.statusCode = 409;
+        super(409, "DUPLICATE_RESOURCE", message);
     }
 
     public DuplicateResourceException(String message, int statusCode) {
-        super(message);
-        this.statusCode = statusCode;
-    }
-
-    public int getStatusCode() {
-        return statusCode;
+        super(statusCode, "DUPLICATE_RESOURCE", message);
     }
 }
