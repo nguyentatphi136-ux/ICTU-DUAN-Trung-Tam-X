@@ -1,8 +1,15 @@
 const {
+  FUNNEL_STAGES,
   LEAD_SOURCE,
   LEAD_STATUS,
   LEAD_STATUS_LABELS,
+  REJECT_REASONS,
+  STAGE_TO_STATUS,
+  STATUS_TO_STAGE,
+  isValidRejectReason,
+  isValidStage,
   normalizeSource,
+  normalizeStage,
   normalizeStatus,
 } = require('../constants/leads');
 const { findUserById } = require('./users');
@@ -10,6 +17,7 @@ const { findUserById } = require('./users');
 let leadIdCounter = 1;
 let assignmentIdCounter = 1;
 let interactionIdCounter = 1;
+let stageLogIdCounter = 1;
 
 /**
  * Danh sách Lead trong bộ nhớ (In-memory)
@@ -22,7 +30,17 @@ const leads = [];
 const leadAssignments = [];
 
 /**
- * Tạo mới một Lead
+ * Danh sách lịch sử chuyển đổi trạng thái phễu (S3-01 Audit Log)
+ */
+const leadStageLogs = [];
+
+/**
+ * Nhật ký chăm sóc khách hàng theo ID lead (S3-01 & S3-02)
+ */
+const leadCareLogs = {};
+
+/**
+ * Tạo mới một Lead (hỗ trợ các trường S2-10, S2-11 và S3-01 Phễu Kanban)
  */
 function createLead({
   fullName,
@@ -30,12 +48,36 @@ function createLead({
   email = null,
   course = null,
   source = LEAD_SOURCE.WEBSITE,
-  status = LEAD_STATUS.NEW,
+  status = null,
+  stage = null,
+  callbackDate = null,
+  callback = null,
+  trialDate = null,
+  trial = null,
+  rejectReason = null,
+  reason = null,
+  rejectNote = null,
+  studentCode = null,
+  student = null,
   notes = null,
   assignedCounselorId = null,
   createdAt = null,
 }) {
   const now = createdAt ? new Date(createdAt).toISOString() : new Date().toISOString();
+  
+  // Xác định trạng thái và giai đoạn phễu
+  let normStage = stage ? normalizeStage(stage) : null;
+  let normStatus = status ? normalizeStatus(status) : null;
+
+  if (normStage && !normStatus) {
+    normStatus = STAGE_TO_STATUS[normStage] || LEAD_STATUS.NEW;
+  } else if (normStatus && !normStage) {
+    normStage = STATUS_TO_STAGE[normStatus] || 'Mới';
+  } else if (!normStage && !normStatus) {
+    normStatus = LEAD_STATUS.NEW;
+    normStage = 'Mới';
+  }
+
   const lead = {
     id: String(leadIdCounter++),
     fullName: fullName.trim(),
@@ -43,7 +85,13 @@ function createLead({
     email: email && typeof email === 'string' && email.trim() ? email.trim().toLowerCase() : null,
     course: course && typeof course === 'string' ? course.trim() : null,
     source: normalizeSource(source),
-    status: normalizeStatus(status) || LEAD_STATUS.NEW,
+    status: normStatus,
+    stage: normStage,
+    callbackDate: callbackDate || callback || null,
+    trialDate: trialDate || trial || null,
+    rejectReason: rejectReason || reason || null,
+    rejectNote: rejectNote || null,
+    studentCode: studentCode || student || null,
     notes: notes && typeof notes === 'string' ? notes.trim() : null,
     assignedCounselorId: assignedCounselorId ? String(assignedCounselorId) : null,
     lastInteractionAt: now,
@@ -245,15 +293,51 @@ function filterLeads({
 }
 
 /**
- * Đính kèm tên và thông tin người phụ trách vào object Lead
+ * Tính số ngày quá hạn gọi lại so với ngày tham chiếu (mặc định '2026-10-06')
+ * Nếu không có ngày hẹn, hoặc đã ở trạng thái Chốt / Từ chối thì không tính quá hạn (0)
  */
-function enrichLeadInfo(lead) {
+function calculateOverdueDays(lead, referenceDate = '2026-10-06') {
+  const stage = lead.stage || STATUS_TO_STAGE[lead.status] || 'Mới';
+  if (
+    !lead.callbackDate ||
+    stage === 'Chốt' ||
+    stage === 'Từ chối' ||
+    lead.status === LEAD_STATUS.WON ||
+    lead.status === LEAD_STATUS.REJECTED
+  ) {
+    return 0;
+  }
+  const refTime = Date.parse(referenceDate);
+  const cbTime = Date.parse(lead.callbackDate);
+  if (isNaN(refTime) || isNaN(cbTime)) return 0;
+  const diffDays = Math.round((refTime - cbTime) / 86400000);
+  return Math.max(0, diffDays);
+}
+
+/**
+ * Đính kèm tên và thông tin người phụ trách, các trường phễu Kanban vào object Lead
+ */
+function enrichLeadInfo(lead, referenceDate = '2026-10-06') {
   const counselor = lead.assignedCounselorId ? findUserById(lead.assignedCounselorId) : null;
+  const stage = lead.stage || STATUS_TO_STAGE[lead.status] || 'Mới';
+  const overdue = calculateOverdueDays(lead, referenceDate);
+
   return {
     ...lead,
+    name: lead.fullName, // Alias tương thích frontend React S3-01
+    program: lead.course, // Alias tương thích frontend React S3-01
+    owner: counselor ? counselor.name : 'Chưa phân công',
+    stage,
+    stageLabel: stage,
     statusLabel: LEAD_STATUS_LABELS[lead.status] || lead.status,
     assignedCounselorName: counselor ? counselor.name : 'Chưa phân công',
     assignedCounselorEmail: counselor ? counselor.email : null,
+    callback: lead.callbackDate || null,
+    trial: lead.trialDate || null,
+    reason: lead.rejectReason || null,
+    student: lead.studentCode || null,
+    overdueDays: overdue,
+    isOverdue: overdue > 0,
   };
 }
 
@@ -364,12 +448,20 @@ function addLeadInteraction(leadId, { counselorId, type = 'NOTE', title, content
 }
 
 /**
- * Cập nhật trạng thái của Lead
+ * Cập nhật trạng thái của Lead (Legacy / S2-11)
  */
 function updateLeadStatus(leadId, { status, note = '', counselorId = null }) {
   const lead = findLeadById(leadId);
   if (!lead) {
     throw new Error('Không tìm thấy Lead');
+  }
+
+  // S3-03: Lead chuyển sang trạng thái Đã nhập học và không sửa được nữa
+  if (lead.isLocked || lead.student || lead.studentCode || lead.isConverted) {
+    const err = new Error('Lead đã chuyển sang trạng thái Đã nhập học và không sửa được nữa');
+    err.code = 'LEAD_LOCKED';
+    err.statusCode = 400;
+    throw err;
   }
 
   const normalized = normalizeStatus(status);
@@ -383,6 +475,7 @@ function updateLeadStatus(leadId, { status, note = '', counselorId = null }) {
   const user = counselorId ? findUserById(counselorId) : null;
 
   lead.status = normalized;
+  lead.stage = STATUS_TO_STAGE[normalized] || lead.stage;
   lead.updatedAt = now;
   lead.lastInteractionAt = now;
 
@@ -396,6 +489,283 @@ function updateLeadStatus(leadId, { status, note = '', counselorId = null }) {
   });
 
   return enrichLeadInfo(lead);
+}
+
+/**
+ * Chuyển đổi giai đoạn thẻ lead trên Phễu Kanban (Story S3-01)
+ * Tiêu chí nghiệm thu:
+ * - Kéo thả để đổi trạng thái, mỗi lần đổi được ghi nhật ký (Audit Log)
+ * - Chuyển sang Từ chối bắt buộc chọn lý do; nếu "Lý do khác" bắt buộc có ghi chú
+ */
+function moveLeadStage(leadId, { stage, reason = null, note = null, counselorId = null, referenceDate = '2026-10-06' }) {
+  const lead = findLeadById(leadId);
+  if (!lead) {
+    const err = new Error('Không tìm thấy Lead');
+    err.code = 'LEAD_NOT_FOUND';
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // S3-03: Lead chuyển sang trạng thái Đã nhập học và không sửa được nữa
+  if (lead.isLocked || lead.student || lead.studentCode || lead.isConverted) {
+    const err = new Error('Lead đã chuyển sang trạng thái Đã nhập học và không sửa được nữa');
+    err.code = 'LEAD_LOCKED';
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const normalizedStage = normalizeStage(stage);
+  if (!normalizedStage) {
+    const err = new Error('Giai đoạn phễu không hợp lệ');
+    err.code = 'INVALID_STAGE';
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const oldStage = lead.stage || STATUS_TO_STAGE[lead.status] || 'Mới';
+  if (oldStage === normalizedStage) {
+    return enrichLeadInfo(lead, referenceDate);
+  }
+
+  // Tiêu chí S3-01: Chuyển sang Từ chối bắt buộc chọn lý do
+  if (normalizedStage === 'Từ chối') {
+    if (!reason || typeof reason !== 'string' || !reason.trim()) {
+      const err = new Error('Bắt buộc chọn lý do khi chuyển lead sang trạng thái Từ chối');
+      err.code = 'REJECT_REASON_REQUIRED';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    const trimmedReason = reason.trim();
+    if (trimmedReason === 'Lý do khác' && (!note || typeof note !== 'string' || !note.trim())) {
+      const err = new Error('Vui lòng ghi rõ lý do vào ô ghi chú khi chọn Lý do khác');
+      err.code = 'REJECT_NOTE_REQUIRED';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    if (!isValidRejectReason(trimmedReason)) {
+      const err = new Error('Lý do từ chối không hợp lệ');
+      err.code = 'INVALID_REJECT_REASON';
+      err.statusCode = 400;
+      throw err;
+    }
+
+    lead.rejectReason = trimmedReason === 'Lý do khác' && note && note.trim() ? note.trim() : trimmedReason;
+    lead.rejectNote = note ? note.trim() : null;
+  } else {
+    // Chuyển sang các cột khác thì xóa lý do từ chối
+    lead.rejectReason = null;
+    lead.rejectNote = null;
+  }
+
+  const newStatus = STAGE_TO_STATUS[normalizedStage] || LEAD_STATUS.NEW;
+  lead.stage = normalizedStage;
+  lead.status = newStatus;
+
+  const now = new Date().toISOString();
+  lead.updatedAt = now;
+  lead.lastInteractionAt = now;
+
+  const counselor = counselorId ? findUserById(counselorId) : null;
+  const authorName = counselor ? counselor.name : 'Tư vấn viên';
+
+  // Format nội dung nhật ký đổi trạng thái: "${oldStage} → ${newStage}" kèm lý do nếu có
+  const logText = `${oldStage} → ${normalizedStage}` + (lead.rejectReason ? ` · ${lead.rejectReason}` : '');
+
+  // 1. Ghi vào timeline chi tiết của lead
+  lead.timeline.unshift({
+    id: String(interactionIdCounter++),
+    time: now,
+    type: 'STATUS_CHANGE',
+    title: 'Đổi giai đoạn phễu',
+    content: logText + (note && lead.rejectReason !== note ? ` (${note})` : ''),
+    author: authorName,
+  });
+
+  // 2. Ghi vào leadStageLogs (Audit Log chuyển phễu)
+  const stageLog = {
+    id: String(stageLogIdCounter++),
+    leadId: lead.id,
+    fromStage: oldStage,
+    toStage: normalizedStage,
+    reason: lead.rejectReason,
+    note: lead.rejectNote,
+    changedByUserId: counselor ? String(counselor.id) : null,
+    changedByName: authorName,
+    createdAt: now,
+  };
+  leadStageLogs.unshift(stageLog);
+
+  // 3. Ghi vào Care Logs (Nhật ký chăm sóc S3-01 / S3-02)
+  if (!leadCareLogs[String(lead.id)]) {
+    leadCareLogs[String(lead.id)] = [];
+  }
+  leadCareLogs[String(lead.id)].unshift({
+    kind: 'Đổi trạng thái',
+    at: now,
+    by: authorName,
+    text: logText,
+  });
+
+  return enrichLeadInfo(lead, referenceDate);
+}
+
+/**
+ * Lấy dữ liệu Bảng phễu Kanban 6 cột (Story S3-01)
+ * Hỗ trợ lọc theo từ khóa tìm kiếm (tên, SĐT), chỉ hiện lead quá hạn gọi lại, và theo tư vấn viên phụ trách
+ */
+function getFunnelData({ search = '', onlyLate = false, counselorId = null, referenceDate = '2026-10-06' } = {}) {
+  let targetLeads = leads;
+
+  if (counselorId !== null && counselorId !== undefined && counselorId !== '') {
+    if (counselorId === 'unassigned') {
+      targetLeads = targetLeads.filter((l) => !l.assignedCounselorId);
+    } else {
+      targetLeads = targetLeads.filter((l) => String(l.assignedCounselorId) === String(counselorId));
+    }
+  }
+
+  let enriched = targetLeads.map((l) => enrichLeadInfo(l, referenceDate));
+
+  // Thống kê số lượng lead trên 6 cột phễu (trước khi search/lọc late)
+  const counts = {
+    'Mới': 0,
+    'Đã liên hệ': 0,
+    'Đang tư vấn': 0,
+    'Hẹn học thử': 0,
+    'Chốt': 0,
+    'Từ chối': 0,
+    NEW: 0,
+    CONTACTED: 0,
+    CONSULTING: 0,
+    TRIAL_SCHEDULED: 0,
+    WON: 0,
+    REJECTED: 0,
+  };
+
+  enriched.forEach((l) => {
+    if (counts[l.stage] !== undefined) counts[l.stage]++;
+    if (counts[l.status] !== undefined) counts[l.status]++;
+  });
+
+  const total = enriched.length;
+  const lateCount = enriched.filter((l) => l.overdueDays > 0).length;
+
+  // Lọc tìm kiếm theo tên hoặc số điện thoại (tương thích cả frontend React S3-01)
+  if (search && search.trim()) {
+    const q = search.trim().toLowerCase();
+    const digits = q.replace(/\D/g, '');
+    enriched = enriched.filter((l) => {
+      const matchName = l.fullName ? l.fullName.toLowerCase().includes(q) : false;
+      const cleanPhone = (l.phone || '').replace(/\D/g, '');
+      const matchPhone = digits.length > 2 && cleanPhone.includes(digits);
+      return matchName || matchPhone;
+    });
+  }
+
+  // Lọc chỉ hiện lead quá hạn gọi lại (onlyLate)
+  if (onlyLate === true || onlyLate === 'true' || onlyLate === 1 || onlyLate === '1') {
+    enriched = enriched.filter((l) => l.overdueDays > 0);
+  }
+
+  // Phân nhóm thành 6 cột Kanban
+  const columns = {
+    'Mới': enriched.filter((l) => l.stage === 'Mới'),
+    'Đã liên hệ': enriched.filter((l) => l.stage === 'Đã liên hệ'),
+    'Đang tư vấn': enriched.filter((l) => l.stage === 'Đang tư vấn'),
+    'Hẹn học thử': enriched.filter((l) => l.stage === 'Hẹn học thử'),
+    'Chốt': enriched.filter((l) => l.stage === 'Chốt'),
+    'Từ chối': enriched.filter((l) => l.stage === 'Từ chối'),
+  };
+
+  return {
+    total,
+    lateCount,
+    counts,
+    leads: enriched,
+    columns,
+  };
+}
+
+/**
+ * Lấy nhật ký chăm sóc của Lead (S3-01 & S3-02)
+ */
+function getLeadCareLogs(leadId) {
+  const lead = findLeadById(leadId);
+  if (!lead) return [];
+  const counselor = lead.assignedCounselorId ? findUserById(lead.assignedCounselorId) : null;
+  const defaultLogs = [
+    {
+      kind: 'Phân công',
+      at: lead.createdAt,
+      by: counselor ? counselor.name : 'Quản lý',
+      text: counselor ? `Giao cho ${counselor.name}` : 'Tiếp nhận lead từ biểu mẫu web',
+    },
+  ];
+  const list = leadCareLogs[String(leadId)] ?? defaultLogs;
+  return [...list].sort((a, b) => (b.at || '').localeCompare(a.at || ''));
+}
+
+/**
+ * Thêm một dòng nhật ký chăm sóc (S3-01 & S3-02)
+ */
+function addLeadCareLog(leadId, { kind = 'Ghi chú', text, at = null, by = null, counselorId = null }) {
+  const lead = findLeadById(leadId);
+  if (!lead) {
+    const err = new Error('Không tìm thấy Lead');
+    err.code = 'LEAD_NOT_FOUND';
+    err.statusCode = 404;
+    throw err;
+  }
+
+  // S3-03: Lead chuyển sang trạng thái Đã nhập học và không thêm nhật ký được nữa
+  if (lead.isLocked || lead.student || lead.studentCode || lead.isConverted) {
+    const err = new Error('Lead đã chuyển sang trạng thái Đã nhập học và không thể thêm nhật ký');
+    err.code = 'LEAD_LOCKED';
+    err.statusCode = 400;
+    throw err;
+  }
+
+  const now = at || new Date().toISOString();
+  const user = counselorId ? findUserById(counselorId) : null;
+  const authorName = by || (user ? user.name : 'Tư vấn viên');
+
+  const logEntry = {
+    kind: kind || 'Ghi chú',
+    at: now,
+    by: authorName,
+    text: text.trim(),
+  };
+
+  if (!leadCareLogs[String(leadId)]) {
+    leadCareLogs[String(leadId)] = [];
+  }
+  leadCareLogs[String(leadId)].unshift(logEntry);
+
+  lead.timeline.unshift({
+    id: String(interactionIdCounter++),
+    time: now,
+    type: kind === 'Đổi trạng thái' ? 'STATUS_CHANGE' : 'NOTE',
+    title: `Nhật ký: ${kind}`,
+    content: text.trim(),
+    author: authorName,
+  });
+
+  lead.lastInteractionAt = now;
+  lead.updatedAt = now;
+
+  return logEntry;
+}
+
+/**
+ * Lấy danh sách lịch sử chuyển đổi giai đoạn phễu
+ */
+function getLeadStageLogs(leadId = null) {
+  if (leadId) {
+    return leadStageLogs.filter((l) => String(l.leadId) === String(leadId));
+  }
+  return leadStageLogs;
 }
 
 /**
@@ -416,6 +786,15 @@ function getLeadStats({ counselorId = null } = {}) {
     won: targetLeads.filter((l) => l.status === LEAD_STATUS.WON).length,
     rejected: targetLeads.filter((l) => l.status === LEAD_STATUS.REJECTED).length,
     unassigned: targetLeads.filter((l) => !l.assignedCounselorId).length,
+    // Bổ sung các chỉ số S3-01
+    stages: {
+      'Mới': targetLeads.filter((l) => (l.stage || 'Mới') === 'Mới').length,
+      'Đã liên hệ': targetLeads.filter((l) => l.stage === 'Đã liên hệ').length,
+      'Đang tư vấn': targetLeads.filter((l) => l.stage === 'Đang tư vấn').length,
+      'Hẹn học thử': targetLeads.filter((l) => l.stage === 'Hẹn học thử').length,
+      'Chốt': targetLeads.filter((l) => l.stage === 'Chốt').length,
+      'Từ chối': targetLeads.filter((l) => l.stage === 'Từ chối').length,
+    },
   };
 }
 
@@ -425,13 +804,18 @@ function getLeadStats({ counselorId = null } = {}) {
 function seedSampleLeads() {
   leads.length = 0;
   leadAssignments.length = 0;
+  leadStageLogs.length = 0;
+  for (const k of Object.keys(leadCareLogs)) {
+    delete leadCareLogs[k];
+  }
   leadIdCounter = 1;
   assignmentIdCounter = 1;
   interactionIdCounter = 1;
+  stageLogIdCounter = 1;
 
   const now = new Date();
 
-  // 1. Lead tạo từ tháng trước (Phục vụ S2-11: "tìm lại được cuộc trao đổi từ tháng trước khi khách gọi lại")
+  // 1. Lead tạo từ tháng trước (Phục vụ S2-11 & S3-01: Vũ Minh Anh - Đang tư vấn, có hẹn gọi lại quá hạn)
   const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 15, 10, 30, 0);
   createLead({
     fullName: 'Vũ Minh Anh',
@@ -440,12 +824,14 @@ function seedSampleLeads() {
     course: 'Lập trình Web Fullstack',
     source: LEAD_SOURCE.FACEBOOK,
     status: LEAD_STATUS.CONSULTING,
+    stage: 'Đang tư vấn',
+    callbackDate: '2026-10-05', // Quá hạn (với mốc 2026-10-06)
     notes: 'Quan tâm lộ trình từ cơ bản, hỏi về học phí trả góp 0%',
     assignedCounselorId: '5', // Lê Thị Thu Hà
     createdAt: lastMonthDate.toISOString(),
   });
 
-  // 2. Lead tuần trước
+  // 2. Lead tuần trước (Ngô Quốc Bảo - Hẹn học thử)
   const lastWeekDate = new Date(now);
   lastWeekDate.setDate(lastWeekDate.getDate() - 7);
   createLead({
@@ -455,12 +841,14 @@ function seedSampleLeads() {
     course: 'Java Spring Boot',
     source: LEAD_SOURCE.WEBSITE,
     status: LEAD_STATUS.TRIAL_SCHEDULED,
+    stage: 'Hẹn học thử',
+    trialDate: '2026-10-10',
     notes: 'Hẹn test đầu vào chiều thứ 7 phòng P.102',
     assignedCounselorId: '5',
     createdAt: lastWeekDate.toISOString(),
   });
 
-  // 3. Lead hôm nay - chưa phân công
+  // 3. Lead hôm nay - chưa phân công (Bùi Thu Hà - Mới)
   createLead({
     fullName: 'Bùi Thu Hà',
     phone: '0977889900',
@@ -468,12 +856,13 @@ function seedSampleLeads() {
     course: 'Python & Data Analysis',
     source: LEAD_SOURCE.REFERRAL,
     status: LEAD_STATUS.NEW,
+    stage: 'Mới',
     notes: 'Bạn học giới thiệu, muốn tư vấn lớp học ca tối',
     assignedCounselorId: null, // Chưa phân công -> Dùng test S2-10
     createdAt: now.toISOString(),
   });
 
-  // 4. Lead hôm nay - chưa phân công
+  // 4. Lead hôm nay - chưa phân công (Đặng Hoàng Nam - Mới)
   createLead({
     fullName: 'Đặng Hoàng Nam',
     phone: '0933221100',
@@ -481,21 +870,65 @@ function seedSampleLeads() {
     course: 'Thiết kế UI/UX',
     source: LEAD_SOURCE.TIKTOK,
     status: LEAD_STATUS.NEW,
+    stage: 'Mới',
     notes: 'Điền form từ link bio TikTok',
     assignedCounselorId: null, // Chưa phân công -> Dùng test S2-10
     createdAt: now.toISOString(),
   });
 
-  // 5. Lead đã chốt đăng ký tháng trước của tư vấn viên 6
+  // 5. Lead đã chốt đăng ký tháng trước của tư vấn viên 6 (Trần Minh Đức - Chốt)
   createLead({
     fullName: 'Trần Minh Đức',
     phone: '0903456789',
-    email: 'duc.tran@yahoo.com',
+    email: 'duc.tm@gmail.com',
     course: 'Lập trình Frontend React',
     source: LEAD_SOURCE.HOTLINE,
     status: LEAD_STATUS.WON,
+    stage: 'Chốt',
     notes: 'Đã đóng học phí đầy đủ',
     assignedCounselorId: '6', // Hoàng Văn Tư
+    createdAt: lastMonthDate.toISOString(),
+  });
+
+  // 6. Lead Đã liên hệ - quá hạn gọi lại (Trần Văn Hùng - Đã liên hệ, callback: 2026-10-04)
+  createLead({
+    fullName: 'Trần Văn Hùng',
+    phone: '0903664518',
+    email: 'hung.tv@gmail.com',
+    course: 'Lập trình web Full-stack',
+    source: LEAD_SOURCE.REFERRAL,
+    status: LEAD_STATUS.CONTACTED,
+    stage: 'Đã liên hệ',
+    callbackDate: '2026-10-04',
+    assignedCounselorId: '5',
+    createdAt: lastWeekDate.toISOString(),
+  });
+
+  // 7. Lead Từ chối có lý do (Hoàng Mai Lan - Từ chối: Học phí cao)
+  createLead({
+    fullName: 'Hoàng Mai Lan',
+    phone: '0977418902',
+    email: 'lan.hm@gmail.com',
+    course: 'Phân tích dữ liệu',
+    source: LEAD_SOURCE.WEBSITE,
+    status: LEAD_STATUS.REJECTED,
+    stage: 'Từ chối',
+    rejectReason: 'Học phí cao',
+    assignedCounselorId: '5',
+    createdAt: lastMonthDate.toISOString(),
+  });
+
+  // 8. Lead Từ chối có lý do (Kiều Văn Sơn - Từ chối: Đã chọn trung tâm khác)
+  createLead({
+    fullName: 'Kiều Văn Sơn',
+    phone: '0988257613',
+    email: 'son.kv@gmail.com',
+    course: 'Lập trình Java Backend',
+    source: LEAD_SOURCE.WEBSITE,
+    status: LEAD_STATUS.REJECTED,
+    stage: 'Từ chối',
+    rejectReason: 'Đã chọn trung tâm khác',
+    assignedCounselorId: '5',
     createdAt: lastMonthDate.toISOString(),
   });
 }
@@ -504,16 +937,24 @@ function seedSampleLeads() {
 seedSampleLeads();
 
 module.exports = {
+  addLeadCareLog,
   addLeadInteraction,
   assignLeads,
+  calculateOverdueDays,
   createLead,
   enrichLeadInfo,
   filterLeads,
   findLeadById,
+  getFunnelData,
   getLeadAssignments,
+  getLeadCareLogs,
+  getLeadStageLogs,
   getLeadStats,
   leadAssignments,
+  leadCareLogs,
+  leadStageLogs,
   leads,
+  moveLeadStage,
   seedSampleLeads,
   updateLeadStatus,
 };

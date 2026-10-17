@@ -104,3 +104,69 @@ git checkout develop
 
 # 5. Build và chạy ứng dụng trên Tomcat server tại địa chỉ:
 # http://localhost:8080/
+```
+
+---
+
+## 7. Sprint 3 — Chuyển Lead đã chốt thành Học viên (Story S3-03 / Subtask IDTTX-240)
+
+Áp dụng cho nhánh: **`feature/S3-03-chuyen-hoc-vien`**  
+**User Story (IDTTX-211):** Là Tư vấn tuyển sinh, tôi muốn chuyển một lead đã chốt thành hồ sơ học viên, để không phải nhập lại thông tin khách đã cung cấp ba lần trước đó.
+
+### Kết quả triển khai Backend (IDTTX-240):
+1. **Thiết kế CSDL & Migration:**
+   - File: [`database/migration_s3_03_convert_student.sql`](database/migration_s3_03_convert_student.sql)
+   - Thiết kế chuẩn hóa 3NF: các bảng `students`, `student_notes`, `student_class_history`, `student_activation_emails`.
+   - Mở rộng bảng `leads`: các trường khóa `is_converted`, `is_locked`, `student_code` để ngăn chặn chỉnh sửa, kéo thẻ phễu sau khi nhập học.
+2. **Kế thừa thông tin lead & Tự động sinh mã học viên:**
+   - Chuyển dữ liệu tự động không cần nhập lại: Họ tên, số điện thoại, email, chương trình đào tạo quan tâm, tư vấn viên phụ trách, nguồn tiếp cận, `leadId`.
+   - Tự động sinh mã học viên định dạng chuẩn `HV26xxxx` (tự tăng tuần tự từ mã cao nhất, ví dụ `HV260143`).
+   - Endpoint `GET /api/students/next-code` xem trước mã dự kiến.
+3. **Cấp tài khoản & Dispatch Email kích hoạt:**
+   - Tự động tạo tài khoản trong hệ thống `users` với vai trò `Student` (`Học viên`).
+   - Email đăng nhập chuẩn TMS: `S25200212{pad(n,3)}@tms.vn`.
+   - Ghi nhận lịch sử gửi email kích hoạt tới địa chỉ nhận tin (`sendTo`).
+4. **Khóa Lead & Ghi Audit Log:**
+   - Cập nhật lead sang trạng thái `Đã nhập học`, gắn liên kết mã học viên `student`.
+   - Khóa toàn bộ thao tác sửa lead, kéo stage hoặc thêm nhật ký mới (`LEAD_LOCKED` - HTTP 400).
+   - Tự động ghi nhận log chuyển đổi vào dòng thời gian `timeline` và `care_logs`.
+5. **Kiểm thử tự động:**
+   ```bash
+   cd backend/legacy_node_be
+   npm test
+   ```
+   Toàn bộ **58/58 test cases** (bao gồm 15 test cases chuyên sâu cho S3-03) đều **PASS 100%**.
+
+---
+
+## 8. Sprint 3 — Quản lý Hồ sơ học viên (Story S3-04 / Subtask IDTTX-241)
+
+Áp dụng cho nhánh: **`feature/S3-04-ho-so-hoc-vien`**  
+**User Story (IDTTX-212):** Là Quản lý đào tạo, tôi muốn quản lý hồ sơ học viên, để tra cứu được toàn bộ quá trình học của một người khi họ xin cấp lại bảng điểm.
+
+### Kết quả triển khai Backend (IDTTX-241):
+1. **Thiết kế CSDL & Migration:**
+   - File: [`database/migration_s3_04_student_profile.sql`](database/migration_s3_04_student_profile.sql)
+   - Thiết kế chuẩn hóa 3NF: các bảng `students`, `classes`, `class_subjects`, `student_notes`, `student_class_history`.
+   - Lưu trữ toàn diện thông tin cá nhân (SĐT, ngày sinh, email, địa chỉ), trình độ đầu vào (điểm thi, xếp loại, nền tảng), lớp đang học và lịch sử các lớp đã học.
+2. **Quản lý & Cập nhật Hồ sơ học viên:**
+   - Xem và sửa thông tin cá nhân, trình độ đầu vào qua `PUT /api/students/:code`.
+   - Hỗ trợ thêm ghi chú mới tự động kèm ngày hiện tại và người thực hiện (từ token đăng nhập).
+   - Kiểm tra validation chặt chẽ: số điện thoại di động Việt Nam (10 số, đầu 03/05/07/08/09), email hợp lệ.
+3. **Hiển thị lớp đang học & Lịch sử học tập:**
+   - Thông tin lớp đang học được gắn kèm chi tiết: ca học (`slot`), phòng học (`room`), tiến độ buổi học (`done`/`totalSessions`), sĩ số lớp (`classSize`/`max`).
+   - Lịch sử các lớp đã học kèm kết quả đánh giá (`result`, `period`).
+4. **Tìm kiếm, lọc & Phân trang đa tiêu chí:**
+   - Tìm kiếm theo mã học viên, họ tên, số điện thoại (hỗ trợ nhập số liền).
+   - Lọc theo trạng thái học tập (`status`) và chương trình đào tạo (`program`).
+   - Phân trang chuẩn (`page`, `limit`) kèm thống kê sĩ số đang học (`studyingCount`) và tổng số học viên (`totalAll`).
+5. **Phân quyền truy cập (RBAC):**
+   - `TrainingManager`, `Admin`, `Admissions`: Toàn quyền xem danh sách, xem chi tiết, sửa hồ sơ và thêm ghi chú.
+   - `Instructor`: Xem danh sách và chi tiết hồ sơ phục vụ giảng dạy, không được sửa hồ sơ.
+   - `Student`: **Chỉ được xem hồ sơ của chính mình** (`GET /api/students/:code` kiểm tra quyền sở hữu), bị chặn khỏi API danh sách toàn trường (`403 FORBIDDEN_STUDENT_LIST`), chặn xem hồ sơ người khác (`403 FORBIDDEN_STUDENT_PROFILE`) và chặn sửa hồ sơ (`403`).
+6. **Kiểm thử tự động:**
+   ```bash
+   cd backend/legacy_node_be
+   npm test
+   ```
+   Toàn bộ **76/76 test cases** (bao gồm 18 test cases chuyên sâu cho S3-04) đều **PASS 100%**.
