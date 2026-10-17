@@ -273,22 +273,28 @@ export function LoginPage() {
                 <a href="#">Trợ giúp &amp; hỗ trợ</a>
               </div>
 
-              <details className="lg-demo">
-                <summary>Tài khoản mẫu để thử</summary>
+              <details className="lg-demo" open>
+                <summary>Tài khoản mẫu để test (1 Actor = 1 Tài khoản)</summary>
                 <table>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: '4px 8px' }}>Tài khoản</th>
+                      <th style={{ textAlign: 'left', padding: '4px 8px' }}>Vai trò</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {DEMO_ACCOUNTS.map((a) => (
                       <tr key={a.email}>
-                        <td>
+                        <td style={{ padding: '4px 8px' }}>
                           <code>{a.email}</code>
                         </td>
-                        <td>{a.roles.map((r) => ROLES[r]).join(", ")}</td>
+                        <td style={{ padding: '4px 8px' }}>{a.roles.map((r) => ROLES[r]).join(", ")}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
                 <p>
-                  Mật khẩu chung: <code>{DEMO_PASSWORD}</code>. Nhập sai {MAX_ATTEMPTS} lần liên tiếp sẽ bị khóa tạm 15 phút.
+                  Mật khẩu chung cho tất cả tài khoản: <code>{DEMO_PASSWORD}</code>
                 </p>
               </details>
           </div>

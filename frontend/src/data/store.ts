@@ -1,7 +1,7 @@
 // Dữ liệu mẫu được lưu vào localStorage để tải lại trang không mất thay đổi (chế độ chưa có backend).
 // Mỗi mảng/đối tượng đăng ký một khoá; trang vẫn sửa trực tiếp như cũ, khi rời hoặc tải lại trang thì ghi lại tất cả.
 
-const PREFIX = 'tms.data.v1.';
+const PREFIX = 'tms.data.v2.';
 const registry = new Map<string, unknown>();
 
 /** Giá trị đã lưu của khoá này, hoặc seed nếu chưa có hay dữ liệu hỏng. */

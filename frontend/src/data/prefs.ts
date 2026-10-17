@@ -14,7 +14,7 @@ export const ALWAYS: PrefKind[] = ['Thay đổi lịch học'];
 
 export type Pref = { app: boolean; email: boolean };
 /** Cài đặt theo email đăng nhập; chưa có là bật hết. */
-export const PREFS: Record<string, Partial<Record<PrefKind, Pref>>> = persisted('prefs', { 'S25200212101@tms.vn': { 'Nhắc lịch học': { app: false, email: false } } });
+export const PREFS: Record<string, Partial<Record<PrefKind, Pref>>> = persisted('prefs', { 'hocvien@tms.vn': { 'Nhắc lịch học': { app: false, email: false } } });
 export const prefOf = (login: string, k: PrefKind): Pref => (ALWAYS.includes(k) ? { app: true, email: true } : (PREFS[login]?.[k] ?? { app: true, email: true }));
 
 export const REMINDER: { hours: number } = persisted('reminder', { hours: 12 });

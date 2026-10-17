@@ -24,22 +24,20 @@ export type UserRow = {
 };
 
 const SEED: Omit<UserRow, 'id'>[] = [
-  { name: 'NGUYEN MINH ANH', email: 'S25200212101@tms.vn', phone: '0912 345 678', roles: [0], status: 'Hoạt động' },
-  { name: 'TRAN THU HA', email: 'AMS25200212012@tms.vn', phone: '0987 654 321', roles: [3], status: 'Hoạt động' },
-  { name: 'LE HOANG NAM', email: 'TM25200212002@tms.vn', phone: '0903 112 233', roles: [2, 5], status: 'Hoạt động' },
-  { name: 'PHAM GIA HUY', email: 'TA25200212007@tms.vn', phone: '0938 221 144', roles: [1], status: 'Chờ kích hoạt' },
-  { name: 'DO THI MAI', email: 'ACT25200212003@tms.vn', phone: '0977 889 900', roles: [4], status: 'Hoạt động' },
+  { name: 'QUẢN TRỊ VIÊN', email: 'admin@tms.vn', phone: '0901 234 567', roles: [6], status: 'Hoạt động' },
+  { name: 'QUẢN LÝ ĐÀO TẠO', email: 'daotao@tms.vn', phone: '0912 345 678', roles: [5], status: 'Hoạt động' },
   {
-    name: 'VU DUC LONG',
-    email: 'IST25200212045@tms.vn',
+    name: 'GIẢNG VIÊN VŨ ĐỨC LONG',
+    email: 'giangvien@tms.vn',
     phone: '0909 456 123',
     roles: [2],
     status: 'Hoạt động',
     classes: ['WEB-K15 · Lập trình web cơ bản', 'DB-K14 · Cơ sở dữ liệu'],
   },
-  { name: 'HOANG YEN NHI', email: 'S25200212102@tms.vn', phone: '0965 778 210', roles: [0], status: 'Hoạt động' },
-  { name: 'BUI QUANG KHAI', email: 'S25200212103@tms.vn', phone: '0944 310 562', roles: [0], status: 'Hoạt động' },
-  { name: 'TRAN QUOC BAO', email: 'A25200212001@tms.vn', phone: '0918 200 300', roles: [6], status: 'Hoạt động' },
+  { name: 'TRỢ GIẢNG PHẠM GIA HUY', email: 'trogiang@tms.vn', phone: '0938 221 144', roles: [1], status: 'Hoạt động' },
+  { name: 'TƯ VẤN TRẦN THU HÀ', email: 'tuvan@tms.vn', phone: '0987 654 321', roles: [3], status: 'Hoạt động' },
+  { name: 'KẾ TOÁN ĐỖ THỊ MAI', email: 'ketoan@tms.vn', phone: '0977 889 900', roles: [4], status: 'Hoạt động' },
+  { name: 'HỌC VIÊN NGUYỄN MINH ANH', email: 'hocvien@tms.vn', phone: '0912 345 678', roles: [0], status: 'Hoạt động' },
 ];
 
 const LAST = ['AN', 'BINH', 'CHI', 'DUNG', 'GIANG', 'HANH', 'KHANH', 'LINH', 'MINH', 'NGOC', 'PHUONG', 'QUAN', 'SON', 'THAO', 'TUAN', 'VY'];

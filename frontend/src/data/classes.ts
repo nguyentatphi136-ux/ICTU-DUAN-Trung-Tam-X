@@ -34,12 +34,12 @@ export const classTone = (s: ClassStatus): 'ok' | 'info' | 'off' | undefined =>
 /** id và openClasses chỉ có khi tải từ máy chủ (S3-08). */
 export type Staff = { name: string; role: 1 | 2; email: string; id?: number; openClasses?: number };
 export const STAFF: Staff[] = [
-  { name: 'VU DUC LONG', role: 2, email: 'IST25200212045@tms.vn' },
-  { name: 'LE HOANG NAM', role: 2, email: 'TM25200212002@tms.vn' },
+  { name: 'VU DUC LONG', role: 2, email: 'giangvien@tms.vn' },
+  { name: 'LE HOANG NAM', role: 2, email: 'daotao@tms.vn' },
   { name: 'NGO THI THU', role: 2, email: 'IST25200212031@tms.vn' },
   { name: 'DANG MINH SON', role: 2, email: 'IST25200212027@tms.vn' },
   { name: 'PHAM THI VY', role: 2, email: 'IST25200212019@tms.vn' },
-  { name: 'PHAM GIA HUY', role: 1, email: 'TA25200212007@tms.vn' },
+  { name: 'PHAM GIA HUY', role: 1, email: 'trogiang@tms.vn' },
   { name: 'NGO BAO TU', role: 1, email: 'TA25200212011@tms.vn' },
   { name: 'TRAN MINH THU', role: 1, email: 'TA25200212015@tms.vn' },
 ];
