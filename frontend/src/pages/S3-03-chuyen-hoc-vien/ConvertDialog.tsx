@@ -29,10 +29,12 @@ export function ConvertDialog({ lead, onClose, onDone }: Props) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  function create() {
+  async function create() {
     if (!EMAIL_RE.test(sendTo.trim())) return setError('Nhập email hợp lệ để gửi thông tin đăng nhập');
+    setBusy(true);
+    setError('');
+
     if (apiEnabled) {
-      setBusy(true);
       return void convertLead(lead.id, sendTo.trim()).then(
         (r) => onDone(r.code, r.email, r.emailSent),
         (e: Error) => (setBusy(false), setError(e.message)),
@@ -84,15 +86,23 @@ export function ConvertDialog({ lead, onClose, onDone }: Props) {
     });
     saveAll();
 
-    void dispatchActivationEmail({
-      toEmail: sendTo.trim(),
-      fullName: s.name,
-      loginEmail: login,
-      tempPassword,
-      roleName: 'Học viên',
-    });
+    let emailSent = false;
+    try {
+      const emailRes = await dispatchActivationEmail({
+        toEmail: sendTo.trim(),
+        fullName: s.name,
+        loginEmail: login,
+        tempPassword,
+        roleName: 'Học viên',
+      });
+      emailSent = !!emailRes?.success;
+    } catch {
+      emailSent = false;
+    } finally {
+      setBusy(false);
+    }
 
-    onDone(s.code, s.email, true, tempPassword, login);
+    onDone(s.code, s.email, emailSent, tempPassword, login);
   }
 
   const facts: [string, string][] = [
@@ -157,11 +167,11 @@ export function ConvertDialog({ lead, onClose, onDone }: Props) {
         Lead chuyển sang trạng thái Đã nhập học. Mọi thay đổi về sau thực hiện ở hồ sơ học viên.
       </Box>
       <div className="acts">
-        <button type="button" className="btn" style={{ width: 100 }} onClick={onClose}>
+        <button type="button" className="btn" style={{ width: 100 }} onClick={onClose} disabled={busy}>
           Huỷ
         </button>
-        <button type="button" className="btn primary" style={{ width: 164 }} disabled={busy} onClick={create}>
-          {busy ? 'Đang tạo…' : 'Tạo học viên'}
+        <button type="button" className="btn primary" style={{ minWidth: 164 }} disabled={busy} onClick={create}>
+          {busy ? 'Đang gửi email & tạo…' : 'Tạo học viên'}
         </button>
       </div>
     </Modal>

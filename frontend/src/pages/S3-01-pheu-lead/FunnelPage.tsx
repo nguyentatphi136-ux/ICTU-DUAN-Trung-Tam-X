@@ -231,13 +231,22 @@ export function FunnelPage() {
             const passText = tempPass ? ` · Mật khẩu: ${tempPass}` : '';
             const accText = loginEmail ? `Tài khoản: ${loginEmail}${passText}. ` : '';
             const sub = emailSent
-              ? `${accText}Email kích hoạt đã gửi tới ${sentTo}.`
+              ? `${accText}Email kích hoạt đã gửi tới ${sentTo}. Vui lòng kiểm tra hộp thư (cả thư mục Thư rác/Spam).`
               : `${accText}Chưa gửi được email tới ${sentTo}, hãy thông báo mật khẩu tạm trực tiếp cho học viên.`;
             setConverting(null);
             if (apiEnabled) return void sync(Promise.resolve(), 'Đã tạo học viên ' + code, sub);
             addLog(converting, { kind: 'Chuyển thành học viên', at: now(), by: user!.name, text: `Tạo hồ sơ ${code} và tài khoản đăng nhập.` });
             syncFunnelStage(converting.id, 'Chốt', undefined, code);
             setLeads([...FUNNEL]);
+            notify({
+              at: now(),
+              kind: 'Lead',
+              title: `Đã cấp tài khoản học viên ${code} (${converting.name})`,
+              body: `Tài khoản: ${loginEmail || code} · Mật khẩu tạm: ${tempPass || 'Tms@2026'}. Email nhận: ${sentTo} (${emailSent ? 'Đã gửi thành công' : 'Chưa gửi được email'}).`,
+              link: `/hoc-vien/${code}`,
+              to: { users: [converting.owner, user!.name, converting.name, loginEmail || '', code].filter(Boolean) },
+              ref: `lead-conv-${converting.id}-${code}`,
+            });
             toast('Đã tạo học viên ' + code, sub);
           }}
         />
