@@ -16,6 +16,8 @@ import { isPhone, PHONE_MSG } from '../../data/validate';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
 import { StatusDialog } from '../S4-06-tinh-trang-hoc/StatusDialog';
 import { AbsenceFlag } from '../S5-02-nguong-vang/AbsenceFlag';
+import { canManageClasses } from '../S3-07-danh-sach-lop/ClassListPage';
+import { EnrollStudentModal } from './EnrollStudentModal';
 import { MODULE } from './StudentListPage';
 import './student.css';
 
@@ -44,6 +46,7 @@ export function StudentProfilePage({ actions }: Props) {
   const [, setTick] = useState(0);
   const [editing, setEditing] = useState(false);
   const [changing, setChanging] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
   // Có backend: tải hồ sơ đầy đủ và lớp đang học (để hiện sĩ số, tiến độ).
   const load = useLoad(async () => {
     const st = await loadStudent(code);
@@ -160,7 +163,23 @@ export function StudentProfilePage({ actions }: Props) {
                 </div>
               </Link>
             ) : (
-              <p className="hint">Chưa xếp lớp. Quản lý đào tạo ghi danh học viên vào lớp ở màn hình Lớp học.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <p className="hint" style={{ margin: 0 }}>
+                  Chưa xếp lớp. Học viên chưa được ghi danh vào lớp học nào.
+                </p>
+                {canManageClasses(role) && (
+                  <div>
+                    <button
+                      type="button"
+                      className="btn primary"
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                      onClick={() => setEnrolling(true)}
+                    >
+                      <Icon name="plus" size={16} /> Ghi danh vào lớp
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </section>
           <h3 className="section-t sp-hist-t">Lịch sử các lớp đã học</h3>
@@ -226,6 +245,18 @@ export function StudentProfilePage({ actions }: Props) {
             setChanging(false);
             refresh();
             toast(msg);
+          }}
+        />
+      )}
+      {enrolling && (
+        <EnrollStudentModal
+          student={s}
+          userName={user!.name}
+          onClose={() => setEnrolling(false)}
+          onEnrolled={(clsCode) => {
+            setEnrolling(false);
+            refresh();
+            toast('Ghi danh thành công', `Đã ghi danh ${s.name} vào lớp ${clsCode}.`);
           }}
         />
       )}
