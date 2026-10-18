@@ -98,17 +98,30 @@ export async function login(email: string, password: string): Promise<Account | 
   }
 
   // 2. Kiểm tra trong danh sách người dùng USERS (bao gồm cả tài khoản SV vừa tạo)
-  const u = USERS.find((x) => {
-    const em = x.email.toLowerCase();
-    const contact = x.contactEmail?.toLowerCase() || '';
-    const code = x.code?.toLowerCase() || '';
-    const userPrefix = em.split('@')[0];
+  let allUsers = USERS;
+  try {
+    const rawSaved = localStorage.getItem('tms.data.v2.users');
+    if (rawSaved) {
+      const parsed = JSON.parse(rawSaved);
+      if (Array.isArray(parsed) && parsed.length >= allUsers.length) allUsers = parsed;
+    }
+  } catch {}
+
+  const rawDigits = raw.replace(/\D/g, '');
+
+  const u = allUsers.find((x) => {
+    const em = x.email ? x.email.toLowerCase() : '';
+    const contact = x.contactEmail ? x.contactEmail.toLowerCase() : '';
+    const code = x.code ? x.code.toLowerCase() : '';
+    const userPrefix = em ? em.split('@')[0] : '';
+    const ph = x.phone ? x.phone.replace(/\D/g, '') : '';
     return (
       em === raw ||
       contact === raw ||
       code === raw ||
       userPrefix === raw ||
-      em === normalized
+      em === normalized ||
+      (rawDigits.length >= 9 && ph === rawDigits)
     );
   });
 
@@ -144,12 +157,28 @@ export async function login(email: string, password: string): Promise<Account | 
   }
 
   // 3. Kiểm tra trong danh sách học viên STUDENTS
-  const st = STUDENTS.find((s) => {
-    const l = s.login.toLowerCase();
-    const e = s.email.toLowerCase();
-    const c = s.code.toLowerCase();
-    const prefix = l.split('@')[0];
-    return l === raw || e === raw || c === raw || prefix === raw;
+  let allStudents = STUDENTS;
+  try {
+    const rawSavedStudents = localStorage.getItem('tms.data.v2.students');
+    if (rawSavedStudents) {
+      const parsed = JSON.parse(rawSavedStudents);
+      if (Array.isArray(parsed) && parsed.length >= allStudents.length) allStudents = parsed;
+    }
+  } catch {}
+
+  const st = allStudents.find((s) => {
+    const l = s.login ? s.login.toLowerCase() : '';
+    const e = s.email ? s.email.toLowerCase() : '';
+    const c = s.code ? s.code.toLowerCase() : '';
+    const prefix = l ? l.split('@')[0] : '';
+    const ph = s.phone ? s.phone.replace(/\D/g, '') : '';
+    return (
+      l === raw ||
+      e === raw ||
+      c === raw ||
+      prefix === raw ||
+      (rawDigits.length >= 9 && ph === rawDigits)
+    );
   });
 
   if (st) {

@@ -8,6 +8,9 @@ import { Box } from '../../components/ui';
 import { api, apiEnabled, json } from '../../data/api';
 import { useAuth } from '../../data/auth';
 import { DEMO_PASSWORD } from '../S1-01-dang-nhap/mockAuth';
+import { saveAll } from '../../data/store';
+import { USERS } from '../../data/users';
+import { STUDENTS } from '../../data/students';
 
 // S1-04. Đổi mật khẩu khi đã đăng nhập. Nút chỉ bật khi đủ bốn yêu cầu và hai ô mật khẩu mới khớp nhau.
 // Có backend: POST /api/auth/change-password; máy chủ thu hồi mọi phiên khác, giữ phiên hiện tại.
@@ -28,7 +31,7 @@ export function ChangePasswordPage() {
 
   const forced = !!user.mustChangePassword;
   const mismatch = confirm.length > 0 && confirm !== pw;
-  const isDefault = pw === DEMO_PASSWORD;
+  const isDefault = pw === DEMO_PASSWORD || pw === 'Tms@2026' || pw === '123456';
   const valid = current.length > 0 && isStrongPassword(pw) && confirm === pw && !isDefault;
 
   if (done)
@@ -70,7 +73,27 @@ export function ChangePasswordPage() {
             } finally {
               setBusy(false);
             }
-          } else if (current !== DEMO_PASSWORD) return setWrong('Mật khẩu hiện tại không đúng');
+          } else {
+            const userInStore = user.email ? USERS.find((u) => u.email.toLowerCase() === user.email.toLowerCase()) : undefined;
+            const validCurrent =
+              current === DEMO_PASSWORD ||
+              current === '123456' ||
+              current === 'Tms@2026' ||
+              (userInStore?.tempPassword && current === userInStore.tempPassword);
+            if (!validCurrent) return setWrong('Mật khẩu hiện tại không đúng');
+
+            if (userInStore) {
+              userInStore.tempPassword = pw;
+              userInStore.status = 'Hoạt động';
+            }
+            if (user.email) {
+              const studentInStore = STUDENTS.find((s) => s.login.toLowerCase() === user.email.toLowerCase());
+              if (studentInStore && studentInStore.status === 'Mới nhập học') {
+                studentInStore.status = 'Đang học';
+              }
+            }
+            saveAll();
+          }
           setCurrent('');
           setPw('');
           setConfirm('');

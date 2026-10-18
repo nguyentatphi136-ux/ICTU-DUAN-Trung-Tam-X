@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
 import { Box, Modal } from '../../components/ui';
 import { apiEnabled } from '../../data/api';
-import { TODAY, type FunnelLead } from '../../data/funnel';
+import { FUNNEL, TODAY, type FunnelLead } from '../../data/funnel';
+import { LEADS, samePhone } from '../../data/leads';
 import { convertLead } from '../../data/s3api';
 import { saveAll } from '../../data/store';
 import { dispatchActivationEmail } from '../../data/email';
@@ -38,6 +39,9 @@ export function ConvertDialog({ lead, onClose, onDone }: Props) {
       );
     }
     const tempPassword = 'Tms@2026';
+    lead.student = code;
+    lead.stage = 'Chốt';
+
     const s: Student = {
       code,
       name: lead.name,
@@ -54,6 +58,17 @@ export function ConvertDialog({ lead, onClose, onDone }: Props) {
       leadId: lead.id,
     };
     STUDENTS.unshift(s);
+
+    const f = FUNNEL.find((x) => x.id === lead.id || (lead.phone && samePhone(x.phone, lead.phone)));
+    if (f) {
+      f.student = code;
+      f.stage = 'Chốt';
+    }
+    const l = LEADS.find((x) => (lead.phone && samePhone(x.phone, lead.phone)) || x.id === lead.id);
+    if (l) {
+      l.status = 'Đã nhập học';
+    }
+
     const newId = Math.max(0, ...USERS.map((u) => u.id)) + 1;
     USERS.unshift({
       id: newId,

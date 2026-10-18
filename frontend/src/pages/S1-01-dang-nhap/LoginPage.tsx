@@ -1,6 +1,6 @@
 import { useTitle } from '../../components/ui';
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../data/auth';
 import { ROLES } from '../../data/permissions';
 import { EMAIL_RE } from '../../data/validate';
@@ -23,7 +23,7 @@ type LoginState = { from?: string; loggedOut?: boolean; expired?: boolean; draft
 
 export function LoginPage() {
   useTitle('Đăng nhập');
-  const { signIn, signOut } = useAuth();
+  const { user, signIn, signOut } = useAuth();
   const navigate = useNavigate();
   const state = useLocation().state as LoginState;
   const [email, setEmail] = useState(state?.email ?? '');
@@ -32,6 +32,11 @@ export function LoginPage() {
   useEffect(() => {
     if (state?.loggedOut || state?.expired) signOut();
   }, [state, signOut]);
+
+  // Nếu người dùng đã có phiên đăng nhập hợp lệ, lập tức đưa vào hệ thống thay vì bắt đăng nhập lại
+  if (user && !state?.loggedOut && !state?.expired) {
+    return <Navigate to="/" replace />;
+  }
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -92,8 +97,15 @@ export function LoginPage() {
         navigate('/doi-mat-khau', { replace: true, state: { from: state?.from } });
         return;
       }
-      // S1-02: quay lại đúng trang đang làm dở trước khi phiên hết hạn, nếu không thì về trang chủ của vai trò.
-      navigate(state?.from ?? '/', { replace: true, state: state?.from ? { restored: true } : undefined });
+      // S1-02: quay lại đúng trang đang làm dở trước khi phiên hết hạn, tránh bị chuyển ngược về trang công khai
+      const target =
+        state?.from &&
+        state.from !== '/dang-ky-tu-van' &&
+        state.from !== '/dang-nhap' &&
+        state.from !== '/doi-mat-khau'
+          ? state.from
+          : '/';
+      navigate(target, { replace: true, state: state?.from ? { restored: true } : undefined });
       return;
     }
     const count = fails + 1;

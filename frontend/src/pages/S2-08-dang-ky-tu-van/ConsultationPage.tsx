@@ -1,6 +1,7 @@
 import { useTitle } from '../../components/ui';
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import { useAuth } from '../../data/auth';
 import { Badge } from '../../components/CardPage';
 import { Icon, type IconName } from '../../components/Icon';
 import { ThemeToggle } from '../../components/ThemeToggle';
@@ -25,6 +26,10 @@ type Form = { name: string; phone: string; email: string; program: string; messa
 // gửi POST /api/public/consultations (máy chủ giới hạn 5 lần mỗi 15 phút cho một địa chỉ IP).
 export function ConsultationPage() {
   useTitle('Đăng ký tư vấn');
+  const { user } = useAuth();
+  if (user) {
+    return <Navigate to="/" replace />;
+  }
   const [f, setF] = useState<Form>({ name: '', phone: '', email: '', program: '', message: '' });
   const [human, setHuman] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof Form | 'human', string>>>({});
