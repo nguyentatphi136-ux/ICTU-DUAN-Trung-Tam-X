@@ -129,6 +129,13 @@ public final class IpLoginAttemptService {
     }
 
     /**
+     * Lấy tổng số lượng IP đang được lưu vết trong bộ nhớ (dùng cho giám sát)
+     */
+    public static int getActiveTrackedIpsCount() {
+        return IP_ATTEMPTS.size();
+    }
+
+    /**
      * Dọn dẹp các entry IP đã hết hạn khi bộ nhớ đạt ngưỡng
      */
     private static void pruneExpiredIfNeeded(Instant now) {
