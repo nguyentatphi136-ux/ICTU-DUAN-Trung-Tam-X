@@ -151,3 +151,15 @@
 .lg-page .lg-foot{margin-top:12px}
 .lg-page .lg-demo{margin-top:8px}
 }
+
+/* Hiệu ứng mượt mà cho khối thông báo khóa IP tạm thời */
+.lg-page .lg-alert.lg-lock {
+  border-left: 4px solid #ef4444;
+  animation: lgAlertFadeIn 0.25s ease-out;
+}
+
+@keyframes lgAlertFadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
