@@ -18,10 +18,17 @@ import java.util.concurrent.ConcurrentHashMap;
  *    từ thiết bị hoặc mạng khác.
  */
 public final class IpLoginAttemptService {
-    private static final int MAX_CACHE_ENTRIES = 10000;
+    public static final int MAX_CACHE_ENTRIES = 10000;
     private static final Map<String, LoginAttemptPolicy.State> IP_ATTEMPTS = new ConcurrentHashMap<>();
 
     private IpLoginAttemptService() {}
+
+    /**
+     * Giới hạn tối đa số lượng IP được lưu vết trong bộ nhớ để bảo vệ RAM
+     */
+    public static int getMaxCacheEntries() {
+        return MAX_CACHE_ENTRIES;
+    }
 
     /**
      * Lấy địa chỉ IP của client gửi yêu cầu (hỗ trợ cả trường hợp qua Proxy / Reverse Proxy)
