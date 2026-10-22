@@ -1,6 +1,5 @@
 package com.ems.controller;
 
-import com.ems.constant.RoleConstant;
 import com.ems.dao.StudentStatusDAO;
 import com.ems.model.ClassItem;
 import com.ems.model.Student;
@@ -18,6 +17,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Controller / Servlet điều hướng nghiệp vụ S4-06 (Jira IDTTX-252, IDTTX-268 [BE]):
@@ -42,18 +42,23 @@ public class StudentStatusServlet extends HttpServlet {
 
         HttpSession session = req.getSession(false);
         User currentUser = (session != null) ? (User) session.getAttribute("currentUser") : null;
-
-        // Nếu chưa đăng nhập, cấp tạm user giả lập vai trò Quản lý đào tạo để kiểm thử thuận tiện
-        if (currentUser == null) {
-            currentUser = new User(1L, "Nguyễn Minh Ngọc", "ngoc.nm@tms.vn", "ACTIVE",
-                    List.of(RoleConstant.TRAINING_MANAGER, RoleConstant.ADMIN));
-            currentUser.setUserCode("QLDT-001");
-            if (session != null) {
-                session.setAttribute("currentUser", currentUser);
-            }
+        if (!isStaff(currentUser)) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ cán bộ trung tâm được xem tình trạng học của học viên.");
+            return;
         }
         req.setAttribute("currentUser", currentUser);
 
+        try {
+            route(req, resp);
+        } catch (IllegalArgumentException e) {
+            resp.sendError(HttpServletResponse.SC_BAD_REQUEST, e.getMessage());
+        } catch (IllegalStateException e) {
+            log("Lỗi đọc tình trạng học viên", e);
+            resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Lỗi máy chủ khi đọc dữ liệu học viên. Vui lòng thử lại sau.");
+        }
+    }
+
+    private void route(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String uri = req.getRequestURI();
 
         // 1. Chi tiết Hồ sơ học viên & Nút thao tác S4-06 (/student/profile)
@@ -79,8 +84,12 @@ public class StudentStatusServlet extends HttpServlet {
 
         HttpSession session = req.getSession(false);
         User currentUser = (session != null) ? (User) session.getAttribute("currentUser") : null;
-        String actorName = (currentUser != null && currentUser.getName() != null) ? currentUser.getName() : "Quản lý đào tạo";
-        Long actorId = (currentUser != null) ? currentUser.getId() : 1L;
+        if (!canChangeStatus(currentUser)) {
+            resp.sendError(HttpServletResponse.SC_FORBIDDEN, "Chỉ Quản lý đào tạo được bảo lưu, chuyển lớp hoặc cho học viên thôi học.");
+            return;
+        }
+        String actorName = currentUser.getName() != null ? currentUser.getName() : "Quản lý đào tạo";
+        Long actorId = currentUser.getId();
 
         String uri = req.getRequestURI();
 
@@ -121,18 +130,25 @@ public class StudentStatusServlet extends HttpServlet {
             }
 
             // Thực thi nghiệp vụ lưu trữ & đổi trạng thái
-            boolean success = studentStatusDAO.processStatusChange(
-                    studentCode, actionType, effectiveDate, reason, notes, toClassCode, actorName, actorId);
+            try {
+                studentStatusDAO.processStatusChange(
+                        studentCode, actionType, effectiveDate, reason, notes, toClassCode, actorName, actorId);
+            } catch (IllegalArgumentException e) {
+                redirectWithError(req, resp, studentCode, e.getMessage());
+                return;
+            } catch (IllegalStateException e) {
+                log("Lỗi lưu tình trạng học viên " + studentCode, e);
+                redirectWithError(req, resp, studentCode, "Lỗi máy chủ, chưa lưu được thay đổi. Vui lòng thử lại sau.");
+                return;
+            }
 
-            if (success) {
+            {
                 String successMsg = "Chuyển lớp".equalsIgnoreCase(actionType)
                         ? "Đã chuyển học viên " + studentCode + " sang lớp " + toClassCode + " từ ngày " + effectiveDate
                         : "Đã ghi nhận " + actionType.toLowerCase() + " cho học viên " + studentCode + " từ ngày " + effectiveDate;
 
-                resp.sendRedirect(req.getContextPath() + "/student/profile?code=" + studentCode +
+                resp.sendRedirect(req.getContextPath() + "/student/profile?code=" + URLEncoder.encode(studentCode, StandardCharsets.UTF_8) +
                         "&success=" + URLEncoder.encode(successMsg, StandardCharsets.UTF_8));
-            } else {
-                redirectWithError(req, resp, studentCode, "Có lỗi xảy ra trong quá trình xử lý thay đổi tình trạng học!");
             }
         } else {
             resp.sendRedirect(req.getContextPath() + "/student/status");
@@ -142,7 +158,8 @@ public class StudentStatusServlet extends HttpServlet {
     private void handleStudentProfile(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String code = req.getParameter("code");
         if (code == null || code.isBlank()) {
-            code = "HV260101"; // Mặc định mở học viên mẫu
+            resp.sendRedirect(req.getContextPath() + "/student/status");
+            return;
         }
 
         Student student = studentStatusDAO.getStudentByCode(code);
@@ -199,9 +216,10 @@ public class StudentStatusServlet extends HttpServlet {
     }
 
     private void handleClassRoster(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        List<ClassItem> allClasses = studentStatusDAO.getAllClasses();
         String cls = req.getParameter("cls");
-        if (cls == null || cls.isBlank()) {
-            cls = "WEB-K15";
+        if ((cls == null || cls.isBlank()) && !allClasses.isEmpty()) {
+            cls = allClasses.get(0).getCode();
         }
         String date = req.getParameter("date");
         if (date == null || date.isBlank()) {
@@ -209,7 +227,6 @@ public class StudentStatusServlet extends HttpServlet {
         }
 
         List<Student> roster = studentStatusDAO.getRosterOnDate(cls, date);
-        List<ClassItem> allClasses = studentStatusDAO.getAllClasses();
 
         req.setAttribute("selectedClass", cls);
         req.setAttribute("selectedDate", date);
@@ -221,7 +238,18 @@ public class StudentStatusServlet extends HttpServlet {
 
     private void redirectWithError(HttpServletRequest req, HttpServletResponse resp, String studentCode, String errorMsg)
             throws IOException {
-        resp.sendRedirect(req.getContextPath() + "/student/profile?code=" + studentCode +
+        resp.sendRedirect(req.getContextPath() + "/student/profile?code=" + URLEncoder.encode(studentCode == null ? "" : studentCode, StandardCharsets.UTF_8) +
                 "&error=" + URLEncoder.encode(errorMsg, StandardCharsets.UTF_8));
+    }
+
+    // Vai trò trong phiên là mã ở bảng roles (TRAINING_MANAGER, ADMIN...), không phải tên trong RoleConstant.
+    private static final Set<String> STAFF_ROLES = Set.of("ADMIN", "TRAINING_MANAGER", "ADMISSIONS", "INSTRUCTOR", "TA", "ACCOUNTANT");
+
+    public static boolean isStaff(User user) {
+        return user != null && user.getRoles() != null && user.getRoles().stream().anyMatch(STAFF_ROLES::contains);
+    }
+
+    public static boolean canChangeStatus(User user) {
+        return user != null && (user.hasRole("TRAINING_MANAGER") || user.hasRole("ADMIN"));
     }
 }

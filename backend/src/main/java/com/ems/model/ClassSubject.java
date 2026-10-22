@@ -12,6 +12,10 @@ import java.util.List;
 public class ClassSubject implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    private Long classSubjectId;    // class_subjects.id
+    private Long subjectId;         // subjects.id
+    private Long instructorId;      // users.id của giảng viên chính, null khi chưa phân công
+
     private String code;
     private String name;
     private int sessions; // Số buổi của môn
@@ -76,5 +80,29 @@ public class ClassSubject implements Serializable {
 
     public void setTas(List<String> tas) {
         this.tas = tas;
+    }
+
+    public Long getClassSubjectId() {
+        return classSubjectId;
+    }
+
+    public void setClassSubjectId(Long classSubjectId) {
+        this.classSubjectId = classSubjectId;
+    }
+
+    public Long getSubjectId() {
+        return subjectId;
+    }
+
+    public void setSubjectId(Long subjectId) {
+        this.subjectId = subjectId;
+    }
+
+    public Long getInstructorId() {
+        return instructorId;
+    }
+
+    public void setInstructorId(Long instructorId) {
+        this.instructorId = instructorId;
     }
 }

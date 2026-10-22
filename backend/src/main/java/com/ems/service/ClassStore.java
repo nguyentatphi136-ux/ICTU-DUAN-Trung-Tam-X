@@ -1,137 +1,182 @@
 package com.ems.service;
 
+import com.ems.config.DBConnection;
 import com.ems.model.ClassSubject;
 import com.ems.model.Klass;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 /**
- * Quản lý kho dữ liệu Lớp học và Giáo trình buổi học chuẩn của Trung tâm
+ * Đọc lớp, môn của lớp (thứ tự, giảng viên, trợ giảng), giáo trình từng buổi và phòng học từ các bảng của S3
+ * (classes, class_subjects, subjects, subject_lessons, classrooms) để S4-01 sinh lịch trên dữ liệu thật.
  * Tác vụ Jira: IDTTX-247 / IDTTX-263 [BE] - S4-01
  * Người thực hiện: Nguyễn Trung Kiên (NK) - dtc245200736@ictu.edu.vn
  */
 public class ClassStore {
 
-    private static final Map<String, Klass> CLASS_MAP = new ConcurrentHashMap<>();
-    private static final Map<String, List<String>> SUBJECT_TOPICS = new HashMap<>();
-    private static final List<String> ROOM_LIST = Arrays.asList("P.401", "P.301", "P.302", "Lab 1", "Zoom 01", "Meet WEB");
+    private static final String CLASS_SELECT = "SELECT c.id, c.class_code, c.class_name, c.start_date, c.max_capacity, "
+            + "c.study_mode, c.status, p.program_name, r.room_code "
+            + "FROM classes c LEFT JOIN programs p ON p.id = c.program_id "
+            + "LEFT JOIN classrooms r ON r.id = c.default_classroom_id ";
 
-    static {
-        initTopics();
-        resetToDefault();
-    }
-
-    private static void initTopics() {
-        SUBJECT_TOPICS.put("GIT-01", Arrays.asList(
-                "Làm quen Git & GitHub", "Nhánh (Branch) và gộp nhánh", "Tạo Pull Request & Code Review", "Xử lý xung đột (Merge Conflict)"
-        ));
-        SUBJECT_TOPICS.put("WEB-01", Arrays.asList(
-                "Cấu trúc tài liệu HTML5", "Semantic HTML & Accessibility", "CSS Selector & Độ ưu tiên", "Box Model & Box Sizing",
-                "Flexbox căn bản", "Flexbox nâng cao & căn chỉnh", "CSS Grid Layout", "Responsive Web Design",
-                "Media Queries cho thiết bị di động", "Typography & Hệ màu hiện đại", "Styling Biểu mẫu & Hiệu ứng Hover", "Thực hành hoàn thiện giao diện Landing Page"
-        ));
-        SUBJECT_TOPICS.put("WEB-02", Arrays.asList(
-                "Biến, Kiểu dữ liệu & Toán tử", "Cấu trúc điều kiện & Vòng lặp", "Hàm (Functions) & Scope", "Mảng & Các phương thức xử lý mảng",
-                "Đối tượng (Objects) trong JavaScript", "Thao tác DOM căn bản", "Xử lý sự kiện (Event Handling)", "Biểu mẫu và xác thực đầu vào",
-                "Lưu trữ cục bộ (LocalStorage/SessionStorage)", "Lập trình bất đồng bộ (Asynchronous)", "Xử lý Promise", "Cú pháp Async/Await hiện đại",
-                "Giao tiếp API bằng Fetch & Axios", "Thực hành xây dựng ứng dụng Web tương tác hoàn chỉnh"
-        ));
-        SUBJECT_TOPICS.put("DB-01", Arrays.asList(
-                "Tổng quan hệ CSDL quan hệ", "Thiết kế lược đồ ERD chuẩn 3NF", "Truy vấn dữ liệu SELECT căn bản", "Liên kết bảng (INNER, LEFT JOIN)",
-                "Gom nhóm và thống kê (GROUP BY, HAVING)", "Truy vấn con (Subquery)", "Chỉ mục (Index) và tối ưu truy vấn", "Quản lý giao dịch (Transaction ACID)",
-                "Chuẩn hoá dữ liệu thực tế", "Ôn tập và bài kiểm tra thiết kế CSDL"
-        ));
-        SUBJECT_TOPICS.put("WEB-03", Arrays.asList(
-                "Giới thiệu React & JSX", "Components & Props", "State & Vòng đời Component", "Xử lý sự kiện trong React",
-                "Render có điều kiện", "Render danh sách & Keys", "Kiểm soát Forms trong React", "Chia sẻ trạng thái (Lifting State Up)",
-                "React Hooks (useState, useEffect)", "Custom Hooks tái sử dụng", "Điều hướng trang với React Router", "Dự án SPA cuối môn"
-        ));
-        SUBJECT_TOPICS.put("BE-01", Arrays.asList(
-                "Kiến trúc Node.js Runtime", "Quản lý thư viện NPM", "Xây dựng Server với Express", "Thiết kế RESTful API chuẩn",
-                "Middleware kiến trúc", "Kết nối và thao tác CSDL MySQL", "Xác thực người dùng & JWT Token", "Validate dữ liệu & Xử lý lỗi tập trung",
-                "Xử lý tải lên tệp tin (File Upload)", "Bảo mật API (CORS, Rate Limit)", "Viết Unit Tests cho Endpoint", "Đóng gói Docker và triển khai"
-        ));
-        SUBJECT_TOPICS.put("JV-01", Arrays.asList(
-                "Cú pháp Java Core căn bản", "Lập trình hướng đối tượng (OOP)", "Kế thừa và Đa hình", "Interface và Abstract Class",
-                "Java Collections Framework (List, Map, Set)", "Xử lý Ngoại lệ (Exceptions)", "Java I/O và Files", "Generics trong Java",
-                "Lambda Expression & Stream API", "JDBC kết nối cơ sở dữ liệu", "CRUD với PreparedStatement", "Mô hình MVC trong Java",
-                "Java Servlet & Kiến trúc Web", "JSP, JSTL & Hoàn thiện dự án nhỏ"
-        ));
-        SUBJECT_TOPICS.put("TEST-01", Arrays.asList(
-                "Tổng quan kiểm thử phần mềm", "Quy trình kiểm thử theo Agile/Scrum", "Kỹ thuật thiết kế Test Case hộp đen", "Phân tích giá trị biên (BVA)",
-                "Phân vùng tương đương (EP)", "Bảng quyết định & Chuyển đổi trạng thái", "Kiểm thử hồi quy & Smoke Test", "Thực hành viết Test Plan & Test Cases"
-        ));
-    }
-
-    public static synchronized void resetToDefault() {
-        CLASS_MAP.clear();
-
-        // Lớp WEB-K16: Lớp Chuẩn bị (64 buổi) - Lớp trọng tâm để Quản lý đào tạo sinh thời khoá biểu tự động
-        List<ClassSubject> webK16Subs = new ArrayList<>();
-        webK16Subs.add(new ClassSubject("GIT-01", "Git và làm việc nhóm", 4, "LE HOANG NAM", Collections.singletonList("PHAM GIA HUY")));
-        webK16Subs.add(new ClassSubject("WEB-01", "HTML & CSS nền tảng", 12, "NGO THI THU", Collections.singletonList("NGO BAO TU")));
-        webK16Subs.add(new ClassSubject("WEB-02", "JavaScript cơ bản", 14, "NGO THI THU"));
-        webK16Subs.add(new ClassSubject("DB-01", "Cơ sở dữ liệu", 10, "VU DUC LONG"));
-        webK16Subs.add(new ClassSubject("WEB-03", "React", 12, "DANG MINH SON"));
-        webK16Subs.add(new ClassSubject("BE-01", "Node.js và API", 12, "VU DUC LONG"));
-
-        Klass webK16 = new Klass("WEB-K16", "Lập trình web Full-stack", "2026-10-20", 30, "Kết hợp", "Chuẩn bị", "Chưa xếp lịch", "Meet WEB", webK16Subs);
-        CLASS_MAP.put(webK16.getCode(), webK16);
-
-        // Lớp chuẩn 60 buổi mẫu: Lớp JAVA-K15 (60 buổi)
-        List<ClassSubject> java60Subs = new ArrayList<>();
-        java60Subs.add(new ClassSubject("GIT-01", "Git và làm việc nhóm", 4, "LE HOANG NAM"));
-        java60Subs.add(new ClassSubject("JV-01", "Java cơ bản & Hướng đối tượng", 14, "DANG MINH SON"));
-        java60Subs.add(new ClassSubject("DB-01", "Cơ sở dữ liệu quan hệ", 10, "VU DUC LONG"));
-        java60Subs.add(new ClassSubject("JV-02", "Lập trình Web Servlet/JSP & Spring Boot", 20, "DANG MINH SON"));
-        java60Subs.add(new ClassSubject("JV-03", "Dự án thực tế & Triển khai hệ thống", 12, "DANG MINH SON"));
-
-        Klass java60 = new Klass("JAVA-K15", "Lập trình Java Doanh nghiệp", "2026-11-01", 30, "Trực tiếp", "Chuẩn bị", "Chưa xếp lịch", "Lab 1", java60Subs);
-        CLASS_MAP.put(java60.getCode(), java60);
-
-        // Lớp TEST-K06: 32 buổi
-        List<ClassSubject> testSubs = new ArrayList<>();
-        testSubs.add(new ClassSubject("GIT-01", "Git và làm việc nhóm", 4, "PHAM THI VY"));
-        testSubs.add(new ClassSubject("TEST-01", "Kiểm thử phần mềm cơ bản", 8, "PHAM THI VY"));
-        testSubs.add(new ClassSubject("TEST-02", "Kiểm thử tự động", 12, "PHAM THI VY"));
-        testSubs.add(new ClassSubject("TEST-03", "Kiểm thử API", 8, "PHAM THI VY"));
-
-        Klass testK06 = new Klass("TEST-K06", "Kiểm thử phần mềm", "2026-11-02", 25, "Trực tuyến", "Chuẩn bị", "Chưa xếp lịch", "Zoom 01", testSubs);
-        CLASS_MAP.put(testK06.getCode(), testK06);
-
-        // Lớp WEB-K15: Đang học
-        List<ClassSubject> webK15Subs = new ArrayList<>(webK16Subs);
-        Klass webK15 = new Klass("WEB-K15", "Lập trình web Full-stack", "2026-08-12", 30, "Trực tiếp", "Đang học", "Tối 2-4-6", "P.401", webK15Subs);
-        CLASS_MAP.put(webK15.getCode(), webK15);
-    }
-
+    /** Lớp còn xếp lịch được: đang chuẩn bị hoặc đang học. */
     public static List<Klass> getAllClasses() {
-        List<Klass> list = new ArrayList<>(CLASS_MAP.values());
-        list.sort(Comparator.comparing(Klass::getCode));
-        return Collections.unmodifiableList(list);
+        List<Klass> list = new ArrayList<>();
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(CLASS_SELECT
+                     + "WHERE c.status IN ('PLANNING', 'IN_PROGRESS') ORDER BY c.class_code");
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(readClass(conn, rs));
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Không đọc được danh sách lớp: " + e.getMessage(), e);
+        }
+        return list;
     }
 
     public static Klass findByCode(String code) {
-        if (code == null) return null;
-        return CLASS_MAP.get(code.trim().toUpperCase());
+        if (code == null || code.isBlank()) return null;
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(CLASS_SELECT + "WHERE c.class_code = ?")) {
+            ps.setString(1, code.trim().toUpperCase());
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? readClass(conn, rs) : null;
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Không đọc được lớp " + code + ": " + e.getMessage(), e);
+        }
     }
 
-    public static String getTopicForLesson(String subjectCode, int lessonIndex) {
-        List<String> topics = SUBJECT_TOPICS.get(subjectCode);
-        if (topics != null && lessonIndex >= 1 && lessonIndex <= topics.size()) {
-            return topics.get(lessonIndex - 1);
+    /** Chủ đề từng buổi của môn theo giáo trình (subject_lessons.session_order -> topic). */
+    public static Map<Integer, String> getLessonTopics(long subjectId) {
+        Map<Integer, String> topics = new HashMap<>();
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT session_order, topic FROM subject_lessons WHERE subject_id = ?")) {
+            ps.setLong(1, subjectId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    topics.put(rs.getInt("session_order"), rs.getString("topic"));
+                }
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Không đọc được giáo trình môn: " + e.getMessage(), e);
         }
-        return "Bài học số " + lessonIndex;
+        return topics;
     }
 
     public static List<String> getAvailableRooms() {
-        return Collections.unmodifiableList(ROOM_LIST);
+        List<String> rooms = new ArrayList<>();
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT room_code FROM classrooms WHERE status = 'AVAILABLE' ORDER BY room_code");
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                rooms.add(rs.getString("room_code"));
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Không đọc được danh sách phòng học: " + e.getMessage(), e);
+        }
+        return rooms;
     }
 
-    public static synchronized void saveClass(Klass klass) {
-        if (klass != null && klass.getCode() != null) {
-            CLASS_MAP.put(klass.getCode(), klass);
+    private static Klass readClass(Connection conn, ResultSet rs) throws SQLException {
+        long classId = rs.getLong("id");
+        Klass klass = new Klass(rs.getString("class_code"), rs.getString("program_name"),
+                rs.getDate("start_date").toLocalDate().toString(), rs.getInt("max_capacity"),
+                modeLabel(rs.getString("study_mode")), statusLabel(rs.getString("status")),
+                "Chưa xếp lịch", rs.getString("room_code"), readSubjects(conn, classId));
+        klass.setId(classId);
+        klass.setName(rs.getString("class_name"));
+        readSessionSummary(conn, klass);
+        return klass;
+    }
+
+    private static List<ClassSubject> readSubjects(Connection conn, long classId) throws SQLException {
+        List<ClassSubject> subjects = new ArrayList<>();
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT cs.id, cs.subject_id, cs.primary_instructor_id, s.subject_code, s.subject_name, s.total_sessions, "
+                        + "u.full_name FROM class_subjects cs JOIN subjects s ON s.id = cs.subject_id "
+                        + "LEFT JOIN users u ON u.id = cs.primary_instructor_id "
+                        + "WHERE cs.class_id = ? ORDER BY cs.order_index, cs.id")) {
+            ps.setLong(1, classId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    ClassSubject s = new ClassSubject(rs.getString("subject_code"), rs.getString("subject_name"),
+                            rs.getInt("total_sessions"), rs.getString("full_name"));
+                    s.setClassSubjectId(rs.getLong("id"));
+                    s.setSubjectId(rs.getLong("subject_id"));
+                    long instructorId = rs.getLong("primary_instructor_id");
+                    s.setInstructorId(rs.wasNull() ? null : instructorId);
+                    subjects.add(s);
+                }
+            }
         }
+        for (ClassSubject s : subjects) {
+            try (PreparedStatement ps = conn.prepareStatement(
+                    "SELECT u.full_name FROM class_subject_assistants a JOIN users u ON u.id = a.ta_user_id "
+                            + "WHERE a.class_subject_id = ? ORDER BY u.full_name")) {
+                ps.setLong(1, s.getClassSubjectId());
+                try (ResultSet rs = ps.executeQuery()) {
+                    List<String> tas = new ArrayList<>();
+                    while (rs.next()) tas.add(rs.getString(1));
+                    s.setTas(tas);
+                }
+            }
+        }
+        return subjects;
+    }
+
+    /** Số buổi đã học và khung giờ (ví dụ "Tối 2-4-6") suy ra từ lịch đã lưu của lớp. */
+    private static void readSessionSummary(Connection conn, Klass klass) throws SQLException {
+        TreeSet<Integer> days = new TreeSet<>();
+        LocalTime firstStart = null;
+        int done = 0;
+        try (PreparedStatement ps = conn.prepareStatement(
+                "SELECT session_date, start_time, status FROM class_sessions WHERE class_id = ? AND status <> 'CANCELLED' "
+                        + "ORDER BY session_date, start_time")) {
+            ps.setLong(1, klass.getId());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    LocalDate date = rs.getDate("session_date").toLocalDate();
+                    days.add(date.getDayOfWeek().getValue()); // Thứ 2 = 1 ... Chủ nhật = 7
+                    if (firstStart == null) firstStart = rs.getTime("start_time").toLocalTime();
+                    if ("COMPLETED".equals(rs.getString("status"))) done++;
+                }
+            }
+        }
+        klass.setDone(done);
+        if (firstStart != null) {
+            klass.setSlot(ScheduleService.shiftName(firstStart) + " "
+                    + days.stream().map(d -> d == 7 ? "CN" : String.valueOf(d + 1)).collect(Collectors.joining("-")));
+        }
+    }
+
+    private static String modeLabel(String mode) {
+        if ("ONLINE".equals(mode)) return "Trực tuyến";
+        if ("HYBRID".equals(mode)) return "Kết hợp";
+        return "Trực tiếp";
+    }
+
+    private static String statusLabel(String status) {
+        if (status == null) return "Chuẩn bị";
+        return switch (status) {
+            case "IN_PROGRESS" -> "Đang học";
+            case "FINISHED" -> "Kết thúc";
+            case "CANCELLED" -> "Huỷ";
+            default -> "Chuẩn bị";
+        };
     }
 }

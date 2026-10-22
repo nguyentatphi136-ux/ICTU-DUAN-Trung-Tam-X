@@ -46,13 +46,7 @@ public class ScheduleServlet extends HttpServlet {
         HttpSession session = req.getSession(true);
         User currentUser = (User) session.getAttribute("currentUser");
 
-        // Nếu chưa đăng nhập (hoặc chạy thử trực tiếp), cấp phiên Quản lý đào tạo để chạy thử ngay
-        if (currentUser == null) {
-            currentUser = new User(1L, "Nguyễn Minh Ngọc", "ngoc.nm@tms.vn", "ACTIVE",
-                    List.of(RoleConstant.TRAINING_MANAGER, RoleConstant.ADMIN));
-            currentUser.setUserCode("QLDT-001");
-            session.setAttribute("currentUser", currentUser);
-        } else if (!currentUser.hasRole(RoleConstant.TRAINING_MANAGER) && !currentUser.hasRole(RoleConstant.ADMIN)) {
+        if (!canManageSchedule(currentUser)) {
             resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
             req.setAttribute("errorMessage", "Chức năng sinh thời khoá biểu tự động chỉ dành riêng cho Quản lý đào tạo (Training Manager) hoặc Quản trị hệ thống (Admin).");
             req.getRequestDispatcher("/WEB-INF/views/common/403.jsp").forward(req, resp);
@@ -99,12 +93,7 @@ public class ScheduleServlet extends HttpServlet {
         HttpSession session = req.getSession(true);
         User currentUser = (User) session.getAttribute("currentUser");
 
-        if (currentUser == null) {
-            currentUser = new User(1L, "Nguyễn Minh Ngọc", "ngoc.nm@tms.vn", "ACTIVE",
-                    List.of(RoleConstant.TRAINING_MANAGER, RoleConstant.ADMIN));
-            currentUser.setUserCode("QLDT-001");
-            session.setAttribute("currentUser", currentUser);
-        } else if (!currentUser.hasRole(RoleConstant.TRAINING_MANAGER) && !currentUser.hasRole(RoleConstant.ADMIN)) {
+        if (!canManageSchedule(currentUser)) {
             resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
             req.setAttribute("errorMessage", "Chức năng sinh thời khoá biểu tự động chỉ dành riêng cho Quản lý đào tạo (Training Manager) hoặc Quản trị hệ thống (Admin).");
             req.getRequestDispatcher("/WEB-INF/views/common/403.jsp").forward(req, resp);
@@ -264,13 +253,13 @@ public class ScheduleServlet extends HttpServlet {
 
     private SchedulePattern createDefaultPattern(Klass klass) {
         if (klass == null) {
-            return new SchedulePattern("", Arrays.asList(1, 3, 5), "18:00", "20:30", "2026-10-20", 60, "P.401");
+            return new SchedulePattern("", Arrays.asList(1, 3, 5), "18:00", "20:30", "2026-10-20", 60, "");
         }
         int total = klass.getTotalSessions() > 0 ? klass.getTotalSessions() : 60;
         String start = "18:00";
         String end = "20:30";
         String from = (klass.getStart() != null && !klass.getStart().isBlank()) ? klass.getStart() : "2026-10-20";
-        String room = (klass.getRoom() != null && !klass.getRoom().isBlank()) ? klass.getRoom() : "P.401";
+        String room = (klass.getRoom() != null && !klass.getRoom().isBlank()) ? klass.getRoom() : "";
 
         // Mặc định T2-T4-T6 (1, 3, 5)
         List<Integer> days = new ArrayList<>(Arrays.asList(1, 3, 5));
@@ -296,5 +285,10 @@ public class ScheduleServlet extends HttpServlet {
                 session.removeAttribute("flashError");
             }
         }
+    }
+
+    /** Vai trò trong phiên là mã ở bảng roles (TRAINING_MANAGER, ADMIN), không phải tên trong RoleConstant. */
+    public static boolean canManageSchedule(User user) {
+        return user != null && (user.hasRole("TRAINING_MANAGER") || user.hasRole("ADMIN"));
     }
 }

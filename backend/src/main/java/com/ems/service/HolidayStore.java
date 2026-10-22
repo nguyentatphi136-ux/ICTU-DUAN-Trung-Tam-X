@@ -1,43 +1,41 @@
 package com.ems.service;
 
+import com.ems.config.DBConnection;
 import com.ems.model.Holiday;
 
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Quản lý danh mục ngày nghỉ lễ của hệ thống (Thread-safe)
+ * Danh mục ngày nghỉ lễ của trung tâm, lưu ở bảng holidays (S4TimetableMigration tạo bảng).
  * Tác vụ Jira: IDTTX-247 / IDTTX-263 [BE] - S4-01
  * Người thực hiện: Nguyễn Trung Kiên (NK) - dtc245200736@ictu.edu.vn
  */
 public class HolidayStore {
 
-    private static final List<Holiday> HOLIDAYS = new CopyOnWriteArrayList<>();
-
-    static {
-        resetToDefault();
-    }
-
-    public static synchronized void resetToDefault() {
-        HOLIDAYS.clear();
-        long id = 1;
-        HOLIDAYS.add(new Holiday(id++, "Ngày Nhà giáo Việt Nam", LocalDate.of(2026, 11, 20), LocalDate.of(2026, 11, 20)));
-        HOLIDAYS.add(new Holiday(id++, "Tết Dương lịch", LocalDate.of(2027, 1, 1), LocalDate.of(2027, 1, 1)));
-        HOLIDAYS.add(new Holiday(id++, "Nghỉ Tết Nguyên đán", LocalDate.of(2027, 2, 5), LocalDate.of(2027, 2, 14)));
-        HOLIDAYS.add(new Holiday(id++, "Giỗ Tổ Hùng Vương", LocalDate.of(2027, 4, 26), LocalDate.of(2027, 4, 26)));
-        HOLIDAYS.add(new Holiday(id++, "Giải phóng miền Nam, Quốc tế Lao động", LocalDate.of(2027, 4, 30), LocalDate.of(2027, 5, 1)));
-        sortHolidays();
-    }
-
     public static List<Holiday> getAllHolidays() {
-        return Collections.unmodifiableList(new ArrayList<>(HOLIDAYS));
+        List<Holiday> list = new ArrayList<>();
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT id, name, from_date, to_date FROM holidays ORDER BY from_date, id");
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(new Holiday(rs.getLong("id"), rs.getString("name"),
+                        rs.getDate("from_date").toLocalDate(), rs.getDate("to_date").toLocalDate()));
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Không đọc được danh sách ngày nghỉ lễ: " + e.getMessage(), e);
+        }
+        return list;
     }
 
-    public static synchronized void addHoliday(String name, String fromStr, String toStr) {
+    public static void addHoliday(String name, String fromStr, String toStr) {
         if (name == null || name.isBlank() || fromStr == null || fromStr.isBlank()) {
             throw new IllegalArgumentException("Tên và ngày bắt đầu nghỉ lễ không được để trống.");
         }
@@ -46,30 +44,26 @@ public class HolidayStore {
         if (toDate.isBefore(fromDate)) {
             throw new IllegalArgumentException("Ngày kết thúc nghỉ lễ phải bằng hoặc sau ngày bắt đầu.");
         }
-
-        long maxId = HOLIDAYS.stream().mapToLong(h -> h.getId() != null ? h.getId() : 0).max().orElse(0);
-        HOLIDAYS.add(new Holiday(maxId + 1, name.trim(), fromDate, toDate));
-        sortHolidays();
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "INSERT INTO holidays (name, from_date, to_date) VALUES (?, ?, ?)")) {
+            ps.setString(1, name.trim());
+            ps.setDate(2, Date.valueOf(fromDate));
+            ps.setDate(3, Date.valueOf(toDate));
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new IllegalStateException("Không lưu được ngày nghỉ lễ: " + e.getMessage(), e);
+        }
     }
 
-    public static Holiday findHolidayCovering(LocalDate date) {
+    /** Ngày nghỉ lễ chứa date trong danh sách đã đọc sẵn (sinh lịch đọc một lần rồi dò từng ngày). */
+    public static Holiday findHolidayCovering(List<Holiday> holidays, LocalDate date) {
         if (date == null) return null;
-        for (Holiday h : HOLIDAYS) {
+        for (Holiday h : holidays) {
             if (h.covers(date)) {
                 return h;
             }
         }
         return null;
-    }
-
-    public static boolean isHoliday(LocalDate date) {
-        return findHolidayCovering(date) != null;
-    }
-
-    private static void sortHolidays() {
-        List<Holiday> list = new ArrayList<>(HOLIDAYS);
-        list.sort(Comparator.comparing(Holiday::getFromDate));
-        HOLIDAYS.clear();
-        HOLIDAYS.addAll(list);
     }
 }

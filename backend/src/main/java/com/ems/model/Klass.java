@@ -12,6 +12,8 @@ import java.util.List;
 public class Klass implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    private Long id;                // classes.id
+
     private String code;            // Mã lớp: ví dụ WEB-K16, WEB-K15
     private String name;            // Tên lớp
     private String program;         // Chương trình đào tạo: ví dụ "Lập trình web Full-stack"
@@ -138,5 +140,13 @@ public class Klass implements Serializable {
 
     public void setSubjects(List<ClassSubject> subjects) {
         this.subjects = subjects;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 }

@@ -1,8 +1,6 @@
 package com.ems.controller;
 
-import com.ems.constant.RoleConstant;
 import com.ems.model.*;
-import com.ems.service.ClassStore;
 import com.ems.service.HolidayStore;
 import com.ems.service.ScheduleService;
 
@@ -11,7 +9,6 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -44,6 +41,14 @@ public class ScheduleGenerateApiServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         resp.setContentType("application/json;charset=UTF-8");
+        try {
+            handleGet(req, resp);
+        } catch (RuntimeException e) {
+            writeError(resp, e);
+        }
+    }
+
+    private void handleGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         String uri = req.getRequestURI();
 
         if (uri.endsWith("/api/v1/holidays")) {
@@ -81,15 +86,7 @@ public class ScheduleGenerateApiServlet extends HttpServlet {
         PrintWriter out = resp.getWriter();
         String uri = req.getRequestURI();
 
-        HttpSession session = req.getSession(false);
-        User currentUser = (session != null) ? (User) session.getAttribute("currentUser") : null;
-
-        // Cho phép khi có vai trò TRAINING_MANAGER, ADMIN hoặc đang trong môi trường test/dev
-        if (currentUser != null && !currentUser.hasRole(RoleConstant.TRAINING_MANAGER) && !currentUser.hasRole(RoleConstant.ADMIN)) {
-            resp.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            out.write("{\"error\":\"Chức năng yêu cầu quyền Quản lý đào tạo hoặc Quản trị viên\"}");
-            return;
-        }
+        // Quyền ghi (CLASS_MANAGE) do SessionAuthFilter kiểm tra theo PermissionPolicy trước khi tới đây.
 
         // POST /api/v1/holidays
         if (uri.endsWith("/api/v1/holidays")) {
@@ -101,9 +98,8 @@ public class ScheduleGenerateApiServlet extends HttpServlet {
                 HolidayStore.addHoliday(name, from, to);
                 resp.setStatus(HttpServletResponse.SC_CREATED);
                 out.write("{\"success\":true,\"message\":\"Đã thêm ngày nghỉ lễ\"}");
-            } catch (Exception e) {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                out.write(String.format("{\"error\":\"%s\"}", escapeJson(e.getMessage())));
+            } catch (RuntimeException e) {
+                writeError(resp, e);
             }
             return;
         }
@@ -118,9 +114,8 @@ public class ScheduleGenerateApiServlet extends HttpServlet {
                 SchedulePattern p = parsePatternJson(classCode, body);
                 ScheduleGenerationResult result = scheduleService.generateSchedule(p);
                 out.write(resultToJson(result));
-            } catch (Exception e) {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                out.write(String.format("{\"error\":\"%s\"}", escapeJson(e.getMessage())));
+            } catch (RuntimeException e) {
+                writeError(resp, e);
             }
             return;
         }
@@ -137,15 +132,23 @@ public class ScheduleGenerateApiServlet extends HttpServlet {
                 scheduleService.saveSchedule(classCode, result.getSessions(), p);
                 out.write(String.format("{\"success\":true,\"message\":\"Đã lưu thời khoá biểu lớp %s\",\"sessionsCount\":%d}",
                         escapeJson(classCode), result.getSessions().size()));
-            } catch (Exception e) {
-                resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                out.write(String.format("{\"error\":\"%s\"}", escapeJson(e.getMessage())));
+            } catch (RuntimeException e) {
+                writeError(resp, e);
             }
             return;
         }
 
         resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
         out.write("{\"error\":\"Endpoint không tồn tại\"}");
+    }
+
+    /** Dữ liệu gửi sai: 400 kèm lý do; lỗi CSDL: 500. */
+    private void writeError(HttpServletResponse resp, RuntimeException e) throws IOException {
+        boolean badInput = e instanceof IllegalArgumentException || e instanceof java.time.format.DateTimeParseException;
+        resp.setStatus(badInput ? HttpServletResponse.SC_BAD_REQUEST : HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        if (!badInput) log("Lỗi API sinh thời khoá biểu", e);
+        String message = badInput ? e.getMessage() : "Lỗi máy chủ khi xử lý thời khoá biểu. Vui lòng thử lại sau.";
+        resp.getWriter().write(String.format("{\"error\":\"%s\"}", escapeJson(message)));
     }
 
     private String readBody(HttpServletRequest req) throws IOException {
