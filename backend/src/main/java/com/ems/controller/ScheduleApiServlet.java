@@ -12,9 +12,7 @@ import com.ems.model.User;
 import com.ems.security.ApiResponse;
 import com.ems.service.ScheduleConflictService;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;

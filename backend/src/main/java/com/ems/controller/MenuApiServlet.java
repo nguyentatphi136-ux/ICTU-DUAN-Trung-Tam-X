@@ -3,7 +3,6 @@ package com.ems.controller;
 import com.ems.dao.PermissionDAO;
 import com.ems.model.User;
 import com.ems.security.ApiResponse;
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;

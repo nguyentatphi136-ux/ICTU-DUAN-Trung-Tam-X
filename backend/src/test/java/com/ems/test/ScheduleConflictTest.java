@@ -50,7 +50,6 @@ public class ScheduleConflictTest {
     private static final Long TRAINING_MGR_ID = 2L;
     private static final List<String> TRAINING_MGR_ROLES = List.of(RoleConstant.TRAINING_MANAGER);
     private static final List<String> INSTRUCTOR_ROLES = List.of(RoleConstant.INSTRUCTOR);
-    private static final List<String> STUDENT_ROLES = List.of(RoleConstant.STUDENT);
 
     @BeforeEach
     void setUp() {

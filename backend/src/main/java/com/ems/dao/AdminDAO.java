@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 public class AdminDAO {
     private static final com.google.gson.Gson GSON = new com.google.gson.Gson();
 
+    @SuppressWarnings("unchecked")
     public List<Map<String, Object>> listUsers() throws SQLException {
         return (List<Map<String, Object>>) searchUsers(null, null, null, 1, 100).get("items");
     }
@@ -439,12 +440,11 @@ public class AdminDAO {
             connection.setAutoCommit(false);
             try {
                 String oldStatus = null;
-                String oldReason = null;
                 String email = null;
                 String fullName = null;
 
                 try (PreparedStatement stmt = connection.prepareStatement(
-                        "SELECT email, full_name, status, locked_reason FROM users WHERE id = ? FOR UPDATE")) {
+                        "SELECT email, full_name, status FROM users WHERE id = ? FOR UPDATE")) {
                     stmt.setLong(1, targetId);
                     try (ResultSet rs = stmt.executeQuery()) {
                         if (!rs.next()) {
@@ -454,7 +454,6 @@ public class AdminDAO {
                         email = rs.getString("email");
                         fullName = rs.getString("full_name");
                         oldStatus = rs.getString("status");
-                        oldReason = rs.getString("locked_reason");
                     }
                 }
 

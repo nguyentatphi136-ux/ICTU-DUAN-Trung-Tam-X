@@ -2,7 +2,6 @@ package com.ems.test;
 
 import com.ems.constant.RoleConstant;
 import com.ems.controller.ScheduleApiServlet;
-import com.ems.dto.ConflictCheckResult;
 import com.ems.dto.ScheduleRequest;
 import com.ems.model.ClassSession;
 import com.ems.model.Classroom;
@@ -15,14 +14,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import javax.servlet.ReadListener;
-import javax.servlet.ServletInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.*;
 import java.lang.reflect.Proxy;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.*;
