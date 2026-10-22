@@ -173,14 +173,17 @@ export function LoginPage() {
 
               {locked && (
                 <div className="lg-alert lg-lock" role="alert">
-                  <strong>Tài khoản tạm khóa</strong>
-                  Bạn đã nhập sai {MAX_ATTEMPTS} lần. Vui lòng thử lại sau {mmss(lockLeft)}.
+                  <strong>Địa chỉ IP máy bị tạm khóa 15 phút</strong>
+                  Thiết bị này đã nhập sai mật khẩu {MAX_ATTEMPTS} lần liên tiếp. Vui lòng thử lại sau {mmss(lockLeft)}.
+                  <div style={{ marginTop: 6, fontSize: '0.85rem', opacity: 0.9, lineHeight: 1.35 }}>
+                    🔒 Khóa theo địa chỉ IP máy: Tài khoản của bạn không bị khóa và vẫn có thể đăng nhập bình thường từ thiết bị hoặc mạng khác.
+                  </div>
                 </div>
               )}
               {!locked && wrong && (
                 <div className="lg-alert lg-error" role="alert">
                   <strong>Email hoặc mật khẩu không đúng</strong>
-                  Bạn còn {MAX_ATTEMPTS - fails} lần thử trước khi tài khoản bị khóa tạm.
+                  Địa chỉ IP máy này còn {MAX_ATTEMPTS - fails} lần thử trước khi bị tạm khóa 15 phút (khóa theo IP máy, không khóa tài khoản).
                 </div>
               )}
 

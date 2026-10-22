@@ -5,7 +5,7 @@
 ## Findings
 
 - `filter/AuthRateLimitFilter.java`: 30 requests per 15 min per IP+path for login and reset; 5 for forgot-password and the public consultation form. Returns 429 with `Retry-After`. It uses `getRemoteAddr()`, not `X-Forwarded-For`, so a spoofed header can't get around it.
-- Per-account lockout exists (`security/LoginAttemptPolicy.java`, `failed_login_attempts`, `locked_until`).
+- Per-IP lockout implemented (`security/IpLoginAttemptService.java`): 5 consecutive failed attempts lock the client's IP for 15 minutes. User accounts are NOT locked in the database, preventing Account Denial-of-Service (DoS) attacks.
 - **Bug (FIXED):** the key used the raw URI, so `/api/auth/login;1`, `;2` and so on each got a fresh bucket. It now uses the normalized servlet path.
 - Behind a reverse proxy, `getRemoteAddr()` is the proxy's IP and all users share one bucket. Configure Tomcat's `RemoteIpValve` with the trusted proxy list when deploying.
 - `ForgotPasswordServlet.RATE_LIMIT_CACHE` is never pruned (slow memory growth).

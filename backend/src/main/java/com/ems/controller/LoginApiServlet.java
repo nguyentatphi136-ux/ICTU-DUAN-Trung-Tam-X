@@ -11,9 +11,12 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import com.ems.security.IpLoginAttemptService;
+import com.ems.security.LoginAttemptPolicy;
 
 @WebServlet(urlPatterns = {"/login", "/auth/login", "/api/auth/login"})
 public class LoginApiServlet extends HttpServlet {
@@ -58,6 +61,25 @@ public class LoginApiServlet extends HttpServlet {
             return;
         }
 
+        String clientIp = IpLoginAttemptService.getClientIp(request);
+
+        // 1. Kiểm tra xem ĐỊA CHỈ IP MÁY này có đang bị khóa 15 phút do nhập sai 5 lần hay không
+        if (IpLoginAttemptService.isIpLocked(clientIp)) {
+            long remainingSeconds = IpLoginAttemptService.getRemainingLockSeconds(clientIp);
+            long minutes = Math.max(1, (remainingSeconds + 59) / 60);
+            String lockMsg = "Địa chỉ IP máy của bạn đã bị tạm khóa 15 phút do nhập sai thông tin 5 lần liên tiếp. "
+                    + "Vui lòng thử lại sau " + minutes + " phút. "
+                    + "(Tài khoản vẫn có thể đăng nhập bình thường từ thiết bị khác).";
+            if (apiRequest) {
+                response.setHeader("Retry-After", String.valueOf(remainingSeconds));
+                sendApiError(response, 429, "AUTH_IP_LOCKED", lockMsg);
+            } else {
+                request.setAttribute("errorMessage", lockMsg);
+                request.getRequestDispatcher("/login.jsp").forward(request, response);
+            }
+            return;
+        }
+
         User user = null;
         boolean databaseDown = false;
         try {
@@ -77,14 +99,37 @@ public class LoginApiServlet extends HttpServlet {
         }
 
         if (user == null) {
+            // Ghi nhận lần nhập sai cho ĐỊA CHỈ IP MÁY
+            LoginAttemptPolicy.State ipState = IpLoginAttemptService.recordFailure(clientIp);
+            if (LoginAttemptPolicy.isLocked(ipState, Instant.now())) {
+                long remainingSeconds = IpLoginAttemptService.getRemainingLockSeconds(clientIp);
+                String lockMsg = "Địa chỉ IP máy của bạn đã bị tạm khóa 15 phút do nhập sai thông tin 5 lần liên tiếp. "
+                        + "Vui lòng thử lại sau 15 phút. "
+                        + "(Tài khoản của bạn không bị khóa và vẫn có thể đăng nhập bình thường từ thiết bị khác).";
+                if (apiRequest) {
+                    response.setHeader("Retry-After", String.valueOf(remainingSeconds));
+                    sendApiError(response, 429, "AUTH_IP_LOCKED", lockMsg);
+                } else {
+                    request.setAttribute("errorMessage", lockMsg);
+                    request.getRequestDispatcher("/login.jsp").forward(request, response);
+                }
+                return;
+            }
+
+            int remainingAttempts = Math.max(0, LoginAttemptPolicy.MAX_FAILED_ATTEMPTS - ipState.failures());
+            String errorMsg = "Email hoặc mật khẩu không đúng. IP máy này còn " + remainingAttempts 
+                    + " lần thử trước khi bị tạm khóa 15 phút (khóa theo IP máy, không khóa tài khoản).";
             if (apiRequest) {
-                sendApiError(response, 401, "AUTH_CREDENTIALS_INVALID", INVALID_CREDENTIALS);
+                sendApiError(response, 401, "AUTH_CREDENTIALS_INVALID", errorMsg);
             } else {
-                request.setAttribute("errorMessage", INVALID_CREDENTIALS);
+                request.setAttribute("errorMessage", errorMsg);
                 request.getRequestDispatcher("/login.jsp").forward(request, response);
             }
             return;
         }
+
+        // Đăng nhập thành công -> Xóa bộ đếm lỗi cho IP máy này
+        IpLoginAttemptService.recordSuccess(clientIp);
 
         HttpSession previousSession = request.getSession(false);
         if (previousSession != null) previousSession.invalidate();

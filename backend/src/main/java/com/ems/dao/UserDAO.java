@@ -80,9 +80,9 @@ public class UserDAO {
                     }
                 }
 
-                Instant now = Instant.now();
-                LoginAttemptPolicy.State lockState = new LoginAttemptPolicy.State(failures, lockedUntil);
-                if (!"ACTIVE".equals(status) || LoginAttemptPolicy.isLocked(lockState, now)) {
+                // Không khóa theo tài khoản khi nhập sai mật khẩu (chống tấn công Account DoS).
+                // Việc khóa tạm 15 phút được kiểm soát theo địa chỉ IP máy tại LoginApiServlet.
+                if (!"ACTIVE".equals(status)) {
                     BCrypt.checkpw(password, DUMMY_PASSWORD_HASH);
                     connection.commit();
                     return null;
@@ -91,22 +91,16 @@ public class UserDAO {
                 boolean passwordMatches = isValidBcryptHash(passwordHash)
                         && BCrypt.checkpw(password, passwordHash);
                 if (!passwordMatches) {
-                    LoginAttemptPolicy.State next = LoginAttemptPolicy.recordFailure(lockState, now);
-                    try (PreparedStatement statement = connection.prepareStatement(
-                            "UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?")) {
-                        statement.setInt(1, next.failures());
-                        statement.setTimestamp(2, next.lockedUntil() == null ? null : Timestamp.from(next.lockedUntil()));
-                        statement.setLong(3, userId);
-                        statement.executeUpdate();
-                    }
                     connection.commit();
                     return null;
                 }
 
-                try (PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?")) {
-                    statement.setLong(1, userId);
-                    statement.executeUpdate();
+                if (failures > 0 || lockedUntil != null) {
+                    try (PreparedStatement statement = connection.prepareStatement(
+                            "UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?")) {
+                        statement.setLong(1, userId);
+                        statement.executeUpdate();
+                    }
                 }
 
                 List<String> roles = new ArrayList<>();

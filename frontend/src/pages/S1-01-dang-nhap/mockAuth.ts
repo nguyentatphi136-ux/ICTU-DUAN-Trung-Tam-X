@@ -1,6 +1,7 @@
 // S1-01. Dữ liệu và hàm đăng nhập giả để chạy giao diện khi chưa có backend.
 // Khi tích hợp: thay login() bằng POST {VITE_API_URL}/auth/login, nhận access token và refresh token (JWT),
-// và để máy chủ đếm số lần sai, khoá tạm 15 phút sau 5 lần sai liên tiếp.
+// và để máy chủ đếm số lần sai theo ĐỊA CHỈ IP MÁY (Client IP), khoá tạm 15 phút sau 5 lần sai liên tiếp của IP đó
+// chứ không khóa tài khoản người dùng (chống tấn công Account DoS).
 
 import { api, apiEnabled } from '../../data/api';
 import type { Account } from '../../data/auth';
