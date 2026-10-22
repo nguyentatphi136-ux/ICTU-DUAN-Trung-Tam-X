@@ -353,13 +353,13 @@
                                         <label for="startTimeInput" class="col-form-label small">Giờ bắt đầu:</label>
                                     </div>
                                     <div class="col-auto">
-                                        <input type="time" id="startTimeInput" name="start" class="form-control" value="${pattern.start}">
+                                        <input type="time" id="startTimeInput" class="form-control" value="${pattern.start}">
                                     </div>
                                     <div class="col-auto">
                                         <label for="endTimeInput" class="col-form-label small">Giờ kết thúc:</label>
                                     </div>
                                     <div class="col-auto">
-                                        <input type="time" id="endTimeInput" name="end" class="form-control" value="${pattern.end}">
+                                        <input type="time" id="endTimeInput" class="form-control" value="${pattern.end}">
                                     </div>
                                 </div>
                                 <input type="hidden" id="hiddenStart" name="start" value="${pattern.start}" />
@@ -747,14 +747,20 @@
             } else {
                 block.style.display = 'none';
             }
+        var startInput = document.getElementById('startTimeInput');
+        if (startInput) {
+            startInput.addEventListener('change', function() {
+                var hidden = document.getElementById('hiddenStart');
+                if (hidden) hidden.value = this.value;
+            });
         }
-
-        document.getElementById('startTimeInput').addEventListener('change', function() {
-            document.getElementById('hiddenStart').value = this.value;
-        });
-        document.getElementById('endTimeInput').addEventListener('change', function() {
-            document.getElementById('hiddenEnd').value = this.value;
-        });
+        var endInput = document.getElementById('endTimeInput');
+        if (endInput) {
+            endInput.addEventListener('change', function() {
+                var hidden = document.getElementById('hiddenEnd');
+                if (hidden) hidden.value = this.value;
+            });
+        }
     </script>
 </body>
 </html>

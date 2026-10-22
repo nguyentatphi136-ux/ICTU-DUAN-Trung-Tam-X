@@ -36,6 +36,7 @@
                 <a class="nav-link" href="${pageContext.request.contextPath}/grade/list">Điểm số</a>
                 <a class="nav-link" href="${pageContext.request.contextPath}/tuition/list">Học phí</a>
                 <a class="nav-link" href="${pageContext.request.contextPath}/training-programs">Chương trình học</a>
+                <a class="nav-link text-warning fw-bold" href="${pageContext.request.contextPath}/schedule/generate"><i class="bi bi-calendar-week me-1"></i>Sinh TKB (S4-01)</a>
                 <c:if test="${sessionScope.currentUser.hasRole('Admin')}">
                     <a class="nav-link" href="${pageContext.request.contextPath}/admin/users/roles">Phân quyền vai trò</a>
                 </c:if>
@@ -127,6 +128,23 @@
                     <p class="text-muted small flex-grow-1">Danh mục các chương trình học, số lượng môn học, thời lượng buổi học và trạng thái vận hành của trung tâm.</p>
                     <a href="${pageContext.request.contextPath}/training-programs" class="btn btn-primary btn-sm mt-2">
                         Xem danh mục <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 4b. Sinh Thời khoá biểu tự động (S4-01 - Jira IDTTX-247 / IDTTX-263 [BE]) -->
+            <div class="col-md-4 col-sm-6">
+                <div class="card module-card p-4 border border-primary border-2">
+                    <div class="module-icon bg-icon-primary text-primary">
+                        <i class="bi bi-calendar2-week-fill"></i>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h5 class="fw-bold mb-0">Sinh TKB Tự Động</h5>
+                        <span class="badge bg-primary">S4-01</span>
+                    </div>
+                    <p class="text-muted small flex-grow-1">Khai báo mẫu lặp (thứ, ca, ngày bắt đầu, 60 buổi), tự bỏ qua ngày nghỉ lễ, gắn bài học theo môn và xem trước danh sách.</p>
+                    <a href="${pageContext.request.contextPath}/schedule/generate" class="btn btn-primary btn-sm mt-2 fw-bold">
+                        Sinh thời khoá biểu <i class="bi bi-arrow-right ms-1"></i>
                     </a>
                 </div>
             </div>
