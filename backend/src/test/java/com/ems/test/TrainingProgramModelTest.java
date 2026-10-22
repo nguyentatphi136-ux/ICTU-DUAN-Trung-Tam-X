@@ -1,7 +1,6 @@
 package com.ems.test;
 
 import com.ems.dto.TrainingProgramPageResponse;
-import com.ems.dto.TrainingProgramRequest;
 import com.ems.dto.TrainingProgramResponse;
 import com.ems.model.TrainingProgram;
 import org.junit.jupiter.api.DisplayName;
