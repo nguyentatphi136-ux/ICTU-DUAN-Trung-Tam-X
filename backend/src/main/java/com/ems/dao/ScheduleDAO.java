@@ -251,7 +251,7 @@ public class ScheduleDAO {
     }
 
     /**
-     * Ghi nhß║¡t k├╜ thao t├íc kiß╗âm to├ín v├áo bß║úng audit_logs
+     * Ghi nhận lịch sử thao tác kiểm toán vào bảng audit_logs
      */
     public void recordAuditLog(Connection connection, Long userId, String action, String entityType,
                                String entityId, String oldValues, String newValues) {
@@ -267,7 +267,125 @@ public class ScheduleDAO {
             stmt.setString(6, newValues);
             stmt.executeUpdate();
         } catch (SQLException ignored) {
-            // Kh├┤ng ngß║»t luß╗ông ch├¡nh nß║┐u audit log bß╗ï lß╗ùi nhß║╣
+            // Không ngắt luồng chính nếu audit log bị lỗi nhẹ
+        }
+    }
+
+    /**
+     * Kiểm tra xem một buổi học đã có dữ liệu điểm danh hay chưa.
+     * Quy tắc: Có ít nhất một bản ghi trong bảng attendance với session_id = sessionId.
+     */
+    public boolean hasAttendance(Connection connection, long sessionId) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM attendance WHERE session_id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setLong(1, sessionId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean hasAttendance(long sessionId) throws SQLException {
+        try (Connection conn = DBConnection.getConnection()) {
+            return hasAttendance(conn, sessionId);
+        }
+    }
+
+    /**
+     * Lấy danh sách user_id của các học viên đang ghi danh (status = 'ENROLLED') trong lớp.
+     */
+    public List<Long> getEnrolledStudentUserIds(Connection connection, long classId) throws SQLException {
+        List<Long> userIds = new ArrayList<>();
+        String sql = "SELECT DISTINCT s.user_id "
+                + "FROM enrollments e "
+                + "JOIN students s ON s.id = e.student_id "
+                + "WHERE e.class_id = ? AND e.status = 'ENROLLED'";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setLong(1, classId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    userIds.add(rs.getLong("user_id"));
+                }
+            }
+        }
+        return userIds;
+    }
+
+    public List<Long> getEnrolledStudentUserIds(long classId) throws SQLException {
+        try (Connection conn = DBConnection.getConnection()) {
+            return getEnrolledStudentUserIds(conn, classId);
+        }
+    }
+
+    /**
+     * Tạo một thông báo cho người dùng vào bảng notifications
+     */
+    public void createNotification(Connection connection, Long recipientId, Long senderId,
+                                   String title, String content, String type, String linkUrl) throws SQLException {
+        String sql = "INSERT INTO notifications (recipient_id, sender_id, title, content, notification_type, link_url, is_read, created_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, FALSE, NOW())";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setLong(1, recipientId);
+            if (senderId != null) stmt.setLong(2, senderId);
+            else stmt.setNull(2, Types.BIGINT);
+            stmt.setString(3, title);
+            stmt.setString(4, content);
+            stmt.setString(5, type != null ? type : "SCHEDULE");
+            stmt.setString(6, linkUrl);
+            stmt.executeUpdate();
+        }
+    }
+
+    /**
+     * Gửi thông báo hàng loạt cho danh sách học viên
+     */
+    public int sendNotificationToStudents(Connection connection, List<Long> recipientUserIds, Long senderId,
+                                          String title, String content, String type, String linkUrl) {
+        if (recipientUserIds == null || recipientUserIds.isEmpty()) {
+            return 0;
+        }
+        int count = 0;
+        String sql = "INSERT INTO notifications (recipient_id, sender_id, title, content, notification_type, link_url, is_read, created_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, FALSE, NOW())";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            for (Long recipientId : recipientUserIds) {
+                stmt.setLong(1, recipientId);
+                if (senderId != null) stmt.setLong(2, senderId);
+                else stmt.setNull(2, Types.BIGINT);
+                stmt.setString(3, title);
+                stmt.setString(4, content);
+                stmt.setString(5, type != null ? type : "SCHEDULE");
+                stmt.setString(6, linkUrl);
+                stmt.addBatch();
+                count++;
+            }
+            stmt.executeBatch();
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi gửi thông báo cho học viên: " + e.getMessage());
+        }
+        return count;
+    }
+
+    /**
+     * Ghi nhận lịch sử thay đổi vào bảng class_session_change_logs
+     */
+    public void recordChangeLog(Connection connection, long sessionId, String actionType,
+                                long performedBy, String reason, String oldValues, String newValues) {
+        String sql = "INSERT INTO class_session_change_logs (session_id, action_type, performed_by, reason, old_values, new_values, created_at) "
+                + "VALUES (?, ?, ?, ?, ?, ?, NOW())";
+        try (PreparedStatement stmt = connection.prepareStatement(sql)) {
+            stmt.setLong(1, sessionId);
+            stmt.setString(2, actionType);
+            stmt.setLong(3, performedBy);
+            stmt.setString(4, reason);
+            stmt.setString(5, oldValues);
+            stmt.setString(6, newValues);
+            stmt.executeUpdate();
+        } catch (SQLException ignored) {
+            // Không ngắt luồng nếu bảng chưa tồn tại hoặc gặp lỗi nhẹ
         }
     }
 

@@ -286,11 +286,27 @@ public class ScheduleRequest implements Serializable {
         this.overrideReason = overrideReason;
     }
 
+    private String reason;
+
+    public String getReason() {
+        return reason != null ? reason : cancelReason;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+        if (this.cancelReason == null) {
+            this.cancelReason = reason;
+        }
+    }
+
     public String getCancelReason() {
-        return cancelReason;
+        return cancelReason != null ? cancelReason : reason;
     }
 
     public void setCancelReason(String cancelReason) {
         this.cancelReason = cancelReason;
+        if (this.reason == null) {
+            this.reason = cancelReason;
+        }
     }
 }

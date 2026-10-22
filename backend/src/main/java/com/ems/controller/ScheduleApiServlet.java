@@ -2,6 +2,7 @@ package com.ems.controller;
 
 import com.ems.config.GsonProvider;
 import com.ems.dto.ConflictCheckResult;
+import com.ems.dto.RescheduleResponse;
 import com.ems.dto.ScheduleRequest;
 import com.ems.exception.ForbiddenAccessException;
 import com.ems.exception.ResourceNotFoundException;
@@ -13,6 +14,7 @@ import com.ems.security.ApiResponse;
 import com.ems.service.ScheduleConflictService;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -20,6 +22,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -29,20 +32,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Controller xß╗¡ l├╜ API Thß╗¥i kh├│a biß╗âu & Kiß╗âm tra xung ─æß╗Öt (Story S4-02 / Sprint 4)
+ * Controller xử lý API Thời khóa biểu & Quản lý buổi học (Story S4-02 & S4-03 / Sprint 4)
  * Endpoints:
- * - POST /api/schedules/check-conflicts : Kiß╗âm tra tr├╣ng lß╗ïch giß║úng vi├¬n / ph├▓ng hß╗ìc
- * - POST /api/schedules                 : Tß║ío buß╗òi hß╗ìc mß╗¢i (chß║╖n xung ─æß╗Öt, cho ph├⌐p QL─ÉT ghi ─æ├¿ c├│ audit)
- * - GET  /api/schedules                 : Tra cß╗⌐u danh s├ích lß╗ïch hß╗ìc
- * - GET  /api/schedules/{id}            : Chi tiß║┐t buß╗òi hß╗ìc
- * - PUT  /api/schedules/{id}            : Cß║¡p nhß║¡t buß╗òi hß╗ìc (kiß╗âm tra xung ─æß╗Öt loß║íi trß╗½ ch├¡nh n├│)
- * - DELETE /api/schedules/{id}          : Hß╗ºy buß╗òi hß╗ìc
+ * - POST   /api/schedules/check-conflicts   : Kiểm tra trùng lịch giảng viên / phòng học
+ * - POST   /api/schedules                   : Tạo buổi học mới (chặn xung đột, cho phép QLĐT ghi đè có audit)
+ * - GET    /api/schedules                   : Tra cứu danh sách lịch học
+ * - GET    /api/schedules/{id}              : Chi tiết buổi học
+ * - PUT    /api/schedules/{id}              : Cập nhật / dời buổi học
+ * - PATCH  /api/schedules/{id}              : Sửa một phần / dời buổi học (giữ nguyên các trường không gửi)
+ * - POST   /api/schedules/{id}/cancel       : Hủy buổi học (yêu cầu lý do hủy bắt buộc)
+ * - DELETE /api/schedules/{id}              : Hủy buổi học (yêu cầu lý do hủy bắt buộc)
+ *
+ * Đồng thời hỗ trợ alias /api/class-sessions/* theo chuẩn RESTful.
  */
-@WebServlet("/api/schedules/*")
+@WebServlet(urlPatterns = {"/api/schedules/*", "/api/class-sessions/*"})
 public class ScheduleApiServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Gson GSON = GsonProvider.getGson();
     private static final Pattern ID_PATH = Pattern.compile("^/(\\d+)$");
+    private static final Pattern CANCEL_PATH = Pattern.compile("^/(\\d+)/cancel$");
 
     private final ScheduleConflictService scheduleConflictService;
 
@@ -55,9 +63,27 @@ public class ScheduleApiServlet extends HttpServlet {
     }
 
     @Override
+    protected void service(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        String method = request.getMethod();
+        if ("PATCH".equalsIgnoreCase(method)) {
+            doPatch(request, response);
+        } else {
+            super.service(request, response);
+        }
+    }
+
+    @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
         String path = request.getPathInfo() == null ? "" : request.getPathInfo();
+
+        // 1. Endpoint: POST /api/schedules/{id}/cancel hoặc /api/class-sessions/{id}/cancel
+        Matcher cancelMatcher = CANCEL_PATH.matcher(path);
+        if (cancelMatcher.matches()) {
+            handleCancelRequest(request, response, Long.parseLong(cancelMatcher.group(1)));
+            return;
+        }
 
         try {
             ScheduleRequest scheduleReq = parseRequestBody(request);
@@ -67,13 +93,12 @@ public class ScheduleApiServlet extends HttpServlet {
                 return;
             }
 
-            // 1. Endpoint: POST /api/schedules/check-conflicts
+            // 2. Endpoint: POST /api/schedules/check-conflicts
             if ("/check-conflicts".equals(path)) {
                 ConflictCheckResult result = scheduleConflictService.checkConflicts(scheduleReq);
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentType("application/json;charset=UTF-8");
 
-                // Trả về định dạng chứa đầy đủ trường theo yêu cầu prompt & ApiResponse chuẩn
                 java.util.Map<String, Object> respBody = new java.util.LinkedHashMap<>();
                 respBody.put("success", true);
                 respBody.put("hasConflict", result.isHasConflict());
@@ -84,7 +109,7 @@ public class ScheduleApiServlet extends HttpServlet {
                 return;
             }
 
-            // 2. Endpoint: POST /api/schedules
+            // 3. Endpoint: POST /api/schedules hoặc POST /api/class-sessions
             if (path.isEmpty() || "/".equals(path)) {
                 Long actorId = getActorId(request);
                 List<String> actorRoles = getActorRoles(request);
@@ -122,6 +147,16 @@ public class ScheduleApiServlet extends HttpServlet {
     @Override
     protected void doPut(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
+        handleUpdateOrReschedule(request, response);
+    }
+
+    protected void doPatch(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        handleUpdateOrReschedule(request, response);
+    }
+
+    private void handleUpdateOrReschedule(HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
         String path = request.getPathInfo() == null ? "" : request.getPathInfo();
         Matcher matcher = ID_PATH.matcher(path);
 
@@ -143,14 +178,17 @@ public class ScheduleApiServlet extends HttpServlet {
             Long actorId = getActorId(request);
             List<String> actorRoles = getActorRoles(request);
 
-            ClassSession updated = scheduleConflictService.updateSchedule(actorId, actorRoles, scheduleId, scheduleReq);
+            RescheduleResponse rescheduleResp = scheduleConflictService.updateScheduleWithDetails(
+                    actorId, actorRoles, scheduleId, scheduleReq
+            );
+
             ApiResponse.success(response, HttpServletResponse.SC_OK, "SCHEDULE_UPDATED",
-                    "Cập nhật lịch học thành công.", updated);
+                    rescheduleResp.getMessage(), rescheduleResp);
         } catch (ValidationException e) {
             ApiResponse.error(response, HttpServletResponse.SC_BAD_REQUEST, "VALIDATION_ERROR",
                     e.getMessage(), "Kiểm tra lại dữ liệu", "/schedules");
         } catch (ForbiddenAccessException e) {
-            ApiResponse.error(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN_OVERRIDE",
+            ApiResponse.error(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN",
                     e.getMessage(), "Yêu cầu quyền Quản lý đào tạo", "/schedules");
         } catch (ResourceNotFoundException e) {
             ApiResponse.error(response, HttpServletResponse.SC_NOT_FOUND, "NOT_FOUND",
@@ -161,6 +199,10 @@ public class ScheduleApiServlet extends HttpServlet {
             logError("Lỗi cơ sở dữ liệu khi cập nhật lịch học", e);
             ApiResponse.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "DATABASE_ERROR",
                     "Đã xảy ra lỗi máy chủ khi cập nhật lịch học.", "Thử lại", "/schedules");
+        } catch (Exception e) {
+            logError("Lỗi hệ thống khi cập nhật lịch học", e);
+            ApiResponse.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "SYSTEM_ERROR",
+                    "Hệ thống tạm thời gặp sự cố. Vui lòng thử lại sau.", "Thử lại", "/schedules");
         }
     }
 
@@ -205,6 +247,10 @@ public class ScheduleApiServlet extends HttpServlet {
             logError("Lỗi cơ sở dữ liệu khi tra cứu lịch học", e);
             ApiResponse.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "DATABASE_ERROR",
                     "Lỗi máy chủ khi tra cứu lịch học.", "Thử lại", "/schedules");
+        } catch (Exception e) {
+            logError("Lỗi hệ thống khi tra cứu lịch học", e);
+            ApiResponse.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "SYSTEM_ERROR",
+                    "Hệ thống tạm thời gặp sự cố. Vui lòng thử lại sau.", "Thử lại", "/schedules");
         }
     }
 
@@ -220,22 +266,27 @@ public class ScheduleApiServlet extends HttpServlet {
             return;
         }
 
+        long scheduleId = Long.parseLong(matcher.group(1));
+        handleCancelRequest(request, response, scheduleId);
+    }
+
+    private void handleCancelRequest(HttpServletRequest request, HttpServletResponse response, long scheduleId)
+            throws IOException {
         try {
-            long scheduleId = Long.parseLong(matcher.group(1));
-            String reason = request.getParameter("reason");
-            if (reason == null) reason = "Quản lý đào tạo hủy lịch";
+            String reason = extractReason(request);
 
             Long actorId = getActorId(request);
             List<String> actorRoles = getActorRoles(request);
 
-            boolean ok = scheduleConflictService.cancelSchedule(actorId, actorRoles, scheduleId, reason);
-            if (ok) {
-                ApiResponse.success(response, HttpServletResponse.SC_OK, "SCHEDULE_CANCELLED",
-                        "Hủy buổi học thành công.", java.util.Map.of("id", scheduleId, "status", "CANCELLED"));
-            } else {
-                ApiResponse.error(response, HttpServletResponse.SC_NOT_FOUND, "NOT_FOUND",
-                        "Không tìm thấy buổi học để hủy.", "Quay lại", "/schedules");
-            }
+            RescheduleResponse cancelResp = scheduleConflictService.cancelScheduleWithDetails(
+                    actorId, actorRoles, scheduleId, reason
+            );
+
+            ApiResponse.success(response, HttpServletResponse.SC_OK, "SCHEDULE_CANCELLED",
+                    cancelResp.getMessage(), cancelResp);
+        } catch (ValidationException e) {
+            ApiResponse.error(response, HttpServletResponse.SC_BAD_REQUEST, "VALIDATION_ERROR",
+                    e.getMessage(), "Kiểm tra lại dữ liệu", "/schedules");
         } catch (ForbiddenAccessException e) {
             ApiResponse.error(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN",
                     e.getMessage(), "Yêu cầu quyền Quản lý đào tạo", "/schedules");
@@ -246,7 +297,40 @@ public class ScheduleApiServlet extends HttpServlet {
             logError("Lỗi cơ sở dữ liệu khi hủy lịch học", e);
             ApiResponse.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "DATABASE_ERROR",
                     "Lỗi máy chủ khi hủy lịch học.", "Thử lại", "/schedules");
+        } catch (Exception e) {
+            logError("Lỗi hệ thống khi hủy lịch học", e);
+            ApiResponse.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "SYSTEM_ERROR",
+                    "Hệ thống tạm thời gặp sự cố. Vui lòng thử lại sau.", "Thử lại", "/schedules");
         }
+    }
+
+    private String extractReason(HttpServletRequest request) {
+        // 1. Thử đọc từ query parameter
+        String reason = request.getParameter("reason");
+        if (reason != null && !reason.trim().isEmpty()) {
+            return reason.trim();
+        }
+
+        // 2. Thử đọc từ body JSON
+        try {
+            BufferedReader reader = request.getReader();
+            if (reader != null) {
+                JsonObject json = JsonParser.parseReader(reader).getAsJsonObject();
+                if (json.has("reason") && !json.get("reason").isJsonNull()) {
+                    return json.get("reason").getAsString();
+                }
+                if (json.has("cancelReason") && !json.get("cancelReason").isJsonNull()) {
+                    return json.get("cancelReason").getAsString();
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // 3. Fallback cho method DELETE nếu không có lý do được chỉ định (tương thích backward)
+        if ("DELETE".equalsIgnoreCase(request.getMethod())) {
+            return "Quản lý đào tạo hủy lịch";
+        }
+
+        return reason;
     }
 
     private ScheduleRequest parseRequestBody(HttpServletRequest request) {

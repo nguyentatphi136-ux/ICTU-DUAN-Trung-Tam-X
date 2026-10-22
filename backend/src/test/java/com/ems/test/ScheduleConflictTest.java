@@ -596,6 +596,55 @@ public class ScheduleConflictTest {
             return sessions.stream().filter(s -> s.getId().equals(id)).findFirst().orElse(null);
         }
 
+        private final Set<Long> attendedSessionIds = ConcurrentHashMap.newKeySet();
+        private final Map<Long, List<Long>> enrolledStudents = new ConcurrentHashMap<>();
+        public final List<com.ems.model.Notification> sentNotifications = Collections.synchronizedList(new ArrayList<>());
+        public final List<com.ems.model.ClassSessionChangeLog> changeLogs = Collections.synchronizedList(new ArrayList<>());
+
+        public void markAttended(long sessionId) {
+            attendedSessionIds.add(sessionId);
+        }
+
+        public void addEnrolledStudent(long classId, long studentUserId) {
+            enrolledStudents.computeIfAbsent(classId, k -> new CopyOnWriteArrayList<>()).add(studentUserId);
+        }
+
+        @Override
+        public boolean hasAttendance(Connection connection, long sessionId) {
+            return attendedSessionIds.contains(sessionId);
+        }
+
+        @Override
+        public boolean hasAttendance(long sessionId) {
+            return attendedSessionIds.contains(sessionId);
+        }
+
+        @Override
+        public List<Long> getEnrolledStudentUserIds(Connection connection, long classId) {
+            return enrolledStudents.getOrDefault(classId, List.of());
+        }
+
+        @Override
+        public List<Long> getEnrolledStudentUserIds(long classId) {
+            return enrolledStudents.getOrDefault(classId, List.of());
+        }
+
+        @Override
+        public int sendNotificationToStudents(Connection connection, List<Long> recipientUserIds, Long senderId,
+                                              String title, String content, String type, String linkUrl) {
+            if (recipientUserIds == null) return 0;
+            for (Long rId : recipientUserIds) {
+                sentNotifications.add(new com.ems.model.Notification(rId, senderId, title, content, type, linkUrl));
+            }
+            return recipientUserIds.size();
+        }
+
+        @Override
+        public void recordChangeLog(Connection connection, long sessionId, String actionType,
+                                    long performedBy, String reason, String oldValues, String newValues) {
+            changeLogs.add(new com.ems.model.ClassSessionChangeLog(sessionId, actionType, performedBy, reason, oldValues, newValues));
+        }
+
         @Override
         public synchronized boolean cancelSchedule(Connection connection, long id, String cancelReason) {
             for (ClassSession s : sessions) {

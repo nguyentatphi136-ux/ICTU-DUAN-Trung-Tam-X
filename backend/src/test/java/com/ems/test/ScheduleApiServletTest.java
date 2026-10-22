@@ -243,6 +243,97 @@ public class ScheduleApiServletTest {
         assertEquals("SCHEDULE_CANCELLED", json.get("code").getAsString());
     }
 
+    @Test
+    @DisplayName("API PATCH /api/schedules/{id}: Cập nhật một phần (chỉ đổi phòng học) thành công")
+    void testPatchSchedulePartialUpdateSuccess() throws Exception {
+        addExistingSession(16L, 1L, 3L, 1, LocalTime.of(8, 0), LocalTime.of(10, 0), "SCHEDULED");
+
+        String patchJson = "{\"roomId\": 2}";
+        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phạm Quản Lý", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
+        TestResponse resp = new TestResponse();
+        TestRequest req = new TestRequest("/16", "PATCH", patchJson, trainingMgr);
+
+        servlet.service(req.getProxy(), resp.getProxy());
+
+        assertEquals(200, resp.getStatus());
+        JsonObject json = GSON.fromJson(resp.getContent(), JsonObject.class);
+        assertTrue(json.get("success").getAsBoolean());
+        assertEquals("SCHEDULE_UPDATED", json.get("code").getAsString());
+    }
+
+    @Test
+    @DisplayName("API POST /api/schedules/{id}/cancel: Hủy buổi học với lý do hợp lệ thành công")
+    void testPostCancelScheduleWithReasonSuccess() throws Exception {
+        addExistingSession(17L, 1L, 3L, 1, LocalTime.of(14, 0), LocalTime.of(16, 0), "SCHEDULED");
+
+        String cancelBody = "{\"reason\": \"Giảng viên bận việc gia đình đột xuất\"}";
+        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phạm Quản Lý", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
+        TestResponse resp = new TestResponse();
+        TestRequest req = new TestRequest("/17/cancel", "POST", cancelBody, trainingMgr);
+
+        servlet.service(req.getProxy(), resp.getProxy());
+
+        assertEquals(200, resp.getStatus());
+        JsonObject json = GSON.fromJson(resp.getContent(), JsonObject.class);
+        assertTrue(json.get("success").getAsBoolean());
+        assertEquals("SCHEDULE_CANCELLED", json.get("code").getAsString());
+    }
+
+    @Test
+    @DisplayName("API POST /api/schedules/{id}/cancel: Hủy không có lý do bị từ chối HTTP 400")
+    void testPostCancelScheduleWithoutReasonRejected() throws Exception {
+        addExistingSession(18L, 1L, 3L, 1, LocalTime.of(14, 0), LocalTime.of(16, 0), "SCHEDULED");
+
+        String emptyCancelBody = "{}";
+        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phạm Quản Lý", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
+        TestResponse resp = new TestResponse();
+        TestRequest req = new TestRequest("/18/cancel", "POST", emptyCancelBody, trainingMgr);
+
+        servlet.service(req.getProxy(), resp.getProxy());
+
+        assertEquals(400, resp.getStatus());
+        JsonObject json = GSON.fromJson(resp.getContent(), JsonObject.class);
+        assertFalse(json.get("success").getAsBoolean());
+        assertEquals("VALIDATION_ERROR", json.get("error").getAsJsonObject().get("code").getAsString());
+    }
+
+    @Test
+    @DisplayName("API POST /api/schedules/{id}/cancel: Hủy với lý do toàn khoảng trắng bị từ chối HTTP 400")
+    void testPostCancelScheduleWhitespaceReasonRejected() throws Exception {
+        addExistingSession(19L, 1L, 3L, 1, LocalTime.of(14, 0), LocalTime.of(16, 0), "SCHEDULED");
+
+        String wsCancelBody = "{\"reason\": \"    \"}";
+        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phạm Quản Lý", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
+        TestResponse resp = new TestResponse();
+        TestRequest req = new TestRequest("/19/cancel", "POST", wsCancelBody, trainingMgr);
+
+        servlet.service(req.getProxy(), resp.getProxy());
+
+        assertEquals(400, resp.getStatus());
+        JsonObject json = GSON.fromJson(resp.getContent(), JsonObject.class);
+        assertFalse(json.get("success").getAsBoolean());
+        assertEquals("VALIDATION_ERROR", json.get("error").getAsJsonObject().get("code").getAsString());
+    }
+
+    @Test
+    @DisplayName("API PATCH /api/schedules/{id}: Sửa buổi học đã điểm danh bị từ chối HTTP 400")
+    void testPatchAttendedSessionRejected() throws Exception {
+        addExistingSession(20L, 1L, 3L, 1, LocalTime.of(8, 0), LocalTime.of(10, 0), "SCHEDULED");
+        mockScheduleDAO.markAttended(20L);
+
+        String patchJson = "{\"roomId\": 2}";
+        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phạm Quản Lý", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
+        TestResponse resp = new TestResponse();
+        TestRequest req = new TestRequest("/20", "PATCH", patchJson, trainingMgr);
+
+        servlet.service(req.getProxy(), resp.getProxy());
+
+        assertEquals(400, resp.getStatus());
+        JsonObject json = GSON.fromJson(resp.getContent(), JsonObject.class);
+        assertFalse(json.get("success").getAsBoolean());
+        assertTrue(json.get("error").getAsJsonObject().get("message").getAsString().contains("đã được điểm danh"));
+    }
+
     private void addExistingSession(Long id, Long classId, Long instructorId, Integer roomId,
                                     LocalTime start, LocalTime end, String status) {
         ClassSession s = new ClassSession();

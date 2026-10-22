@@ -9,6 +9,7 @@ import com.ems.dao.UserDAO;
 import com.ems.dto.ConflictCheckResult;
 import com.ems.dto.ConflictDetail;
 import com.ems.dto.ConflictType;
+import com.ems.dto.RescheduleResponse;
 import com.ems.dto.ScheduleRequest;
 import com.ems.exception.ForbiddenAccessException;
 import com.ems.exception.ResourceNotFoundException;
@@ -298,14 +299,34 @@ public class ScheduleConflictService {
     /**
      * API 3: Cß║¡p nhß║¡t lß╗ïch hß╗ìc
      */
+    /**
+     * API 3: Cập nhật hoặc Dời lịch học (User Story S4-03)
+     */
     public ClassSession updateSchedule(
             long actorId,
             List<String> actorRoles,
             long scheduleId,
             ScheduleRequest request
     ) throws SQLException {
-        request.setScheduleId(scheduleId);
-        request.validate();
+        RescheduleResponse resp = updateScheduleWithDetails(actorId, actorRoles, scheduleId, request);
+        return resp.getSession();
+    }
+
+    /**
+     * API 3 (Chi tiết): Cập nhật hoặc Dời lịch học có trả về trạng thái gửi thông báo
+     */
+    public com.ems.dto.RescheduleResponse updateScheduleWithDetails(
+            long actorId,
+            List<String> actorRoles,
+            long scheduleId,
+            ScheduleRequest request
+    ) throws SQLException {
+        if (!isTrainingManagerOrAdmin(actorRoles)) {
+            throw new ForbiddenAccessException("Chỉ Quản lý đào tạo hoặc Quản trị viên mới có quyền sửa hoặc dời buổi học.");
+        }
+        if (request == null) {
+            throw new ValidationException("Dữ liệu cập nhật không được để trống.");
+        }
 
         try (Connection connection = connectionProvider.getConnection()) {
             connection.setAutoCommit(false);
@@ -315,12 +336,67 @@ public class ScheduleConflictService {
                     throw new ResourceNotFoundException("Không tìm thấy buổi học có ID: " + scheduleId);
                 }
 
+                // 1. Kiểm tra trạng thái hiện tại của buổi học
+                if ("CANCELLED".equalsIgnoreCase(currentSession.getStatus())) {
+                    throw new ValidationException("Không thể sửa hoặc dời buổi học đã bị hủy.");
+                }
+                if ("COMPLETED".equalsIgnoreCase(currentSession.getStatus())) {
+                    throw new ValidationException("Không thể sửa hoặc dời buổi học đã hoàn thành.");
+                }
+
+                // 2. Không cho phép sửa buổi học đã được điểm danh
+                if (scheduleDAO.hasAttendance(connection, scheduleId)) {
+                    throw new ValidationException("Không thể sửa hoặc dời buổi học đã được điểm danh.");
+                }
+
+                // Lưu bản sao cũ trước khi thay đổi để ghi log & thông báo
+                String oldValuesJson = GSON.toJson(currentSession);
+                LocalDate oldDate = currentSession.getSessionDate();
+                LocalTime oldStart = currentSession.getStartTime();
+                LocalTime oldEnd = currentSession.getEndTime();
+                Integer oldRoomId = currentSession.getClassroomId();
+                Long oldInstructorId = currentSession.getInstructorId();
+
+                // 3. Quy tắc cập nhật một phần (Partial update / PATCH merge)
+                request.setScheduleId(scheduleId);
+                if (request.getClassId() == null) {
+                    request.setClassId(currentSession.getClassId());
+                }
+                if (request.getInstructorId() == null) {
+                    request.setInstructorId(currentSession.getInstructorId());
+                }
+                if (request.getResolvedRoomId() == null) {
+                    request.setRoomId(currentSession.getClassroomId());
+                }
+                if (request.getResolvedDate() == null && oldDate != null) {
+                    request.setSessionDate(oldDate.toString());
+                }
+                if (request.getResolvedStartTime() == null && oldStart != null) {
+                    request.setStartTime(oldStart.toString());
+                }
+                if (request.getResolvedEndTime() == null && oldEnd != null) {
+                    request.setEndTime(oldEnd.toString());
+                }
+                if (request.getSessionNumber() == null) {
+                    request.setSessionNumber(currentSession.getSessionNumber());
+                }
+                if (request.getClassSubjectId() == null) {
+                    request.setClassSubjectId(currentSession.getClassSubjectId());
+                }
+                if (request.getSubjectLessonId() == null) {
+                    request.setSubjectLessonId(currentSession.getSubjectLessonId());
+                }
+
+                // Validate sau khi merge các trường cần thiết
+                request.validate();
+
+                // Kiểm tra sự tồn tại của các thực thể mới
                 verifyEntitiesExist(connection, request);
 
-                // Kh├│a t├ái nguy├¬n
+                // Khóa tài nguyên phòng học & giảng viên để chống race condition
                 scheduleDAO.lockInstructorAndRoom(connection, request.getInstructorId(), request.getResolvedRoomId());
 
-                // Kiß╗âm tra xung ─æß╗Öt (loß║íi trß╗½ ch├¡nh n├│)
+                // 4. Kiểm tra xung đột lịch (loại trừ chính buổi học đang sửa)
                 List<ClassSession> candidates = scheduleDAO.findConflictingSessions(
                         connection,
                         scheduleId,
@@ -336,54 +412,108 @@ public class ScheduleConflictService {
                     handleConflictResolution(actorId, actorRoles, request, conflictResult);
                 }
 
+                // 5. Xác định xem có dời lịch (đổi ngày/giờ) hay không
+                LocalDate newDate = request.getResolvedDate();
+                LocalTime newStart = request.getResolvedStartTime();
+                LocalTime newEnd = request.getResolvedEndTime();
+                boolean isDateTimeChanged = !Objects.equals(oldDate, newDate)
+                        || !Objects.equals(oldStart, newStart)
+                        || !Objects.equals(oldEnd, newEnd);
+                boolean isReschedule = isDateTimeChanged;
+
+                String newStatus = isReschedule ? "RESCHEDULED"
+                        : (request.getStatus() != null ? request.getStatus() : currentSession.getStatus());
+
                 currentSession.setClassId(request.getClassId());
                 currentSession.setClassSubjectId(request.getClassSubjectId());
                 currentSession.setSubjectLessonId(request.getSubjectLessonId());
                 currentSession.setSessionNumber(request.getSessionNumber());
-                currentSession.setSessionDate(request.getResolvedDate());
-                currentSession.setStartTime(request.getResolvedStartTime());
-                currentSession.setEndTime(request.getResolvedEndTime());
+                currentSession.setSessionDate(newDate);
+                currentSession.setStartTime(newStart);
+                currentSession.setEndTime(newEnd);
                 currentSession.setClassroomId(request.getResolvedRoomId());
                 currentSession.setInstructorId(request.getInstructorId());
-                if (request.getStatus() != null) currentSession.setStatus(request.getStatus());
+                currentSession.setStatus(newStatus);
 
                 scheduleDAO.updateSchedule(connection, currentSession);
 
-                // Ghi nhß║¡n Audit Log
-                if (conflictResult.isHasConflict() && request.isOverrideConflict()) {
-                    Map<String, Object> auditOld = Map.of(
-                            "action", "OVERRIDE_UPDATE_SCHEDULE_CONFLICT",
-                            "conflictingCount", conflictResult.getConflicts().size(),
-                            "conflicts", conflictResult.getConflicts()
-                    );
-                    Map<String, Object> auditNew = Map.of(
-                            "updatedScheduleId", scheduleId,
-                            "overrideReason", request.getOverrideReason(),
-                            "actorRoles", actorRoles != null ? actorRoles : List.of()
-                    );
-                    scheduleDAO.recordAuditLog(
-                            connection,
-                            actorId,
-                            "OVERRIDE_SCHEDULE_CONFLICT",
-                            "SCHEDULE",
-                            String.valueOf(scheduleId),
-                            GSON.toJson(auditOld),
-                            GSON.toJson(auditNew)
-                    );
-                } else {
-                    scheduleDAO.recordAuditLog(
-                            connection,
-                            actorId,
-                            "UPDATE_SCHEDULE",
-                            "SCHEDULE",
-                            String.valueOf(scheduleId),
-                            null,
-                            GSON.toJson(request)
-                    );
-                }
+                ClassSession updated = scheduleDAO.findById(connection, scheduleId);
+                if (updated == null) updated = currentSession;
+                String newValuesJson = GSON.toJson(updated);
+
+                // Ghi nhận Audit Log & Change Log
+                String actionType = isReschedule ? "RESCHEDULE" : "UPDATE";
+                scheduleDAO.recordAuditLog(
+                        connection,
+                        actorId,
+                        isReschedule ? "RESCHEDULE_SESSION" : "UPDATE_SESSION",
+                        "SCHEDULE",
+                        String.valueOf(scheduleId),
+                        oldValuesJson,
+                        newValuesJson
+                );
+                scheduleDAO.recordChangeLog(
+                        connection,
+                        scheduleId,
+                        actionType,
+                        actorId,
+                        request.getReason(),
+                        oldValuesJson,
+                        newValuesJson
+                );
 
                 connection.commit();
-                return scheduleDAO.findById(connection, scheduleId);
+
+                // 6. Gửi thông báo cho học viên (sau khi commit thành công, lỗi thông báo không làm mất thay đổi)
+                boolean notifSent = false;
+                int recipientCount = 0;
+                String notifError = null;
+                try {
+                    List<Long> studentUserIds = scheduleDAO.getEnrolledStudentUserIds(connection, currentSession.getClassId());
+                    if (studentUserIds != null && !studentUserIds.isEmpty()) {
+                        String classCode = updated.getClassCode() != null ? updated.getClassCode() : "Lớp #" + updated.getClassId();
+                        String title = "Thông báo " + (isReschedule ? "dời lịch học" : "cập nhật lịch học") + ": " + classCode;
+
+                        StringBuilder contentBuilder = new StringBuilder();
+                        contentBuilder.append("Lịch học lớp ").append(classCode).append(" đã được điều chỉnh:\n");
+                        if (isDateTimeChanged) {
+                            contentBuilder.append("- Thời gian cũ: Ngày ").append(oldDate).append(" (").append(oldStart).append(" - ").append(oldEnd).append(")\n");
+                            contentBuilder.append("- Thời gian mới: Ngày ").append(newDate).append(" (").append(newStart).append(" - ").append(newEnd).append(")\n");
+                        }
+                        if (!Objects.equals(oldRoomId, updated.getClassroomId())) {
+                            contentBuilder.append("- Phòng học mới: ").append(updated.getRoomCode() != null ? updated.getRoomCode() : updated.getClassroomId()).append("\n");
+                        }
+                        if (!Objects.equals(oldInstructorId, updated.getInstructorId())) {
+                            contentBuilder.append("- Giảng viên phụ trách mới: ").append(updated.getInstructorName() != null ? updated.getInstructorName() : updated.getInstructorId()).append("\n");
+                        }
+                        contentBuilder.append("- Thời điểm cập nhật: ").append(java.time.LocalDateTime.now());
+
+                        recipientCount = scheduleDAO.sendNotificationToStudents(
+                                connection,
+                                studentUserIds,
+                                actorId,
+                                title,
+                                contentBuilder.toString(),
+                                "SCHEDULE",
+                                "/classes/" + updated.getClassId() + "/schedule"
+                        );
+                        notifSent = recipientCount > 0;
+                    }
+                } catch (Exception ex) {
+                    notifError = ex.getMessage();
+                    System.err.println("Lỗi khi gửi thông báo cập nhật lịch học: " + ex.getMessage());
+                }
+
+                com.ems.dto.RescheduleResponse resp = new com.ems.dto.RescheduleResponse(
+                        true,
+                        actionType,
+                        updated,
+                        notifSent,
+                        recipientCount,
+                        (isReschedule ? "Dời" : "Cập nhật") + " buổi học thành công."
+                );
+                resp.setNotificationError(notifError);
+                return resp;
             } catch (SQLException | RuntimeException e) {
                 connection.rollback();
                 throw e;
@@ -413,7 +543,23 @@ public class ScheduleConflictService {
         }
     }
 
+    /**
+     * API 4: Hủy buổi học (User Story S4-03)
+     */
     public boolean cancelSchedule(
+            long actorId,
+            List<String> actorRoles,
+            long scheduleId,
+            String reason
+    ) throws SQLException {
+        com.ems.dto.RescheduleResponse resp = cancelScheduleWithDetails(actorId, actorRoles, scheduleId, reason);
+        return resp.isSuccess();
+    }
+
+    /**
+     * API 4 (Chi tiết): Hủy buổi học có trả về trạng thái gửi thông báo
+     */
+    public com.ems.dto.RescheduleResponse cancelScheduleWithDetails(
             long actorId,
             List<String> actorRoles,
             long scheduleId,
@@ -422,6 +568,10 @@ public class ScheduleConflictService {
         if (!isTrainingManagerOrAdmin(actorRoles)) {
             throw new ForbiddenAccessException("Chỉ Quản lý đào tạo hoặc Quản trị viên mới có quyền hủy buổi học.");
         }
+        if (reason == null || reason.trim().isEmpty()) {
+            throw new ValidationException("Lý do hủy buổi học là bắt buộc và không được để trống.");
+        }
+
         try (Connection connection = connectionProvider.getConnection()) {
             connection.setAutoCommit(false);
             try {
@@ -429,18 +579,90 @@ public class ScheduleConflictService {
                 if (session == null) {
                     throw new ResourceNotFoundException("Không tìm thấy buổi học có ID: " + scheduleId);
                 }
-                boolean ok = scheduleDAO.cancelSchedule(connection, scheduleId, reason);
+
+                // Kiểm tra trạng thái
+                if ("CANCELLED".equalsIgnoreCase(session.getStatus())) {
+                    throw new ValidationException("Buổi học này đã bị hủy trước đó.");
+                }
+                if ("COMPLETED".equalsIgnoreCase(session.getStatus())) {
+                    throw new ValidationException("Không thể hủy buổi học đã hoàn thành.");
+                }
+
+                // Không cho phép hủy buổi học đã được điểm danh
+                if (scheduleDAO.hasAttendance(connection, scheduleId)) {
+                    throw new ValidationException("Không thể hủy buổi học đã được điểm danh.");
+                }
+
+                String oldValuesJson = GSON.toJson(session);
+
+                scheduleDAO.cancelSchedule(connection, scheduleId, reason.trim());
+
+                session.setStatus("CANCELLED");
+                session.setCancelReason(reason.trim());
+                String newValuesJson = GSON.toJson(session);
+
                 scheduleDAO.recordAuditLog(
                         connection,
                         actorId,
                         "CANCEL_SCHEDULE",
                         "SCHEDULE",
                         String.valueOf(scheduleId),
-                        GSON.toJson(session),
-                        GSON.toJson(Map.of("reason", reason != null ? reason : ""))
+                        oldValuesJson,
+                        newValuesJson
                 );
+                scheduleDAO.recordChangeLog(
+                        connection,
+                        scheduleId,
+                        "CANCEL",
+                        actorId,
+                        reason.trim(),
+                        oldValuesJson,
+                        newValuesJson
+                );
+
                 connection.commit();
-                return ok;
+
+                // Gửi thông báo cho học viên
+                boolean notifSent = false;
+                int recipientCount = 0;
+                String notifError = null;
+                try {
+                    List<Long> studentUserIds = scheduleDAO.getEnrolledStudentUserIds(connection, session.getClassId());
+                    if (studentUserIds != null && !studentUserIds.isEmpty()) {
+                        String classCode = session.getClassCode() != null ? session.getClassCode() : "Lớp #" + session.getClassId();
+                        String title = "Thông báo hủy buổi học: " + classCode;
+                        String content = "Buổi học ngày " + session.getSessionDate()
+                                + " (" + session.getStartTime() + " - " + session.getEndTime() + ") của lớp "
+                                + classCode + " đã bị hủy.\n"
+                                + "- Lý do hủy: " + reason.trim() + "\n"
+                                + "- Thời điểm hủy: " + java.time.LocalDateTime.now();
+
+                        recipientCount = scheduleDAO.sendNotificationToStudents(
+                                connection,
+                                studentUserIds,
+                                actorId,
+                                title,
+                                content,
+                                "SCHEDULE",
+                                "/classes/" + session.getClassId() + "/schedule"
+                        );
+                        notifSent = recipientCount > 0;
+                    }
+                } catch (Exception ex) {
+                    notifError = ex.getMessage();
+                    System.err.println("Lỗi khi gửi thông báo hủy buổi học: " + ex.getMessage());
+                }
+
+                com.ems.dto.RescheduleResponse resp = new com.ems.dto.RescheduleResponse(
+                        true,
+                        "CANCEL",
+                        session,
+                        notifSent,
+                        recipientCount,
+                        "Hủy buổi học thành công."
+                );
+                resp.setNotificationError(notifError);
+                return resp;
             } catch (SQLException | RuntimeException e) {
                 connection.rollback();
                 throw e;
