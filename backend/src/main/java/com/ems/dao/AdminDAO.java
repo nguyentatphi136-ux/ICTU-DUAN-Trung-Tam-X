@@ -20,7 +20,6 @@ import java.util.stream.Collectors;
 public class AdminDAO {
     private static final com.google.gson.Gson GSON = new com.google.gson.Gson();
 
-    @SuppressWarnings("unchecked")
     public List<Map<String, Object>> listUsers() throws SQLException {
         return (List<Map<String, Object>>) searchUsers(null, null, null, 1, 100).get("items");
     }
@@ -478,7 +477,7 @@ public class AdminDAO {
                 // Ghi nhật ký audit_logs
                 String action = "LOCKED".equals(normalizedStatus) ? "LOCK_USER" : "UNLOCK_USER";
                 recordAuditLog(connection, actorId, action, "USER", String.valueOf(targetId),
-                        "{\"status\":\"" + oldStatus + "\",\"locked_reason\":\"" + (oldReason != null ? oldReason.trim() : "") + "\"}",
+                        "{\"status\":\"" + oldStatus + "\"}",
                         "{\"status\":\"" + normalizedStatus + "\",\"locked_reason\":\"" + (lockedReason != null ? lockedReason.trim() : "") + "\"}");
 
                 // Kiểm tra lớp học phụ trách cần bàn giao
