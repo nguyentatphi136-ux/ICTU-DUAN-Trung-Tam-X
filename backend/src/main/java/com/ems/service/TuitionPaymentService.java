@@ -387,19 +387,68 @@ public class TuitionPaymentService {
     }
 
     // =========================================================================
-    // 4. XEM CÔNG NỢ & LỊCH SỬ THANH TOÁN
+    // =========================================================================
+    // 4. XEM CÔNG NỢ & LỊCH SỬ THANH TOÁN (S7-03 & S7-07)
     // =========================================================================
 
+    /**
+     * S7-07: Học viên đang đăng nhập xem tình trạng học phí cá nhân của mình
+     */
+    public StudentDebtSummaryResponse getMyTuitionStatus(long currentUserId, Collection<String> roles, String statusFilter) throws SQLException {
+        try (Connection conn = DBConnection.getConnection()) {
+            Student student = dao.findStudentByUserId(currentUserId, conn);
+            if (student == null) {
+                throw new ApiException(HttpServletResponse.SC_NOT_FOUND, "STUDENT_NOT_FOUND",
+                        "Tài khoản hiện tại chưa được liên kết với hồ sơ học viên. Trang này dành riêng cho học viên.");
+            }
+            return buildStudentDebtSummary(student, conn, statusFilter);
+        }
+    }
+
+    /**
+     * S7-07: Học viên đang đăng nhập xem danh sách biên lai các khoản đã đóng (hỗ trợ phân trang)
+     */
+    public java.util.Map<String, Object> getMyReceipts(long currentUserId, Collection<String> roles, int page, int pageSize, String keyword) throws SQLException {
+        try (Connection conn = DBConnection.getConnection()) {
+            Student student = dao.findStudentByUserId(currentUserId, conn);
+            if (student == null) {
+                throw new ApiException(HttpServletResponse.SC_NOT_FOUND, "STUDENT_NOT_FOUND",
+                        "Tài khoản hiện tại chưa được liên kết với hồ sơ học viên.");
+            }
+            List<PaymentReceipt> receipts = dao.listAllReceipts(page, pageSize, keyword, student.getId());
+            int total = dao.countReceipts(keyword, student.getId());
+            List<PaymentReceiptResponse> list = new ArrayList<>();
+            for (PaymentReceipt r : receipts) {
+                list.add(toReceiptResponse(r));
+            }
+            return java.util.Map.of(
+                    "items", list,
+                    "total", total,
+                    "page", page,
+                    "pageSize", pageSize,
+                    "totalPages", pageSize > 0 ? (int) Math.ceil((double) total / pageSize) : 1
+            );
+        }
+    }
+
     public StudentDebtSummaryResponse getStudentDebtSummary(long currentUserId, Collection<String> roles, String studentIdOrCode) throws SQLException {
+        return getStudentDebtSummary(currentUserId, roles, studentIdOrCode, null);
+    }
+
+    public StudentDebtSummaryResponse getStudentDebtSummary(long currentUserId, Collection<String> roles, String studentIdOrCode, String statusFilter) throws SQLException {
         try (Connection conn = DBConnection.getConnection()) {
             Student student = null;
-            try {
-                long sid = Long.parseLong(studentIdOrCode);
-                student = dao.findStudentById(sid, conn);
-            } catch (NumberFormatException ignored) {}
+            if ("me".equalsIgnoreCase(studentIdOrCode)) {
+                student = dao.findStudentByUserId(currentUserId, conn);
+            } else {
+                try {
+                    long sid = Long.parseLong(studentIdOrCode);
+                    student = dao.findStudentById(sid, conn);
+                } catch (NumberFormatException ignored) {}
 
-            if (student == null) {
-                student = dao.findStudentByCode(studentIdOrCode, conn);
+                if (student == null) {
+                    student = dao.findStudentByCode(studentIdOrCode, conn);
+                }
             }
 
             if (student == null) {
@@ -409,76 +458,121 @@ public class TuitionPaymentService {
             // Kiểm tra quyền: Chỉ Kế toán/Admin hoặc chính học viên sở hữu hồ sơ
             checkStudentAccess(currentUserId, roles, student);
 
-            StudentTuitionPlan plan = dao.findPlanByStudentId(student.getId(), conn);
-            if (plan == null) {
-                StudentDebtSummaryResponse emptyRes = new StudentDebtSummaryResponse();
-                emptyRes.setStudentId(student.getId());
-                emptyRes.setStudentCode(student.getStudentCode());
-                emptyRes.setStudentName(student.getFullName());
-                emptyRes.setClassName(student.getClassName());
-                emptyRes.setProgramName(student.getProgramName());
-                emptyRes.setBills(new ArrayList<>());
-                emptyRes.setReceipts(new ArrayList<>());
-                return emptyRes;
+            return buildStudentDebtSummary(student, conn, statusFilter);
+        }
+    }
+
+    private StudentDebtSummaryResponse buildStudentDebtSummary(Student student, Connection conn, String statusFilter) throws SQLException {
+        StudentTuitionPlan plan = dao.findPlanByStudentId(student.getId(), conn);
+        if (plan == null) {
+            StudentDebtSummaryResponse emptyRes = new StudentDebtSummaryResponse();
+            emptyRes.setStudentId(student.getId());
+            emptyRes.setStudentCode(student.getStudentCode());
+            emptyRes.setStudentName(student.getFullName());
+            emptyRes.setClassName(student.getClassName());
+            emptyRes.setProgramName(student.getProgramName());
+            emptyRes.setOriginalTuition(BigDecimal.ZERO);
+            emptyRes.setFinalPayableAmount(BigDecimal.ZERO);
+            emptyRes.setTotalPaidAmount(BigDecimal.ZERO);
+            emptyRes.setTotalDebtAmount(BigDecimal.ZERO);
+            emptyRes.setOverdueDays(0);
+            emptyRes.setPlanStatus("NO_PLAN");
+            emptyRes.setBills(new ArrayList<>());
+            emptyRes.setReceipts(new ArrayList<>());
+            return emptyRes;
+        }
+
+        List<TuitionInstallmentBill> bills = dao.listBillsByPlanId(plan.getId(), conn);
+        List<PaymentReceipt> receipts = dao.listReceiptsByStudentId(student.getId(), conn);
+        List<PaymentReceiptResponse> receiptResponses = new ArrayList<>();
+        for (PaymentReceipt r : receipts) {
+            receiptResponses.add(toReceiptResponse(r));
+        }
+
+        List<InstallmentBillResponse> billResponses = new ArrayList<>();
+        int maxOverdue = 0;
+        LocalDate today = LocalDate.now();
+
+        for (TuitionInstallmentBill b : bills) {
+            BigDecimal actualPaid = dao.calculateTotalPaidForBill(b.getId(), conn);
+            BigDecimal remaining = b.getExpectedAmount().subtract(actualPaid);
+            if (remaining.compareTo(BigDecimal.ZERO) < 0) remaining = BigDecimal.ZERO;
+
+            InstallmentBillResponse br = new InstallmentBillResponse();
+            br.setId(b.getId());
+            br.setTuitionPlanId(b.getTuitionPlanId());
+            br.setInstallmentOrder(b.getInstallmentOrder());
+            br.setInstallmentName("Đợt " + b.getInstallmentOrder());
+            br.setDueDate(b.getDueDate() != null ? b.getDueDate().toString() : null);
+            br.setExpectedAmount(b.getExpectedAmount());
+            br.setPaidAmount(actualPaid);
+            br.setRemainingDebt(remaining);
+
+            String st;
+            if (actualPaid.compareTo(b.getExpectedAmount()) >= 0) {
+                st = "PAID";
+            } else if (remaining.compareTo(BigDecimal.ZERO) > 0 && b.getDueDate() != null && b.getDueDate().isBefore(today)) {
+                st = "OVERDUE";
+            } else if (actualPaid.compareTo(BigDecimal.ZERO) > 0) {
+                st = "PARTIAL";
+            } else {
+                st = "UNPAID";
             }
+            br.setStatus(st);
 
-            List<TuitionInstallmentBill> bills = dao.listBillsByPlanId(plan.getId(), conn);
-            List<InstallmentBillResponse> billResponses = new ArrayList<>();
-            int maxOverdue = 0;
-            LocalDate today = LocalDate.now();
+            // Gắn danh sách biên lai thuộc đợt thu này
+            List<PaymentReceiptResponse> billReceipts = new ArrayList<>();
+            for (PaymentReceiptResponse rr : receiptResponses) {
+                if (rr.getInstallmentBillId() != null && rr.getInstallmentBillId().equals(b.getId())) {
+                    billReceipts.add(rr);
+                }
+            }
+            br.setReceipts(billReceipts);
 
-            for (TuitionInstallmentBill b : bills) {
-                BigDecimal actualPaid = dao.calculateTotalPaidForBill(b.getId(), conn);
-                BigDecimal remaining = b.getExpectedAmount().subtract(actualPaid);
-                if (remaining.compareTo(BigDecimal.ZERO) < 0) remaining = BigDecimal.ZERO;
-
-                InstallmentBillResponse br = new InstallmentBillResponse();
-                br.setId(b.getId());
-                br.setTuitionPlanId(b.getTuitionPlanId());
-                br.setInstallmentOrder(b.getInstallmentOrder());
-                br.setDueDate(b.getDueDate() != null ? b.getDueDate().toString() : null);
-                br.setExpectedAmount(b.getExpectedAmount());
-                br.setPaidAmount(actualPaid);
-                br.setRemainingDebt(remaining);
-
-                String st = (actualPaid.compareTo(b.getExpectedAmount()) >= 0) ? "PAID" :
-                        (actualPaid.compareTo(BigDecimal.ZERO) > 0 ? "PARTIAL" : "UNPAID");
-                br.setStatus(st);
-                billResponses.add(br);
-
-                if (remaining.compareTo(BigDecimal.ZERO) > 0 && b.getDueDate() != null && b.getDueDate().isBefore(today)) {
-                    int days = (int) ChronoUnit.DAYS.between(b.getDueDate(), today);
-                    if (days > maxOverdue) {
-                        maxOverdue = days;
-                    }
+            if (remaining.compareTo(BigDecimal.ZERO) > 0 && b.getDueDate() != null && b.getDueDate().isBefore(today)) {
+                int days = (int) ChronoUnit.DAYS.between(b.getDueDate(), today);
+                if (days > maxOverdue) {
+                    maxOverdue = days;
                 }
             }
 
-            List<PaymentReceipt> receipts = dao.listReceiptsByStudentId(student.getId(), conn);
-            List<PaymentReceiptResponse> receiptResponses = new ArrayList<>();
-            for (PaymentReceipt r : receipts) {
-                receiptResponses.add(toReceiptResponse(r));
+            if (matchesStatusFilter(st, statusFilter)) {
+                billResponses.add(br);
             }
-
-            StudentDebtSummaryResponse res = new StudentDebtSummaryResponse();
-            res.setStudentId(student.getId());
-            res.setStudentCode(student.getStudentCode());
-            res.setStudentName(student.getFullName());
-            res.setProgramName(student.getProgramName());
-            res.setClassName(student.getClassName());
-            res.setTuitionPlanId(plan.getId());
-            res.setOriginalTuition(plan.getOriginalTuition());
-            res.setDiscountLabel(plan.getDiscountReason());
-            res.setDiscountAmount(plan.getDiscountAmount());
-            res.setFinalPayableAmount(plan.getFinalPayableAmount());
-            res.setTotalPaidAmount(plan.getPaidAmount());
-            res.setTotalDebtAmount(plan.getDebtAmount());
-            res.setOverdueDays(maxOverdue);
-            res.setPlanStatus(plan.getStatus());
-            res.setBills(billResponses);
-            res.setReceipts(receiptResponses);
-            return res;
         }
+
+        StudentDebtSummaryResponse res = new StudentDebtSummaryResponse();
+        res.setStudentId(student.getId());
+        res.setStudentCode(student.getStudentCode());
+        res.setStudentName(student.getFullName());
+        res.setProgramName(student.getProgramName());
+        res.setClassName(student.getClassName());
+        res.setTuitionPlanId(plan.getId());
+        res.setOriginalTuition(plan.getOriginalTuition());
+        res.setDiscountLabel(plan.getDiscountReason());
+        res.setDiscountAmount(plan.getDiscountAmount());
+        res.setFinalPayableAmount(plan.getFinalPayableAmount());
+        res.setTotalPaidAmount(plan.getPaidAmount());
+        res.setTotalDebtAmount(plan.getDebtAmount());
+        res.setOverdueDays(maxOverdue);
+        res.setPlanStatus(plan.getStatus());
+        res.setBills(billResponses);
+        res.setReceipts(receiptResponses);
+        return res;
+    }
+
+    private boolean matchesStatusFilter(String billStatus, String filter) {
+        if (filter == null || filter.isBlank() || "ALL".equalsIgnoreCase(filter.trim())) {
+            return true;
+        }
+        String f = filter.trim().toUpperCase(Locale.ROOT);
+        String s = billStatus != null ? billStatus.toUpperCase(Locale.ROOT) : "";
+        if (s.equals(f)) return true;
+        if ("OVERDUE".equals(s) && ("QUÁ HẠN".equals(f) || "QUA HAN".equals(f))) return true;
+        if ("PAID".equals(s) && ("ĐÃ THANH TOÁN".equals(f) || "DA THANH TOAN".equals(f))) return true;
+        if ("PARTIAL".equals(s) && ("THANH TOÁN MỘT PHẦN".equals(f) || "THANH TOAN MOT PHAN".equals(f))) return true;
+        if ("UNPAID".equals(s) && ("CHƯA THANH TOÁN".equals(f) || "CHUA THANH TOAN".equals(f))) return true;
+        return false;
     }
 
     public List<PaymentReceiptResponse> listPayments(long currentUserId, Collection<String> roles, int page, int pageSize, String keyword, Long studentId) throws SQLException {

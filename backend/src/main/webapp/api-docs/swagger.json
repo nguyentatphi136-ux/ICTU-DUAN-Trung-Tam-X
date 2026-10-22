@@ -422,14 +422,68 @@
       "get": {
         "tags": ["Tuition & Payments"],
         "summary": "Xem tổng hợp công nợ và các đợt thanh toán của học viên",
-        "description": "Trả về chi tiết số tiền phải thu, đã thu, còn nợ, số ngày quá hạn, danh sách các đợt thu và lịch sử biên lai.",
+        "description": "Trả về chi tiết số tiền phải thu, đã thu, còn nợ, số ngày quá hạn, danh sách các đợt thu và lịch sử biên lai. Hỗ trợ studentKey = 'me' đối với học viên đang đăng nhập.",
         "parameters": [
-          { "name": "studentKey", "in": "path", "required": true, "schema": { "type": "string" }, "description": "ID học viên hoặc Mã học viên (ví dụ HV260142)" }
+          { "name": "studentKey", "in": "path", "required": true, "schema": { "type": "string" }, "description": "ID học viên hoặc Mã học viên (ví dụ HV260142 hoặc 'me')" },
+          { "name": "status", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Lọc đợt thu theo trạng thái: UNPAID, PARTIAL, PAID, OVERDUE" }
         ],
         "responses": {
           "200": { "description": "Lấy thông tin công nợ thành công" },
           "403": { "description": "Học viên chỉ được xem công nợ của chính mình" },
           "404": { "description": "Không tìm thấy học viên" }
+        }
+      }
+    },
+    "/api/tuition/my-fees": {
+      "get": {
+        "tags": ["Tuition & Payments - Student"],
+        "summary": "S7-07: Học viên xem tình trạng học phí của bản thân",
+        "description": "Tự động xác định học viên từ phiên đăng nhập. Trả về tổng tiền phải đóng, đã đóng, còn nợ, số ngày quá hạn, danh sách các đợt thu kèm trạng thái (Chưa thanh toán, Thanh toán một phần, Đã thanh toán, Quá hạn) và danh sách biên lai.",
+        "parameters": [
+          { "name": "status", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Lọc các đợt thu theo trạng thái (UNPAID, PARTIAL, PAID, OVERDUE)" }
+        ],
+        "responses": {
+          "200": { "description": "Lấy tình trạng học phí thành công" },
+          "401": { "description": "Chưa đăng nhập" },
+          "404": { "description": "Tài khoản chưa liên kết hồ sơ học viên" }
+        }
+      }
+    },
+    "/api/tuition/my-fees/receipts": {
+      "get": {
+        "tags": ["Tuition & Payments - Student"],
+        "summary": "S7-07: Học viên xem danh sách biên lai các khoản đã đóng của bản thân",
+        "description": "Trả về danh sách biên lai gắn liền với các giao dịch thực tế của học viên đang đăng nhập. Hỗ trợ phân trang và tìm kiếm.",
+        "parameters": [
+          { "name": "page", "in": "query", "required": false, "schema": { "type": "integer", "default": 1 }, "description": "Số trang" },
+          { "name": "size", "in": "query", "required": false, "schema": { "type": "integer", "default": 10 }, "description": "Số bản ghi mỗi trang" },
+          { "name": "keyword", "in": "query", "required": false, "schema": { "type": "string" }, "description": "Từ khóa tìm kiếm theo mã biên lai hoặc mã tham chiếu" }
+        ],
+        "responses": {
+          "200": { "description": "Lấy danh sách biên lai thành công" },
+          "401": { "description": "Chưa đăng nhập" },
+          "404": { "description": "Tài khoản chưa liên kết hồ sơ học viên" }
+        }
+      }
+    },
+    "/api/tuition/my-fees/receipts/{id}/pdf": {
+      "get": {
+        "tags": ["Tuition & Payments - Student"],
+        "summary": "S7-07: Học viên tải lại biên lai PDF khoản đã đóng",
+        "description": "Tải lại file PDF biên lai thuộc sở hữu của học viên đang đăng nhập. Kiểm tra quyền truy cập chặt chẽ, ngăn chặn IDOR.",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "ID hoặc Mã biên lai (ví dụ BL-2026-000001)" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tệp PDF biên lai hợp lệ",
+            "content": {
+              "application/pdf": {}
+            }
+          },
+          "401": { "description": "Chưa đăng nhập" },
+          "403": { "description": "Không có quyền xem biên lai học viên khác" },
+          "404": { "description": "Không tìm thấy biên lai" }
         }
       }
     }

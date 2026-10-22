@@ -9,11 +9,13 @@ public class InstallmentBillResponse {
     private Long id;
     private Long tuitionPlanId;
     private Integer installmentOrder;
+    private String installmentName;
     private String dueDate;
     private BigDecimal expectedAmount;
     private BigDecimal paidAmount;
     private BigDecimal remainingDebt;
     private String status; // UNPAID, PARTIAL, PAID, OVERDUE
+    private java.util.List<PaymentReceiptResponse> receipts;
 
     public InstallmentBillResponse() {}
 
@@ -25,6 +27,9 @@ public class InstallmentBillResponse {
 
     public Integer getInstallmentOrder() { return installmentOrder; }
     public void setInstallmentOrder(Integer installmentOrder) { this.installmentOrder = installmentOrder; }
+
+    public String getInstallmentName() { return installmentName; }
+    public void setInstallmentName(String installmentName) { this.installmentName = installmentName; }
 
     public String getDueDate() { return dueDate; }
     public void setDueDate(String dueDate) { this.dueDate = dueDate; }
@@ -40,4 +45,7 @@ public class InstallmentBillResponse {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    public java.util.List<PaymentReceiptResponse> getReceipts() { return receipts; }
+    public void setReceipts(java.util.List<PaymentReceiptResponse> receipts) { this.receipts = receipts; }
 }

@@ -38,6 +38,9 @@ import java.util.regex.Pattern;
  * - DELETE /api/tuition/payments/{id}             : Chặn xoá cứng (chỉ cho phép bút toán điều chỉnh)
  * - POST   /api/tuition/payments/{id}/adjustments : Lập bút toán điều chỉnh cho biên lai
  * - POST   /api/tuition/adjustments               : Lập bút toán điều chỉnh
+ * - GET    /api/tuition/my-fees                   : Học viên xem tình trạng học phí của bản thân (S7-07)
+ * - GET    /api/tuition/my-fees/receipts          : Học viên xem danh sách biên lai các khoản đã đóng (S7-07)
+ * - GET    /api/tuition/my-fees/receipts/{id}/pdf : Học viên tải lại biên lai PDF (S7-07)
  * - GET    /api/tuition/receipts/{id}             : Xem chi tiết biên lai
  * - GET    /api/tuition/receipts/{id}/pdf         : Tải / xem biên lai PDF
  * - GET    /api/tuition/students/{idOrCode}/debts : Xem công nợ và kế hoạch các đợt thu của học viên
@@ -47,12 +50,18 @@ import java.util.regex.Pattern;
         "/api/tuition/payments/*",
         "/api/tuition/receipts/*",
         "/api/tuition/students/*",
+        "/api/tuition/my-fees",
+        "/api/tuition/my-fees/*",
         "/api/tuition/adjustments",
         "/api/tuition/adjustments/*"
 })
 public class TuitionPaymentApiServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Gson GSON = new Gson();
+
+    private static final Pattern MY_FEES_RECEIPT_PDF_PATTERN = Pattern.compile("^/my-fees/receipts/([A-Za-z0-9._-]+)/pdf$");
+    private static final Pattern MY_FEES_RECEIPTS_PATTERN = Pattern.compile("^/my-fees/receipts/?$");
+    private static final Pattern MY_FEES_PATTERN = Pattern.compile("^/my-fees/?$");
 
     private static final Pattern PAYMENT_ID_PATTERN = Pattern.compile("^/payments/(\\d+)$");
     private static final Pattern PAYMENT_ADJUST_PATTERN = Pattern.compile("^/payments/(\\d+)/adjustments$");
@@ -83,6 +92,52 @@ public class TuitionPaymentApiServlet extends HttpServlet {
         List<String> roles = currentUser.getRoles() != null ? currentUser.getRoles() : Collections.emptyList();
 
         try {
+            // Case 0.1: GET /api/tuition/my-fees/receipts/{id}/pdf (S7-07)
+            Matcher myReceiptPdfMatcher = MY_FEES_RECEIPT_PDF_PATTERN.matcher(path);
+            if (myReceiptPdfMatcher.matches()) {
+                String idStr = myReceiptPdfMatcher.group(1);
+                long receiptId;
+                try {
+                    receiptId = Long.parseLong(idStr);
+                } catch (NumberFormatException e) {
+                    PaymentReceiptResponse r = service.getReceiptDetailByCode(currentUser.getId(), roles, idStr);
+                    receiptId = r.getId();
+                }
+
+                resp.setContentType("application/pdf;charset=UTF-8");
+                resp.setHeader("Content-Disposition", "inline; filename=\"Bien-Lai-" + idStr + ".pdf\"");
+                service.generateReceiptPdf(currentUser.getId(), roles, receiptId, resp.getOutputStream());
+                return;
+            }
+
+            // Case 0.2: GET /api/tuition/my-fees/receipts (S7-07)
+            Matcher myReceiptsMatcher = MY_FEES_RECEIPTS_PATTERN.matcher(path);
+            if (myReceiptsMatcher.matches()) {
+                int page = 1;
+                int pageSize = 10;
+                try {
+                    if (req.getParameter("page") != null) page = Integer.parseInt(req.getParameter("page"));
+                    if (req.getParameter("size") != null) pageSize = Integer.parseInt(req.getParameter("size"));
+                    else if (req.getParameter("pageSize") != null) pageSize = Integer.parseInt(req.getParameter("pageSize"));
+                } catch (NumberFormatException ignored) {}
+
+                String keyword = req.getParameter("keyword");
+                if (keyword == null) keyword = req.getParameter("q");
+
+                Map<String, Object> data = service.getMyReceipts(currentUser.getId(), roles, page, pageSize, keyword);
+                ApiResponse.success(resp, "MY_RECEIPTS_SUCCESS", "Lấy danh sách biên lai của bạn thành công.", data);
+                return;
+            }
+
+            // Case 0.3: GET /api/tuition/my-fees (S7-07)
+            Matcher myFeesMatcher = MY_FEES_PATTERN.matcher(path);
+            if (myFeesMatcher.matches()) {
+                String status = req.getParameter("status");
+                StudentDebtSummaryResponse summary = service.getMyTuitionStatus(currentUser.getId(), roles, status);
+                ApiResponse.success(resp, "MY_FEES_SUCCESS", "Lấy tình trạng học phí cá nhân thành công.", summary);
+                return;
+            }
+
             // Case 1: GET /api/tuition/receipts/{id}/pdf
             Matcher pdfMatcher = RECEIPT_PDF_PATTERN.matcher(path);
             if (pdfMatcher.matches()) {
@@ -120,7 +175,10 @@ public class TuitionPaymentApiServlet extends HttpServlet {
             Matcher debtsMatcher = STUDENT_DEBTS_PATTERN.matcher(path);
             if (debtsMatcher.matches()) {
                 String studentKey = debtsMatcher.group(1);
-                StudentDebtSummaryResponse summary = service.getStudentDebtSummary(currentUser.getId(), roles, studentKey);
+                String status = req.getParameter("status");
+                StudentDebtSummaryResponse summary = "me".equalsIgnoreCase(studentKey)
+                        ? service.getMyTuitionStatus(currentUser.getId(), roles, status)
+                        : service.getStudentDebtSummary(currentUser.getId(), roles, studentKey, status);
                 ApiResponse.success(resp, "STUDENT_DEBTS_SUCCESS", "Lấy thông tin công nợ học viên thành công.", summary);
                 return;
             }
@@ -129,8 +187,23 @@ public class TuitionPaymentApiServlet extends HttpServlet {
             Matcher studentPaymentsMatcher = STUDENT_PAYMENTS_PATTERN.matcher(path);
             if (studentPaymentsMatcher.matches()) {
                 String studentKey = studentPaymentsMatcher.group(1);
-                StudentDebtSummaryResponse summary = service.getStudentDebtSummary(currentUser.getId(), roles, studentKey);
-                ApiResponse.success(resp, "STUDENT_PAYMENTS_SUCCESS", "Lấy lịch sử thanh toán của học viên thành công.", summary.getReceipts());
+                if ("me".equalsIgnoreCase(studentKey)) {
+                    int page = 1;
+                    int pageSize = 10;
+                    try {
+                        if (req.getParameter("page") != null) page = Integer.parseInt(req.getParameter("page"));
+                        if (req.getParameter("size") != null) pageSize = Integer.parseInt(req.getParameter("size"));
+                        else if (req.getParameter("pageSize") != null) pageSize = Integer.parseInt(req.getParameter("pageSize"));
+                    } catch (NumberFormatException ignored) {}
+                    String keyword = req.getParameter("keyword");
+                    if (keyword == null) keyword = req.getParameter("q");
+
+                    Map<String, Object> data = service.getMyReceipts(currentUser.getId(), roles, page, pageSize, keyword);
+                    ApiResponse.success(resp, "STUDENT_PAYMENTS_SUCCESS", "Lấy lịch sử thanh toán của học viên thành công.", data.get("items"));
+                } else {
+                    StudentDebtSummaryResponse summary = service.getStudentDebtSummary(currentUser.getId(), roles, studentKey);
+                    ApiResponse.success(resp, "STUDENT_PAYMENTS_SUCCESS", "Lấy lịch sử thanh toán của học viên thành công.", summary.getReceipts());
+                }
                 return;
             }
 
@@ -225,6 +298,13 @@ public class TuitionPaymentApiServlet extends HttpServlet {
                 return;
             }
 
+            // Chặn học viên tạo giao dịch qua endpoint my-fees
+            if (path.startsWith("/my-fees")) {
+                ApiResponse.error(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED",
+                        "Học viên không có quyền tạo hoặc chỉnh sửa giao dịch thanh toán.");
+                return;
+            }
+
             ApiResponse.error(resp, HttpServletResponse.SC_NOT_FOUND, "ENDPOINT_NOT_FOUND", "Đường dẫn API không tồn tại.");
         } catch (ApiException e) {
             ApiResponse.error(resp, e.getStatusCode(), e.getErrorCode(), e.getMessage());
@@ -235,12 +315,29 @@ public class TuitionPaymentApiServlet extends HttpServlet {
         }
     }
 
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String path = getNormalizedSubPath(req);
+        if (path.startsWith("/my-fees") || path.startsWith("/payments")) {
+            ApiResponse.error(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED",
+                    "Không được phép chỉnh sửa trực tiếp thông tin thanh toán hoặc công nợ.");
+            return;
+        }
+        ApiResponse.error(resp, HttpServletResponse.SC_NOT_FOUND, "ENDPOINT_NOT_FOUND", "Đường dẫn API không tồn tại.");
+    }
+
     /**
      * Requirement 6: Đã ghi nhận thu thì không được xóa; chỉ được bút toán điều chỉnh theo quy trình có kiểm soát.
      * Chặn xóa cứng qua API.
      */
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String path = getNormalizedSubPath(req);
+        if (path.startsWith("/my-fees")) {
+            ApiResponse.error(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED",
+                    "Học viên không có quyền xoá giao dịch hoặc công nợ.");
+            return;
+        }
         ApiResponse.error(resp, HttpServletResponse.SC_METHOD_NOT_ALLOWED, "PAYMENT_DELETE_FORBIDDEN",
                 "Giao dịch thanh toán đã ghi nhận không được phép xoá. Vui lòng lập bút toán điều chỉnh theo quy trình kiểm toán.");
     }
