@@ -49,6 +49,20 @@ class PermissionPolicyTest {
     }
 
     @Test
+    void tuitionPaymentAndReceiptRoutesRequireAppropriatePermissions() {
+        assertEquals("FINANCE_MANAGE", PermissionPolicy.requiredPermission("POST", "/api/tuition/payments"));
+        assertEquals("FINANCE_MANAGE", PermissionPolicy.requiredPermission("POST", "/api/tuition/payments/1/adjustments"));
+        assertEquals("FINANCE_MANAGE", PermissionPolicy.requiredPermission("POST", "/api/tuition/adjustments"));
+        assertEquals("FINANCE_MANAGE", PermissionPolicy.requiredPermission("DELETE", "/api/tuition/payments/1"));
+        assertEquals("FINANCE_MANAGE", PermissionPolicy.requiredPermission("GET", "/api/tuition/payments"));
+        assertEquals("FINANCE_READ", PermissionPolicy.requiredPermission("GET", "/api/tuition/payments/1"));
+        assertEquals("FINANCE_READ", PermissionPolicy.requiredPermission("GET", "/api/tuition/receipts/1"));
+        assertEquals("FINANCE_READ", PermissionPolicy.requiredPermission("GET", "/api/tuition/receipts/BL-2026-000001/pdf"));
+        assertEquals("FINANCE_READ", PermissionPolicy.requiredPermission("GET", "/api/tuition/students/HV-2026-001/debts"));
+        assertEquals("FINANCE_READ", PermissionPolicy.requiredPermission("GET", "/api/tuition/students/1/payments"));
+    }
+
+    @Test
     void userMayHoldMultipleRolesButCannotRemoveTheirOwnAdminRole() {
         assertTrue(PermissionPolicy.mayReplaceRoles(4, 5, List.of("ADMIN"), List.of("STUDENT")));
         assertFalse(PermissionPolicy.mayReplaceRoles(4, 4, List.of("ADMIN"), List.of("STUDENT")));
