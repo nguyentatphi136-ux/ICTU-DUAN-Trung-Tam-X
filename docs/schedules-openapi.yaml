@@ -1,0 +1,257 @@
+openapi: 3.0.3
+info:
+  title: API Thß╗¥i kh├│a biß╗âu & Kiß╗âm tra xung ─æß╗Öt (EMS S4-02)
+  description: >
+    API quß║ún l├╜ thß╗¥i kh├│a biß╗âu, tß╗▒ ─æß╗Öng ph├ít hiß╗çn v├á chß║╖n xung ─æß╗Öt giß║úng vi├¬n hoß║╖c ph├▓ng hß╗ìc
+    trong c├╣ng khung giß╗¥, cho ph├⌐p Quß║ún l├╜ ─æ├áo tß║ío ghi ─æ├¿ c├│ l╞░u vß║┐t kiß╗âm to├ín (Audit Trail).
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: M├íy chß╗º cß╗Ñc bß╗Ö (Tomcat)
+
+paths:
+  /api/schedules/check-conflicts:
+    post:
+      summary: Kiß╗âm tra xung ─æß╗Öt lß╗ïch hß╗ìc (Kh├┤ng l╞░u)
+      description: Kiß╗âm tra xem thß╗¥i gian ─æß╗ü xuß║Ñt c├│ bß╗ï tr├╣ng giß║úng vi├¬n hoß║╖c ph├▓ng hß╗ìc hay kh├┤ng.
+      tags:
+        - Thß╗¥i kh├│a biß╗âu
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleRequest'
+            example:
+              classId: 1
+              instructorId: 3
+              roomId: 1
+              startDateTime: "2026-11-01T09:00:00"
+              endDateTime: "2026-11-01T11:00:00"
+      responses:
+        '200':
+          description: Kß║┐t quß║ú kiß╗âm tra xung ─æß╗Öt (th├ánh c├┤ng)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictCheckResponse'
+        '400':
+          description: Dß╗» liß╗çu gß╗¡i l├¬n kh├┤ng hß╗úp lß╗ç (v├¡ dß╗Ñ end <= start)
+        '401':
+          description: Ch╞░a ─æ─âng nhß║¡p
+        '403':
+          description: Kh├┤ng c├│ quyß╗ün CLASS_MANAGE
+
+  /api/schedules:
+    post:
+      summary: Tß║ío lß╗ïch hß╗ìc mß╗¢i
+      description: Tß║ío buß╗òi hß╗ìc mß╗¢i. Tß╗▒ ─æß╗Öng kiß╗âm tra xung ─æß╗Öt. Nß║┐u c├│ xung ─æß╗Öt, tß╗½ chß╗æi l╞░u (409) trß╗½ khi Quß║ún l├╜ ─æ├áo tß║ío x├íc nhß║¡n ghi ─æ├¿ k├¿m l├╜ do.
+      tags:
+        - Thß╗¥i kh├│a biß╗âu
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleCreateRequest'
+            examples:
+              TaoLichBinhThuong:
+                summary: Tß║ío lß╗ïch hß╗ìc b├¼nh th╞░ß╗¥ng
+                value:
+                  classId: 1
+                  instructorId: 3
+                  roomId: 1
+                  startDateTime: "2026-11-01T08:00:00"
+                  endDateTime: "2026-11-01T10:00:00"
+              GhiDeXungDot:
+                summary: X├íc nhß║¡n ghi ─æ├¿ xung ─æß╗Öt (Chß╗ë Training Manager)
+                value:
+                  classId: 1
+                  instructorId: 3
+                  roomId: 1
+                  startDateTime: "2026-11-01T09:00:00"
+                  endDateTime: "2026-11-01T11:00:00"
+                  overrideConflict: true
+                  overrideReason: "Giß║úng vi├¬n thß╗Åa thuß║¡n dß║íy gh├⌐p b├╣ theo ph├¬ duyß╗çt BGD"
+      responses:
+        '201':
+          description: Tß║ío lß╗ïch hß╗ìc th├ánh c├┤ng
+        '400':
+          description: Dß╗» liß╗çu kh├┤ng hß╗úp lß╗ç hoß║╖c thiß║┐u l├╜ do ghi ─æ├¿
+        '401':
+          description: Ch╞░a ─æ─âng nhß║¡p
+        '403':
+          description: Kh├┤ng c├│ quyß╗ün ghi ─æ├¿ (kh├┤ng phß║úi Training Manager)
+        '409':
+          description: Ph├ít hiß╗çn xung ─æß╗Öt lß╗ïch hß╗ìc (Tr├╣ng giß║úng vi├¬n hoß║╖c ph├▓ng)
+
+    get:
+      summary: Tra cß╗⌐u danh s├ích thß╗¥i kh├│a biß╗âu
+      tags:
+        - Thß╗¥i kh├│a biß╗âu
+      parameters:
+        - name: classId
+          in: query
+          schema:
+            type: integer
+        - name: instructorId
+          in: query
+          schema:
+            type: integer
+        - name: roomId
+          in: query
+          schema:
+            type: integer
+        - name: fromDate
+          in: query
+          schema:
+            type: string
+            format: date
+            example: "2026-11-01"
+        - name: toDate
+          in: query
+          schema:
+            type: string
+            format: date
+            example: "2026-11-30"
+      responses:
+        '200':
+          description: Danh s├ích thß╗¥i kh├│a biß╗âu
+
+  /api/schedules/{id}:
+    get:
+      summary: Chi tiß║┐t mß╗Öt buß╗òi hß╗ìc
+      tags:
+        - Thß╗¥i kh├│a biß╗âu
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Chi tiß║┐t buß╗òi hß╗ìc
+        '404':
+          description: Kh├┤ng t├¼m thß║Ñy buß╗òi hß╗ìc
+
+    put:
+      summary: Cß║¡p nhß║¡t lß╗ïch hß╗ìc
+      description: Cß║¡p nhß║¡t buß╗òi hß╗ìc. Bß╗Å qua ch├¡nh n├│ khi kiß╗âm tra xung ─æß╗Öt.
+      tags:
+        - Thß╗¥i kh├│a biß╗âu
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleCreateRequest'
+      responses:
+        '200':
+          description: Cß║¡p nhß║¡t th├ánh c├┤ng
+        '409':
+          description: Xung ─æß╗Öt vß╗¢i buß╗òi hß╗ìc kh├íc
+
+    delete:
+      summary: Hß╗ºy buß╗òi hß╗ìc
+      tags:
+        - Thß╗¥i kh├│a biß╗âu
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: reason
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Hß╗ºy buß╗òi hß╗ìc th├ánh c├┤ng
+
+components:
+  schemas:
+    ScheduleRequest:
+      type: object
+      required:
+        - classId
+        - instructorId
+        - roomId
+        - startDateTime
+        - endDateTime
+      properties:
+        classId:
+          type: integer
+          example: 1
+        instructorId:
+          type: integer
+          example: 3
+        roomId:
+          type: integer
+          example: 1
+        startDateTime:
+          type: string
+          example: "2026-11-01T08:00:00"
+        endDateTime:
+          type: string
+          example: "2026-11-01T10:00:00"
+        sessionDate:
+          type: string
+          format: date
+          example: "2026-11-01"
+        startTime:
+          type: string
+          example: "08:00:00"
+        endTime:
+          type: string
+          example: "10:00:00"
+
+    ScheduleCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ScheduleRequest'
+        - type: object
+          properties:
+            overrideConflict:
+              type: boolean
+              default: false
+              description: X├íc nhß║¡n ghi ─æ├¿ khi bß╗ï xung ─æß╗Öt (chß╗ë d├ánh cho Quß║ún l├╜ ─æ├áo tß║ío)
+            overrideReason:
+              type: string
+              example: "L├╜ do ph├¬ duyß╗çt ghi ─æ├¿ tß╗½ Ban gi├ím hiß╗çu"
+
+    ConflictDetail:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [INSTRUCTOR_CONFLICT, ROOM_CONFLICT, BOTH_CONFLICT]
+        requestedSchedule:
+          type: object
+        conflictingSchedule:
+          type: object
+        message:
+          type: string
+
+    ConflictCheckResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        hasConflict:
+          type: boolean
+          example: true
+        conflicts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConflictDetail'
+        message:
+          type: string
+          example: "Ph├ít hiß╗çn 1 xung ─æß╗Öt thß╗¥i kh├│a biß╗âu."

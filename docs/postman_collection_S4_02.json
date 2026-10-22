@@ -1,0 +1,176 @@
+{
+  "info": {
+    "name": "EMS - S4-02 Thß╗¥i kh├│a biß╗âu & Kiß╗âm tra xung ─æß╗Öt",
+    "_postman_id": "s4-02-schedule-conflicts",
+    "description": "Bß╗Ö kß╗ïch bß║ún kiß╗âm thß╗¡ API cho User Story S4-02: Kiß╗âm tra tr├╣ng giß║úng vi├¬n, tr├╣ng ph├▓ng, chß║╖n l╞░u lß╗ïch, c╞í chß║┐ ghi ─æ├¿ cß╗ºa QL─ÉT c├│ audit log.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Kiß╗âm tra xung ─æß╗Öt (Kh├┤ng c├│ xung ─æß╗Öt)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"classId\": 1,\n  \"instructorId\": 3,\n  \"roomId\": 1,\n  \"startDateTime\": \"2026-11-01T07:00:00\",\n  \"endDateTime\": \"2026-11-01T09:00:00\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/schedules/check-conflicts",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "schedules", "check-conflicts"]
+        }
+      }
+    },
+    {
+      "name": "2. Kiß╗âm tra xung ─æß╗Öt (Ph├ít hiß╗çn tr├╣ng lß╗ïch giß║úng vi├¬n / ph├▓ng)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"classId\": 1,\n  \"instructorId\": 3,\n  \"roomId\": 1,\n  \"startDateTime\": \"2026-11-01T09:30:00\",\n  \"endDateTime\": \"2026-11-01T10:30:00\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/schedules/check-conflicts",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "schedules", "check-conflicts"]
+        }
+      }
+    },
+    {
+      "name": "3. Tß║ío lß╗ïch hß╗ìc hß╗úp lß╗ç (HTTP 201 Created)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"classId\": 1,\n  \"instructorId\": 3,\n  \"roomId\": 1,\n  \"startDateTime\": \"2026-11-01T13:00:00\",\n  \"endDateTime\": \"2026-11-01T15:00:00\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/schedules",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "schedules"]
+        }
+      }
+    },
+    {
+      "name": "4. Tß║ío lß╗ïch hß╗ìc bß╗ï xung ─æß╗Öt (Mß║╖c ─æß╗ïnh bß╗ï chß║╖n - HTTP 409 Conflict)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"classId\": 1,\n  \"instructorId\": 3,\n  \"roomId\": 1,\n  \"startDateTime\": \"2026-11-01T09:30:00\",\n  \"endDateTime\": \"2026-11-01T10:30:00\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/schedules",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "schedules"]
+        }
+      }
+    },
+    {
+      "name": "5. Quß║ún l├╜ ─æ├áo tß║ío x├íc nhß║¡n ghi ─æ├¿ c├│ l├╜ do (HTTP 201 Created)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"classId\": 1,\n  \"instructorId\": 3,\n  \"roomId\": 1,\n  \"startDateTime\": \"2026-11-01T09:30:00\",\n  \"endDateTime\": \"2026-11-01T10:30:00\",\n  \"overrideConflict\": true,\n  \"overrideReason\": \"Giß║úng vi├¬n thß╗Åa thuß║¡n dß║íy gh├⌐p b├╣ theo ph├¬ duyß╗çt BGD\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/schedules",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "schedules"]
+        }
+      }
+    },
+    {
+      "name": "6. Tra cß╗⌐u danh s├ích thß╗¥i kh├│a biß╗âu",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:8080/api/schedules?fromDate=2026-11-01&toDate=2026-11-30",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "schedules"],
+          "query": [
+            { "key": "fromDate", "value": "2026-11-01" },
+            { "key": "toDate", "value": "2026-11-30" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "7. Chi tiß║┐t buß╗òi hß╗ìc theo ID",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "http://localhost:8080/api/schedules/15",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "schedules", "15"]
+        }
+      }
+    },
+    {
+      "name": "8. Cß║¡p nhß║¡t buß╗òi hß╗ìc",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"classId\": 2,\n  \"instructorId\": 3,\n  \"roomId\": 1,\n  \"startDateTime\": \"2026-11-01T09:00:00\",\n  \"endDateTime\": \"2026-11-01T11:30:00\"\n}"
+        },
+        "url": {
+          "raw": "http://localhost:8080/api/schedules/15",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "schedules", "15"]
+        }
+      }
+    },
+    {
+      "name": "9. Hß╗ºy buß╗òi hß╗ìc",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "http://localhost:8080/api/schedules/15?reason=Nghß╗ë lß╗à",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "8080",
+          "path": ["api", "schedules", "15"],
+          "query": [
+            { "key": "reason", "value": "Nghß╗ë lß╗à" }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -374,9 +374,9 @@ CREATE TABLE IF NOT EXISTS `student_status_logs` (
 CREATE TABLE IF NOT EXISTS `class_sessions` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `class_id` BIGINT NOT NULL,
-    `class_subject_id` BIGINT NOT NULL,
+    `class_subject_id` BIGINT NULL COMMENT 'Môn học tương ứng của lớp (tùy chọn)',
     `subject_lesson_id` INT NULL COMMENT 'Bài học giáo trình tương ứng',
-    `session_number` INT NOT NULL COMMENT 'Buổi số mấy của môn',
+    `session_number` INT NOT NULL DEFAULT 1 COMMENT 'Buổi số mấy của môn',
     `session_date` DATE NOT NULL,
     `start_time` TIME NOT NULL,
     `end_time` TIME NOT NULL,
@@ -387,7 +387,7 @@ CREATE TABLE IF NOT EXISTS `class_sessions` (
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_csess_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_csess_subject` FOREIGN KEY (`class_subject_id`) REFERENCES `class_subjects` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_csess_subject` FOREIGN KEY (`class_subject_id`) REFERENCES `class_subjects` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_csess_lesson` FOREIGN KEY (`subject_lesson_id`) REFERENCES `subject_lessons` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_csess_room` FOREIGN KEY (`classroom_id`) REFERENCES `classrooms` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_csess_instructor` FOREIGN KEY (`instructor_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
@@ -903,3 +903,26 @@ ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `students` (`id`, `user_id`, `student_code`, `entry_level`, `enrollment_status`) VALUES
 (1, 5, 'HV2026-001', 'Cơ bản (Beginner)', 'STUDYING')
 ON DUPLICATE KEY UPDATE `student_code` = VALUES(`student_code`);
+
+-- Seed Chương trình đào tạo & Phòng học & Lớp học mẫu (S4-02 / Sprint 4)
+INSERT INTO `programs` (`id`, `program_code`, `program_name`, `total_duration_hours`, `tuition_fee`, `status`) VALUES
+(1, 'PROG-JAVA-FULL', 'Lập trình Java Fullstack', 360, 25000000.00, 'ACTIVE'),
+(2, 'PROG-WEB-FE', 'Lập trình Frontend Chuyên nghiệp', 180, 15000000.00, 'ACTIVE')
+ON DUPLICATE KEY UPDATE `program_name` = VALUES(`program_name`);
+
+INSERT INTO `classrooms` (`id`, `room_code`, `room_name`, `capacity`, `room_type`, `meeting_url`, `status`) VALUES
+(1, 'PH-101', 'Phòng lý thuyết 101 (Tầng 1)', 40, 'PHYSICAL', NULL, 'AVAILABLE'),
+(2, 'LAB-202', 'Phòng máy Lab 202 (Tầng 2)', 35, 'PHYSICAL', NULL, 'AVAILABLE'),
+(3, 'ONLINE-01', 'Phòng học Google Meet 01', 100, 'ONLINE', 'https://meet.google.com/ems-s4-02', 'AVAILABLE')
+ON DUPLICATE KEY UPDATE `room_name` = VALUES(`room_name`);
+
+INSERT INTO `classes` (`id`, `class_code`, `class_name`, `program_id`, `start_date`, `end_date`, `max_capacity`, `default_classroom_id`, `study_mode`, `status`) VALUES
+(1, 'CNTT-K23-01', 'Lớp Lập trình Java K23-01', 1, '2026-11-01', '2027-04-30', 30, 1, 'OFFLINE', 'IN_PROGRESS'),
+(2, 'CNTT-K23-02', 'Lớp Web Fullstack K23-02', 1, '2026-11-01', '2027-04-30', 30, 2, 'OFFLINE', 'IN_PROGRESS')
+ON DUPLICATE KEY UPDATE `class_name` = VALUES(`class_name`);
+
+-- Seed Lịch học mẫu (Buổi học số 1 lớp CNTT-K23-02: Giảng viên 3 (Trần Thị Giảng), Phòng 1 (PH-101), ngày 2026-11-01 từ 09:00:00 đến 11:00:00)
+INSERT INTO `class_sessions` (`id`, `class_id`, `class_subject_id`, `session_number`, `session_date`, `start_time`, `end_time`, `classroom_id`, `instructor_id`, `status`) VALUES
+(15, 2, NULL, 1, '2026-11-01', '09:00:00', '11:00:00', 1, 3, 'SCHEDULED')
+ON DUPLICATE KEY UPDATE `session_number` = VALUES(`session_number`);
+

@@ -55,6 +55,21 @@ public final class PermissionPolicy {
         if ("POST".equals(method) && ("/api/auth/logout".equals(path) || "/api/auth/change-password".equals(path))) {
             return "@authenticated";
         }
+        if ("POST".equals(method) && "/api/schedules/check-conflicts".equals(path)) {
+            return "CLASS_MANAGE";
+        }
+        if ("POST".equals(method) && "/api/schedules".equals(path)) {
+            return "CLASS_MANAGE";
+        }
+        if ("PUT".equals(method) && path.matches("^/api/schedules/\\d+$")) {
+            return "CLASS_MANAGE";
+        }
+        if ("DELETE".equals(method) && path.matches("^/api/schedules/\\d+$")) {
+            return "CLASS_MANAGE";
+        }
+        if ("GET".equals(method) && ("/api/schedules".equals(path) || path.matches("^/api/schedules/\\d+$"))) {
+            return "SCHEDULE_READ";
+        }
         return null;
     }
 
