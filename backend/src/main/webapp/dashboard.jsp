@@ -37,6 +37,7 @@
                 <a class="nav-link" href="${pageContext.request.contextPath}/tuition/list">Học phí</a>
                 <a class="nav-link" href="${pageContext.request.contextPath}/training-programs">Chương trình học</a>
                 <a class="nav-link text-warning fw-bold" href="${pageContext.request.contextPath}/schedule/generate"><i class="bi bi-calendar-week me-1"></i>Sinh TKB (S4-01)</a>
+                <a class="nav-link text-info fw-bold" href="${pageContext.request.contextPath}/assignment/submissions"><i class="bi bi-card-checklist me-1"></i>Chấm bài (S6-01)</a>
                 <c:if test="${sessionScope.currentUser.hasRole('Admin')}">
                     <a class="nav-link" href="${pageContext.request.contextPath}/admin/users/roles">Phân quyền vai trò</a>
                 </c:if>
@@ -146,6 +147,28 @@
                     <a href="${pageContext.request.contextPath}/schedule/generate" class="btn btn-primary btn-sm mt-2 fw-bold">
                         Sinh thời khoá biểu <i class="bi bi-arrow-right ms-1"></i>
                     </a>
+                </div>
+            </div>
+
+            <!-- 4c. Chấm điểm & Viết nhận xét bài nộp (S6-01 - Jira IDTTX-273 / IDTTX-280 [BE]) -->
+            <div class="col-md-4 col-sm-6">
+                <div class="card module-card p-4 border border-info border-2">
+                    <div class="module-icon bg-icon-info text-info">
+                        <i class="bi bi-pencil-square"></i>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <h5 class="fw-bold mb-0">Chấm Điểm Bài Nộp</h5>
+                        <span class="badge bg-info text-dark">S6-01</span>
+                    </div>
+                    <p class="text-muted small flex-grow-1">Xem trước tệp nộp, link repo; chuyển nhanh bài kế tiếp chấm 25 bài/buổi; công bố điểm và nhật ký sửa điểm.</p>
+                    <div class="d-flex gap-2 mt-2">
+                        <a href="${pageContext.request.contextPath}/assignment/submissions?assignmentId=14" class="btn btn-outline-info btn-sm fw-bold flex-grow-1">
+                            DS 25 bài nộp <i class="bi bi-list-ul ms-1"></i>
+                        </a>
+                        <a href="${pageContext.request.contextPath}/assignment/grading?assignmentId=14&studentCode=HV260101" class="btn btn-info btn-sm text-dark fw-bold">
+                            Chấm ngay <i class="bi bi-play-fill"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
 
