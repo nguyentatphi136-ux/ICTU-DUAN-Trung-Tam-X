@@ -54,8 +54,16 @@ public class ScheduleDAO {
             if (excludeScheduleId != null) {
                 stmt.setLong(idx++, excludeScheduleId);
             }
-            stmt.setLong(idx++, instructorId);
-            stmt.setInt(idx++, roomId);
+            if (instructorId != null) {
+                stmt.setLong(idx++, instructorId);
+            } else {
+                stmt.setNull(idx++, Types.BIGINT);
+            }
+            if (roomId != null) {
+                stmt.setInt(idx++, roomId);
+            } else {
+                stmt.setNull(idx++, Types.INTEGER);
+            }
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {

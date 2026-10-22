@@ -66,8 +66,43 @@ public class DatabaseMigration {
                 )
             """);
 
-            LOGGER.info("Đã kiểm tra và đảm bảo cấu trúc bảng programs và classes thành công.");
+            // 3. Tạo bảng classrooms (S4-02: Quản lý phòng học)
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS classrooms (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    room_code VARCHAR(50) NOT NULL UNIQUE,
+                    room_name VARCHAR(100) NOT NULL,
+                    capacity INT NOT NULL DEFAULT 30,
+                    room_type VARCHAR(20) DEFAULT 'PHYSICAL',
+                    meeting_url VARCHAR(255) NULL,
+                    status VARCHAR(20) DEFAULT 'AVAILABLE'
+                )
+            """);
+
+            // 4. Tạo bảng class_sessions (S4-02: Thời khóa biểu & phát hiện xung đột)
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS class_sessions (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    class_id BIGINT NOT NULL,
+                    class_subject_id BIGINT NULL,
+                    subject_lesson_id INT NULL,
+                    session_number INT NOT NULL DEFAULT 1,
+                    session_date DATE NOT NULL,
+                    start_time TIME NOT NULL,
+                    end_time TIME NOT NULL,
+                    classroom_id INT NOT NULL,
+                    instructor_id BIGINT NOT NULL,
+                    status VARCHAR(20) DEFAULT 'SCHEDULED',
+                    cancel_reason VARCHAR(255) NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """);
+
+            LOGGER.info("Đã kiểm tra và đảm bảo cấu trúc bảng programs, classes, classrooms, class_sessions thành công.");
         }
+
+        ensureColumn(conn, "class_sessions", "cancel_reason", "VARCHAR(255) NULL");
 
         // schema.sql cũ đặt tên cột là duration_months, còn DAO và migration S2-04 dùng duration.
         if (hasColumn(conn, "programs", "duration_months") && !hasColumn(conn, "programs", "duration")) {
