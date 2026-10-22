@@ -156,6 +156,12 @@ public class TestDatabaseHelper {
     public static void clearData() {
         try (Connection conn = DBConnection.getConnection();
              Statement stmt = conn.createStatement()) {
+            stmt.execute("DELETE FROM payment_adjustments");
+            stmt.execute("DELETE FROM payment_receipts");
+            stmt.execute("DELETE FROM tuition_installment_bills");
+            stmt.execute("DELETE FROM student_tuition_plans");
+            stmt.execute("DELETE FROM enrollments");
+            stmt.execute("DELETE FROM students");
             stmt.execute("DELETE FROM classes");
             stmt.execute("DELETE FROM program_subjects");
             stmt.execute("DELETE FROM subjects");

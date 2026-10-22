@@ -631,6 +631,7 @@ CREATE TABLE IF NOT EXISTS `payment_receipts` (
     `amount_paid` DECIMAL(12, 2) NOT NULL,
     `payment_method` ENUM('CASH', 'BANK_TRANSFER', 'VNPAY', 'OTHER') NOT NULL DEFAULT 'BANK_TRANSFER',
     `payment_date` DATE NOT NULL,
+    `reference_code` VARCHAR(100) NULL COMMENT 'Mã giao dịch ngân hàng hoặc tham chiếu đối soát',
     `notes` VARCHAR(255) NULL,
     `collected_by` BIGINT NOT NULL COMMENT 'Kế toán thực hiện thu',
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -639,6 +640,22 @@ CREATE TABLE IF NOT EXISTS `payment_receipts` (
     INDEX `idx_pr_code` (`receipt_code`),
     INDEX `idx_pr_date` (`payment_date`)
 ) ENGINE=InnoDB COMMENT='Bảng biên lai thu tiền không được xóa (chỉ lập bút toán điều chỉnh)';
+
+-- 7.6 Bảng Bút toán điều chỉnh khoản thu (Payment Adjustments - S7-03)
+CREATE TABLE IF NOT EXISTS `payment_adjustments` (
+    `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+    `adjustment_code` VARCHAR(50) NOT NULL UNIQUE COMMENT 'Mã bút toán điều chỉnh duy nhất: DC-2026-0001',
+    `payment_receipt_id` BIGINT NOT NULL,
+    `adjustment_type` ENUM('REDUCE', 'INCREASE', 'CANCEL') NOT NULL COMMENT 'Loại điều chỉnh: Giảm thu, Tăng thu, Hủy toàn bộ',
+    `delta_amount` DECIMAL(12, 2) NOT NULL COMMENT 'Số tiền điều chỉnh (+ tăng thu, - giảm thu/hủy)',
+    `reason` VARCHAR(255) NOT NULL COMMENT 'Lý do điều chỉnh bắt buộc',
+    `adjusted_by` BIGINT NOT NULL COMMENT 'Người lập bút toán điều chỉnh (Kế toán)',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT `fk_pa_receipt` FOREIGN KEY (`payment_receipt_id`) REFERENCES `payment_receipts` (`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_pa_actor` FOREIGN KEY (`adjusted_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
+    INDEX `idx_pa_receipt` (`payment_receipt_id`),
+    INDEX `idx_pa_code` (`adjustment_code`)
+) ENGINE=InnoDB COMMENT='Bảng bút toán điều chỉnh phiếu thu có kiểm soát, lưu vết kiểm toán';
 
 
 -- =============================================================================
