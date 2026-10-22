@@ -52,6 +52,19 @@ public final class PermissionPolicy {
         if (path.startsWith("/api/training-programs")) {
             return "PROGRAM_MANAGE";
         }
+        // Phân hệ Học phí & Kế toán (S7-03): Ghi nhận thanh toán, sinh biên lai, bút toán điều chỉnh
+        if ("POST".equals(method) && (path.equals("/api/tuition/payments") || path.startsWith("/api/tuition/payments/") || path.startsWith("/api/tuition/adjustments"))) {
+            return "FINANCE_MANAGE";
+        }
+        if ("DELETE".equals(method) && path.startsWith("/api/tuition/payments")) {
+            return "FINANCE_MANAGE";
+        }
+        if ("GET".equals(method) && path.equals("/api/tuition/payments")) {
+            return "FINANCE_MANAGE";
+        }
+        if ("GET".equals(method) && (path.startsWith("/api/tuition/receipts/") || path.startsWith("/api/tuition/students/") || path.startsWith("/api/tuition/payments/"))) {
+            return "FINANCE_READ";
+        }
         if ("POST".equals(method) && ("/api/auth/logout".equals(path) || "/api/auth/change-password".equals(path))) {
             return "@authenticated";
         }

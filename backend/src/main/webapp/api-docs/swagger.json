@@ -19,6 +19,10 @@
     {
       "name": "Training Programs",
       "description": "Quản lý danh mục chương trình đào tạo (S2-04)"
+    },
+    {
+      "name": "Tuition & Payments",
+      "description": "Kế toán ghi nhận thanh toán, sinh biên lai và bút toán điều chỉnh (S7-03 - EP-08)"
     }
   ],
   "paths": {
@@ -276,6 +280,156 @@
           "404": {
             "description": "Không tìm thấy chương trình đào tạo"
           }
+        }
+      }
+    },
+    "/api/tuition/payments": {
+      "post": {
+        "tags": ["Tuition & Payments"],
+        "summary": "Ghi nhận thanh toán và sinh biên lai",
+        "description": "Kế toán ghi nhận khoản thu (tiền mặt hoặc chuyển khoản) cho một đợt thu học phí. Tự động sinh mã biên lai duy nhất, tính lại công nợ và cập nhật trạng thái.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["installmentBillId", "amount", "paymentMethod"],
+                "properties": {
+                  "installmentBillId": { "type": "integer", "example": 1 },
+                  "studentCode": { "type": "string", "example": "HV260142" },
+                  "amount": { "type": "number", "example": 5000000 },
+                  "paymentMethod": { "type": "string", "enum": ["CASH", "BANK_TRANSFER", "Tiền mặt", "Chuyển khoản"], "example": "Tiền mặt" },
+                  "paymentDate": { "type": "string", "format": "date", "example": "2026-10-22" },
+                  "referenceCode": { "type": "string", "example": "VCB-FT26278104452" },
+                  "notes": { "type": "string", "example": "Đóng trước một phần" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Ghi nhận thanh toán thành công và sinh biên lai" },
+          "400": { "description": "Dữ liệu không hợp lệ hoặc số tiền vượt quá công nợ còn lại" },
+          "403": { "description": "Không có quyền kế toán (FINANCE_MANAGE)" }
+        }
+      },
+      "get": {
+        "tags": ["Tuition & Payments"],
+        "summary": "Xem danh sách các khoản thanh toán",
+        "description": "Trả về danh sách các giao dịch thu đã ghi nhận, có hỗ trợ tìm kiếm, lọc theo học viên và phân trang.",
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer", "default": 10 } },
+          { "name": "keyword", "in": "query", "schema": { "type": "string" } },
+          { "name": "studentId", "in": "query", "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Lấy danh sách thành công" }
+        }
+      }
+    },
+    "/api/tuition/payments/{id}": {
+      "get": {
+        "tags": ["Tuition & Payments"],
+        "summary": "Xem chi tiết một khoản thanh toán",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": { "description": "Lấy chi tiết thành công" },
+          "404": { "description": "Không tìm thấy khoản thanh toán" }
+        }
+      },
+      "delete": {
+        "tags": ["Tuition & Payments"],
+        "summary": "Chặn xoá cứng giao dịch thanh toán",
+        "description": "Nghiệp vụ tài chính không cho phép xoá giao dịch thu đã ghi nhận; chỉ cho phép lập bút toán điều chỉnh.",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "405": { "description": "Phương thức không được phép (Chỉ được lập bút toán điều chỉnh)" }
+        }
+      }
+    },
+    "/api/tuition/payments/{id}/adjustments": {
+      "post": {
+        "tags": ["Tuition & Payments"],
+        "summary": "Lập bút toán điều chỉnh cho biên lai",
+        "description": "Tạo bút toán điều chỉnh Giảm thu, Tăng thu hoặc Huỷ toàn bộ có lưu vết kiểm toán, lý do, người thực hiện và tính lại công nợ.",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["adjustmentType", "reason"],
+                "properties": {
+                  "adjustmentType": { "type": "string", "enum": ["REDUCE", "INCREASE", "CANCEL", "Giảm khoản thu", "Tăng khoản thu", "Huỷ toàn bộ"], "example": "Giảm khoản thu" },
+                  "amount": { "type": "number", "example": 2000000 },
+                  "reason": { "type": "string", "example": "Nhầm lẫn khi đếm tiền mặt" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Lập bút toán điều chỉnh thành công" },
+          "400": { "description": "Số tiền điều chỉnh không hợp lệ hoặc thiếu lý do" }
+        }
+      }
+    },
+    "/api/tuition/receipts/{id}": {
+      "get": {
+        "tags": ["Tuition & Payments"],
+        "summary": "Xem chi tiết biên lai thu học phí",
+        "description": "Lấy thông tin biên lai kèm danh sách các bút toán điều chỉnh, số tiền bằng chữ và công nợ còn lại của đợt.",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "ID hoặc Mã biên lai (BL-YYYY-XXXXXX)" }
+        ],
+        "responses": {
+          "200": { "description": "Lấy chi tiết biên lai thành công" },
+          "403": { "description": "Không có quyền truy cập biên lai của học viên khác" },
+          "404": { "description": "Không tìm thấy biên lai" }
+        }
+      }
+    },
+    "/api/tuition/receipts/{id}/pdf": {
+      "get": {
+        "tags": ["Tuition & Payments"],
+        "summary": "Tải hoặc in tệp PDF biên lai thu tiền",
+        "description": "Trả về luồng binary application/pdf hiển thị tiếng Việt chuẩn, bảng chi tiết đợt nộp, số tiền bằng chữ và chữ ký hai bên.",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" }, "description": "ID hoặc Mã biên lai" }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tệp PDF biên lai",
+            "content": {
+              "application/pdf": {}
+            }
+          },
+          "403": { "description": "Không có quyền xem biên lai học viên khác" },
+          "404": { "description": "Không tìm thấy biên lai" }
+        }
+      }
+    },
+    "/api/tuition/students/{studentKey}/debts": {
+      "get": {
+        "tags": ["Tuition & Payments"],
+        "summary": "Xem tổng hợp công nợ và các đợt thanh toán của học viên",
+        "description": "Trả về chi tiết số tiền phải thu, đã thu, còn nợ, số ngày quá hạn, danh sách các đợt thu và lịch sử biên lai.",
+        "parameters": [
+          { "name": "studentKey", "in": "path", "required": true, "schema": { "type": "string" }, "description": "ID học viên hoặc Mã học viên (ví dụ HV260142)" }
+        ],
+        "responses": {
+          "200": { "description": "Lấy thông tin công nợ thành công" },
+          "403": { "description": "Học viên chỉ được xem công nợ của chính mình" },
+          "404": { "description": "Không tìm thấy học viên" }
         }
       }
     }
