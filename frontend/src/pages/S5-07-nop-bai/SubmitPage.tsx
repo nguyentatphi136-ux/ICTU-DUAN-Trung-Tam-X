@@ -18,9 +18,9 @@ import { MODULE } from '../S5-05-bai-tap/AssignmentPages';
 import { dueOf, nowIso, remaining } from '../S5-06-bai-tap-cua-toi/MyAssignmentsPage';
 import './submit.css';
 
-export const MAX_FILE = 20 * 1048576;
+export const MAX_FILE = 20 * 1048576; // 20MB theo tiêu chuẩn S5-07
 /** Liên kết repo: https:// và trỏ tới GitHub, GitLab hoặc Bitbucket, có chủ sở hữu và tên repo. */
-export const REPO_RE = /^https:\/\/(www\.)?(github\.com|gitlab\.com|bitbucket\.org)\/[\w.-]+\/[\w.-]+\/?$/;
+export const REPO_RE = /^https:\/\/(www\.)?(github\.com|gitlab\.com|bitbucket\.org)\/[\w.-]+(\/[\w.-]+)+\/?(\.git)?$/;
 
 type Picked = FileRef & { tooBig: boolean };
 
