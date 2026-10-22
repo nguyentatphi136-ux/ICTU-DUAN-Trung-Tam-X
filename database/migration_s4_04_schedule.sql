@@ -1,4 +1,4 @@
-Select-String -Path .\database\migration_s4_04_schedule.sql -Pattern 'DROP\s+TABLE|TRUNCATE|DELETE\s+FROM|ALTER\s+TABLE|CREATE\s+TABLE' -CaseSensitive:$f-- =============================================================================
+-- =============================================================================
 -- MIGRATION S4-04: Hỗ trợ EP-04 – Thời khóa biểu tuần và tháng
 -- Áp dụng cho CSDL ems_database (MySQL 8.0+)
 -- Chạy một lần; các bảng đã dùng IF NOT EXISTS / IF NOT EXISTS / IGNORE

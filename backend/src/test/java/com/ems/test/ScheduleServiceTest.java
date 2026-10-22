@@ -139,7 +139,8 @@ class ScheduleServiceTest {
                        (2, 'WEB-K1',  'Lớp Web K1',  1, '2026-10-01')
             """);
 
-            // Phân công môn / lớp
+            // Phân công môn / lớp (test S3 dùng chung H2 có thể đã chèn cặp lớp-môn này với id khác)
+            stmt.execute("DELETE FROM class_subjects WHERE class_id IN (1, 2)");
             stmt.execute("""
                 MERGE INTO class_subjects (id, class_id, subject_id, primary_instructor_id)
                 KEY(id)

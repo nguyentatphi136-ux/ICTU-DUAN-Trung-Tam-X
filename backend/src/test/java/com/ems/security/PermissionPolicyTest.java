@@ -35,6 +35,19 @@ class PermissionPolicyTest {
     }
 
     @Test
+    void scheduleRoutesOfS4HaveRules() {
+        assertEquals("SCHEDULE_READ", PermissionPolicy.requiredPermission("GET", "/api/schedules/week"));
+        assertEquals("SCHEDULE_READ", PermissionPolicy.requiredPermission("GET", "/api/schedules/filters/classes"));
+        assertEquals("SCHEDULE_READ", PermissionPolicy.requiredPermission("GET", "/api/v1/classes/WEB-K16/schedule"));
+        assertEquals("CLASS_MANAGE", PermissionPolicy.requiredPermission("POST", "/api/v1/classes/WEB-K16/schedule/preview"));
+        assertEquals("CLASS_MANAGE", PermissionPolicy.requiredPermission("POST", "/api/schedules/check-conflicts"));
+        assertEquals("CLASS_MANAGE", PermissionPolicy.requiredPermission("PATCH", "/api/schedules/15"));
+        assertEquals("CLASS_MANAGE", PermissionPolicy.requiredPermission("POST", "/api/class-sessions/15/cancel"));
+        assertEquals("CLASS_MANAGE", PermissionPolicy.requiredPermission("POST", "/api/v1/holidays"));
+        assertEquals(null, PermissionPolicy.requiredPermission("GET", "/api/schedulesX"));
+    }
+
+    @Test
     void profileImportAndTrashRoutesHaveRules() {
         assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/profile"));
         assertEquals("@authenticated", PermissionPolicy.requiredPermission("PUT", "/api/profile"));

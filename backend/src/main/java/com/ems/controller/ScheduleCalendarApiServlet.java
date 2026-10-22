@@ -15,8 +15,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * REST API Servlet phục vụ thời khóa biểu tuần / tháng
@@ -25,21 +23,22 @@ import java.util.regex.Pattern;
  * Endpoints:
  *  GET /api/schedules/week?date=yyyy-MM-dd[&classId=&lecturerId=&roomId=]
  *  GET /api/schedules/month?year=yyyy&month=M[&classId=&lecturerId=&roomId=]
- *  GET /api/schedules?startDate=&endDate=[&classId=&lecturerId=&roomId=]
- *  GET /api/schedules/{id}
  *  GET /api/schedules/conflicts?startDate=&endDate=
  *  GET /api/schedules/filters/classes
  *  GET /api/schedules/filters/instructors
  *  GET /api/schedules/filters/classrooms
+ *
+ * Danh sách theo khoảng ngày và chi tiết một buổi (GET /api/schedules, /api/schedules/{id}) thuộc
+ * ScheduleApiServlet của S4-03. Đường dẫn khớp chính xác và tiền tố dài hơn được ưu tiên hơn /api/schedules/*,
+ * nên hai servlet cùng chạy được.
  */
-@WebServlet(name = "ScheduleApiServlet",
-        urlPatterns = {"/api/schedules", "/api/schedules/*"})
-public class ScheduleApiServlet extends HttpServlet {
+@WebServlet(name = "ScheduleCalendarApiServlet", urlPatterns = {
+        "/api/schedules/week", "/api/schedules/month", "/api/schedules/conflicts", "/api/schedules/filters/*"
+})
+public class ScheduleCalendarApiServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
     private static final Gson GSON = new Gson();
-
-    private static final Pattern ID_PATTERN = Pattern.compile("^/(\\d+)$");
 
     private ClassSessionService classSessionService;
 
@@ -155,42 +154,6 @@ public class ScheduleApiServlet extends HttpServlet {
                 return;
             }
 
-            // ----------------------------------------------------------------
-            // GET /api/schedules/{id}
-            // ----------------------------------------------------------------
-            Matcher idMatcher = ID_PATTERN.matcher(pathInfo);
-            if (idMatcher.matches()) {
-                long id = Long.parseLong(idMatcher.group(1));
-                ClassSessionResponse session = classSessionService.getSessionById(id);
-                ApiResponse.success(resp, "SCHEDULE_DETAIL_SUCCESS",
-                        "Lấy chi tiết buổi học thành công.", session);
-                return;
-            }
-
-            // ----------------------------------------------------------------
-            // GET /api/schedules?startDate=&endDate=
-            // ----------------------------------------------------------------
-            if (pathInfo.isEmpty() || "/".equals(pathInfo)) {
-                String startDate = req.getParameter("startDate");
-                String endDate   = req.getParameter("endDate");
-
-                if (startDate == null || endDate == null) {
-                    throw new com.ems.exception.ValidationException(
-                            "Tham số 'startDate' và 'endDate' là bắt buộc khi truy vấn danh sách lịch học.");
-                }
-
-                Long classId    = parseLong(req.getParameter("classId"));
-                Long lecturerId = parseLong(req.getParameter("lecturerId"));
-                Integer roomId  = parseInteger(req.getParameter("roomId"));
-
-                List<ClassSessionResponse> sessions =
-                        classSessionService.getScheduleByRange(startDate, endDate, classId, lecturerId, roomId);
-
-                ApiResponse.success(resp, "SCHEDULE_RANGE_SUCCESS",
-                        "Lấy thời khóa biểu theo khoảng ngày thành công.", sessions);
-                return;
-            }
-
             ApiResponse.error(resp, HttpServletResponse.SC_NOT_FOUND,
                     "ENDPOINT_NOT_FOUND", "Đường dẫn API không tồn tại.");
 
@@ -209,9 +172,11 @@ public class ScheduleApiServlet extends HttpServlet {
     // Helpers
     // -------------------------------------------------------------------------
 
+    /** Phần sau /api/schedules, ví dụ /week hoặc /filters/classes (đường dẫn khớp chính xác có pathInfo null). */
     private String getCleanPathInfo(HttpServletRequest request) {
         String pathInfo = request.getPathInfo();
-        return pathInfo == null ? "" : pathInfo.trim();
+        String path = request.getServletPath() + (pathInfo == null ? "" : pathInfo.trim());
+        return path.startsWith("/api/schedules") ? path.substring("/api/schedules".length()) : path;
     }
 
     private Long parseLong(String s) {
