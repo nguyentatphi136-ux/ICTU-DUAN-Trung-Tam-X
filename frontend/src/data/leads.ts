@@ -53,7 +53,7 @@ export const LEADS: Lead[] = persisted('leads.v2', [...Array(128)].map((_, i): L
     owner: COUNSELORS[i % COUNSELORS.length],
     createdAt: `2026-${i % 2 ? '08' : '09'}-${String(day).padStart(2, '0')}`,
   };
-}));
+}), true);
 
 export const samePhone = (a: string, b: string) => a.replace(/\D/g, '') === b.replace(/\D/g, '');
 export const viDate = (iso: string) => iso.split('-').reverse().join('/');

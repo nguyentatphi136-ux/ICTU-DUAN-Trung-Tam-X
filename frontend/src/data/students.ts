@@ -143,6 +143,7 @@ function generate(): Student[] {
 export const STUDENTS: Student[] = persisted(
   'students',
   [...SEED.map((s): Student => ({ notes: [], history: [], ...s, login: loginOf(seq(s.code) % 1000) })), ...generate()].sort((a, b) => b.code.localeCompare(a.code)),
+  true,
 );
 
 /** Mã học viên kế tiếp của năm 2026, ví dụ HV260143. */

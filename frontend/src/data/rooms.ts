@@ -25,7 +25,7 @@ export const ROOMS: Room[] = persisted('rooms', [
   { name: 'Meet WEB', kind: 'Trực tuyến', where: 'meet.google.com/tms-web-k16' },
   { name: 'Zoom 01', kind: 'Trực tuyến', where: 'zoom.us/j/842 5510 3367', capacity: 100 },
   { name: 'Zoom 02', kind: 'Trực tuyến', where: 'zoom.us/j/917 2204 6158', capacity: 100 },
-]);
+], true);
 
 export const capacityText = (r: Room) => (r.capacity ? `${r.capacity} ${r.kind === 'Vật lý' ? 'chỗ' : 'người'}` : 'Không giới hạn');
 /** Lớp đang chạy xếp vào phòng này. */

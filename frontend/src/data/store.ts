@@ -1,11 +1,25 @@
 // Dữ liệu mẫu được lưu vào localStorage để tải lại trang không mất thay đổi (chế độ chưa có backend).
 // Mỗi mảng/đối tượng đăng ký một khoá; trang vẫn sửa trực tiếp như cũ, khi rời hoặc tải lại trang thì ghi lại tất cả.
 
+import { apiEnabled } from './api';
+
 const PREFIX = 'tms.data.v1.';
 const registry = new Map<string, unknown>();
 
-/** Giá trị đã lưu của khoá này, hoặc seed nếu chưa có hay dữ liệu hỏng. */
-export function persisted<T>(key: string, seed: T): T {
+/**
+ * Giá trị đã lưu của khoá này, hoặc seed nếu chưa có hay dữ liệu hỏng.
+ * server: dữ liệu do máy chủ quản lý. Khi có backend thì không lưu vào trình duyệt, vì bản lưu là ảnh chụp theo quyền của
+ * người đăng nhập trước (lớp của một giảng viên, lead của một tư vấn viên...) và làm lệch dữ liệu của vai trò khác.
+ */
+export function persisted<T>(key: string, seed: T, server = false): T {
+  if (apiEnabled && server) {
+    try {
+      localStorage.removeItem(PREFIX + key);
+    } catch {
+      // Bị chặn localStorage: không có gì để xoá.
+    }
+    return seed;
+  }
   let value = seed;
   try {
     const raw = localStorage.getItem(PREFIX + key);

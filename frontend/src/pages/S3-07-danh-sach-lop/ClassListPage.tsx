@@ -4,7 +4,8 @@ import { AppLayout } from '../../components/AppLayout';
 import { Filter, LoadState, Pager, paginate, Pill, RowMenu, Search, usePaging, type MenuAction } from '../../components/ui';
 import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
-import { loadClasses, loadMyClasses, loadStaff } from '../../data/s3api';
+import { ROLE_CODES } from '../../data/s1api';
+import { loadClassScope } from '../../data/shared';
 import { CLASS_STATUSES, CLASSES, classesOf, classSize, classTone, isOpen, mainTeacher, missingTeachers, STAFF, totalSessions, type Klass } from '../../data/classes';
 import { viDate } from '../../data/leads';
 import { PROGRAMS } from '../../data/training';
@@ -33,8 +34,8 @@ export function ClassListPage({ head, rowActions, onOpen, version }: Props) {
   const { user } = useAuth();
   const role = user?.active ?? -1;
   const mine = role === 1 || role === 2;
-  // Có backend: giảng viên, trợ giảng tải lớp của mình; người quản lý tải mọi lớp và danh sách giảng viên để lọc.
-  const load = useLoad(() => (mine ? loadMyClasses(user!.name) : Promise.all([loadClasses(), loadStaff()])), [version, mine]);
+  // Có backend: tải lớp theo quyền như mọi menu khác (data/shared.ts); giảng viên, trợ giảng lọc lớp mình dạy ở dưới.
+  const load = useLoad(() => loadClassScope(user?.perms?.[ROLE_CODES[role]], user!.name), [version, role]);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [program, setProgram] = useState('');

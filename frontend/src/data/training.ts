@@ -15,7 +15,7 @@ export const PROGRAMS: Program[] = persisted('programs.v2', [
   { code: 'JAVA-BE', name: 'Lập trình Java Backend', description: '', hours: 200, fee: 6000000, runningClasses: 1, active: true },
   { code: 'TEST-01', name: 'Kiểm thử phần mềm', description: '', hours: 120, fee: 3000000, runningClasses: 0, active: true },
   { code: 'PHP-OLD', name: 'Lập trình PHP cơ bản', description: '', hours: 120, fee: 3000000, runningClasses: 0, active: false },
-]);
+], true);
 
 export const SUBJECTS: Subject[] = persisted('subjects', [
   { code: 'WEB-01', name: 'HTML & CSS nền tảng', sessions: 12, weight: 1, outcome: 'Dựng được trang web tĩnh có bố cục đáp ứng.', openedClasses: 5 },
@@ -30,7 +30,7 @@ export const SUBJECTS: Subject[] = persisted('subjects', [
   { code: 'ENG-01', name: 'Tiếng Anh chuyên ngành', sessions: 10, weight: 1, outcome: 'Đọc được tài liệu kỹ thuật tiếng Anh.', openedClasses: 0 },
   { code: 'SOFT-01', name: 'Kỹ năng phỏng vấn', sessions: 4, weight: 1, outcome: 'Tự tin trả lời phỏng vấn kỹ thuật.', openedClasses: 0 },
   { code: 'WEB-00', name: 'HTML & CSS (khoá cũ)', sessions: 12, weight: 1, outcome: '', openedClasses: 4 },
-]);
+], true);
 
 export const CURRICULUM: Record<string, CurriculumItem[]> = persisted('curriculum', {
   'WEB-FS': [
@@ -44,7 +44,7 @@ export const CURRICULUM: Record<string, CurriculumItem[]> = persisted('curriculu
   'DATA-01': [{ code: 'DB-01', prereq: [] }, { code: 'GIT-01', prereq: [] }],
   'JAVA-BE': [{ code: 'DB-01', prereq: [] }, { code: 'GIT-01', prereq: [] }],
   'UIUX-01': [{ code: 'UX-01', prereq: [] }, { code: 'GIT-01', prereq: [] }],
-});
+}, true);
 
 const HTML_LESSONS: Lesson[] = [
   { topic: 'Cấu trúc trang HTML', goal: 'Dựng được trang có tiêu đề, đoạn văn, danh sách, liên kết' },

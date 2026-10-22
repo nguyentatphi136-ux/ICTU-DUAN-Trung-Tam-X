@@ -1,4 +1,6 @@
+import { Fragment, useSyncExternalStore } from 'react';
 import { useRoutes, type RouteObject } from 'react-router-dom';
+import { sharedVersion, subscribeShared } from './data/shared';
 import { ErrorPage } from './pages/S1-07-trang-loi/ErrorPage';
 import { StoryIndexPage } from './pages/StoryIndexPage';
 
@@ -9,5 +11,8 @@ import { StoryIndexPage } from './pages/StoryIndexPage';
 const storyRoutes = Object.values(import.meta.glob<{ default: RouteObject[] }>('./pages/*/routes.tsx', { eager: true })).flatMap((m) => m.default);
 
 export function App() {
-  return useRoutes([...storyRoutes, { path: '/man-hinh', element: <StoryIndexPage /> }, { path: '*', element: <ErrorPage code="404" /> }]);
+  // Dữ liệu dùng chung (data/shared.ts) vừa tải xong thì dựng lại trang đang mở để mọi menu hiện cùng một bản.
+  const version = useSyncExternalStore(subscribeShared, sharedVersion);
+  const page = useRoutes([...storyRoutes, { path: '/man-hinh', element: <StoryIndexPage /> }, { path: '*', element: <ErrorPage code="404" /> }]);
+  return <Fragment key={version}>{page}</Fragment>;
 }

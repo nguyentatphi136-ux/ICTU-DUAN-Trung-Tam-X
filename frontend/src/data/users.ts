@@ -58,7 +58,7 @@ export const USERS: UserRow[] = persisted('users', [...Array(300)].map((_, i): U
     roles: [0],
     status: i % 97 === 0 ? 'Đã khoá' : i % 41 === 0 ? 'Chờ kích hoạt' : 'Hoạt động',
   };
-}));
+}), true);
 
 /** Tài khoản khác (không phải exceptId) đang dùng số điện thoại này. Máy chủ kiểm lại khi lưu (409 PHONE_DUPLICATE). */
 export const phoneOwner = (phone: string, exceptId?: number) =>

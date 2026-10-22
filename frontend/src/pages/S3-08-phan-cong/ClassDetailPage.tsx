@@ -5,6 +5,7 @@ import { Icon } from '../../components/Icon';
 import { Box, LoadState, Pill } from '../../components/ui';
 import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
+import { ROLE_CODES } from '../../data/s1api';
 import { loadClass, loadEnrollments, loadMyClasses, loadRooms, loadStaff, loadStudents } from '../../data/s3api';
 import { classesOf, classSize, classTone, ENROLLMENTS, findClass, isOpen, totalSessions, type Klass } from '../../data/classes';
 import { viDate } from '../../data/leads';
@@ -31,10 +32,12 @@ export function ClassDetailPage() {
   const [, setTick] = useState(0);
   const role = user?.active ?? -1;
   const mine = role === 1 || role === 2;
-  // Có backend: giảng viên, trợ giảng chỉ có "lớp của tôi"; người quản lý tải lớp, học viên, ghi danh, người dạy và phòng để sửa.
+  // Có backend: có quyền xem lớp (CLASS_READ) thì tải đủ lớp, học viên, ghi danh, người dạy và phòng như các menu khác;
+  // không có thì chỉ "lớp của tôi". Trước đây giảng viên luôn tải "lớp của tôi" nên ghi đè mất danh sách lớp dùng chung.
+  const readAll = !!user?.perms?.[ROLE_CODES[role]]?.includes('CLASS_READ');
   const load = useLoad(
-    () => (mine ? loadMyClasses(user!.name) : Promise.all([loadClass(code), loadStudents(), loadEnrollments(code), loadStaff(), loadRooms()])),
-    [code, mine],
+    () => (mine && !readAll ? loadMyClasses(user!.name) : Promise.all([loadClass(code), loadStudents(), loadEnrollments(code), loadStaff(), loadRooms()])),
+    [code, mine, readAll],
   );
   const k = findClass(code);
   if (apiEnabled && (load.loading || load.error))
