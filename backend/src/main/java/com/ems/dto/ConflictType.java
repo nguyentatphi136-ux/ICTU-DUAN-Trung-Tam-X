@@ -1,9 +1,9 @@
 package com.ems.dto;
 
 public enum ConflictType {
-    INSTRUCTOR_CONFLICT("INSTRUCTOR_CONFLICT", "Tr├╣ng lß╗ïch giß║úng vi├¬n"),
-    ROOM_CONFLICT("ROOM_CONFLICT", "Tr├╣ng ph├▓ng hß╗ìc"),
-    BOTH_CONFLICT("BOTH_CONFLICT", "Tr├╣ng cß║ú giß║úng vi├¬n v├á ph├▓ng hß╗ìc");
+    INSTRUCTOR_CONFLICT("INSTRUCTOR_CONFLICT", "Trùng lịch giảng viên"),
+    ROOM_CONFLICT("ROOM_CONFLICT", "Trùng phòng học"),
+    BOTH_CONFLICT("BOTH_CONFLICT", "Trùng cả giảng viên và phòng học");
 
     private final String code;
     private final String label;

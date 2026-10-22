@@ -1,7 +1,7 @@
 package com.ems.test;
 
 import com.ems.constant.RoleConstant;
-import com.ems.dao.ClassDAO;
+import com.ems.dao.SchoolClassDAO;
 import com.ems.dao.ClassroomDAO;
 import com.ems.dao.ScheduleDAO;
 import com.ems.dao.UserDAO;
@@ -736,7 +736,7 @@ public class ScheduleRescheduleAndCancelTest {
         public Classroom findById(Connection conn, int id) { return map.get(id); }
     }
 
-    static class S403MockClassDAO extends ClassDAO {
+    static class S403MockClassDAO extends SchoolClassDAO {
         private final Map<Long, SchoolClass> map = new ConcurrentHashMap<>();
         public void save(SchoolClass c) { map.put(c.getId(), c); }
         @Override

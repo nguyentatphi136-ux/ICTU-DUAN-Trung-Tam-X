@@ -11,7 +11,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ClassDAO {
+public class SchoolClassDAO {
 
     public SchoolClass findById(Connection connection, long id) throws SQLException {
         String sql = "SELECT id, class_code, class_name, program_id, start_date, end_date, "

@@ -12,8 +12,8 @@ import java.util.List;
 public class ScheduleDAO {
 
     /**
-     * T├¼m c├íc buß╗òi hß╗ìc bß╗ï giao nhau trong c├╣ng khung giß╗¥ vß╗¢i giß║úng vi├¬n hoß║╖c ph├▓ng hß╗ìc.
-     * Quy tß║»c giao nhau:
+     * Tìm các buổi học bị giao nhau trong cùng khung giờ với giảng viên hoặc phòng học.
+     * Quy tắc giao nhau:
      *   existing.session_date = requested.session_date
      *   AND existing.status != 'CANCELLED'
      *   AND existing.start_time < requested.end_time
@@ -230,8 +230,8 @@ public class ScheduleDAO {
     }
 
     /**
-     * Kh├│a d├▓ng bß║úng users (giß║úng vi├¬n) v├á classrooms (ph├▓ng hß╗ìc) vß╗¢i FOR UPDATE
-     * ─æß╗â ng─ân chß║╖n race condition khi hai request ─æß╗ông thß╗¥i c├╣ng xß║┐p lß╗ïch.
+     * Khóa dòng bảng users (giảng viên) và classrooms (phòng học) với FOR UPDATE
+     * để ngăn chặn race condition khi hai request đồng thời cùng xếp lịch.
      */
     public void lockInstructorAndRoom(Connection connection, Long instructorId, Integer roomId) throws SQLException {
         if (instructorId != null) {

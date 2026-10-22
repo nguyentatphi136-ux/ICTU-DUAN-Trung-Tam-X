@@ -1,13 +1,13 @@
 {
   "info": {
-    "name": "EMS - S4-02 Thß╗¥i kh├│a biß╗âu & Kiß╗âm tra xung ─æß╗Öt",
+    "name": "EMS - S4-02 Thời khóa biểu & Kiểm tra xung đột",
     "_postman_id": "s4-02-schedule-conflicts",
-    "description": "Bß╗Ö kß╗ïch bß║ún kiß╗âm thß╗¡ API cho User Story S4-02: Kiß╗âm tra tr├╣ng giß║úng vi├¬n, tr├╣ng ph├▓ng, chß║╖n l╞░u lß╗ïch, c╞í chß║┐ ghi ─æ├¿ cß╗ºa QL─ÉT c├│ audit log.",
+    "description": "Bộ kịch bản kiểm thử API cho User Story S4-02: Kiểm tra trùng giảng viên, trùng phòng, chặn lưu lịch, cơ chế ghi đè của QLĐT có audit log.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "1. Kiß╗âm tra xung ─æß╗Öt (Kh├┤ng c├│ xung ─æß╗Öt)",
+      "name": "1. Kiểm tra xung đột (Không có xung đột)",
       "request": {
         "method": "POST",
         "header": [
@@ -27,7 +27,7 @@
       }
     },
     {
-      "name": "2. Kiß╗âm tra xung ─æß╗Öt (Ph├ít hiß╗çn tr├╣ng lß╗ïch giß║úng vi├¬n / ph├▓ng)",
+      "name": "2. Kiểm tra xung đột (Phát hiện trùng lịch giảng viên / phòng)",
       "request": {
         "method": "POST",
         "header": [
@@ -47,7 +47,7 @@
       }
     },
     {
-      "name": "3. Tß║ío lß╗ïch hß╗ìc hß╗úp lß╗ç (HTTP 201 Created)",
+      "name": "3. Tạo lịch học hợp lệ (HTTP 201 Created)",
       "request": {
         "method": "POST",
         "header": [
@@ -67,7 +67,7 @@
       }
     },
     {
-      "name": "4. Tß║ío lß╗ïch hß╗ìc bß╗ï xung ─æß╗Öt (Mß║╖c ─æß╗ïnh bß╗ï chß║╖n - HTTP 409 Conflict)",
+      "name": "4. Tạo lịch học bị xung đột (Mặc định bị chặn - HTTP 409 Conflict)",
       "request": {
         "method": "POST",
         "header": [
@@ -87,7 +87,7 @@
       }
     },
     {
-      "name": "5. Quß║ún l├╜ ─æ├áo tß║ío x├íc nhß║¡n ghi ─æ├¿ c├│ l├╜ do (HTTP 201 Created)",
+      "name": "5. Quản lý đào tạo xác nhận ghi đè có lý do (HTTP 201 Created)",
       "request": {
         "method": "POST",
         "header": [
@@ -95,7 +95,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"classId\": 1,\n  \"instructorId\": 3,\n  \"roomId\": 1,\n  \"startDateTime\": \"2026-11-01T09:30:00\",\n  \"endDateTime\": \"2026-11-01T10:30:00\",\n  \"overrideConflict\": true,\n  \"overrideReason\": \"Giß║úng vi├¬n thß╗Åa thuß║¡n dß║íy gh├⌐p b├╣ theo ph├¬ duyß╗çt BGD\"\n}"
+          "raw": "{\n  \"classId\": 1,\n  \"instructorId\": 3,\n  \"roomId\": 1,\n  \"startDateTime\": \"2026-11-01T09:30:00\",\n  \"endDateTime\": \"2026-11-01T10:30:00\",\n  \"overrideConflict\": true,\n  \"overrideReason\": \"Giảng viên thỏa thuận dạy ghép bù theo phê duyệt BGD\"\n}"
         },
         "url": {
           "raw": "http://localhost:8080/api/schedules",
@@ -107,7 +107,7 @@
       }
     },
     {
-      "name": "6. Tra cß╗⌐u danh s├ích thß╗¥i kh├│a biß╗âu",
+      "name": "6. Tra cứu danh sách thời khóa biểu",
       "request": {
         "method": "GET",
         "url": {
@@ -124,7 +124,7 @@
       }
     },
     {
-      "name": "7. Chi tiß║┐t buß╗òi hß╗ìc theo ID",
+      "name": "7. Chi tiết buổi học theo ID",
       "request": {
         "method": "GET",
         "url": {
@@ -137,7 +137,7 @@
       }
     },
     {
-      "name": "8. Cß║¡p nhß║¡t buß╗òi hß╗ìc",
+      "name": "8. Cập nhật buổi học",
       "request": {
         "method": "PUT",
         "header": [
@@ -157,17 +157,17 @@
       }
     },
     {
-      "name": "9. Hß╗ºy buß╗òi hß╗ìc",
+      "name": "9. Hủy buổi học",
       "request": {
         "method": "DELETE",
         "url": {
-          "raw": "http://localhost:8080/api/schedules/15?reason=Nghß╗ë lß╗à",
+          "raw": "http://localhost:8080/api/schedules/15?reason=Nghỉ lễ",
           "protocol": "http",
           "host": ["localhost"],
           "port": "8080",
           "path": ["api", "schedules", "15"],
           "query": [
-            { "key": "reason", "value": "Nghß╗ë lß╗à" }
+            { "key": "reason", "value": "Nghỉ lễ" }
           ]
         }
       }

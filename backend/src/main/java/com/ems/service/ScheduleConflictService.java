@@ -2,7 +2,7 @@ package com.ems.service;
 
 import com.ems.config.DBConnection;
 import com.ems.constant.RoleConstant;
-import com.ems.dao.ClassDAO;
+import com.ems.dao.SchoolClassDAO;
 import com.ems.dao.ClassroomDAO;
 import com.ems.dao.ScheduleDAO;
 import com.ems.dao.UserDAO;
@@ -33,7 +33,7 @@ public class ScheduleConflictService {
 
     private final ScheduleDAO scheduleDAO;
     private final ClassroomDAO classroomDAO;
-    private final ClassDAO classDAO;
+    private final SchoolClassDAO classDAO;
     private final UserDAO userDAO;
     private final ConnectionProvider connectionProvider;
 
@@ -43,13 +43,13 @@ public class ScheduleConflictService {
     }
 
     public ScheduleConflictService() {
-        this(new ScheduleDAO(), new ClassroomDAO(), new ClassDAO(), new UserDAO(), DBConnection::getConnection);
+        this(new ScheduleDAO(), new ClassroomDAO(), new SchoolClassDAO(), new UserDAO(), DBConnection::getConnection);
     }
 
     public ScheduleConflictService(
             ScheduleDAO scheduleDAO,
             ClassroomDAO classroomDAO,
-            ClassDAO classDAO,
+            SchoolClassDAO classDAO,
             UserDAO userDAO
     ) {
         this(scheduleDAO, classroomDAO, classDAO, userDAO, DBConnection::getConnection);
@@ -58,7 +58,7 @@ public class ScheduleConflictService {
     public ScheduleConflictService(
             ScheduleDAO scheduleDAO,
             ClassroomDAO classroomDAO,
-            ClassDAO classDAO,
+            SchoolClassDAO classDAO,
             UserDAO userDAO,
             ConnectionProvider connectionProvider
     ) {
@@ -70,14 +70,14 @@ public class ScheduleConflictService {
     }
 
     /**
-     * Thuß║¡t to├ín kiß╗âm tra xung ─æß╗Öt thß╗¥i kh├│a biß╗âu:
-     * - Tr├╣ng giß║úng vi├¬n trong c├╣ng khung giß╗¥ giao nhau.
-     * - Tr├╣ng ph├▓ng hß╗ìc trong c├╣ng khung giß╗¥ giao nhau.
-     * - ─Éiß╗üu kiß╗çn giao nhau:
+     * Thuật toán kiểm tra xung đột thời khóa biểu:
+     * - Trùng giảng viên trong cùng khung giờ giao nhau.
+     * - Trùng phòng học trong cùng khung giờ giao nhau.
+     * - Điều kiện giao nhau:
      *     existing.start_time < requested.end_time AND existing.end_time > requested.start_time
-     * - Hai buß╗òi hß╗ìc nß╗æi tiß║┐p nhau (v├¡ dß╗Ñ: kß║┐t th├║c 10:00 v├á bß║»t ─æß║ºu 10:00) KH├öNG bß╗ï coi l├á xung ─æß╗Öt.
-     * - Khi cß║¡p nhß║¡t, bß╗Å qua ch├¡nh buß╗òi hß╗ìc ─æ├│ (existing.id != requested.scheduleId).
-     * - Lß╗ïch c├│ trß║íng th├íi CANCELLED ─æ╞░ß╗úc loß║íi trß╗½.
+     * - Hai buổi học nối tiếp nhau (ví dụ: kết thúc 10:00 và bắt đầu 10:00) KHÔNG bị coi là xung đột.
+     * - Khi cập nhật, bỏ qua chính buổi học đó (existing.id != requested.scheduleId).
+     * - Lịch có trạng thái CANCELLED được loại trừ.
      */
     public ConflictCheckResult detectConflicts(ScheduleRequest request, List<ClassSession> candidates) {
         request.validate();
@@ -93,15 +93,15 @@ public class ScheduleConflictService {
 
         if (candidates != null) {
             for (ClassSession existing : candidates) {
-                // Loß║íi trß╗½ ch├¡nh n├│ khi cß║¡p nhß║¡t
+                // Loại trừ chính nó khi cập nhật
                 if (excludeId != null && excludeId.equals(existing.getId())) {
                     continue;
                 }
-                // Loß║íi trß╗½ c├íc buß╗òi ─æ├ú hß╗ºy
+                // Loại trừ các buổi đã hủy
                 if ("CANCELLED".equalsIgnoreCase(existing.getStatus())) {
                     continue;
                 }
-                // Kh├íc ng├áy -> kh├┤ng xung ─æß╗Öt
+                // Khác ngày -> không xung đột
                 if (existing.getSessionDate() == null || !existing.getSessionDate().equals(reqDate)) {
                     continue;
                 }
@@ -110,14 +110,14 @@ public class ScheduleConflictService {
                 LocalTime exEnd = existing.getEndTime();
                 if (exStart == null || exEnd == null) continue;
 
-                // Kiß╗âm tra ─æiß╗üu kiß╗çn giao nhau thß╗¥i gian:
+                // Kiểm tra điều kiện giao nhau thời gian:
                 // exStart < reqEnd && exEnd > reqStart
                 boolean isOverlapping = exStart.isBefore(reqEnd) && exEnd.isAfter(reqStart);
                 if (!isOverlapping) {
                     continue;
                 }
 
-                // Map th├┤ng tin y├¬u cß║ºu ─æß╗â hiß╗ân thß╗ï
+                // Map thông tin yêu cầu để hiển thị
                 Map<String, Object> requestedSchedule = new LinkedHashMap<>();
                 requestedSchedule.put("classId", request.getClassId());
                 requestedSchedule.put("startDateTime", request.getResolvedStartDateTime() != null
@@ -173,7 +173,7 @@ public class ScheduleConflictService {
     }
 
     /**
-     * API 1: Kiß╗âm tra xung ─æß╗Öt (Read-only check, kh├┤ng l╞░u lß╗ïch)
+     * API 1: Kiểm tra xung đột (Read-only check, không lưu lịch)
      */
     public ConflictCheckResult checkConflicts(ScheduleRequest request) throws SQLException {
         request.validate();
@@ -192,19 +192,19 @@ public class ScheduleConflictService {
     }
 
     /**
-     * API 2: Tß║ío lß╗ïch hß╗ìc mß╗¢i
-     * Quy tr├¼nh:
-     * 1. Validate dß╗» liß╗çu ─æß║ºu v├áo.
-     * 2. Kiß╗âm tra lß╗¢p hß╗ìc, giß║úng vi├¬n, ph├▓ng hß╗ìc tß╗ôn tß║íi.
-     * 3. Mß╗ƒ transaction v├á kh├│a FOR UPDATE t├ái nguy├¬n ─æß╗â chß╗æng race condition.
-     * 4. Kiß╗âm tra xung ─æß╗Öt.
-     * 5. Nß║┐u c├│ xung ─æß╗Öt:
-     *    - Nß║┐u KH├öNG y├¬u cß║ºu ghi ─æ├¿ -> Tß╗½ chß╗æi l╞░u (HTTP 409).
-     *    - Nß║┐u C├ô y├¬u cß║ºu ghi ─æ├¿:
-     *      + Chß╗ë Quß║ún l├╜ ─æ├áo tß║ío (hoß║╖c Admin) mß╗¢i c├│ quyß╗ün ghi ─æ├¿ (HTTP 403).
-     *      + Bß║»t buß╗Öc phß║úi c├│ l├╜ do ghi ─æ├¿ (HTTP 400).
-     *      + L╞░u lß╗ïch v├á ghi nhß║¡n Audit Log chi tiß║┐t.
-     * 6. Nß║┐u kh├┤ng c├│ xung ─æß╗Öt: L╞░u lß╗ïch v├á ghi nhß║¡n Audit Log.
+     * API 2: Tạo lịch học mới
+     * Quy trình:
+     * 1. Validate dữ liệu đầu vào.
+     * 2. Kiểm tra lớp học, giảng viên, phòng học tồn tại.
+     * 3. Mở transaction và khóa FOR UPDATE tài nguyên để chống race condition.
+     * 4. Kiểm tra xung đột.
+     * 5. Nếu có xung đột:
+     *    - Nếu KHÔNG yêu cầu ghi đè -> Từ chối lưu (HTTP 409).
+     *    - Nếu CÓ yêu cầu ghi đè:
+     *      + Chỉ Quản lý đào tạo (hoặc Admin) mới có quyền ghi đè (HTTP 403).
+     *      + Bắt buộc phải có lý do ghi đè (HTTP 400).
+     *      + Lưu lịch và ghi nhận Audit Log chi tiết.
+     * 6. Nếu không có xung đột: Lưu lịch và ghi nhận Audit Log.
      */
     public ClassSession createSchedule(
             long actorId,
@@ -216,13 +216,13 @@ public class ScheduleConflictService {
         try (Connection connection = connectionProvider.getConnection()) {
             connection.setAutoCommit(false);
             try {
-                // 1. Kiß╗âm tra tß╗ôn tß║íi thß╗▒c thß╗â
+                // 1. Kiểm tra tồn tại thực thể
                 verifyEntitiesExist(connection, request);
 
-                // 2. Kh├│a d├▓ng users & classrooms ─æß╗â ng─ân chß║╖n race condition ─æß╗ông thß╗¥i
+                // 2. Khóa dòng users & classrooms để ngăn chặn race condition đồng thời
                 scheduleDAO.lockInstructorAndRoom(connection, request.getInstructorId(), request.getResolvedRoomId());
 
-                // 3. Kiß╗âm tra xung ─æß╗Öt trong transaction
+                // 3. Kiểm tra xung đột trong transaction
                 List<ClassSession> candidates = scheduleDAO.findConflictingSessions(
                         connection,
                         null,
@@ -238,7 +238,7 @@ public class ScheduleConflictService {
                     handleConflictResolution(actorId, actorRoles, request, conflictResult);
                 }
 
-                // 4. L╞░u lß╗ïch hß╗ìc mß╗¢i
+                // 4. Lưu lịch học mới
                 ClassSession session = new ClassSession();
                 session.setClassId(request.getClassId());
                 session.setClassSubjectId(request.getClassSubjectId());
@@ -254,7 +254,7 @@ public class ScheduleConflictService {
                 long newId = scheduleDAO.createSchedule(connection, session);
                 session.setId(newId);
 
-                // 5. Ghi nhß║¡n Audit Log
+                // 5. Ghi nhận Audit Log
                 if (conflictResult.isHasConflict() && request.isOverrideConflict()) {
                     Map<String, Object> auditOld = Map.of(
                             "action", "OVERRIDE_SCHEDULE_CONFLICT",
@@ -297,7 +297,7 @@ public class ScheduleConflictService {
     }
 
     /**
-     * API 3: Cß║¡p nhß║¡t lß╗ïch hß╗ìc
+     * API 3: Cập nhật lịch học
      */
     /**
      * API 3: Cập nhật hoặc Dời lịch học (User Story S4-03)

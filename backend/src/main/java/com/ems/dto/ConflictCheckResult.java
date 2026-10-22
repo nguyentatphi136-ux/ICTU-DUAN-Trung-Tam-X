@@ -13,7 +13,7 @@ public class ConflictCheckResult implements Serializable {
 
     public ConflictCheckResult() {
         this.hasConflict = false;
-        this.message = "Kh├┤ng c├│ xung ─æß╗Öt lß╗ïch hß╗ìc.";
+        this.message = "Không có xung đột lịch học.";
     }
 
     public ConflictCheckResult(boolean hasConflict, List<ConflictDetail> conflicts, String message) {

@@ -1,7 +1,7 @@
 package com.ems.test;
 
 import com.ems.constant.RoleConstant;
-import com.ems.dao.ClassDAO;
+import com.ems.dao.SchoolClassDAO;
 import com.ems.dao.ClassroomDAO;
 import com.ems.dao.ScheduleDAO;
 import com.ems.dao.UserDAO;
@@ -34,9 +34,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Bß╗Ö kiß╗âm thß╗¡ to├án diß╗çn cho User Story S4-02:
- * [BE] Database + API kiß╗âm tra xung ─æß╗Öt thß╗¥i kh├│a biß╗âu
- * Bao qu├ít ─æß║ºy ─æß╗º 15 ti├¬u ch├¡ kiß╗âm thß╗¡ theo ─æß║╖c tß║ú nghiß╗çp vß╗Ñ.
+ * Bộ kiểm thử toàn diện cho User Story S4-02:
+ * [BE] Database + API kiểm tra xung đột thời khóa biểu
+ * Bao quát đầy đủ 15 tiêu chí kiểm thử theo đặc tả nghiệp vụ.
  */
 public class ScheduleConflictTest {
 
@@ -66,49 +66,49 @@ public class ScheduleConflictTest {
                 () -> createMockConnection(mockScheduleDAO)
         );
 
-        // Khß╗ƒi tß║ío ph├▓ng hß╗ìc mß║½u
-        mockClassroomDAO.save(new Classroom(1, "PH-101", "Ph├▓ng 101", 40, "PHYSICAL", "AVAILABLE"));
-        mockClassroomDAO.save(new Classroom(2, "LAB-202", "Ph├▓ng m├íy 202", 35, "PHYSICAL", "AVAILABLE"));
+        // Khởi tạo phòng học mẫu
+        mockClassroomDAO.save(new Classroom(1, "PH-101", "Phòng 101", 40, "PHYSICAL", "AVAILABLE"));
+        mockClassroomDAO.save(new Classroom(2, "LAB-202", "Phòng máy 202", 35, "PHYSICAL", "AVAILABLE"));
 
-        // Khß╗ƒi tß║ío lß╗¢p hß╗ìc mß║½u
-        mockClassDAO.save(new SchoolClass(1L, "CNTT-K23-01", "Lß╗¢p Java 01", 1, "IN_PROGRESS"));
-        mockClassDAO.save(new SchoolClass(2L, "CNTT-K23-02", "Lß╗¢p Web 02", 1, "IN_PROGRESS"));
+        // Khởi tạo lớp học mẫu
+        mockClassDAO.save(new SchoolClass(1L, "CNTT-K23-01", "Lớp Java 01", 1, "IN_PROGRESS"));
+        mockClassDAO.save(new SchoolClass(2L, "CNTT-K23-02", "Lớp Web 02", 1, "IN_PROGRESS"));
 
-        // Khß╗ƒi tß║ío ng╞░ß╗¥i d├╣ng / giß║úng vi├¬n mß║½u
-        mockUserDAO.save(new User(3L, "NV-GV-01", "giangvien@edumanager.vn", "Trß║ºn Thß╗ï Giß║úng", RoleConstant.INSTRUCTOR));
-        mockUserDAO.save(new User(4L, "NV-GV-02", "giangvien2@edumanager.vn", "Nguyß╗àn V─ân Thß║ºy", RoleConstant.INSTRUCTOR));
+        // Khởi tạo người dùng / giảng viên mẫu
+        mockUserDAO.save(new User(3L, "NV-GV-01", "giangvien@edumanager.vn", "Trần Thị Giảng", RoleConstant.INSTRUCTOR));
+        mockUserDAO.save(new User(4L, "NV-GV-02", "giangvien2@edumanager.vn", "Nguyễn Văn Thầy", RoleConstant.INSTRUCTOR));
     }
 
     // -------------------------------------------------------------------------
-    // 1. Tß║ío lß╗ïch hß╗úp lß╗ç th├ánh c├┤ng
+    // 1. Tạo lịch hợp lệ thành công
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 1: Tß║ío lß╗ïch hß╗úp lß╗ç th├ánh c├┤ng khi kh├┤ng c├│ xung ─æß╗Öt")
+    @DisplayName("TC 1: Tạo lịch hợp lệ thành công khi không có xung đột")
     void testCreateValidScheduleSuccess() throws SQLException {
         ScheduleRequest req = new ScheduleRequest(1L, 3L, 1,
                 "2026-11-01T08:00:00", "2026-11-01T10:00:00");
 
         ClassSession created = service.createSchedule(TRAINING_MGR_ID, TRAINING_MGR_ROLES, req);
 
-        assertNotNull(created, "Buß╗òi hß╗ìc ─æ╞░ß╗úc tß║ío kh├┤ng ─æ╞░ß╗úc null");
-        assertNotNull(created.getId(), "Phß║úi sinh ID cho buß╗òi hß╗ìc mß╗¢i");
+        assertNotNull(created, "Buổi học được tạo không được null");
+        assertNotNull(created.getId(), "Phải sinh ID cho buổi học mới");
         assertEquals("SCHEDULED", created.getStatus());
         assertEquals(TEST_DATE, created.getSessionDate());
         assertEquals(LocalTime.of(8, 0), created.getStartTime());
         assertEquals(LocalTime.of(10, 0), created.getEndTime());
-        assertEquals(1, mockScheduleDAO.auditLogs.size(), "Phß║úi ghi nhß║¡n 1 audit log cho thao t├íc tß║ío lß╗ïch");
+        assertEquals(1, mockScheduleDAO.auditLogs.size(), "Phải ghi nhận 1 audit log cho thao tác tạo lịch");
     }
 
     // -------------------------------------------------------------------------
-    // 2. Tr├╣ng giß║úng vi├¬n c├╣ng khung giß╗¥ bß╗ï chß║╖n
+    // 2. Trùng giảng viên cùng khung giờ bị chặn
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 2: Tr├╣ng giß║úng vi├¬n c├╣ng khung giß╗¥ bß╗ï chß║╖n l╞░u lß╗ïch (HTTP 409)")
+    @DisplayName("TC 2: Trùng giảng viên cùng khung giờ bị chặn lưu lịch (HTTP 409)")
     void testInstructorConflictBlocked() {
-        // ─É├ú c├│ lß╗ïch cß╗ºa Giß║úng vi├¬n 3 ß╗ƒ Ph├▓ng 1 tß╗½ 09:00 ─æß║┐n 11:00
+        // Đã có lịch của Giảng viên 3 ở Phòng 1 từ 09:00 đến 11:00
         addExistingSession(10L, 2L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
 
-        // Y├¬u cß║ºu xß║┐p lß╗ïch Giß║úng vi├¬n 3 ß╗ƒ Ph├▓ng 2 (kh├íc ph├▓ng) tß╗½ 08:30 ─æß║┐n 10:00 (giao nhau 09:00 - 10:00)
+        // Yêu cầu xếp lịch Giảng viên 3 ở Phòng 2 (khác phòng) từ 08:30 đến 10:00 (giao nhau 09:00 - 10:00)
         ScheduleRequest req = new ScheduleRequest(1L, 3L, 2,
                 "2026-11-01T08:30:00", "2026-11-01T10:00:00");
 
@@ -116,22 +116,22 @@ public class ScheduleConflictTest {
                 service.createSchedule(TRAINING_MGR_ID, TRAINING_MGR_ROLES, req));
 
         ConflictCheckResult result = ex.getConflictResult();
-        assertTrue(result.isHasConflict(), "Phß║úi b├ío c├│ xung ─æß╗Öt");
-        assertEquals(1, result.getConflicts().size(), "Phß║úi c├│ ─æ├║ng 1 xung ─æß╗Öt");
+        assertTrue(result.isHasConflict(), "Phải báo có xung đột");
+        assertEquals(1, result.getConflicts().size(), "Phải có đúng 1 xung đột");
         assertEquals(ConflictType.INSTRUCTOR_CONFLICT.getCode(), result.getConflicts().get(0).getType());
-        assertTrue(result.getConflicts().get(0).getMessage().contains("Trß║ºn Thß╗ï Giß║úng"));
+        assertTrue(result.getConflicts().get(0).getMessage().contains("Trần Thị Giảng"));
     }
 
     // -------------------------------------------------------------------------
-    // 3. Tr├╣ng ph├▓ng c├╣ng khung giß╗¥ bß╗ï chß║╖n
+    // 3. Trùng phòng cùng khung giờ bị chặn
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 3: Tr├╣ng ph├▓ng c├╣ng khung giß╗¥ bß╗ï chß║╖n l╞░u lß╗ïch (HTTP 409)")
+    @DisplayName("TC 3: Trùng phòng cùng khung giờ bị chặn lưu lịch (HTTP 409)")
     void testRoomConflictBlocked() {
-        // ─É├ú c├│ lß╗ïch ß╗ƒ Ph├▓ng 1 cß╗ºa Giß║úng vi├¬n 3 tß╗½ 09:00 ─æß║┐n 11:00
+        // Đã có lịch ở Phòng 1 của Giảng viên 3 từ 09:00 đến 11:00
         addExistingSession(10L, 2L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
 
-        // Y├¬u cß║ºu xß║┐p lß╗ïch cho Giß║úng vi├¬n 4 (kh├íc giß║úng vi├¬n) ß╗ƒ Ph├▓ng 1 tß╗½ 10:00 ─æß║┐n 12:00 (giao nhau 10:00 - 11:00)
+        // Yêu cầu xếp lịch cho Giảng viên 4 (khác giảng viên) ở Phòng 1 từ 10:00 đến 12:00 (giao nhau 10:00 - 11:00)
         ScheduleRequest req = new ScheduleRequest(1L, 4L, 1,
                 "2026-11-01T10:00:00", "2026-11-01T12:00:00");
 
@@ -146,21 +146,21 @@ public class ScheduleConflictTest {
     }
 
     // -------------------------------------------------------------------------
-    // 4. Tr├╣ng cß║ú giß║úng vi├¬n v├á ph├▓ng trß║ú ─æß╗º th├┤ng tin xung ─æß╗Öt
+    // 4. Trùng cả giảng viên và phòng trả đủ thông tin xung đột
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 4: Tr├╣ng cß║ú giß║úng vi├¬n v├á ph├▓ng trß║ú ─æß╗º cß║ú 2 th├┤ng tin xung ─æß╗Öt")
+    @DisplayName("TC 4: Trùng cả giảng viên và phòng trả đủ cả 2 thông tin xung đột")
     void testBothInstructorAndRoomConflictReported() {
-        // Buß╗òi 1: Giß║úng vi├¬n 3, Ph├▓ng 1, 09:00 - 11:00
+        // Buổi 1: Giảng viên 3, Phòng 1, 09:00 - 11:00
         addExistingSession(10L, 2L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
 
-        // Y├¬u cß║ºu xß║┐p c├╣ng Giß║úng vi├¬n 3 V├Ç c├╣ng Ph├▓ng 1 tß╗½ 09:30 ─æß║┐n 11:30
+        // Yêu cầu xếp cùng Giảng viên 3 VÀ cùng Phòng 1 từ 09:30 đến 11:30
         ScheduleRequest req = new ScheduleRequest(1L, 3L, 1,
                 "2026-11-01T09:30:00", "2026-11-01T11:30:00");
 
         ConflictCheckResult result = service.detectConflicts(req, mockScheduleDAO.sessions);
         assertTrue(result.isHasConflict());
-        assertEquals(2, result.getConflicts().size(), "Phß║úi trß║ú vß╗ü 2 xung ─æß╗Öt: 1 cho GV, 1 cho Ph├▓ng");
+        assertEquals(2, result.getConflicts().size(), "Phải trả về 2 xung đột: 1 cho GV, 1 cho Phòng");
 
         List<String> types = result.getConflicts().stream().map(ConflictDetail::getType).toList();
         assertTrue(types.contains(ConflictType.INSTRUCTOR_CONFLICT.getCode()));
@@ -168,79 +168,79 @@ public class ScheduleConflictTest {
     }
 
     // -------------------------------------------------------------------------
-    // 5. Hai lß╗ïch nß╗æi tiß║┐p nhau kh├┤ng bß╗ï coi l├á xung ─æß╗Öt
+    // 5. Hai lịch nối tiếp nhau không bị coi là xung đột
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 5: Hai lß╗ïch nß╗æi tiß║┐p nhau (buß╗òi tr╞░ß╗¢c kß║┐t th├║c ─æ├║ng l├║c buß╗òi sau bß║»t ─æß║ºu) KH├öNG xung ─æß╗Öt")
+    @DisplayName("TC 5: Hai lịch nối tiếp nhau (buổi trước kết thúc đúng lúc buổi sau bắt đầu) KHÔNG xung đột")
     void testConsecutiveSchedulesNotConflicting() {
-        // Buß╗òi 1: 08:00 - 10:00 (Giß║úng vi├¬n 3, Ph├▓ng 1)
+        // Buổi 1: 08:00 - 10:00 (Giảng viên 3, Phòng 1)
         addExistingSession(10L, 2L, 3L, 1, LocalTime.of(8, 0), LocalTime.of(10, 0), "SCHEDULED");
 
-        // Buß╗òi sau: 10:00 - 12:00 (C├╣ng Giß║úng vi├¬n 3 hoß║╖c c├╣ng Ph├▓ng 1)
+        // Buổi sau: 10:00 - 12:00 (Cùng Giảng viên 3 hoặc cùng Phòng 1)
         ScheduleRequest nextReq = new ScheduleRequest(1L, 3L, 1,
                 "2026-11-01T10:00:00", "2026-11-01T12:00:00");
 
         ConflictCheckResult nextResult = service.detectConflicts(nextReq, mockScheduleDAO.sessions);
-        assertFalse(nextResult.isHasConflict(), "Nß╗æi tiß║┐p sau 10:00 kh├┤ng ─æ╞░ß╗úc b├ío xung ─æß╗Öt");
+        assertFalse(nextResult.isHasConflict(), "Nối tiếp sau 10:00 không được báo xung đột");
 
-        // Buß╗òi tr╞░ß╗¢c: 06:00 - 08:00 (C├╣ng Giß║úng vi├¬n 3 hoß║╖c c├╣ng Ph├▓ng 1)
+        // Buổi trước: 06:00 - 08:00 (Cùng Giảng viên 3 hoặc cùng Phòng 1)
         ScheduleRequest prevReq = new ScheduleRequest(1L, 3L, 1,
                 "2026-11-01T06:00:00", "2026-11-01T08:00:00");
 
         ConflictCheckResult prevResult = service.detectConflicts(prevReq, mockScheduleDAO.sessions);
-        assertFalse(prevResult.isHasConflict(), "Nß╗æi tiß║┐p tr╞░ß╗¢c 08:00 kh├┤ng ─æ╞░ß╗úc b├ío xung ─æß╗Öt");
+        assertFalse(prevResult.isHasConflict(), "Nối tiếp trước 08:00 không được báo xung đột");
     }
 
     // -------------------------------------------------------------------------
-    // 6. Lß╗ïch giao nhau mß╗Öt phß║ºn bß╗ï ph├ít hiß╗çn
+    // 6. Lịch giao nhau một phần bị phát hiện
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 6: Lß╗ïch giao nhau mß╗Öt phß║ºn (bß║»t ─æß║ºu tr╞░ß╗¢c kß║┐t th├║c giß╗»a chß╗½ng, hoß║╖c bß║»t ─æß║ºu giß╗»a chß╗½ng) bß╗ï ph├ít hiß╗çn")
+    @DisplayName("TC 6: Lịch giao nhau một phần (bắt đầu trước kết thúc giữa chừng, hoặc bắt đầu giữa chừng) bị phát hiện")
     void testPartialOverlapDetected() {
-        // Buß╗òi hiß╗çn tß║íi: 09:00 - 11:00
+        // Buổi hiện tại: 09:00 - 11:00
         addExistingSession(10L, 2L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
 
-        // Tr╞░ß╗¥ng hß╗úp a: 08:00 - 09:30 (bß║»t ─æß║ºu tr╞░ß╗¢c, kß║┐t th├║c giß╗»a chß╗½ng)
+        // Trường hợp a: 08:00 - 09:30 (bắt đầu trước, kết thúc giữa chừng)
         ScheduleRequest reqA = new ScheduleRequest(1L, 3L, 2,
                 "2026-11-01T08:00:00", "2026-11-01T09:30:00");
         assertTrue(service.detectConflicts(reqA, mockScheduleDAO.sessions).isHasConflict());
 
-        // Tr╞░ß╗¥ng hß╗úp b: 10:30 - 12:00 (bß║»t ─æß║ºu giß╗»a chß╗½ng, kß║┐t th├║c sau)
+        // Trường hợp b: 10:30 - 12:00 (bắt đầu giữa chừng, kết thúc sau)
         ScheduleRequest reqB = new ScheduleRequest(1L, 3L, 2,
                 "2026-11-01T10:30:00", "2026-11-01T12:00:00");
         assertTrue(service.detectConflicts(reqB, mockScheduleDAO.sessions).isHasConflict());
     }
 
     // -------------------------------------------------------------------------
-    // 7. Lß╗ïch lß╗ông ho├án to├án v├áo lß╗ïch kh├íc bß╗ï ph├ít hiß╗çn
+    // 7. Lịch lồng hoàn toàn vào lịch khác bị phát hiện
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 7: Lß╗ïch lß╗ông ho├án to├án b├¬n trong hoß║╖c bao tr├╣m ho├án to├án lß╗ïch kh├íc bß╗ï ph├ít hiß╗çn")
+    @DisplayName("TC 7: Lịch lồng hoàn toàn bên trong hoặc bao trùm hoàn toàn lịch khác bị phát hiện")
     void testCompleteNestingDetected() {
-        // Buß╗òi 1: 08:00 - 12:00
+        // Buổi 1: 08:00 - 12:00
         addExistingSession(10L, 2L, 3L, 1, LocalTime.of(8, 0), LocalTime.of(12, 0), "SCHEDULED");
 
-        // Lß╗ông b├¬n trong: 09:00 - 11:00
+        // Lồng bên trong: 09:00 - 11:00
         ScheduleRequest innerReq = new ScheduleRequest(1L, 3L, 2,
                 "2026-11-01T09:00:00", "2026-11-01T11:00:00");
         assertTrue(service.detectConflicts(innerReq, mockScheduleDAO.sessions).isHasConflict());
 
-        // Bao tr├╣m b├¬n ngo├ái: 07:00 - 13:00
+        // Bao trùm bên ngoài: 07:00 - 13:00
         ScheduleRequest outerReq = new ScheduleRequest(1L, 3L, 2,
                 "2026-11-01T07:00:00", "2026-11-01T13:00:00");
         assertTrue(service.detectConflicts(outerReq, mockScheduleDAO.sessions).isHasConflict());
     }
 
     // -------------------------------------------------------------------------
-    // 8. Cß║¡p nhß║¡t lß╗ïch kh├┤ng so s├ính vß╗¢i ch├¡nh n├│
+    // 8. Cập nhật lịch không so sánh với chính nó
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 8: Cß║¡p nhß║¡t lß╗ïch kh├┤ng so s├ính vß╗¢i ch├¡nh n├│ (loß║íi trß╗½ scheduleId)")
+    @DisplayName("TC 8: Cập nhật lịch không so sánh với chính nó (loại trừ scheduleId)")
     void testUpdateDoesNotCompareWithItself() throws SQLException {
-        // Buß╗òi hß╗ìc ID 15: 09:00 - 11:00
+        // Buổi học ID 15: 09:00 - 11:00
         addExistingSession(15L, 2L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
 
-        // Cß║¡p nhß║¡t buß╗òi hß╗ìc ID 15 dß╗¥i giß╗¥ sang 09:00 - 11:30 (vß║½n giß║úng vi├¬n 3, ph├▓ng 1)
+        // Cập nhật buổi học ID 15 dời giờ sang 09:00 - 11:30 (vẫn giảng viên 3, phòng 1)
         ScheduleRequest req = new ScheduleRequest(2L, 3L, 1,
                 "2026-11-01T09:00:00", "2026-11-01T11:30:00");
 
@@ -251,17 +251,17 @@ public class ScheduleConflictTest {
     }
 
     // -------------------------------------------------------------------------
-    // 9. Cß║¡p nhß║¡t tß║ío ra xung ─æß╗Öt vß╗¢i buß╗òi kh├íc bß╗ï tß╗½ chß╗æi
+    // 9. Cập nhật tạo ra xung đột với buổi khác bị từ chối
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 9: Cß║¡p nhß║¡t tß║ío ra xung ─æß╗Öt vß╗¢i buß╗òi hß╗ìc KH├üC bß╗ï tß╗½ chß╗æi")
+    @DisplayName("TC 9: Cập nhật tạo ra xung đột với buổi học KHÁC bị từ chối")
     void testUpdateCausingConflictIsRejected() {
-        // Buß╗òi hß╗ìc 15: 09:00 - 11:00 (GV 3, Ph├▓ng 1)
+        // Buổi học 15: 09:00 - 11:00 (GV 3, Phòng 1)
         addExistingSession(15L, 2L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
-        // Buß╗òi hß╗ìc 16: 14:00 - 16:00 (GV 3, Ph├▓ng 2)
+        // Buổi học 16: 14:00 - 16:00 (GV 3, Phòng 2)
         addExistingSession(16L, 1L, 3L, 2, LocalTime.of(14, 0), LocalTime.of(16, 0), "SCHEDULED");
 
-        // Thß╗¡ cß║¡p nhß║¡t Buß╗òi 15 dß╗¥i sang 14:30 - 16:30 -> ─Éß╗Ñng Giß║úng vi├¬n 3 ß╗ƒ Buß╗òi 16
+        // Thử cập nhật Buổi 15 dời sang 14:30 - 16:30 -> Đụng Giảng viên 3 ở Buổi 16
         ScheduleRequest req = new ScheduleRequest(2L, 3L, 1,
                 "2026-11-01T14:30:00", "2026-11-01T16:30:00");
 
@@ -273,55 +273,55 @@ public class ScheduleConflictTest {
     }
 
     // -------------------------------------------------------------------------
-    // 10. Giß║úng vi├¬n kh├íc nhau v├á ph├▓ng kh├íc nhau kh├┤ng bß╗ï b├ío nhß║ºm
+    // 10. Giảng viên khác nhau và phòng khác nhau không bị báo nhầm
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 10: Giß║úng vi├¬n kh├íc v├á ph├▓ng kh├íc trong c├╣ng khung giß╗¥ kh├┤ng bß╗ï b├ío nhß║ºm xung ─æß╗Öt")
+    @DisplayName("TC 10: Giảng viên khác và phòng khác trong cùng khung giờ không bị báo nhầm xung đột")
     void testDifferentInstructorAndRoomNotReported() {
-        // Buß╗òi 1: Giß║úng vi├¬n 3, Ph├▓ng 1, 09:00 - 11:00
+        // Buổi 1: Giảng viên 3, Phòng 1, 09:00 - 11:00
         addExistingSession(10L, 2L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
 
-        // Buß╗òi mß╗¢i: Giß║úng vi├¬n 4, Ph├▓ng 2, 09:00 - 11:00 (kh├íc cß║ú GV lß║½n ph├▓ng)
+        // Buổi mới: Giảng viên 4, Phòng 2, 09:00 - 11:00 (khác cả GV lẫn phòng)
         ScheduleRequest req = new ScheduleRequest(1L, 4L, 2,
                 "2026-11-01T09:00:00", "2026-11-01T11:00:00");
 
         ConflictCheckResult result = service.detectConflicts(req, mockScheduleDAO.sessions);
-        assertFalse(result.isHasConflict(), "Kh├íc cß║ú giß║úng vi├¬n lß║½n ph├▓ng hß╗ìc kh├┤ng ─æ╞░ß╗úc b├ío xung ─æß╗Öt");
+        assertFalse(result.isHasConflict(), "Khác cả giảng viên lẫn phòng học không được báo xung đột");
     }
 
     // -------------------------------------------------------------------------
-    // 11. Lß╗ïch ─æ├ú hß╗ºy kh├┤ng bß╗ï t├¡nh l├á xung ─æß╗Öt
+    // 11. Lịch đã hủy không bị tính là xung đột
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 11: Buß╗òi hß╗ìc c├│ trß║íng th├íi CANCELLED kh├┤ng bß╗ï t├¡nh l├á xung ─æß╗Öt")
+    @DisplayName("TC 11: Buổi học có trạng thái CANCELLED không bị tính là xung đột")
     void testCancelledScheduleExcludedFromConflict() {
-        // Buß╗òi 1: Giß║úng vi├¬n 3, Ph├▓ng 1, 09:00 - 11:00 nh╞░ng trß║íng th├íi CANCELLED
+        // Buổi 1: Giảng viên 3, Phòng 1, 09:00 - 11:00 nhưng trạng thái CANCELLED
         addExistingSession(10L, 2L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "CANCELLED");
 
-        // Buß╗òi mß╗¢i: Giß║úng vi├¬n 3, Ph├▓ng 1, 09:00 - 11:00
+        // Buổi mới: Giảng viên 3, Phòng 1, 09:00 - 11:00
         ScheduleRequest req = new ScheduleRequest(1L, 3L, 1,
                 "2026-11-01T09:00:00", "2026-11-01T11:00:00");
 
         ConflictCheckResult result = service.detectConflicts(req, mockScheduleDAO.sessions);
-        assertFalse(result.isHasConflict(), "Buß╗òi hß╗ìc ─æ├ú hß╗ºy kh├┤ng ─æ╞░ß╗úc t├¡nh l├á chiß║┐m dß╗Ñng lß╗ïch");
+        assertFalse(result.isHasConflict(), "Buổi học đã hủy không được tính là chiếm dụng lịch");
     }
 
     // -------------------------------------------------------------------------
-    // 12. Ng╞░ß╗¥i kh├┤ng c├│ quyß╗ün kh├┤ng thß╗â ghi ─æ├¿
+    // 12. Người không có quyền không thể ghi đè
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 12: Ng╞░ß╗¥i kh├┤ng c├│ vai tr├▓ Quß║ún l├╜ ─æ├áo tß║ío (v├¡ dß╗Ñ Giß║úng vi├¬n/Hß╗ìc vi├¬n) kh├┤ng thß╗â ghi ─æ├¿ xung ─æß╗Öt (HTTP 403)")
+    @DisplayName("TC 12: Người không có vai trò Quản lý đào tạo (ví dụ Giảng viên/Học viên) không thể ghi đè xung đột (HTTP 403)")
     void testUnauthorizedUserCannotOverrideConflict() {
-        // ─É├ú c├│ lß╗ïch 09:00 - 11:00
+        // Đã có lịch 09:00 - 11:00
         addExistingSession(10L, 2L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
 
-        // Request cß╗æ t├¼nh truyß╗ün overrideConflict = true
+        // Request cố tình truyền overrideConflict = true
         ScheduleRequest req = new ScheduleRequest(1L, 3L, 1,
                 "2026-11-01T09:30:00", "2026-11-01T11:30:00");
         req.setOverrideConflict(true);
-        req.setOverrideReason("Tß╗▒ ├╜ ghi ─æ├¿");
+        req.setOverrideReason("Tự ý ghi đè");
 
-        // Giß║úng vi├¬n thß╗¡ ghi ─æ├¿ -> Phß║úi bß╗ï tß╗½ chß╗æi 403 Forbidden
+        // Giảng viên thử ghi đè -> Phải bị từ chối 403 Forbidden
         ForbiddenAccessException ex = assertThrows(ForbiddenAccessException.class, () ->
                 service.createSchedule(3L, INSTRUCTOR_ROLES, req));
 
@@ -330,35 +330,35 @@ public class ScheduleConflictTest {
     }
 
     // -------------------------------------------------------------------------
-    // 13. Ghi ─æ├¿ hß╗úp lß╗ç phß║úi c├│ audit log
+    // 13. Ghi đè hợp lệ phải có audit log
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 13: Quß║ún l├╜ ─æ├áo tß║ío ghi ─æ├¿ hß╗úp lß╗ç k├¿m l├╜ do ─æ╞░ß╗úc l╞░u th├ánh c├┤ng v├á ghi nhß║¡n Audit Log")
+    @DisplayName("TC 13: Quản lý đào tạo ghi đè hợp lệ kèm lý do được lưu thành công và ghi nhận Audit Log")
     void testAuthorizedOverrideRecordsAuditLog() throws SQLException {
-        // ─É├ú c├│ lß╗ïch 09:00 - 11:00
+        // Đã có lịch 09:00 - 11:00
         addExistingSession(10L, 2L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
 
         ScheduleRequest req = new ScheduleRequest(1L, 3L, 1,
                 "2026-11-01T09:30:00", "2026-11-01T11:30:00");
         req.setOverrideConflict(true);
-        req.setOverrideReason("Giß║úng vi├¬n thß╗Åa thuß║¡n dß║íy gh├⌐p b├╣ theo ph├¬ duyß╗çt cß╗ºa Ban gi├ím ─æß╗æc");
+        req.setOverrideReason("Giảng viên thỏa thuận dạy ghép bù theo phê duyệt của Ban giám đốc");
 
         ClassSession created = service.createSchedule(TRAINING_MGR_ID, TRAINING_MGR_ROLES, req);
 
-        assertNotNull(created, "Ghi ─æ├¿ hß╗úp lß╗ç phß║úi l╞░u ─æ╞░ß╗úc buß╗òi hß╗ìc");
-        assertEquals(1, mockScheduleDAO.auditLogs.size(), "Phß║úi ghi nhß║¡n 1 bß║ún ghi audit log");
+        assertNotNull(created, "Ghi đè hợp lệ phải lưu được buổi học");
+        assertEquals(1, mockScheduleDAO.auditLogs.size(), "Phải ghi nhận 1 bản ghi audit log");
         AuditLog log = mockScheduleDAO.auditLogs.get(0);
         assertEquals("OVERRIDE_SCHEDULE_CONFLICT", log.getAction());
         assertEquals("SCHEDULE", log.getEntityType());
         assertEquals(String.valueOf(created.getId()), log.getEntityId());
-        assertTrue(log.getNewValues().contains("Ban gi├ím ─æß╗æc"));
+        assertTrue(log.getNewValues().contains("Ban giám đốc"));
     }
 
     // -------------------------------------------------------------------------
-    // 14. Kiß╗âm tra hai request ─æß╗ông thß╗¥i tß║ío lß╗ïch tr├╣ng nhau (Concurrency / Race condition)
+    // 14. Kiểm tra hai request đồng thời tạo lịch trùng nhau (Concurrency / Race condition)
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 14: Hai request ─æß╗ông thß╗¥i tß║ío lß╗ïch tr├╣ng nhau - chß╗ë 1 request th├ánh c├┤ng, request c├▓n lß║íi bß╗ï chß║╖n xung ─æß╗Öt")
+    @DisplayName("TC 14: Hai request đồng thời tạo lịch trùng nhau - chỉ 1 request thành công, request còn lại bị chặn xung đột")
     void testConcurrentRequestsRaceConditionHandled() throws Exception {
         int threads = 2;
         ExecutorService executor = Executors.newFixedThreadPool(threads);
@@ -370,7 +370,7 @@ public class ScheduleConflictTest {
         for (int i = 0; i < threads; i++) {
             final long classId = i + 1;
             tasks.add(() -> {
-                barrier.await(); // ─Éß║úm bß║úo cß║ú 2 luß╗ông c├╣ng xuß║Ñt ph├ít ─æß╗ông thß╗¥i
+                barrier.await(); // Đảm bảo cả 2 luồng cùng xuất phát đồng thời
                 ScheduleRequest req = new ScheduleRequest(classId, 3L, 1,
                         "2026-11-01T09:00:00", "2026-11-01T11:00:00");
                 try {
@@ -387,15 +387,15 @@ public class ScheduleConflictTest {
         for (Future<Void> f : futures) f.get();
         executor.shutdown();
 
-        assertEquals(1, successCount.get(), "Chß╗ë duy nhß║Ñt 1 buß╗òi hß╗ìc ─æ╞░ß╗úc tß║ío th├ánh c├┤ng");
-        assertEquals(1, conflictCount.get(), "Buß╗òi hß╗ìc thß╗⌐ hai bß╗ï ph├ít hiß╗çn v├á chß║╖n v├¼ xung ─æß╗Öt");
+        assertEquals(1, successCount.get(), "Chỉ duy nhất 1 buổi học được tạo thành công");
+        assertEquals(1, conflictCount.get(), "Buổi học thứ hai bị phát hiện và chặn vì xung đột");
     }
 
     // -------------------------------------------------------------------------
-    // 15. Lß╗ùi l╞░u dß╗» liß╗çu kh├┤ng ─æß╗â lß║íi lß╗ïch ß╗ƒ trß║íng th├íi dß╗ƒ dang (Rollback)
+    // 15. Lỗi lưu dữ liệu không để lại lịch ở trạng thái dở dang (Rollback)
     // -------------------------------------------------------------------------
     @Test
-    @DisplayName("TC 15: Lß╗ùi khi xß╗¡ l├╜ l╞░u dß╗» liß╗çu phß║úi rollback, kh├┤ng ─æß╗â lß║íi bß║ún ghi dß╗ƒ dang")
+    @DisplayName("TC 15: Lỗi khi xử lý lưu dữ liệu phải rollback, không để lại bản ghi dở dang")
     void testDataConsistencyRollbackOnError() {
         mockScheduleDAO.setSimulateDatabaseError(true);
 
@@ -405,7 +405,7 @@ public class ScheduleConflictTest {
         assertThrows(SQLException.class, () ->
                 service.createSchedule(TRAINING_MGR_ID, TRAINING_MGR_ROLES, req));
 
-        assertEquals(0, mockScheduleDAO.sessions.size(), "Dß╗» liß╗çu phß║úi sß║ích, kh├┤ng c├│ lß╗ïch dß╗ƒ dang sau rollback");
+        assertEquals(0, mockScheduleDAO.sessions.size(), "Dữ liệu phải sạch, không có lịch dở dang sau rollback");
     }
 
     // -------------------------------------------------------------------------
@@ -521,10 +521,10 @@ public class ScheduleConflictTest {
         ClassSession s = new ClassSession();
         s.setId(id);
         s.setClassId(classId);
-        s.setClassCode("Lß╗ÜP-TEST-" + classId);
-        s.setClassName("T├¬n lß╗¢p " + classId);
+        s.setClassCode("LỚP-TEST-" + classId);
+        s.setClassName("Tên lớp " + classId);
         s.setInstructorId(instructorId);
-        s.setInstructorName("Trß║ºn Thß╗ï Giß║úng");
+        s.setInstructorName("Trần Thị Giảng");
         s.setClassroomId(roomId);
         s.setRoomCode("PH-10" + roomId);
         s.setSessionDate(TEST_DATE);
@@ -535,7 +535,7 @@ public class ScheduleConflictTest {
     }
 
     // =========================================================================
-    // Mock DAOs cho m├┤i tr╞░ß╗¥ng Test ─æß╗Öc lß║¡p, tß╗æc ─æß╗Ö cao, thread-safe
+    // Mock DAOs cho môi trường Test độc lập, tốc độ cao, thread-safe
     // =========================================================================
     static class MockScheduleDAO extends ScheduleDAO {
         final List<ClassSession> sessions = new CopyOnWriteArrayList<>();
@@ -686,7 +686,7 @@ public class ScheduleConflictTest {
         public Classroom findById(Connection conn, int id) { return map.get(id); }
     }
 
-    static class MockClassDAO extends ClassDAO {
+    static class MockClassDAO extends SchoolClassDAO {
         private final Map<Long, SchoolClass> map = new ConcurrentHashMap<>();
 
         public void save(SchoolClass c) { map.put(c.getId(), c); }

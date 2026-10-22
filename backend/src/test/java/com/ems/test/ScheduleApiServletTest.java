@@ -53,15 +53,15 @@ public class ScheduleApiServletTest {
         servlet = new ScheduleApiServlet(service);
 
         // Seeding
-        mockClassroomDAO.save(new Classroom(1, "PH-101", "Ph├▓ng 101", 40, "PHYSICAL", "AVAILABLE"));
-        mockClassroomDAO.save(new Classroom(2, "LAB-202", "Ph├▓ng 202", 35, "PHYSICAL", "AVAILABLE"));
-        mockClassDAO.save(new SchoolClass(1L, "CNTT-K23-01", "Lß╗¢p Java 01", 1, "IN_PROGRESS"));
-        mockClassDAO.save(new SchoolClass(2L, "CNTT-K23-02", "Lß╗¢p Web 02", 1, "IN_PROGRESS"));
-        mockUserDAO.save(new User(3L, "NV-GV-01", "giangvien@edumanager.vn", "Trß║ºn Thß╗ï Giß║úng", RoleConstant.INSTRUCTOR));
+        mockClassroomDAO.save(new Classroom(1, "PH-101", "Phòng 101", 40, "PHYSICAL", "AVAILABLE"));
+        mockClassroomDAO.save(new Classroom(2, "LAB-202", "Phòng 202", 35, "PHYSICAL", "AVAILABLE"));
+        mockClassDAO.save(new SchoolClass(1L, "CNTT-K23-01", "Lớp Java 01", 1, "IN_PROGRESS"));
+        mockClassDAO.save(new SchoolClass(2L, "CNTT-K23-02", "Lớp Web 02", 1, "IN_PROGRESS"));
+        mockUserDAO.save(new User(3L, "NV-GV-01", "giangvien@edumanager.vn", "Trần Thị Giảng", RoleConstant.INSTRUCTOR));
     }
 
     @Test
-    @DisplayName("API POST /api/schedules/check-conflicts: Trß║ú vß╗ü HTTP 200 v├á hasConflict = false khi lß╗ïch trß╗æng")
+    @DisplayName("API POST /api/schedules/check-conflicts: Trả về HTTP 200 và hasConflict = false khi lịch trống")
     void testCheckConflictsNoConflict() throws Exception {
         ScheduleRequest reqDto = new ScheduleRequest(1L, 3L, 1,
                 "2026-11-01T08:00:00", "2026-11-01T10:00:00");
@@ -79,9 +79,9 @@ public class ScheduleApiServletTest {
     }
 
     @Test
-    @DisplayName("API POST /api/schedules/check-conflicts: Trß║ú vß╗ü HTTP 200 v├á hasConflict = true k├¿m chi tiß║┐t khi tr├╣ng giß║úng vi├¬n")
+    @DisplayName("API POST /api/schedules/check-conflicts: Trả về HTTP 200 và hasConflict = true kèm chi tiết khi trùng giảng viên")
     void testCheckConflictsHasConflict() throws Exception {
-        // C├│ sß║╡n buß╗òi hß╗ìc 09:00 - 11:00
+        // Có sẵn buổi học 09:00 - 11:00
         addExistingSession(15L, 2L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
 
         ScheduleRequest reqDto = new ScheduleRequest(1L, 3L, 2,
@@ -98,16 +98,16 @@ public class ScheduleApiServletTest {
         assertEquals(1, json.get("conflicts").getAsJsonArray().size());
         JsonObject conflict = json.get("conflicts").getAsJsonArray().get(0).getAsJsonObject();
         assertEquals("INSTRUCTOR_CONFLICT", conflict.get("type").getAsString());
-        assertTrue(conflict.get("message").getAsString().contains("Trß║ºn Thß╗ï Giß║úng"));
+        assertTrue(conflict.get("message").getAsString().contains("Trần Thị Giảng"));
     }
 
     @Test
-    @DisplayName("API POST /api/schedules: Tß║ío lß╗ïch hß╗úp lß╗ç th├ánh c├┤ng trß║ú vß╗ü HTTP 201 Created")
+    @DisplayName("API POST /api/schedules: Tạo lịch hợp lệ thành công trả về HTTP 201 Created")
     void testCreateScheduleSuccess() throws Exception {
         ScheduleRequest reqDto = new ScheduleRequest(1L, 3L, 1,
                 "2026-11-01T08:00:00", "2026-11-01T10:00:00");
 
-        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phß║ím Quß║ún L├╜", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
+        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phạm Quản Lý", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
         TestResponse resp = new TestResponse();
         TestRequest req = new TestRequest("/", "POST", GSON.toJson(reqDto), trainingMgr);
 
@@ -120,14 +120,14 @@ public class ScheduleApiServletTest {
     }
 
     @Test
-    @DisplayName("API POST /api/schedules: Xung ─æß╗Öt lß╗ïch kh├┤ng c├│ ghi ─æ├¿ bß╗ï tß╗½ chß╗æi vß╗¢i HTTP 409 Conflict")
+    @DisplayName("API POST /api/schedules: Xung đột lịch không có ghi đè bị từ chối với HTTP 409 Conflict")
     void testCreateScheduleConflictRejected() throws Exception {
         addExistingSession(15L, 2L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
 
         ScheduleRequest reqDto = new ScheduleRequest(1L, 3L, 1,
                 "2026-11-01T08:00:00", "2026-11-01T10:00:00");
 
-        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phß║ím Quß║ún L├╜", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
+        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phạm Quản Lý", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
         TestResponse resp = new TestResponse();
         TestRequest req = new TestRequest("/", "POST", GSON.toJson(reqDto), trainingMgr);
 
@@ -141,16 +141,16 @@ public class ScheduleApiServletTest {
     }
 
     @Test
-    @DisplayName("API POST /api/schedules: Quß║ún l├╜ ─æ├áo tß║ío x├íc nhß║¡n ghi ─æ├¿ c├│ l├╜ do ─æ╞░ß╗úc l╞░u vß╗¢i HTTP 201 Created")
+    @DisplayName("API POST /api/schedules: Quản lý đào tạo xác nhận ghi đè có lý do được lưu với HTTP 201 Created")
     void testCreateScheduleOverrideSuccess() throws Exception {
         addExistingSession(15L, 2L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
 
         ScheduleRequest reqDto = new ScheduleRequest(1L, 3L, 1,
                 "2026-11-01T08:00:00", "2026-11-01T10:00:00");
         reqDto.setOverrideConflict(true);
-        reqDto.setOverrideReason("L├únh ─æß║ío trung t├óm ph├¬ duyß╗çt dß║íy b├╣ buß╗òi s├íng");
+        reqDto.setOverrideReason("Lãnh đạo trung tâm phê duyệt dạy bù buổi sáng");
 
-        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phß║ím Quß║ún L├╜", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
+        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phạm Quản Lý", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
         TestResponse resp = new TestResponse();
         TestRequest req = new TestRequest("/", "POST", GSON.toJson(reqDto), trainingMgr);
 
@@ -164,16 +164,16 @@ public class ScheduleApiServletTest {
     }
 
     @Test
-    @DisplayName("API POST /api/schedules: Giß║úng vi├¬n cß╗æ t├¼nh gß╗¡i overrideConflict = true bß╗ï chß║╖n vß╗¢i HTTP 403 Forbidden")
+    @DisplayName("API POST /api/schedules: Giảng viên cố tình gửi overrideConflict = true bị chặn với HTTP 403 Forbidden")
     void testCreateScheduleOverrideForbiddenForOtherRoles() throws Exception {
         addExistingSession(15L, 2L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
 
         ScheduleRequest reqDto = new ScheduleRequest(1L, 3L, 1,
                 "2026-11-01T08:00:00", "2026-11-01T10:00:00");
         reqDto.setOverrideConflict(true);
-        reqDto.setOverrideReason("Tß╗▒ ├╜ ghi ─æ├¿");
+        reqDto.setOverrideReason("Tự ý ghi đè");
 
-        User instructor = new User(3L, "giangvien@edumanager.vn", "Trß║ºn Thß╗ï Giß║úng", "ACTIVE", List.of(RoleConstant.INSTRUCTOR));
+        User instructor = new User(3L, "giangvien@edumanager.vn", "Trần Thị Giảng", "ACTIVE", List.of(RoleConstant.INSTRUCTOR));
         TestResponse resp = new TestResponse();
         TestRequest req = new TestRequest("/", "POST", GSON.toJson(reqDto), instructor);
 
@@ -186,7 +186,7 @@ public class ScheduleApiServletTest {
     }
 
     @Test
-    @DisplayName("API POST /api/schedules: Thß╗¥i gian kß║┐t th├║c <= thß╗¥i gian bß║»t ─æß║ºu trß║ú vß╗ü HTTP 400 Bad Request")
+    @DisplayName("API POST /api/schedules: Thời gian kết thúc <= thời gian bắt đầu trả về HTTP 400 Bad Request")
     void testCreateScheduleValidationTimeError() throws Exception {
         ScheduleRequest reqDto = new ScheduleRequest(1L, 3L, 1,
                 "2026-11-01T10:00:00", "2026-11-01T08:00:00");
@@ -203,14 +203,14 @@ public class ScheduleApiServletTest {
     }
 
     @Test
-    @DisplayName("API PUT /api/schedules/{id}: Cß║¡p nhß║¡t lß╗ïch hß╗ìc th├ánh c├┤ng")
+    @DisplayName("API PUT /api/schedules/{id}: Cập nhật lịch học thành công")
     void testUpdateScheduleSuccess() throws Exception {
         addExistingSession(15L, 1L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
 
         ScheduleRequest reqDto = new ScheduleRequest(1L, 3L, 1,
                 "2026-11-01T09:00:00", "2026-11-01T11:30:00");
 
-        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phß║ím Quß║ún L├╜", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
+        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phạm Quản Lý", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
         TestResponse resp = new TestResponse();
         TestRequest req = new TestRequest("/15", "PUT", GSON.toJson(reqDto), trainingMgr);
 
@@ -223,11 +223,11 @@ public class ScheduleApiServletTest {
     }
 
     @Test
-    @DisplayName("API DELETE /api/schedules/{id}: Hß╗ºy buß╗òi hß╗ìc th├ánh c├┤ng")
+    @DisplayName("API DELETE /api/schedules/{id}: Hủy buổi học thành công")
     void testCancelScheduleSuccess() throws Exception {
         addExistingSession(15L, 1L, 3L, 1, LocalTime.of(9, 0), LocalTime.of(11, 0), "SCHEDULED");
 
-        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phß║ím Quß║ún L├╜", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
+        User trainingMgr = new User(2L, "quanly@edumanager.vn", "Phạm Quản Lý", "ACTIVE", List.of(RoleConstant.TRAINING_MANAGER));
         TestResponse resp = new TestResponse();
         TestRequest req = new TestRequest("/15", "DELETE", null, trainingMgr);
 
@@ -336,9 +336,9 @@ public class ScheduleApiServletTest {
         s.setId(id);
         s.setClassId(classId);
         s.setClassCode("CNTT-K23-0" + classId);
-        s.setClassName("Lß╗¢p hß╗ìc #" + classId);
+        s.setClassName("Lớp học #" + classId);
         s.setInstructorId(instructorId);
-        s.setInstructorName("Trß║ºn Thß╗ï Giß║úng");
+        s.setInstructorName("Trần Thị Giảng");
         s.setClassroomId(roomId);
         s.setRoomCode("PH-10" + roomId);
         s.setSessionDate(LocalDate.of(2026, 11, 1));

@@ -13,7 +13,7 @@ public class ScheduleConflictException extends RuntimeException {
     }
 
     public ScheduleConflictException(ConflictCheckResult conflictResult) {
-        super(conflictResult != null ? conflictResult.getMessage() : "Xung ─æß╗Öt thß╗¥i kh├│a biß╗âu.");
+        super(conflictResult != null ? conflictResult.getMessage() : "Xung đột thời khóa biểu.");
         this.conflictResult = conflictResult;
     }
 
