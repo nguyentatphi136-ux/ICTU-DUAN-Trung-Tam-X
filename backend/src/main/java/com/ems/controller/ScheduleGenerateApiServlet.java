@@ -31,12 +31,12 @@ import java.util.regex.Pattern;
  * 
  * Người thực hiện: Nguyễn Trung Kiên (NK) - dtc245200736@ictu.edu.vn
  */
-@WebServlet(name = "ScheduleApiServlet", urlPatterns = {
-        "/api/v1/classes/*/schedule/preview",
-        "/api/v1/classes/*/schedule",
+// Servlet không cho phép dấu * ở giữa đường dẫn, nên bắt cả /api/v1/classes/* rồi tách mã lớp bằng regex bên dưới.
+@WebServlet(name = "ScheduleGenerateApiServlet", urlPatterns = {
+        "/api/v1/classes/*",
         "/api/v1/holidays"
 })
-public class ScheduleApiServlet extends HttpServlet {
+public class ScheduleGenerateApiServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
     private final ScheduleService scheduleService = new ScheduleService();
@@ -65,7 +65,7 @@ public class ScheduleApiServlet extends HttpServlet {
         Matcher matcher = pattern.matcher(uri);
         if (matcher.find()) {
             String classCode = matcher.group(1);
-            List<ClassSession> sessions = scheduleService.getSessionsByClass(classCode);
+            List<PlannedSession> sessions = scheduleService.getSessionsByClass(classCode);
             resp.getWriter().write(sessionsToJson(sessions));
             return;
         }
@@ -207,7 +207,7 @@ public class ScheduleApiServlet extends HttpServlet {
         // Sessions
         sb.append("\"sessions\":[");
         for (int i = 0; i < result.getSessions().size(); i++) {
-            ClassSession s = result.getSessions().get(i);
+            PlannedSession s = result.getSessions().get(i);
             if (i > 0) sb.append(",");
             sb.append(String.format("{\"id\":\"%s\",\"cls\":\"%s\",\"no\":%d,\"date\":\"%s\",\"start\":\"%s\",\"end\":\"%s\",\"subject\":\"%s\",\"lesson\":%d,\"topic\":\"%s\",\"teacher\":%s,\"room\":%s}",
                     s.getId(), s.getCls(), s.getNo(), s.getDate(), s.getStart(), s.getEnd(), s.getSubject(), s.getLesson(),
@@ -231,10 +231,10 @@ public class ScheduleApiServlet extends HttpServlet {
         return sb.toString();
     }
 
-    private String sessionsToJson(List<ClassSession> sessions) {
+    private String sessionsToJson(List<PlannedSession> sessions) {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < sessions.size(); i++) {
-            ClassSession s = sessions.get(i);
+            PlannedSession s = sessions.get(i);
             if (i > 0) sb.append(",");
             sb.append(String.format("{\"id\":\"%s\",\"cls\":\"%s\",\"no\":%d,\"date\":\"%s\",\"start\":\"%s\",\"end\":\"%s\",\"subject\":\"%s\",\"lesson\":%d,\"topic\":\"%s\",\"teacher\":%s,\"room\":%s}",
                     s.getId(), s.getCls(), s.getNo(), s.getDate(), s.getStart(), s.getEnd(), s.getSubject(), s.getLesson(),

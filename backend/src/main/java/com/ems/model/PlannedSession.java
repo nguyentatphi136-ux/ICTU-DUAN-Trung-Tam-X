@@ -10,7 +10,7 @@ import java.util.Locale;
  * Tác vụ Jira: IDTTX-247 / IDTTX-263 [BE] - S4-01
  * Người thực hiện: Nguyễn Trung Kiên (NK) - dtc245200736@ictu.edu.vn
  */
-public class ClassSession implements Serializable {
+public class PlannedSession implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String id;              // Ví dụ: WEB-K16-1
@@ -26,10 +26,10 @@ public class ClassSession implements Serializable {
     private String room;            // Phòng học
     private String status = "SCHEDULED"; // SCHEDULED, COMPLETED, CANCELLED
 
-    public ClassSession() {
+    public PlannedSession() {
     }
 
-    public ClassSession(String id, String cls, int no, String date, String start, String end,
+    public PlannedSession(String id, String cls, int no, String date, String start, String end,
                         String subject, int lesson, String topic, String teacher, String room) {
         this.id = id;
         this.cls = cls;

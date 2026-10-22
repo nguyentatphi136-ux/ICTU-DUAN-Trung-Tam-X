@@ -62,7 +62,7 @@ public class ScheduleGenerationTest {
         assertEquals("JAVA-K15", result.getKlass().getCode());
 
         // Kiểm tra tất cả các buổi đều rơi vào Thứ 2, Thứ 4 hoặc Thứ 6
-        for (ClassSession s : result.getSessions()) {
+        for (PlannedSession s : result.getSessions()) {
             LocalDate d = LocalDate.parse(s.getDate());
             int dow = d.getDayOfWeek().getValue() % 7;
             assertTrue(dow == 1 || dow == 3 || dow == 5, "Buổi học ngày " + s.getDate() + " phải rơi vào Thứ 2, 4 hoặc 6");
@@ -123,11 +123,11 @@ public class ScheduleGenerationTest {
         );
 
         ScheduleGenerationResult result = scheduleService.generateSchedule(pattern);
-        List<ClassSession> sessions = result.getSessions();
+        List<PlannedSession> sessions = result.getSessions();
 
         // 4 buổi đầu tiên phải thuộc môn GIT-01, từ Bài 1 đến Bài 4
         for (int i = 0; i < 4; i++) {
-            ClassSession s = sessions.get(i);
+            PlannedSession s = sessions.get(i);
             assertEquals("GIT-01", s.getSubject(), "Buổi " + (i + 1) + " phải là môn GIT-01");
             assertEquals(i + 1, s.getLesson(), "Buổi " + (i + 1) + " phải là Bài " + (i + 1));
             assertNotNull(s.getTopic());
@@ -249,7 +249,7 @@ public class ScheduleGenerationTest {
         scheduleService.saveSchedule("WEB-K16", result.getSessions(), pattern);
 
         assertTrue(scheduleService.hasSchedule("WEB-K16"));
-        List<ClassSession> saved = scheduleService.getSessionsByClass("WEB-K16");
+        List<PlannedSession> saved = scheduleService.getSessionsByClass("WEB-K16");
         assertEquals(60, saved.size());
         assertEquals("WEB-K16-1", saved.get(0).getId());
 

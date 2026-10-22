@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  */
 public class ScheduleService {
 
-    private static final Map<String, List<ClassSession>> SESSIONS_MAP = new ConcurrentHashMap<>();
+    private static final Map<String, List<PlannedSession>> SESSIONS_MAP = new ConcurrentHashMap<>();
 
     private static class LessonSlot {
         String subjectCode;
@@ -69,7 +69,7 @@ public class ScheduleService {
 
         // 2. Thuật toán duyệt ngày và sinh lịch tự động
         LocalDate current = LocalDate.parse(pattern.getFrom());
-        List<ClassSession> sessions = new ArrayList<>();
+        List<PlannedSession> sessions = new ArrayList<>();
         List<SkippedDate> skipped = new ArrayList<>();
 
         int guard = 0;
@@ -100,7 +100,7 @@ public class ScheduleService {
             int sessionNo = sessionIndex + 1;
             String sessionId = pattern.getClassCode() + "-" + sessionNo;
 
-            ClassSession session = new ClassSession(
+            PlannedSession session = new PlannedSession(
                     sessionId,
                     pattern.getClassCode(),
                     sessionNo,
@@ -124,7 +124,7 @@ public class ScheduleService {
     /**
      * Lưu thời khoá biểu chính thức sau khi Quản lý đào tạo xem trước và xác nhận
      */
-    public synchronized void saveSchedule(String classCode, List<ClassSession> sessions, SchedulePattern pattern) {
+    public synchronized void saveSchedule(String classCode, List<PlannedSession> sessions, SchedulePattern pattern) {
         if (classCode == null || classCode.isBlank()) {
             throw new IllegalArgumentException("Mã lớp không được để trống khi lưu.");
         }
@@ -152,14 +152,14 @@ public class ScheduleService {
         }
     }
 
-    public List<ClassSession> getSessionsByClass(String classCode) {
+    public List<PlannedSession> getSessionsByClass(String classCode) {
         if (classCode == null) return Collections.emptyList();
-        List<ClassSession> list = SESSIONS_MAP.get(classCode.trim().toUpperCase());
+        List<PlannedSession> list = SESSIONS_MAP.get(classCode.trim().toUpperCase());
         return (list != null) ? Collections.unmodifiableList(list) : Collections.emptyList();
     }
 
     public boolean hasSchedule(String classCode) {
-        List<ClassSession> list = SESSIONS_MAP.get(classCode.trim().toUpperCase());
+        List<PlannedSession> list = SESSIONS_MAP.get(classCode.trim().toUpperCase());
         return list != null && !list.isEmpty();
     }
 

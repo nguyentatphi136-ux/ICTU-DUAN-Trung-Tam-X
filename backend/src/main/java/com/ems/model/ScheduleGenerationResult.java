@@ -17,7 +17,7 @@ public class ScheduleGenerationResult implements Serializable {
 
     private Klass klass;
     private SchedulePattern pattern;
-    private List<ClassSession> sessions = new ArrayList<>();
+    private List<PlannedSession> sessions = new ArrayList<>();
     private List<SkippedDate> skipped = new ArrayList<>();
 
     private String firstDate;
@@ -30,7 +30,7 @@ public class ScheduleGenerationResult implements Serializable {
     public ScheduleGenerationResult() {
     }
 
-    public ScheduleGenerationResult(Klass klass, SchedulePattern pattern, List<ClassSession> sessions, List<SkippedDate> skipped) {
+    public ScheduleGenerationResult(Klass klass, SchedulePattern pattern, List<PlannedSession> sessions, List<SkippedDate> skipped) {
         this.klass = klass;
         this.pattern = pattern;
         this.sessions = sessions != null ? sessions : new ArrayList<>();
@@ -99,11 +99,11 @@ public class ScheduleGenerationResult implements Serializable {
         this.pattern = pattern;
     }
 
-    public List<ClassSession> getSessions() {
+    public List<PlannedSession> getSessions() {
         return sessions;
     }
 
-    public void setSessions(List<ClassSession> sessions) {
+    public void setSessions(List<PlannedSession> sessions) {
         this.sessions = sessions;
     }
 
