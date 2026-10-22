@@ -63,7 +63,7 @@ public class ScheduleApiServlet extends HttpServlet {
             ScheduleRequest scheduleReq = parseRequestBody(request);
             if (scheduleReq == null) {
                 ApiResponse.error(response, HttpServletResponse.SC_BAD_REQUEST, "INVALID_BODY",
-                        "Dß╗» liß╗çu gß╗¡i l├¬n kh├┤ng ─æ├║ng ─æß╗ïnh dß║íng JSON.", "Kiß╗âm tra dß╗» liß╗çu", "/schedules");
+                        "Dữ liệu gửi lên không đúng định dạng JSON.", "Kiểm tra dữ liệu", "/schedules");
                 return;
             }
 
@@ -73,7 +73,7 @@ public class ScheduleApiServlet extends HttpServlet {
                 response.setStatus(HttpServletResponse.SC_OK);
                 response.setContentType("application/json;charset=UTF-8");
 
-                // Trß║ú vß╗ü ─æß╗ïnh dß║íng chß╗⌐a ─æß║ºy ─æß╗º tr╞░ß╗¥ng theo y├¬u cß║ºu prompt & ApiResponse chuß║⌐n
+                // Trả về định dạng chứa đầy đủ trường theo yêu cầu prompt & ApiResponse chuẩn
                 java.util.Map<String, Object> respBody = new java.util.LinkedHashMap<>();
                 respBody.put("success", true);
                 respBody.put("hasConflict", result.isHasConflict());
@@ -91,31 +91,31 @@ public class ScheduleApiServlet extends HttpServlet {
 
                 ClassSession created = scheduleConflictService.createSchedule(actorId, actorRoles, scheduleReq);
                 ApiResponse.success(response, HttpServletResponse.SC_CREATED, "SCHEDULE_CREATED",
-                        "Tß║ío lß╗ïch hß╗ìc th├ánh c├┤ng.", created);
+                        "Tạo lịch học thành công.", created);
                 return;
             }
 
             ApiResponse.error(response, HttpServletResponse.SC_NOT_FOUND, "API_NOT_FOUND",
-                    "Kh├┤ng t├¼m thß║Ñy chß╗⌐c n─âng.", "Quay lß║íi", "/schedules");
+                    "Không tìm thấy chức năng.", "Quay lại", "/schedules");
         } catch (ValidationException e) {
             ApiResponse.error(response, HttpServletResponse.SC_BAD_REQUEST, "VALIDATION_ERROR",
-                    e.getMessage(), "Kiß╗âm tra lß║íi dß╗» liß╗çu", "/schedules");
+                    e.getMessage(), "Kiểm tra lại dữ liệu", "/schedules");
         } catch (ForbiddenAccessException e) {
             ApiResponse.error(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN_OVERRIDE",
-                    e.getMessage(), "Y├¬u cß║ºu quyß╗ün Quß║ún l├╜ ─æ├áo tß║ío", "/schedules");
+                    e.getMessage(), "Yêu cầu quyền Quản lý đào tạo", "/schedules");
         } catch (ResourceNotFoundException e) {
             ApiResponse.error(response, HttpServletResponse.SC_NOT_FOUND, "NOT_FOUND",
-                    e.getMessage(), "Quay lß║íi", "/schedules");
+                    e.getMessage(), "Quay lại", "/schedules");
         } catch (ScheduleConflictException e) {
             ApiResponse.conflict(response, "SCHEDULE_CONFLICT", e.getMessage(), e.getConflictResult());
         } catch (SQLException e) {
-            logError("Lß╗ùi c╞í sß╗ƒ dß╗» liß╗çu khi thao t├íc lß╗ïch hß╗ìc", e);
+            logError("Lỗi cơ sở dữ liệu khi thao tác lịch học", e);
             ApiResponse.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "DATABASE_ERROR",
-                    "─É├ú xß║úy ra lß╗ùi m├íy chß╗º khi l╞░u thß╗¥i kh├│a biß╗âu. Vui l├▓ng thß╗¡ lß║íi sau.", "Thß╗¡ lß║íi", "/schedules");
+                    "Đã xảy ra lỗi máy chủ khi lưu thời khóa biểu. Vui lòng thử lại sau.", "Thử lại", "/schedules");
         } catch (Exception e) {
-            logError("Lß╗ùi hß╗ç thß╗æng khi thao t├íc lß╗ïch hß╗ìc", e);
+            logError("Lỗi hệ thống khi thao tác lịch học", e);
             ApiResponse.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "SYSTEM_ERROR",
-                    "Hß╗ç thß╗æng tß║ím thß╗¥i gß║╖p sß╗▒ cß╗æ. Vui l├▓ng thß╗¡ lß║íi sau.", "Thß╗¡ lß║íi", "/schedules");
+                    "Hệ thống tạm thời gặp sự cố. Vui lòng thử lại sau.", "Thử lại", "/schedules");
         }
     }
 
@@ -127,7 +127,7 @@ public class ScheduleApiServlet extends HttpServlet {
 
         if (!matcher.matches()) {
             ApiResponse.error(response, HttpServletResponse.SC_NOT_FOUND, "API_NOT_FOUND",
-                    "─É╞░ß╗¥ng dß║½n cß║¡p nhß║¡t kh├┤ng hß╗úp lß╗ç.", "Quay lß║íi", "/schedules");
+                    "Đường dẫn cập nhật không hợp lệ.", "Quay lại", "/schedules");
             return;
         }
 
@@ -136,7 +136,7 @@ public class ScheduleApiServlet extends HttpServlet {
             ScheduleRequest scheduleReq = parseRequestBody(request);
             if (scheduleReq == null) {
                 ApiResponse.error(response, HttpServletResponse.SC_BAD_REQUEST, "INVALID_BODY",
-                        "Dß╗» liß╗çu gß╗¡i l├¬n kh├┤ng ─æ├║ng ─æß╗ïnh dß║íng JSON.", "Kiß╗âm tra dß╗» liß╗çu", "/schedules");
+                        "Dữ liệu gửi lên không đúng định dạng JSON.", "Kiểm tra dữ liệu", "/schedules");
                 return;
             }
 
@@ -145,22 +145,22 @@ public class ScheduleApiServlet extends HttpServlet {
 
             ClassSession updated = scheduleConflictService.updateSchedule(actorId, actorRoles, scheduleId, scheduleReq);
             ApiResponse.success(response, HttpServletResponse.SC_OK, "SCHEDULE_UPDATED",
-                    "Cß║¡p nhß║¡t lß╗ïch hß╗ìc th├ánh c├┤ng.", updated);
+                    "Cập nhật lịch học thành công.", updated);
         } catch (ValidationException e) {
             ApiResponse.error(response, HttpServletResponse.SC_BAD_REQUEST, "VALIDATION_ERROR",
-                    e.getMessage(), "Kiß╗âm tra lß║íi dß╗» liß╗çu", "/schedules");
+                    e.getMessage(), "Kiểm tra lại dữ liệu", "/schedules");
         } catch (ForbiddenAccessException e) {
             ApiResponse.error(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN_OVERRIDE",
-                    e.getMessage(), "Y├¬u cß║ºu quyß╗ün Quß║ún l├╜ ─æ├áo tß║ío", "/schedules");
+                    e.getMessage(), "Yêu cầu quyền Quản lý đào tạo", "/schedules");
         } catch (ResourceNotFoundException e) {
             ApiResponse.error(response, HttpServletResponse.SC_NOT_FOUND, "NOT_FOUND",
-                    e.getMessage(), "Quay lß║íi", "/schedules");
+                    e.getMessage(), "Quay lại", "/schedules");
         } catch (ScheduleConflictException e) {
             ApiResponse.conflict(response, "SCHEDULE_CONFLICT", e.getMessage(), e.getConflictResult());
         } catch (SQLException e) {
-            logError("Lß╗ùi c╞í sß╗ƒ dß╗» liß╗çu khi cß║¡p nhß║¡t lß╗ïch hß╗ìc", e);
+            logError("Lỗi cơ sở dữ liệu khi cập nhật lịch học", e);
             ApiResponse.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "DATABASE_ERROR",
-                    "─É├ú xß║úy ra lß╗ùi m├íy chß╗º khi cß║¡p nhß║¡t lß╗ïch hß╗ìc.", "Thß╗¡ lß║íi", "/schedules");
+                    "Đã xảy ra lỗi máy chủ khi cập nhật lịch học.", "Thử lại", "/schedules");
         }
     }
 
@@ -175,7 +175,7 @@ public class ScheduleApiServlet extends HttpServlet {
                 long scheduleId = Long.parseLong(matcher.group(1));
                 ClassSession session = scheduleConflictService.getScheduleById(scheduleId);
                 ApiResponse.success(response, HttpServletResponse.SC_OK, "SCHEDULE_FOUND",
-                        "Lß║Ñy th├┤ng tin buß╗òi hß╗ìc th├ánh c├┤ng.", session);
+                        "Lấy thông tin buổi học thành công.", session);
                 return;
             }
 
@@ -192,19 +192,19 @@ public class ScheduleApiServlet extends HttpServlet {
                         classId, instructorId, roomId, fromDate, toDate
                 );
                 ApiResponse.success(response, HttpServletResponse.SC_OK, "SCHEDULE_LIST_SUCCESS",
-                        "Lß║Ñy danh s├ích thß╗¥i kh├│a biß╗âu th├ánh c├┤ng.", list);
+                        "Lấy danh sách thời khóa biểu thành công.", list);
                 return;
             }
 
             ApiResponse.error(response, HttpServletResponse.SC_NOT_FOUND, "API_NOT_FOUND",
-                    "Kh├┤ng t├¼m thß║Ñy chß╗⌐c n─âng.", "Quay lß║íi", "/schedules");
+                    "Không tìm thấy chức năng.", "Quay lại", "/schedules");
         } catch (ResourceNotFoundException e) {
             ApiResponse.error(response, HttpServletResponse.SC_NOT_FOUND, "NOT_FOUND",
-                    e.getMessage(), "Quay lß║íi", "/schedules");
+                    e.getMessage(), "Quay lại", "/schedules");
         } catch (SQLException e) {
-            logError("Lß╗ùi c╞í sß╗ƒ dß╗» liß╗çu khi tra cß╗⌐u lß╗ïch hß╗ìc", e);
+            logError("Lỗi cơ sở dữ liệu khi tra cứu lịch học", e);
             ApiResponse.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "DATABASE_ERROR",
-                    "Lß╗ùi m├íy chß╗º khi tra cß╗⌐u lß╗ïch hß╗ìc.", "Thß╗¡ lß║íi", "/schedules");
+                    "Lỗi máy chủ khi tra cứu lịch học.", "Thử lại", "/schedules");
         }
     }
 
@@ -216,14 +216,14 @@ public class ScheduleApiServlet extends HttpServlet {
 
         if (!matcher.matches()) {
             ApiResponse.error(response, HttpServletResponse.SC_NOT_FOUND, "API_NOT_FOUND",
-                    "─É╞░ß╗¥ng dß║½n hß╗ºy lß╗ïch kh├┤ng hß╗úp lß╗ç.", "Quay lß║íi", "/schedules");
+                    "Đường dẫn hủy lịch không hợp lệ.", "Quay lại", "/schedules");
             return;
         }
 
         try {
             long scheduleId = Long.parseLong(matcher.group(1));
             String reason = request.getParameter("reason");
-            if (reason == null) reason = "Quß║ún l├╜ ─æ├áo tß║ío hß╗ºy lß╗ïch";
+            if (reason == null) reason = "Quản lý đào tạo hủy lịch";
 
             Long actorId = getActorId(request);
             List<String> actorRoles = getActorRoles(request);
@@ -231,21 +231,21 @@ public class ScheduleApiServlet extends HttpServlet {
             boolean ok = scheduleConflictService.cancelSchedule(actorId, actorRoles, scheduleId, reason);
             if (ok) {
                 ApiResponse.success(response, HttpServletResponse.SC_OK, "SCHEDULE_CANCELLED",
-                        "Hß╗ºy buß╗òi hß╗ìc th├ánh c├┤ng.", java.util.Map.of("id", scheduleId, "status", "CANCELLED"));
+                        "Hủy buổi học thành công.", java.util.Map.of("id", scheduleId, "status", "CANCELLED"));
             } else {
                 ApiResponse.error(response, HttpServletResponse.SC_NOT_FOUND, "NOT_FOUND",
-                        "Kh├┤ng t├¼m thß║Ñy buß╗òi hß╗ìc ─æß╗â hß╗ºy.", "Quay lß║íi", "/schedules");
+                        "Không tìm thấy buổi học để hủy.", "Quay lại", "/schedules");
             }
         } catch (ForbiddenAccessException e) {
             ApiResponse.error(response, HttpServletResponse.SC_FORBIDDEN, "FORBIDDEN",
-                    e.getMessage(), "Y├¬u cß║ºu quyß╗ün Quß║ún l├╜ ─æ├áo tß║ío", "/schedules");
+                    e.getMessage(), "Yêu cầu quyền Quản lý đào tạo", "/schedules");
         } catch (ResourceNotFoundException e) {
             ApiResponse.error(response, HttpServletResponse.SC_NOT_FOUND, "NOT_FOUND",
-                    e.getMessage(), "Quay lß║íi", "/schedules");
+                    e.getMessage(), "Quay lại", "/schedules");
         } catch (SQLException e) {
-            logError("Lß╗ùi c╞í sß╗ƒ dß╗» liß╗çu khi hß╗ºy lß╗ïch hß╗ìc", e);
+            logError("Lỗi cơ sở dữ liệu khi hủy lịch học", e);
             ApiResponse.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "DATABASE_ERROR",
-                    "Lß╗ùi m├íy chß╗º khi hß╗ºy lß╗ïch hß╗ìc.", "Thß╗¡ lß║íi", "/schedules");
+                    "Lỗi máy chủ khi hủy lịch học.", "Thử lại", "/schedules");
         }
     }
 

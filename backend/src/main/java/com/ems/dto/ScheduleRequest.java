@@ -110,32 +110,32 @@ public class ScheduleRequest implements Serializable {
 
     public void validate() {
         if (classId == null || classId <= 0) {
-            throw new ValidationException("M├ú lß╗¢p hß╗ìc (classId) kh├┤ng hß╗úp lß╗ç hoß║╖c bß╗ï thiß║┐u.");
+            throw new ValidationException("Mã lớp học (classId) không hợp lệ hoặc bị thiếu.");
         }
         if (instructorId == null || instructorId <= 0) {
-            throw new ValidationException("M├ú giß║úng vi├¬n (instructorId) kh├┤ng hß╗úp lß╗ç hoß║╖c bß╗ï thiß║┐u.");
+            throw new ValidationException("Mã giảng viên (instructorId) không hợp lệ hoặc bị thiếu.");
         }
         Integer resolvedRoom = getResolvedRoomId();
         if (resolvedRoom == null || resolvedRoom <= 0) {
-            throw new ValidationException("M├ú ph├▓ng hß╗ìc (roomId/classroomId) kh├┤ng hß╗úp lß╗ç hoß║╖c bß╗ï thiß║┐u.");
+            throw new ValidationException("Mã phòng học (roomId/classroomId) không hợp lệ hoặc bị thiếu.");
         }
 
         LocalDate date = getResolvedDate();
         if (date == null) {
-            throw new ValidationException("Ng├áy hß╗ìc kh├┤ng hß╗úp lß╗ç hoß║╖c kh├┤ng x├íc ─æß╗ïnh ─æ╞░ß╗úc tß╗½ y├¬u cß║ºu.");
+            throw new ValidationException("Ngày học không hợp lệ hoặc không xác định được từ yêu cầu.");
         }
 
         LocalTime start = getResolvedStartTime();
         LocalTime end = getResolvedEndTime();
         if (start == null) {
-            throw new ValidationException("Thß╗¥i gian bß║»t ─æß║ºu (startTime/startDateTime) kh├┤ng hß╗úp lß╗ç.");
+            throw new ValidationException("Thời gian bắt đầu (startTime/startDateTime) không hợp lệ.");
         }
         if (end == null) {
-            throw new ValidationException("Thß╗¥i gian kß║┐t th├║c (endTime/endDateTime) kh├┤ng hß╗úp lß╗ç.");
+            throw new ValidationException("Thời gian kết thúc (endTime/endDateTime) không hợp lệ.");
         }
 
         if (!end.isAfter(start)) {
-            throw new ValidationException("Thß╗¥i gian kß║┐t th├║c phß║úi lß╗¢n h╞ín thß╗¥i gian bß║»t ─æß║ºu.");
+            throw new ValidationException("Thời gian kết thúc phải lớn hơn thời gian bắt đầu.");
         }
     }
 

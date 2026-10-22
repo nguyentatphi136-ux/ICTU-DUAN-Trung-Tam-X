@@ -124,40 +124,40 @@ public class ScheduleConflictService {
                 requestedSchedule.put("endDateTime", request.getResolvedEndDateTime() != null
                         ? request.getResolvedEndDateTime().toString() : reqDate + "T" + reqEnd);
 
-                // Map th├┤ng tin buß╗òi hß╗ìc bß╗ï xung ─æß╗Öt
+                // Map thông tin buổi học bị xung đột
                 Map<String, Object> conflictingSchedule = new LinkedHashMap<>();
                 conflictingSchedule.put("scheduleId", existing.getId());
-                conflictingSchedule.put("classCode", existing.getClassCode() != null ? existing.getClassCode() : "Lß╗¢p #" + existing.getClassId());
+                conflictingSchedule.put("classCode", existing.getClassCode() != null ? existing.getClassCode() : "Lớp #" + existing.getClassId());
                 conflictingSchedule.put("className", existing.getClassName());
                 conflictingSchedule.put("instructorId", existing.getInstructorId());
-                conflictingSchedule.put("instructorName", existing.getInstructorName() != null ? existing.getInstructorName() : "Giß║úng vi├¬n #" + existing.getInstructorId());
+                conflictingSchedule.put("instructorName", existing.getInstructorName() != null ? existing.getInstructorName() : "Giảng viên #" + existing.getInstructorId());
                 conflictingSchedule.put("roomId", existing.getClassroomId());
-                conflictingSchedule.put("roomCode", existing.getRoomCode() != null ? existing.getRoomCode() : "Ph├▓ng #" + existing.getClassroomId());
+                conflictingSchedule.put("roomCode", existing.getRoomCode() != null ? existing.getRoomCode() : "Phòng #" + existing.getClassroomId());
                 conflictingSchedule.put("roomName", existing.getRoomName());
                 conflictingSchedule.put("startDateTime", existing.getFormattedStartDateTime());
                 conflictingSchedule.put("endDateTime", existing.getFormattedEndDateTime());
 
-                // 1. Kiß╗âm tra tr├╣ng giß║úng vi├¬n
+                // 1. Kiểm tra trùng giảng viên
                 if (reqInstructorId != null && reqInstructorId.equals(existing.getInstructorId())) {
                     conflictList.add(new ConflictDetail(
                             ConflictType.INSTRUCTOR_CONFLICT.getCode(),
                             requestedSchedule,
                             conflictingSchedule,
-                            "Giß║úng vi├¬n [" + conflictingSchedule.get("instructorName")
-                                    + "] ─æ├ú c├│ lß╗ïch dß║íy lß╗¢p [" + conflictingSchedule.get("classCode")
-                                    + "] tß╗½ " + exStart + " ─æß║┐n " + exEnd + "."
+                            "Giảng viên [" + conflictingSchedule.get("instructorName")
+                                    + "] đã có lịch dạy lớp [" + conflictingSchedule.get("classCode")
+                                    + "] từ " + exStart + " đến " + exEnd + "."
                     ));
                 }
 
-                // 2. Kiß╗âm tra tr├╣ng ph├▓ng hß╗ìc
+                // 2. Kiểm tra trùng phòng học
                 if (reqRoomId != null && reqRoomId.equals(existing.getClassroomId())) {
                     conflictList.add(new ConflictDetail(
                             ConflictType.ROOM_CONFLICT.getCode(),
                             requestedSchedule,
                             conflictingSchedule,
-                            "Ph├▓ng hß╗ìc [" + conflictingSchedule.get("roomCode")
-                                    + "] ─æ├ú c├│ lß╗¢p [" + conflictingSchedule.get("classCode")
-                                    + "] sß╗¡ dß╗Ñng tß╗½ " + exStart + " ─æß║┐n " + exEnd + "."
+                            "Phòng học [" + conflictingSchedule.get("roomCode")
+                                    + "] đã có lớp [" + conflictingSchedule.get("classCode")
+                                    + "] sử dụng từ " + exStart + " đến " + exEnd + "."
                     ));
                 }
             }
@@ -165,8 +165,8 @@ public class ScheduleConflictService {
 
         boolean hasConflict = !conflictList.isEmpty();
         String message = hasConflict
-                ? "Ph├ít hiß╗çn " + conflictList.size() + " xung ─æß╗Öt thß╗¥i kh├│a biß╗âu (tr├╣ng giß║úng vi├¬n hoß║╖c ph├▓ng hß╗ìc)."
-                : "Kh├┤ng c├│ xung ─æß╗Öt lß╗ïch hß╗ìc.";
+                ? "Phát hiện " + conflictList.size() + " xung đột thời khóa biểu (trùng giảng viên hoặc phòng học)."
+                : "Không có xung đột lịch học.";
 
         return new ConflictCheckResult(hasConflict, conflictList, message);
     }
@@ -312,7 +312,7 @@ public class ScheduleConflictService {
             try {
                 ClassSession currentSession = scheduleDAO.findById(connection, scheduleId);
                 if (currentSession == null) {
-                    throw new ResourceNotFoundException("Kh├┤ng t├¼m thß║Ñy buß╗òi hß╗ìc c├│ ID: " + scheduleId);
+                    throw new ResourceNotFoundException("Không tìm thấy buổi học có ID: " + scheduleId);
                 }
 
                 verifyEntitiesExist(connection, request);
@@ -395,7 +395,7 @@ public class ScheduleConflictService {
         try (Connection connection = connectionProvider.getConnection()) {
             ClassSession session = scheduleDAO.findById(connection, scheduleId);
             if (session == null) {
-                throw new ResourceNotFoundException("Kh├┤ng t├¼m thß║Ñy buß╗òi hß╗ìc c├│ ID: " + scheduleId);
+                throw new ResourceNotFoundException("Không tìm thấy buổi học có ID: " + scheduleId);
             }
             return session;
         }
@@ -420,14 +420,14 @@ public class ScheduleConflictService {
             String reason
     ) throws SQLException {
         if (!isTrainingManagerOrAdmin(actorRoles)) {
-            throw new ForbiddenAccessException("Chß╗ë Quß║ún l├╜ ─æ├áo tß║ío hoß║╖c Quß║ún trß╗ï vi├¬n mß╗¢i c├│ quyß╗ün hß╗ºy buß╗òi hß╗ìc.");
+            throw new ForbiddenAccessException("Chỉ Quản lý đào tạo hoặc Quản trị viên mới có quyền hủy buổi học.");
         }
         try (Connection connection = connectionProvider.getConnection()) {
             connection.setAutoCommit(false);
             try {
                 ClassSession session = scheduleDAO.findById(connection, scheduleId);
                 if (session == null) {
-                    throw new ResourceNotFoundException("Kh├┤ng t├¼m thß║Ñy buß╗òi hß╗ìc c├│ ID: " + scheduleId);
+                    throw new ResourceNotFoundException("Không tìm thấy buổi học có ID: " + scheduleId);
                 }
                 boolean ok = scheduleDAO.cancelSchedule(connection, scheduleId, reason);
                 scheduleDAO.recordAuditLog(
@@ -449,22 +449,22 @@ public class ScheduleConflictService {
     }
 
     private void verifyEntitiesExist(Connection connection, ScheduleRequest request) throws SQLException {
-        // Kiß╗âm tra lß╗¢p hß╗ìc
+        // Kiểm tra lớp học
         SchoolClass sc = classDAO.findById(connection, request.getClassId());
         if (sc == null) {
-            throw new ResourceNotFoundException("Kh├┤ng t├¼m thß║Ñy lß╗¢p hß╗ìc c├│ ID: " + request.getClassId());
+            throw new ResourceNotFoundException("Không tìm thấy lớp học có ID: " + request.getClassId());
         }
 
-        // Kiß╗âm tra ph├▓ng hß╗ìc
+        // Kiểm tra phòng học
         Classroom room = classroomDAO.findById(connection, request.getResolvedRoomId());
         if (room == null) {
-            throw new ResourceNotFoundException("Kh├┤ng t├¼m thß║Ñy ph├▓ng hß╗ìc c├│ ID: " + request.getResolvedRoomId());
+            throw new ResourceNotFoundException("Không tìm thấy phòng học có ID: " + request.getResolvedRoomId());
         }
 
-        // Kiß╗âm tra giß║úng vi├¬n
+        // Kiểm tra giảng viên
         User instructor = userDAO.findById(request.getInstructorId());
         if (instructor == null) {
-            throw new ResourceNotFoundException("Kh├┤ng t├¼m thß║Ñy t├ái khoß║ún giß║úng vi├¬n c├│ ID: " + request.getInstructorId());
+            throw new ResourceNotFoundException("Không tìm thấy tài khoản giảng viên có ID: " + request.getInstructorId());
         }
     }
 
@@ -475,25 +475,25 @@ public class ScheduleConflictService {
             ConflictCheckResult conflictResult
     ) {
         if (!request.isOverrideConflict()) {
-            // Mß║╖c ─æß╗ïnh: Chß║╖n l╞░u lß╗ïch v├á trß║ú vß╗ü th├┤ng tin chi tiß║┐t c├íc buß╗òi hß╗ìc bß╗ï xung ─æß╗Öt
+            // Mặc định: Chặn lưu lịch và trả về thông tin chi tiết các buổi học bị xung đột
             throw new ScheduleConflictException(
-                    "Xung ─æß╗Öt thß╗¥i kh├│a biß╗âu: tr├╣ng giß║úng vi├¬n hoß║╖c ph├▓ng hß╗ìc. Kh├┤ng thß╗â l╞░u lß╗ïch.",
+                    "Xung đột thời khóa biểu: trùng giảng viên hoặc phòng học. Không thể lưu lịch.",
                     conflictResult
             );
         }
 
-        // Nß║┐u client y├¬u cß║ºu ghi ─æ├¿:
-        // 1. Kiß╗âm tra vai tr├▓: Chß╗ë Training Manager hoß║╖c Admin ─æ╞░ß╗úc ph├⌐p ghi ─æ├¿
+        // Nếu client yêu cầu ghi đè:
+        // 1. Kiểm tra vai trò: Chỉ Training Manager hoặc Admin được phép ghi đè
         if (!isTrainingManagerOrAdmin(actorRoles)) {
             throw new ForbiddenAccessException(
-                    "Chß╗ë Quß║ún l├╜ ─æ├áo tß║ío (Training Manager) mß╗¢i c├│ quyß╗ün x├íc nhß║¡n ghi ─æ├¿ xung ─æß╗Öt lß╗ïch hß╗ìc."
+                    "Chỉ Quản lý đào tạo (Training Manager) mới có quyền xác nhận ghi đè xung đột lịch học."
             );
         }
 
-        // 2. Kiß╗âm tra l├╜ do ghi ─æ├¿
+        // 2. Kiểm tra lý do ghi đè
         if (request.getOverrideReason() == null || request.getOverrideReason().trim().isEmpty()) {
             throw new ValidationException(
-                    "Cß║ºn cung cß║Ñp l├╜ do ghi ─æ├¿ (overrideReason) khi x├íc nhß║¡n l╞░u lß╗ïch bß╗ï xung ─æß╗Öt."
+                    "Cần cung cấp lý do ghi đè (overrideReason) khi xác nhận lưu lịch bị xung đột."
             );
         }
     }

@@ -38,8 +38,27 @@ INSERT INTO `classes` (`id`, `class_code`, `class_name`, `program_id`, `start_da
 (2, 'CNTT-K23-02', 'Lß╗¢p Web Fullstack K23-02', 1, '2026-11-01', '2027-04-30', 30, 2, 'OFFLINE', 'IN_PROGRESS')
 ON DUPLICATE KEY UPDATE `class_name` = VALUES(`class_name`);
 
--- Buß╗òi hß╗ìc mß║½u (ID 15) cß╗ºa lß╗¢p CNTT-K23-02:
--- Giß║úng vi├¬n 3 (Trß║ºn Thß╗ï Giß║úng), Ph├▓ng 1 (PH-101), ng├áy 2026-11-01 tß╗½ 09:00:00 ─æß║┐n 11:00:00
+-- Buổi học mẫu (ID 15) của lớp CNTT-K23-02:
+-- Giảng viên 3 (Trần Thị Giảng), Phòng 1 (PH-101), ngày 2026-11-01 từ 09:00:00 đến 11:00:00
 INSERT INTO `class_sessions` (`id`, `class_id`, `class_subject_id`, `session_number`, `session_date`, `start_time`, `end_time`, `classroom_id`, `instructor_id`, `status`) VALUES
 (15, 2, NULL, 1, '2026-11-01', '09:00:00', '11:00:00', 1, 3, 'SCHEDULED')
 ON DUPLICATE KEY UPDATE `session_number` = VALUES(`session_number`);
+
+-- 4. Bổ sung quyền hạn cho phân hệ thời khóa biểu (nếu chưa có)
+INSERT INTO `permissions` (`permission_code`, `permission_name`, `module`, `description`) VALUES
+('CLASS_MANAGE', 'Quản lý lớp học', 'CLASS', 'Mở lớp, xếp lịch và phân công'),
+('SCHEDULE_READ', 'Xem thời khóa biểu', 'SCHEDULE', 'Tra cứu lịch học và xung đột')
+ON DUPLICATE KEY UPDATE `permission_name` = VALUES(`permission_name`);
+
+-- Gán quyền CLASS_MANAGE và SCHEDULE_READ cho ADMIN và TRAINING_MANAGER
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN ('CLASS_MANAGE', 'SCHEDULE_READ')
+WHERE r.role_code IN ('ADMIN', 'TRAINING_MANAGER')
+ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
+
+-- Gán quyền SCHEDULE_READ cho INSTRUCTOR, TA, STUDENT
+INSERT INTO `role_permissions` (`role_id`, `permission_id`)
+SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code = 'SCHEDULE_READ'
+WHERE r.role_code IN ('INSTRUCTOR', 'TA', 'STUDENT')
+ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
+
