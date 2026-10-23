@@ -412,9 +412,9 @@ CREATE TABLE IF NOT EXISTS `student_status_logs` (
 CREATE TABLE IF NOT EXISTS `class_sessions` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `class_id` BIGINT NOT NULL,
-    `class_subject_id` BIGINT NOT NULL,
+    `class_subject_id` BIGINT NULL COMMENT 'Môn học tương ứng của lớp (tùy chọn)',
     `subject_lesson_id` INT NULL COMMENT 'Bài học giáo trình tương ứng',
-    `session_number` INT NOT NULL COMMENT 'Buổi số mấy của môn',
+    `session_number` INT NOT NULL DEFAULT 1 COMMENT 'Buổi số mấy của môn',
     `session_date` DATE NOT NULL,
     `start_time` TIME NOT NULL,
     `end_time` TIME NOT NULL,
@@ -425,7 +425,7 @@ CREATE TABLE IF NOT EXISTS `class_sessions` (
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_csess_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_csess_subject` FOREIGN KEY (`class_subject_id`) REFERENCES `class_subjects` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_csess_subject` FOREIGN KEY (`class_subject_id`) REFERENCES `class_subjects` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_csess_lesson` FOREIGN KEY (`subject_lesson_id`) REFERENCES `subject_lessons` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_csess_room` FOREIGN KEY (`classroom_id`) REFERENCES `classrooms` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_csess_instructor` FOREIGN KEY (`instructor_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
@@ -951,3 +951,4 @@ ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `students` (`id`, `user_id`, `student_code`, `entry_level`, `enrollment_status`) VALUES
 (1, 5, 'HV2026-001', 'Cơ bản (Beginner)', 'STUDYING')
 ON DUPLICATE KEY UPDATE `student_code` = VALUES(`student_code`);
+
