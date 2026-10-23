@@ -39,3 +39,6 @@ target/
 
 # File TypeScript tự sinh khi build
 *.tsbuildinfo
+
+# Cài đặt riêng của VS Code trên từng máy
+.vscode/
