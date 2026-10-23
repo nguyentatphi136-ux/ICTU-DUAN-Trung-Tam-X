@@ -4,6 +4,8 @@ import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { Box, Pager, paginate, Pill, Search, usePaging } from '../../components/ui';
 import { api, ApiError, apiEnabled, json } from '../../data/api';
+import { auditBy } from '../../data/audit';
+import { useAuth } from '../../data/auth';
 import { ROLES, USERS_MODULE } from '../../data/permissions';
 import { download as saveBlob, toXlsx } from '../../data/xlsx';
 import { COLUMNS, evaluate, importOk, MAX_ROWS, TEMPLATE_ROWS, toRaws, type ImportRow, type RowStatus } from './mockImport';
@@ -49,6 +51,7 @@ const STATUS_LABEL: Record<RowStatus, string> = { ok: 'Hợp lệ', duplicate: '
 // Có backend: gửi tệp lên POST /api/admin/users/import/preview (máy chủ đọc .xlsx bằng Apache POI) rồi
 // POST /api/admin/users/import. Chưa có backend: đọc tệp ngay trong trình duyệt và kiểm cùng quy tắc với máy chủ.
 export function ImportUsersPage() {
+  const { user } = useAuth();
   const [step, setStep] = useState(0);
   const [file, setFile] = useState('');
   const [rows, setRows] = useState<ImportRow[]>([]);
@@ -94,16 +97,20 @@ export function ImportUsersPage() {
     setBusy('Đang tạo tài khoản…');
     setError('');
     try {
+      let done: Result;
       if (apiEnabled) {
         const s = await api<{ successRows: number; errors: ApiSkipped[] }>('/api/admin/users/import', json('POST', { fileName: file }));
-        setResult({
+        done = {
           total: rows.length,
           created: s.successRows,
           skipped: s.errors.map((e) => ({ line: e.rowIndex, name: e.fullName, email: e.email, phone: e.phone, role: '', birth: '', status: e.type === 'DUPLICATE' ? 'duplicate' : 'error', issues: [e.reason] })),
-        });
+        };
       } else {
-        setResult({ total: rows.length, created: importOk(rows), skipped: rows.filter((r) => r.status !== 'ok') });
+        done = { total: rows.length, created: importOk(rows), skipped: rows.filter((r) => r.status !== 'ok') };
       }
+      setResult(done);
+      // S6-11: nhập hàng loạt ghi một bản ghi cho cả tệp.
+      auditBy(user, { entity: 'Tài khoản', action: 'Nhập từ Excel', target: file, changes: [{ field: 'Tài khoản tạo mới', before: '–', after: `${done.created}/${done.total} dòng` }] });
       setStep(2);
     } catch (e) {
       setError((e as ApiError).message);

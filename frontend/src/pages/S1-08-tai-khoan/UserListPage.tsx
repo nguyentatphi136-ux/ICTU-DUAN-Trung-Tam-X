@@ -5,9 +5,8 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { ConfirmDialog, Filter, initial, LoadState, Pager, paginate, Pill, RowMenu, Search, usePaging } from '../../components/ui';
 import { apiEnabled, useLoad } from '../../data/api';
-import { audit } from '../../data/audit';
+import { auditBy, type Change } from '../../data/audit';
 import { useAuth } from '../../data/auth';
-import { TODAY } from '../../data/funnel';
 import { moveToTrash, restore } from '../../data/trash';
 import { ADMIN_ROLE, ROLES, USERS_MODULE } from '../../data/permissions';
 import { createUser, loadUserDetail, loadUsers, saveUser, setLocked, trashUser } from '../../data/s1api';
@@ -18,6 +17,17 @@ import { UserDetail } from './UserDetail';
 import { UserDrawer } from './UserDrawer';
 
 const STATUSES: Status[] = ['Hoạt động', 'Chờ kích hoạt', 'Đã khoá'];
+const roleNames = (u: UserRow) => u.roles.map((r) => ROLES[r]).join(', ');
+// Thông tin tài khoản ghi vào nhật ký khi sửa (S6-11), cặp [tên trường, cách lấy giá trị].
+const FIELDS: [string, (u: UserRow) => string | undefined][] = [
+  ['Họ tên', (u) => u.name],
+  ['Email', (u) => u.email],
+  ['Số điện thoại', (u) => u.phone],
+  ['Ngày sinh', (u) => u.birth],
+  ['Giới tính', (u) => u.gender],
+  ['Quê quán', (u) => u.hometown],
+  ['Địa chỉ', (u) => u.address],
+];
 
 // S1-08. Danh sách tài khoản: tìm theo tên, email, số điện thoại; lọc vai trò và trạng thái; 20 dòng mỗi trang.
 // S1-09 (gán vai trò) nằm trong ngăn Sửa, S1-10 (khoá, mở khoá) là hộp thoại mở từ menu ba chấm.
@@ -62,7 +72,20 @@ export function UserListPage() {
   }, [users, q, role, status]);
   const view = paginate(filtered, page, size);
 
+  // S6-11: thao tác của Quản trị trên tài khoản cũng ghi nhật ký.
+  const log = (entity: 'Tài khoản' | 'Vai trò', action: string, u: UserRow, changes: Change[], note?: string) =>
+    auditBy(me, { entity, action, target: `${u.email.split('@')[0]} · ${u.name}`, changes, note });
+  const logEdit = (old: UserRow, u: UserRow) => {
+    const before = roleNames(old);
+    const after = roleNames(u);
+    if (before !== after)
+      log('Vai trò', u.roles.length > old.roles.length ? 'Thêm vai trò' : u.roles.length < old.roles.length ? 'Gỡ vai trò' : 'Đổi vai trò', u, [{ field: 'Vai trò', before: before || '(không có)', after: after || '(không còn vai trò)' }]);
+    const changes = FIELDS.filter(([, get]) => (get(old) ?? '') !== (get(u) ?? '')).map(([field, get]) => ({ field, before: get(old) || '–', after: get(u) || '–' }));
+    if (changes.length) log('Tài khoản', 'Sửa thông tin', u, changes);
+  };
   const update = (u: UserRow) => setUsers((list) => list.map((x) => (x.id === u.id ? u : x)));
+  const trashed = (u: UserRow) => log('Tài khoản', 'Chuyển vào thùng rác', u, [{ field: 'Trạng thái', before: u.status, after: 'Trong thùng rác' }]);
+  const restored = (u: UserRow) => log('Tài khoản', 'Khôi phục', u, [{ field: 'Trạng thái', before: 'Trong thùng rác', after: u.status }]);
   const trash = async (u: UserRow) => {
     if (apiEnabled) {
       try {
@@ -72,15 +95,25 @@ export function UserListPage() {
       }
       setDeleting(null);
       load.reload();
-      return toast('Đã chuyển vào thùng rác', u.name, { label: 'Hoàn tác', onClick: () => void restoreItem('user', u.id).then(load.reload) });
+      trashed(u);
+      return toast('Đã chuyển vào thùng rác', u.name, {
+        label: 'Hoàn tác',
+        onClick: () =>
+          void restoreItem('user', u.id).then(() => {
+            restored(u);
+            load.reload();
+          }),
+      });
     }
     const id = moveToTrash({ kind: 'user', item: u }, `${u.name} · ${u.email}`, me?.name ?? '');
     setUsers([...USERS]);
     setDeleting(null);
+    trashed(u);
     toast('Đã chuyển vào thùng rác', u.name, {
       label: 'Hoàn tác',
       onClick: () => {
         restore(id);
+        restored(u);
         setUsers([...USERS]);
       },
     });
@@ -101,13 +134,13 @@ export function UserListPage() {
           <Icon name="shield" size={16} />
           Ma trận phân quyền
         </Link>
-        {/* S6-11 */}
-        <Link to="/quan-tri/nhat-ky" className="btn">
-          <Icon name="file" size={16} />
-          Nhật ký thao tác
-        </Link>
         {canWrite && (
           <>
+            {/* S6-11, chỉ Quản trị xem */}
+            <Link to="/quan-tri/nhat-ky" className="btn">
+              <Icon name="file" size={16} />
+              Nhật ký thao tác
+            </Link>
             <Link to="/quan-tri/thung-rac" className="btn">
               <Icon name="trash" size={16} />
               Thùng rác
@@ -215,9 +248,11 @@ export function UserListPage() {
               try {
                 if (editing === 'new') {
                   const created = await createUser(u);
+                  log('Tài khoản', 'Tạo tài khoản', u, [{ field: 'Vai trò', before: '–', after: roleNames(u) }]);
                   toast('Đã tạo tài khoản', `Mật khẩu tạm ${created?.tempPassword ?? ''}, đã gửi kèm email kích hoạt tới ${u.email}. Người dùng phải đổi ở lần đăng nhập đầu.`);
                 } else {
                   await saveUser(editing, u);
+                  logEdit(editing, u);
                   toast('Đã lưu thay đổi', u.name);
                 }
               } catch (e) {
@@ -229,13 +264,10 @@ export function UserListPage() {
             }
             if (editing === 'new') {
               setUsers((list) => [{ ...u, id: Math.max(...list.map((x) => x.id)) + 1 }, ...list]);
+              log('Tài khoản', 'Tạo tài khoản', u, [{ field: 'Vai trò', before: '–', after: roleNames(u) }]);
               toast('Đã tạo tài khoản', `Email kích hoạt đã gửi tới ${u.email}.`);
             } else {
-              // S6-11: đổi vai trò được ghi nhật ký thao tác.
-              const before = editing.roles.map((r) => ROLES[r]).join(', ');
-              const after = u.roles.map((r) => ROLES[r]).join(', ');
-              if (before !== after)
-                audit({ at: TODAY + 'T' + new Date().toTimeString().slice(0, 5), by: me?.name ?? '', role: me ? ROLES[me.active] : '', entity: 'Vai trò', action: u.roles.length > editing.roles.length ? 'Thêm vai trò' : u.roles.length < editing.roles.length ? 'Gỡ vai trò' : 'Đổi vai trò', target: `${u.email.split('@')[0]} · ${u.name}`, changes: [{ field: 'Vai trò', before: before || '(không có)', after: after || '(không còn vai trò)' }] });
+              logEdit(editing, u);
               update(u);
               toast('Đã lưu thay đổi', u.name);
             }
@@ -263,6 +295,8 @@ export function UserListPage() {
           onClose={() => setLocking(null)}
           onConfirm={async (reason) => {
             const locked = locking.status !== 'Đã khoá';
+            const logLock = () =>
+              log('Tài khoản', locked ? 'Khoá tài khoản' : 'Mở khoá tài khoản', locking, [{ field: 'Trạng thái', before: locking.status, after: locked ? 'Đã khoá' : 'Hoạt động' }], reason || undefined);
             if (apiEnabled) {
               let res;
               try {
@@ -271,12 +305,14 @@ export function UserListPage() {
                 return toast(locked ? 'Chưa khoá được' : 'Chưa mở khoá được', (e as Error).message);
               }
               // S1-10: lớp người đó đang phụ trách cần bàn giao (máy chủ trả về sau khi khoá).
+              logLock();
               const classes = res?.assignedClasses ?? [];
               toast(locked ? 'Đã khoá tài khoản' : 'Đã mở khoá tài khoản', classes.length ? `${locking.name}. Cần bàn giao ${classes.length} lớp: ${classes.map((c) => c.classCode).join(', ')}.` : locking.name);
               setLocking(null);
               return load.reload();
             }
             update({ ...locking, status: locked ? 'Đã khoá' : 'Hoạt động', lockReason: locked ? reason : undefined });
+            logLock();
             toast(locked ? 'Đã khoá tài khoản' : 'Đã mở khoá tài khoản', locking.name);
             setLocking(null);
           }}

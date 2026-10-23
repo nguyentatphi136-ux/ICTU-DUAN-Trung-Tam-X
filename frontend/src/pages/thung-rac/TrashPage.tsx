@@ -6,6 +6,7 @@ import { useToast } from '../../components/Toast';
 import { MODULE as TRAINING_MODULE, TrainingTabs } from '../../components/TrainingTabs';
 import { ConfirmDialog, LoadState, Pager, paginate, Pill, Search, usePaging } from '../../components/ui';
 import { apiEnabled, useLoad } from '../../data/api';
+import { auditBy } from '../../data/audit';
 import { useAuth } from '../../data/auth';
 import { ADMIN_ROLE, USERS_MODULE } from '../../data/permissions';
 import { loadTrash, purgeFromTrash, restoreItem, type ServerTrashItem, type ServerTrashKind } from '../../data/s2api';
@@ -117,6 +118,7 @@ export function TrashPage({ area }: { area: Area }) {
                           const why = await run(t, (s) => restoreItem(s.kind, s.serverId), restore);
                           if (why) return toast('Chưa khôi phục được', why);
                           reload();
+                          auditBy(user, { entity: 'Thùng rác', action: 'Khôi phục', target: `${KIND_LABEL[t.kind]} · ${t.label}`, changes: [{ field: 'Trạng thái', before: 'Trong thùng rác', after: 'Đã khôi phục' }] });
                           toast('Đã khôi phục', t.label);
                         }}
                       >
@@ -159,6 +161,7 @@ export function TrashPage({ area }: { area: Area }) {
               return toast('Chưa xoá được', why);
             }
             reload();
+            auditBy(user, { entity: 'Thùng rác', action: 'Xoá vĩnh viễn', target: `${KIND_LABEL[purging.kind]} · ${purging.label}`, changes: [{ field: 'Trạng thái', before: 'Trong thùng rác', after: 'Đã xoá vĩnh viễn' }] });
             setPurging(null);
             toast('Đã xoá vĩnh viễn', purging.label);
           }}

@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
 import { pageNumbers } from './paging';
 
@@ -171,24 +171,31 @@ export type MenuAction = { label: string; onClick?: () => void; disabled?: strin
 /** Nút ba chấm cuối dòng, mở danh sách thao tác. disabled là chuỗi thì hiện làm lý do bên dưới. */
 export function RowMenu({ actions }: { actions: MenuAction[] }) {
   const [open, setOpen] = useState(false);
-  const [up, setUp] = useState(false);
+  const [pos, setPos] = useState<CSSProperties>({ visibility: 'hidden' });
   const ref = useRef<HTMLDivElement>(null);
-  // Dòng cuối bảng: menu mở xuống sẽ bị khung cuộn của bảng cắt và đẩy ra thanh cuộn, nên mở lên trên khi phía dưới không đủ chỗ.
+  // Menu đặt cố định theo màn hình (position: fixed) nên khung cuộn của bảng không cắt được, kể cả bảng chỉ có một dòng.
+  // Mở xuống dưới nút, không đủ chỗ thì mở lên trên.
   useLayoutEffect(() => {
     const menu = ref.current?.querySelector<HTMLElement>('.menu');
-    if (!open || !menu) return setUp(false);
-    let box = ref.current!.parentElement;
-    while (box && getComputedStyle(box).overflowY === 'visible') box = box.parentElement;
-    const bound = box ? box.getBoundingClientRect() : { top: 0, bottom: innerHeight };
+    if (!open || !menu) return setPos({ visibility: 'hidden' });
     const btn = ref.current!.getBoundingClientRect();
-    const h = menu.offsetHeight + 4;
-    setUp(btn.bottom + h > Math.min(bound.bottom, innerHeight) && btn.top - h >= Math.max(bound.top, 0));
+    const { clientWidth: w, clientHeight: h } = document.documentElement;
+    const up = btn.bottom + menu.offsetHeight + 4 > h && btn.top - menu.offsetHeight - 4 >= 0;
+    setPos({ right: w - btn.right, top: up ? 'auto' : btn.bottom + 4, bottom: up ? h - btn.top + 4 : 'auto' });
   }, [open]);
   useEffect(() => {
     if (!open) return;
     const f = (e: MouseEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    const close = () => setOpen(false);
     document.addEventListener('mousedown', f);
-    return () => document.removeEventListener('mousedown', f);
+    // Menu không đi theo khi cuộn, nên cuộn hay đổi cỡ cửa sổ thì đóng.
+    addEventListener('scroll', close, true);
+    addEventListener('resize', close);
+    return () => {
+      document.removeEventListener('mousedown', f);
+      removeEventListener('scroll', close, true);
+      removeEventListener('resize', close);
+    };
   }, [open]);
   return (
     <div className="rowmenu" ref={ref}>
@@ -196,7 +203,7 @@ export function RowMenu({ actions }: { actions: MenuAction[] }) {
         <Icon name="dots" />
       </button>
       {open && (
-        <div className={up ? 'menu up' : 'menu'} role="menu">
+        <div className="menu" role="menu" style={pos}>
           {actions.map((a) => (
             <button
               key={a.label}

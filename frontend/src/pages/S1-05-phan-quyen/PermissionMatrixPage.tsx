@@ -5,6 +5,8 @@ import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
 import { LoadState } from '../../components/ui';
 import { apiEnabled, useLoad } from '../../data/api';
+import { auditBy } from '../../data/audit';
+import { useAuth } from '../../data/auth';
 import { adminPerm, MODULES, ROLES, USERS_MODULE, type Permission } from '../../data/permissions';
 import { ADMIN_CORE, loadPermissions, loadRoles, saveRolePermissions, type ServerPermission, type ServerRole } from '../../data/s1api';
 import './matrix.css';
@@ -27,6 +29,7 @@ export function PermissionMatrixPage() {
 
 function LocalMatrix() {
   const toast = useToast();
+  const { user } = useAuth();
   const [saved, setSaved] = useState(initial);
   const [perms, setPerms] = useState(initial);
   const dirty = JSON.stringify(saved) !== JSON.stringify(perms);
@@ -52,6 +55,9 @@ function LocalMatrix() {
           disabled={!dirty}
           style={{ width: 170 }}
           onClick={() => {
+            // S6-11: mỗi ô đổi là một dòng trong bản ghi nhật ký.
+            const changes = MODULES.flatMap((m, i) => ROLES.flatMap((r, j) => (saved[i][j] === perms[i][j] ? [] : [{ field: `${m.name} · ${r}`, before: saved[i][j], after: perms[i][j] }])));
+            auditBy(user, { entity: 'Vai trò', action: 'Sửa phân quyền', target: 'Ma trận phân quyền', changes });
             MODULES.forEach((m, i) => (m.perms = perms[i]));
             setSaved(perms);
             toast('Đã lưu phân quyền', 'Thay đổi có hiệu lực từ lần đăng nhập hoặc chuyển vai trò kế tiếp.');
@@ -140,6 +146,7 @@ const sameSet = (a: string[], b: string[]) => [...a].sort().join() === [...b].so
 /** S1-05 khi có backend: mỗi vai trò một bộ mã quyền (GET /api/admin/roles, PUT /api/admin/roles/{mã}/permissions). */
 function ServerMatrix() {
   const toast = useToast();
+  const { user } = useAuth();
   const [roles, setRoles] = useState<ServerRole[]>([]);
   const [perms, setPerms] = useState<ServerPermission[]>([]);
   const [grants, setGrants] = useState<Record<string, string[]>>({});
@@ -158,7 +165,19 @@ function ServerMatrix() {
   async function save() {
     setSaving(true);
     try {
-      for (const r of changed) await saveRolePermissions(r.roleCode, grants[r.roleCode] ?? []);
+      for (const r of changed) {
+        const now = grants[r.roleCode] ?? [];
+        await saveRolePermissions(r.roleCode, now);
+        // S6-11: ghi quyền được cấp thêm và bị thu hồi của từng vai trò.
+        const added = now.filter((c) => !r.permissionCodes.includes(c));
+        const removed = r.permissionCodes.filter((c) => !now.includes(c));
+        auditBy(user, {
+          entity: 'Vai trò',
+          action: 'Sửa phân quyền',
+          target: `Vai trò ${r.roleName}`,
+          changes: [...(added.length ? [{ field: 'Cấp thêm', before: '–', after: added.join(', ') }] : []), ...(removed.length ? [{ field: 'Thu hồi', before: removed.join(', '), after: '–' }] : [])],
+        });
+      }
       toast('Đã lưu phân quyền', 'Có hiệu lực ngay ở thao tác kế tiếp, người dùng không cần đăng nhập lại.');
     } catch (e) {
       toast('Chưa lưu được phân quyền', (e as Error).message);

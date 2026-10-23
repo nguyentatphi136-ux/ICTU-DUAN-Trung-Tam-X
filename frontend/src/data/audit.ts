@@ -3,8 +3,10 @@
 import { addDays } from './schedule';
 import { TODAY } from './funnel';
 import { persisted } from './store';
+import { ROLES } from './permissions';
+import type { User } from './auth';
 
-export type AuditEntity = 'Điểm' | 'Điểm danh' | 'Học phí' | 'Vai trò';
+export type AuditEntity = 'Điểm' | 'Điểm danh' | 'Học phí' | 'Vai trò' | 'Tài khoản' | 'Thùng rác';
 export type Change = { field: string; before: string; after: string };
 export type AuditEntry = { id: number; at: string; by: string; role: string; entity: AuditEntity; action: string; target: string; changes: Change[]; note?: string };
 
@@ -23,4 +25,11 @@ export const AUDIT: AuditEntry[] = persisted('audit.v2', [
 
 export function audit(e: Omit<AuditEntry, 'id'>) {
   AUDIT.unshift({ ...e, id: Math.max(0, ...AUDIT.map((x) => x.id)) + 1 });
+}
+
+/** Ghi nhật ký thao tác của người đang đăng nhập, thời điểm là bây giờ. */
+export function auditBy(user: User | null, e: Omit<AuditEntry, 'id' | 'at' | 'by' | 'role'>) {
+  const now = new Date();
+  const at = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${now.toTimeString().slice(0, 5)}`;
+  audit({ ...e, at, by: user?.name ?? '', role: user ? ROLES[user.active] : '' });
 }
