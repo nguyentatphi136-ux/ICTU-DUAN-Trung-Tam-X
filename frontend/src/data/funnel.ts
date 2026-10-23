@@ -112,7 +112,11 @@ export const LOGS: Record<number, CareLog[]> = persisted('funnel-logs', {
 }, true);
 
 export function logsOf(l: FunnelLead): CareLog[] {
-  const list = LOGS[l.id] ?? (apiEnabled ? [] : [{ kind: 'Phân công', at: '2026-09-24T08:00', by: MANAGER, text: 'Giao cho ' + l.owner }]);
+  const list =
+    LOGS[l.id] ??
+    (apiEnabled
+      ? []
+      : [{ kind: 'Phân công', at: '2026-09-24T08:00', by: MANAGER, text: l.owner ? 'Giao cho ' + l.owner : 'Chưa phân công tư vấn viên' }]);
   return [...list].sort((a, b) => b.at.localeCompare(a.at));
 }
 

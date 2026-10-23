@@ -127,7 +127,9 @@ export function syncAllLeadsAndFunnel() {
   }
 
   // 2. Đồng bộ từ LEADS sang FUNNEL
-  for (const l of LEADS) {
+  // Duyệt từ cuối lên đầu để các lead mới nhất (ở đầu LEADS) được unshift lên đầu FUNNEL đúng thứ tự
+  for (let i = LEADS.length - 1; i >= 0; i--) {
+    const l = LEADS[i];
     let f = FUNNEL.find((x) => samePhone(x.phone, l.phone));
     if (!f && l.name) {
       f = FUNNEL.find((x) => x.name.trim().toLowerCase() === l.name.trim().toLowerCase());
@@ -141,15 +143,19 @@ export function syncAllLeadsAndFunnel() {
         f.id = l.id;
         changed = true;
       }
+      if (l.owner && f.owner !== l.owner) {
+        f.owner = l.owner;
+        changed = true;
+      }
     } else {
-      FUNNEL.push({
+      FUNNEL.unshift({
         id: l.id,
         name: l.name,
         phone: l.phone,
         email: l.email,
         program: l.program,
         source: l.source || 'Biểu mẫu web',
-        owner: l.owner || 'TRAN THU HA',
+        owner: l.owner || '',
         stage: (l.status === 'Đã nhập học' ? 'Chốt' : l.status) as Stage || 'Mới',
         student: l.status === 'Đã nhập học' ? 'HV' + l.id : undefined,
       });
@@ -159,6 +165,9 @@ export function syncAllLeadsAndFunnel() {
 
   if (changed) {
     saveAll();
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('tms:lead-updated'));
+    }
   }
 }
 
@@ -176,22 +185,29 @@ export function addLead(data: Omit<Lead, 'id'> & { id?: number }): Lead {
     createdAt: data.createdAt || TODAY,
     source: data.source || 'Biểu mẫu web',
     status: data.status || 'Mới',
+    owner: data.owner ?? '',
   };
+
+  const existingLeadIdx = LEADS.findIndex((l) => (data.id && l.id === data.id) || samePhone(l.phone, lead.phone));
+  if (existingLeadIdx >= 0) {
+    lead.id = LEADS[existingLeadIdx].id;
+    LEADS.splice(existingLeadIdx, 1);
+  }
   LEADS.unshift(lead);
 
   const funnelLead: FunnelLead = {
-    id: newId,
+    id: lead.id,
     name: lead.name,
     phone: lead.phone,
     email: lead.email,
     program: lead.program,
     source: lead.source,
-    owner: lead.owner || 'TRAN THU HA',
+    owner: lead.owner || '',
     stage: (lead.status === 'Đã nhập học' ? 'Chốt' : lead.status) as Stage || 'Mới',
-    student: lead.status === 'Đã nhập học' ? 'HV' + newId : undefined,
+    student: lead.status === 'Đã nhập học' ? 'HV' + lead.id : undefined,
   };
 
-  const existingIdx = FUNNEL.findIndex((f) => f.id === newId || samePhone(f.phone, lead.phone));
+  const existingIdx = FUNNEL.findIndex((f) => f.id === lead.id || samePhone(f.phone, lead.phone));
   if (existingIdx >= 0) {
     FUNNEL[existingIdx] = funnelLead;
   } else {
@@ -200,7 +216,7 @@ export function addLead(data: Omit<Lead, 'id'> & { id?: number }): Lead {
 
   saveAll();
   if (typeof window !== 'undefined') {
-    window.dispatchEvent(new CustomEvent('tms:lead-updated', { detail: { id: newId } }));
+    window.dispatchEvent(new CustomEvent('tms:lead-updated', { detail: { id: lead.id } }));
   }
   return lead;
 }

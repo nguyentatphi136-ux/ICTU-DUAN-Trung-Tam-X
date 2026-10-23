@@ -9,7 +9,7 @@ import { useAuth } from '../../data/auth';
 import { loadPublicPrograms, saveLead, type PublicProgram } from '../../data/s2api';
 import { addLeadLog, loadFunnel, loadLeadLogs, moveLead } from '../../data/s3api';
 import { addLog, ddmm, FUNNEL, overdueDays, STAGES, stageTone, TODAY, type FunnelLead, type Stage } from '../../data/funnel';
-import { addLead, syncFunnelStage, LEADS } from '../../data/leads';
+import { addLead, syncFunnelStage, syncAllLeadsAndFunnel, LEADS } from '../../data/leads';
 import { notify } from '../../data/notifications';
 import { isCallbackDue, runLeadReminders } from '../../data/leadReminders';
 import { LeadDrawer } from '../S2-09-lead/LeadDrawer';
@@ -28,7 +28,10 @@ const SHOWN = 3;
 export function FunnelPage() {
   const { user } = useAuth();
   const toast = useToast();
-  const [leads, setLeads] = useState(() => [...FUNNEL]);
+  const [leads, setLeads] = useState(() => {
+    syncAllLeadsAndFunnel();
+    return [...FUNNEL];
+  });
   const [q, setQ] = useState('');
   const [onlyLate, setOnlyLate] = useState(false);
   const [open, setOpen] = useState<Stage[]>([]);
@@ -51,8 +54,10 @@ export function FunnelPage() {
   const canWrite = role === 3;
 
   useEffect(() => {
+    syncAllLeadsAndFunnel();
     setLeads([...FUNNEL]);
     const handleUpdate = () => {
+      syncAllLeadsAndFunnel();
       setLeads([...FUNNEL]);
     };
     window.addEventListener('tms:lead-updated', handleUpdate);

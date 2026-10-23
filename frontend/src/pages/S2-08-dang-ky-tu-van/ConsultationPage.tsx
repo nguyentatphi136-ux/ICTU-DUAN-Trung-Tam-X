@@ -7,7 +7,8 @@ import { Icon, type IconName } from '../../components/Icon';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { Box } from '../../components/ui';
 import { apiEnabled, useLoad } from '../../data/api';
-import { LEADS } from '../../data/leads';
+import { addLead } from '../../data/leads';
+import { TODAY } from '../../data/funnel';
 import { loadPublicPrograms, submitConsultation } from '../../data/s2api';
 import { PROGRAMS } from '../../data/training';
 import { EMAIL_RE, isPhone, PHONE_MSG } from '../../data/validate';
@@ -67,8 +68,7 @@ export function ConsultationPage() {
       }
       return;
     }
-    LEADS.unshift({
-      id: Math.max(...LEADS.map((l) => l.id)) + 1,
+    addLead({
       name: f.name.trim().toUpperCase(),
       phone: f.phone.trim(),
       email: f.email.trim() || undefined,
@@ -76,7 +76,7 @@ export function ConsultationPage() {
       program: f.program,
       status: 'Mới',
       owner: '',
-      createdAt: new Date().toISOString().slice(0, 10),
+      createdAt: TODAY,
       note: f.message.trim() || undefined,
     });
     setSent(true);

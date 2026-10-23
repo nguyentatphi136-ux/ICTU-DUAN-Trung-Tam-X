@@ -6,7 +6,7 @@ import { useToast } from '../../components/Toast';
 import { Filter, LoadState, Pager, paginate, Pill, Search, usePaging } from '../../components/ui';
 import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
-import { COUNSELORS, LEAD_STATUSES, leadTone, LEADS, SOURCES, viDate, addLead, updateLead, removeLead, type Lead } from '../../data/leads';
+import { COUNSELORS, LEAD_STATUSES, leadTone, LEADS, SOURCES, viDate, addLead, updateLead, removeLead, syncAllLeadsAndFunnel, type Lead } from '../../data/leads';
 import { TODAY } from '../../data/funnel';
 import { assignLeads, loadCounselors, loadPublicPrograms, restoreItem, saveLead, searchLeads, trashLead, type Counselor, type PublicProgram } from '../../data/s2api';
 import { moveToTrash, restore } from '../../data/trash';
@@ -31,7 +31,10 @@ const thisMonthLabel = `Tháng ${pad(nowMonth)}/${nowYear}`;
 export function LeadListPage() {
   const { user } = useAuth();
   const toast = useToast();
-  const [leads, setLeads] = useState(() => [...LEADS]);
+  const [leads, setLeads] = useState(() => {
+    syncAllLeadsAndFunnel();
+    return [...LEADS];
+  });
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [source, setSource] = useState('');
@@ -92,8 +95,10 @@ export function LeadListPage() {
   const known = useRef<Record<number, Lead>>({});
   const [qSent, setQSent] = useState('');
   useEffect(() => {
+    syncAllLeadsAndFunnel();
     setLeads([...LEADS]);
     const onUpdated = () => {
+      syncAllLeadsAndFunnel();
       setLeads([...LEADS]);
     };
     window.addEventListener('tms:lead-updated', onUpdated);
