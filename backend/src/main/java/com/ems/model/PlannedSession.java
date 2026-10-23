@@ -3,7 +3,6 @@ package com.ems.model;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 /**
  * Model biểu diễn một buổi học trong thời khoá biểu lớp (Class Session)

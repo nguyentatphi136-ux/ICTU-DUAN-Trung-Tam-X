@@ -4,7 +4,6 @@ import com.ems.dto.ClassSessionResponse;
 import com.ems.exception.ApiException;
 import com.ems.security.ApiResponse;
 import com.ems.service.ClassSessionService;
-import com.google.gson.Gson;
 
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -40,7 +39,6 @@ import java.util.Map;
 public class ScheduleCalendarApiServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
-    private static final Gson GSON = new Gson();
 
     private ClassSessionService classSessionService;
 

@@ -1,9 +1,7 @@
 package com.ems.dao;
 
-import com.ems.config.DBConnection;
 import com.ems.model.*;
 
-import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -23,7 +21,6 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AssignmentGradingDAO {
 
     private static final DateTimeFormatter DT_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
     private static final AtomicLong LOG_ID_GEN = new AtomicLong(100);
 
     // Kho dữ liệu In-Memory Demo

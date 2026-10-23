@@ -229,7 +229,6 @@ public class SubmissionGradingServlet extends HttpServlet {
         try {
             gradingDAO.publishGrade(assignmentId, studentCode, actorName);
             AssignmentSubmission sub = gradingDAO.getSubmission(assignmentId, studentCode);
-            String scoreStr = (sub != null && sub.getGrade() != null) ? sub.getGrade().getFormattedScore() : "";
             String successMsg = URLEncoder.encode("Đã công bố điểm", StandardCharsets.UTF_8);
             resp.sendRedirect(req.getContextPath() + "/assignment/grading?assignmentId=" + assignmentId
                     + "&studentCode=" + studentCode + "&success=" + successMsg);
