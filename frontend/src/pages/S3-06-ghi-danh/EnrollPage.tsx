@@ -35,6 +35,17 @@ export function EnrollPage() {
   const [picked, setPicked] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const selectAllRef = useRef<HTMLInputElement>(null);
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    const onUpdate = () => setTick((t) => t + 1);
+    window.addEventListener('tms:lead-updated', onUpdate);
+    window.addEventListener('storage', onUpdate);
+    return () => {
+      window.removeEventListener('tms:lead-updated', onUpdate);
+      window.removeEventListener('storage', onUpdate);
+    };
+  }, []);
 
   if (apiEnabled && (load.loading || load.error))
     return (
@@ -51,13 +62,21 @@ export function EnrollPage() {
   const over = after - k.max;
   const kw = q.trim().toLowerCase();
   const d = kw.replace(/\D/g, '');
+  const matchKw = (s: Student) =>
+    !kw || s.code.toLowerCase().includes(kw) || s.name.toLowerCase().includes(kw) || (d.length > 2 && s.phone.replace(/\D/g, '').includes(d));
+
+  // Khi tìm theo từ khóa (tên, SĐT, mã HV), cho phép tìm rộng qua mọi chương trình
   const rows = STUDENTS.filter(
     (s) =>
       (s.cls === k.code || !onlyFree || !s.cls) &&
-      (!program || s.program === program) &&
+      (!program || s.program === program || (kw && matchKw(s))) &&
       (s.status === 'Mới nhập học' || s.status === 'Đang học') &&
-      (!kw || s.code.toLowerCase().includes(kw) || s.name.toLowerCase().includes(kw) || (d.length > 2 && s.phone.replace(/\D/g, '').includes(d))),
+      matchKw(s),
   );
+
+  const otherProgramFreeCount = STUDENTS.filter(
+    (s) => !s.cls && (s.status === 'Mới nhập học' || s.status === 'Đang học') && s.program !== k.program,
+  ).length;
 
   // Học viên đủ điều kiện ghi danh (chưa có lớp nào)
   const eligibleRows = rows.filter((s) => !s.cls);
@@ -246,6 +265,22 @@ export function EnrollPage() {
           )}
         </div>
       </div>
+
+      {otherProgramFreeCount > 0 && program === k.program && !kw && (
+        <div style={{ fontSize: 13, color: 'var(--text-sub, #64748b)', padding: '7px 12px', background: 'var(--bg-sub, #f8fafc)', borderRadius: 6, border: '1px solid var(--border, #e2e8f0)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Icon name="info" size={16} />
+          <span>
+            Đang lọc học viên thuộc chương trình <b>{k.program}</b>. Có <b>{otherProgramFreeCount}</b> học viên chưa xếp lớp thuộc chương trình khác (như Phân tích dữ liệu).{' '}
+            <button
+              type="button"
+              style={{ background: 'none', border: 'none', color: 'var(--primary, #2563eb)', textDecoration: 'underline', cursor: 'pointer', padding: 0, font: 'inherit', fontWeight: 600 }}
+              onClick={() => setProgram('')}
+            >
+              Bấm vào đây để xem tất cả học viên
+            </button>
+          </span>
+        </div>
+      )}
       <div className="panel en-table">
         <div className="scroll">
           <table>
@@ -265,6 +300,7 @@ export function EnrollPage() {
                 <th>Mã học viên</th>
                 <th>Họ tên</th>
                 <th>Số điện thoại</th>
+                <th>Chương trình</th>
                 <th>Ngày nhập học</th>
                 <th>Tình trạng</th>
               </tr>
@@ -295,6 +331,13 @@ export function EnrollPage() {
                     <td className="strong">{s.code}</td>
                     <td className="strong">{s.name}</td>
                     <td>{s.phone}</td>
+                    <td>
+                      {s.program === k.program ? (
+                        <span>{s.program}</span>
+                      ) : (
+                        <Pill tone="wait" title="Khác chương trình đào tạo của lớp này">{s.program}</Pill>
+                      )}
+                    </td>
                     <td>{viDate(s.enrolledAt)}</td>
                     <td>
                       {isAlreadyInThisClass ? (
@@ -312,7 +355,7 @@ export function EnrollPage() {
               })}
               {!rows.length && (
                 <tr>
-                  <td colSpan={6} className="empty">
+                  <td colSpan={7} className="empty">
                     Không còn học viên nào để ghi danh theo bộ lọc này.
                   </td>
                 </tr>
