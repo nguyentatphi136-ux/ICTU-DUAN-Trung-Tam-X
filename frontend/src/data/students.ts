@@ -142,7 +142,15 @@ function generate(): Student[] {
 
 export const STUDENTS: Student[] = persisted(
   'students',
-  [...SEED.map((s): Student => ({ notes: [], history: [], ...s, login: loginOf(seq(s.code) % 1000) })), ...generate()].sort((a, b) => b.code.localeCompare(a.code)),
+  [
+    ...SEED.map((s): Student => ({
+      notes: [],
+      history: [],
+      ...s,
+      login: s.code === 'HV260101' ? 'hocvien@tms.vn' : s.code === 'HV260142' ? 'kiet.dt@gmail.com' : loginOf(seq(s.code) % 1000),
+    })),
+    ...generate(),
+  ].sort((a, b) => b.code.localeCompare(a.code)),
   true,
 );
 

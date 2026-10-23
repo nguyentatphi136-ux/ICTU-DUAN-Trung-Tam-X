@@ -20,7 +20,15 @@ function seed(): Material[] {
     if (s.lesson % 2) out.push({ id: id++, session: s.id, kind: 'Tệp', name: `ma-mau-bai-${s.lesson}.zip`, size: 348160, by: s.teacher ?? 'VU DUC LONG', at: at.replace('30', '32') });
     if (s.lesson % 3 === 0) out.push({ id: id++, session: s.id, kind: 'Liên kết', name: 'Tài liệu tham khảo (MDN)', url: 'https://developer.mozilla.org/vi/docs/Web/JavaScript', by: 'PHAM GIA HUY', at: s.date + 'T08:05' });
   }
-  if (next) out.push({ id: id++, session: next.id, kind: 'Tệp', name: `slide-bai-${next.lesson}.pdf`, size: 1887436, by: next.teacher ?? 'VU DUC LONG', at: TODAY + 'T09:00' });
+  if (next) {
+    const atNow = TODAY + 'T08:30';
+    out.push(
+      { id: id++, session: next.id, kind: 'Tệp', name: `slide-bai-${next.lesson}-thiet-ke-luoc-do-erd.pdf`, size: 2450000, by: 'VU DUC LONG', at: atNow },
+      { id: id++, session: next.id, kind: 'Tệp', name: 'script-mau-tao-bang-postgresql.sql', size: 18432, by: 'VU DUC LONG', at: atNow },
+      { id: id++, session: next.id, kind: 'Tệp', name: 'so-do-thuc-the-quan-he-erd.png', size: 852000, by: 'VU DUC LONG', at: atNow },
+      { id: id++, session: next.id, kind: 'Liên kết', name: 'Tài liệu hướng dẫn PostgreSQL (Official Docs)', url: 'https://www.postgresql.org/docs/current/', by: 'VU DUC LONG', at: atNow },
+    );
+  }
   return out;
 }
 

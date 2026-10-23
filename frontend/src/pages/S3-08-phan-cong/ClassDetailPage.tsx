@@ -47,7 +47,7 @@ export function ClassDetailPage() {
       </AppLayout>
     );
   if (!k) return <ErrorPage code="404" />;
-  if (mine && !classesOf(user!.name).includes(k)) return <ErrorPage code="403" />;
+  if (mine && !classesOf(user!.name).some((c) => c.code === k.code)) return <ErrorPage code="403" />;
   const manage = canManageClasses(role);
   const refresh = apiEnabled ? load.reload : () => setTick((t) => t + 1);
   const tabs: ClassTab[] = [

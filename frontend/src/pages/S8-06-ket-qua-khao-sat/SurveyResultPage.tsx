@@ -3,7 +3,7 @@ import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { Filter } from '../../components/ui';
 import { useAuth } from '../../data/auth';
-import { findClass, mainTeacher } from '../../data/classes';
+import { findClass, isTeacherMatch, mainTeacher } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
 import { RUNS, type SurveyRun } from '../../data/surveys';
 import { download, toXlsx } from '../../data/xlsx';
@@ -27,12 +27,12 @@ const label = (r: SurveyRun) => `${r.cls} · ${r.title.replace('Khảo sát ', '
 export function SurveyResultPage() {
   const { user } = useAuth();
   const teacherOnly = user?.active === 2;
-  const runs = RUNS.filter((r) => r.answers.length && (!teacherOnly || teacherOf(r) === user!.name));
+  const runs = RUNS.filter((r) => r.answers.length && (!teacherOnly || isTeacherMatch(teacherOf(r), user!.name)));
   const teachers = [...new Set(runs.map(teacherOf))];
   const [by, setBy] = useState<'cls' | 'teacher'>('teacher');
-  const [teacher, setTeacher] = useState(teacherOnly ? user!.name : (teachers.find((t) => runs.filter((r) => teacherOf(r) === t).length > 1) ?? teachers[0] ?? ''));
+  const [teacher, setTeacher] = useState(teacherOnly ? (teachers.find((t) => isTeacherMatch(t, user!.name)) ?? teachers[0] ?? '') : (teachers.find((t) => runs.filter((r) => isTeacherMatch(teacherOf(r), t)).length > 1) ?? teachers[0] ?? ''));
   const [runId, setRunId] = useState(runs[0]?.id);
-  const shown = by === 'teacher' ? runs.filter((r) => teacherOf(r) === teacher) : runs.filter((r) => r.id === runId);
+  const shown = by === 'teacher' ? runs.filter((r) => isTeacherMatch(teacherOf(r), teacher)) : runs.filter((r) => r.id === runId);
   const scale = (shown[0]?.questions ?? []).filter((q) => q.kind === 'scale');
   const texts = (shown[0]?.questions ?? []).filter((q) => q.kind === 'text');
   const answered = shown.reduce((n, r) => n + r.responded.length, 0);

@@ -116,6 +116,25 @@ function seed(): [ScoreBook, Record<string, Lock>] {
       });
       if (sub.state === 'Đã học xong') locks[key] = { at: '2026-09-30T16:20', by: sub.teacher ?? 'LE HOANG NAM', config: cfg };
     }
+    // Học viên mẫu HV260101 có đủ 6 môn chốt điểm để minh hoạ bảng điểm tốt nghiệp toàn khoá (S8-03)
+    if (k.code === 'WEB-K15') {
+      const gradesTable: Record<string, { cc: number; bt: number; gk: number; ck: number }> = {
+        'GIT-01': { cc: 9.5, bt: 8.5, gk: 8.0, ck: 8.5 },
+        'WEB-01': { cc: 9.0, bt: 8.0, gk: 8.0, ck: 8.0 },
+        'WEB-02': { cc: 9.0, bt: 8.8, gk: 8.5, ck: 9.0 },
+        'DB-01': { cc: 8.5, bt: 8.0, gk: 8.0, ck: 8.5 },
+        'WEB-03': { cc: 9.0, bt: 8.5, gk: 8.5, ck: 8.5 },
+        'BE-01': { cc: 8.5, bt: 8.0, gk: 8.0, ck: 8.0 },
+      };
+      for (const s of k.subjects) {
+        const key = gkey(k.code, s.code);
+        if (!book[key]) book[key] = {};
+        book[key]['HV260101'] = gradesTable[s.code] ?? { cc: 9.0, bt: 8.5, gk: 8.0, ck: 8.5 };
+        if (!locks[key]) {
+          locks[key] = { at: '2026-10-01T15:00', by: s.teacher ?? 'VU DUC LONG', config: cfg };
+        }
+      }
+    }
   }
   return [book, locks];
 }

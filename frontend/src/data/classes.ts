@@ -72,10 +72,12 @@ const k16 = web();
 k16[0] = S('GIT-01', 'Git và làm việc nhóm', 4, 'LE HOANG NAM', ['PHAM GIA HUY']);
 k16[1] = S('WEB-01', 'HTML & CSS nền tảng', 12, 'NGO THI THU', ['NGO BAO TU']);
 k16[2] = S('WEB-02', 'JavaScript cơ bản', 14, 'NGO THI THU');
+k16[3] = S('DB-01', 'Cơ sở dữ liệu', 10, 'VU DUC LONG', ['PHAM GIA HUY']);
 k16[4] = S('WEB-03', 'React', 12, 'DANG MINH SON');
+k16[5] = S('BE-01', 'Node.js và API', 12, 'VU DUC LONG');
 
 export const CLASSES: Klass[] = persisted('classes', [
-  { code: 'WEB-K15', program: 'Lập trình web Full-stack', start: '2026-08-12', max: 30, mode: 'Trực tiếp', status: 'Đang học', done: 22, slot: 'Tối 2-4-6', room: 'P.401', subjects: web('VU DUC LONG').map((s, i) => (i === 0 ? { ...s, tas: ['PHAM GIA HUY'] } : s)) },
+  { code: 'WEB-K15', program: 'Lập trình web Full-stack', start: '2026-08-12', max: 30, mode: 'Trực tiếp', status: 'Đang học', done: 31, slot: 'Tối 2-4-6', room: 'P.401', subjects: web('VU DUC LONG').map((s) => ({ ...s, tas: ['PHAM GIA HUY'] })) },
   { code: 'DATA-K07', program: 'Phân tích dữ liệu', start: '2026-07-20', max: 25, mode: 'Kết hợp', status: 'Đang học', done: 30, slot: 'Tối 3-6', room: 'Zoom 01', subjects: data('LE HOANG NAM') },
   { code: 'UIUX-K09', program: 'Thiết kế UI/UX', start: '2026-07-02', max: 20, mode: 'Trực tiếp', status: 'Đang học', done: 26, slot: 'Tối 3-5', room: 'P.302', subjects: uiux('NGO THI THU') },
   { code: 'JAVA-K12', program: 'Lập trình Java Backend', start: '2026-10-15', max: 30, mode: 'Trực tiếp', status: 'Chuẩn bị', done: 0, slot: 'Sáng 5-7', room: 'Lab 1', subjects: java('DANG MINH SON') },
@@ -100,8 +102,40 @@ export const mainTeacher = (k: Klass) => k.subjects.find((s) => s.teacher)?.teac
 export const missingTeachers = (k: Klass) => k.subjects.filter((s) => !s.teacher).length;
 /** Lớp còn chạy (dùng để đếm số lớp đang dạy của giảng viên, sức chứa phòng...). */
 export const isOpen = (k: Klass) => k.status === 'Chuẩn bị' || k.status === 'Đang học';
+
+/** So khớp tên giảng viên/trợ giảng hỗ trợ cả họ tên đầy đủ, không dấu và bí danh vai trò */
+export function isTeacherMatch(staffName?: string, queryName?: string): boolean {
+  if (!staffName || !queryName) return false;
+  if (staffName === queryName) return true;
+  const normalize = (s: string) =>
+    s
+      .replace(/[đĐ]/g, 'd')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+  const n1 = normalize(staffName);
+  const n2 = normalize(queryName);
+  if (n1 === n2 || n1.includes(n2) || n2.includes(n1)) return true;
+
+  // Giảng viên Vũ Đức Long (giangvien@tms.vn)
+  const isVudLong = (n: string) => n.includes('vuduclong') || n === 'giangvien' || n.includes('giangvien') || n.includes('instructor');
+  if (isVudLong(n1) && isVudLong(n2)) return true;
+
+  // Trợ giảng Phạm Gia Huy (trogiang@tms.vn)
+  const isPhamHuy = (n: string) => n.includes('phamgiahuy') || n === 'trogiang' || n.includes('trogiang') || n.includes('teachingassistant');
+  if (isPhamHuy(n1) && isPhamHuy(n2)) return true;
+
+  // Quản lý đào tạo Lê Hoàng Nam (daotao@tms.vn)
+  const isLeNam = (n: string) => n.includes('lehoangnam') || n === 'daotao' || n.includes('daotao') || n.includes('trainingmanager');
+  if (isLeNam(n1) && isLeNam(n2)) return true;
+
+  return false;
+}
+
 /** Các lớp có người này dạy chính hoặc trợ giảng. */
-export const classesOf = (name: string) => CLASSES.filter((k) => k.subjects.some((s) => s.teacher === name || s.tas.includes(name)));
+export const classesOf = (name: string) =>
+  CLASSES.filter((k) => k.subjects.some((s) => isTeacherMatch(s.teacher, name) || s.tas.some((t) => isTeacherMatch(t, name))));
 
 /** Lần ghi danh (S3-06): ai, vào lớp nào, ngày nào, người thực hiện. Khi tích hợp: GET /classes/:code/enrollments. */
 export type Enrollment = { student: string; cls: string; at: string; by: string };

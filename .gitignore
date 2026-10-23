@@ -45,4 +45,5 @@ node_modules/
 
 # Cài đặt riêng của VS Code trên từng máy
 .vscode/
-
+# Temporary office files
+~$*

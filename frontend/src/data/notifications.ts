@@ -34,6 +34,9 @@ const ME = { users: ['NGUYEN MINH ANH'] };
 
 // Vài thông báo mẫu của học viên NGUYEN MINH ANH để chuông và trang Thông báo có nội dung ngay (S6-09, S6-10).
 export const NOTICES: Notice[] = persisted('notices', [
+  { id: 9, at: t(11, 45), kind: 'Bài tập', title: 'Học viên vừa nộp bài Bài 14: Gọi API danh sách sản phẩm', body: 'Lớp WEB-K15 · Đã có 14 bài nộp đang chờ giảng viên chấm điểm.', link: '/bai-tap/7', to: { users: ['VU DUC LONG', 'GIẢNG VIÊN VŨ ĐỨC LONG', 'Giảng viên Vũ Đức Long'] }, readBy: [] },
+  { id: 8, at: t(10, 15), kind: 'Điểm danh', title: 'Đơn xin phép vắng mới từ học viên Nguyễn Minh Anh', body: 'Lớp WEB-K15 · Xin nghỉ buổi học tối nay (trùng lịch thi). Bấm để duyệt đơn.', link: '/duyet-phep', to: { users: ['VU DUC LONG', 'GIẢNG VIÊN VŨ ĐỨC LONG', 'Giảng viên Vũ Đức Long'] }, readBy: [] },
+  { id: 7, at: t(8, 0), kind: 'Điểm danh', title: 'Học viên Nguyễn Văn Khánh vượt ngưỡng vắng ở lớp WEB-K15', body: 'Đã vắng 6 buổi, vượt ngưỡng 20%. Đề nghị giảng viên liên hệ nhắc nhở.', link: '/chuyen-can/WEB-K15', to: { users: ['VU DUC LONG', 'GIẢNG VIÊN VŨ ĐỨC LONG', 'Giảng viên Vũ Đức Long'] }, readBy: [] },
   { id: 6, at: t(14, 55), kind: 'Bài tập', title: 'Bài tập mới: Bài 15 Xử lý lỗi và trạng thái tải', body: 'WEB-02 · hạn nộp sau 3 ngày.', link: '/bai-tap-cua-toi/8', to: { cls: 'WEB-K15' }, readBy: [] },
   { id: 5, at: t(9, 0), kind: 'Điểm', title: 'Đã có điểm Bài 11: Hàm và phạm vi biến', body: 'Giảng viên VU DUC LONG vừa công bố điểm và nhận xét.', link: '/bai-tap-cua-toi/4', to: ME, readBy: [] },
   { id: 4, at: t(-2, 30), kind: 'Điểm danh', title: 'Đơn xin phép vắng đã được duyệt', body: 'Buổi này được ghi Vắng có phép.', link: '/xin-phep', to: ME, readBy: [] },

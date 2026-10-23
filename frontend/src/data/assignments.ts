@@ -107,6 +107,33 @@ const SEED: Seed[] = [
       { name: 'api-mau.postman_collection.json', size: 12288 },
     ],
   },
+  {
+    title: 'Bài tập thực hành 1: Thiết kế lược đồ ERD & Tạo bảng CSDL',
+    description: md(`
+      # Yêu cầu thực hành Cơ sở dữ liệu (DB-01)
+      Dựa trên đặc tả hệ thống quản lý bán hàng:
+      - Vẽ sơ đồ quan hệ thực thể (ERD) hoàn chỉnh
+      - Viết script SQL \`create_tables.sql\` tạo các bảng kèm khoá chính, khoá ngoại
+      - Chèn ít nhất 5 bản ghi mẫu vào mỗi bảng
+
+      Nộp file script \`.sql\` và ảnh chụp sơ đồ quan hệ.`),
+    due: at(4),
+    subject: 'DB-01',
+    files: [{ name: 'de-bai-erd-db01.pdf', size: 215040 }],
+  },
+  {
+    title: 'Bài tập thực hành 2 (Nháp): Truy vấn SQL nâng cao với JOIN & GROUP BY',
+    description: md(`
+      # Yêu cầu
+      Viết 10 câu truy vấn phức hợp lấy dữ liệu báo cáo bán hàng:
+      - Doanh thu theo tháng
+      - Top 5 khách hàng mua nhiều nhất
+      - Thống kê tồn kho theo danh mục sản phẩm`),
+    due: at(10),
+    subject: 'DB-01',
+    status: 'Nháp' as const,
+    files: [{ name: 'du-lieu-mau.sql', size: 45056 }],
+  },
 ];
 
 export const ASSIGNMENTS: Assignment[] = persisted(
@@ -114,11 +141,11 @@ export const ASSIGNMENTS: Assignment[] = persisted(
   SEED.map((s, i) => ({
     id: i + 1,
     cls: 'WEB-K15',
-    subject: 'WEB-02',
+    subject: s.subject ?? 'WEB-02',
     files: [],
-    status: 'Đã giao' as const,
+    status: (s.status ?? 'Đã giao') as const,
     savedAt: addDays(s.due.slice(0, 10), -7) + 'T14:02',
-    assignedAt: addDays(s.due.slice(0, 10), -7) + 'T14:05',
+    assignedAt: s.status === 'Nháp' ? undefined : addDays(s.due.slice(0, 10), -7) + 'T14:05',
     by: 'VU DUC LONG',
     late: i === 8 || i === 4 ? ('Cho nộp' as const) : ('Chặn' as const),
     max: 10,

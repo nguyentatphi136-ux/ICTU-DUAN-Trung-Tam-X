@@ -36,7 +36,7 @@ export function MaterialsPage() {
   if (!cls) return mine[0] ? <Navigate to={'/hoc-lieu/' + mine[0].code} replace /> : <ErrorPage code="403" />;
   const k = findClass(cls);
   if (!k) return <ErrorPage code="404" />;
-  if (!mine.includes(k)) return <ErrorPage code="403" />;
+  if (!mine.some((c) => c.code === k.code)) return <ErrorPage code="403" />;
 
   const sessions = sessionsOf(k.code).filter((s) => !s.cancelled);
   const recent = sessions.filter((s) => s.date >= addDays(TODAY, -21) && s.date <= addDays(TODAY, 14));

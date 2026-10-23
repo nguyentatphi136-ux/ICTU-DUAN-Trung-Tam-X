@@ -18,11 +18,11 @@ export const LOCK_SECONDS = 15 * 60;
 export const DEMO_ACCOUNTS: Account[] = [
   { email: 'admin@tms.vn', name: 'Quản trị viên (Admin)', roles: [6] },
   { email: 'daotao@tms.vn', name: 'Quản lý đào tạo (Training Manager)', roles: [5] },
-  { email: 'giangvien@tms.vn', name: 'Giảng viên (Instructor)', roles: [2] },
-  { email: 'trogiang@tms.vn', name: 'Trợ giảng (Teaching Assistant)', roles: [1] },
+  { email: 'giangvien@tms.vn', name: 'Giảng viên Vũ Đức Long', roles: [2] },
+  { email: 'trogiang@tms.vn', name: 'Trợ giảng Phạm Gia Huy', roles: [1] },
   { email: 'tuvan@tms.vn', name: 'Tư vấn tuyển sinh (Admissions)', roles: [3] },
   { email: 'ketoan@tms.vn', name: 'Kế toán (Accountant)', roles: [4] },
-  { email: 'hocvien@tms.vn', name: 'Học viên (Student)', roles: [0] },
+  { email: 'hocvien@tms.vn', name: 'Học viên Nguyễn Minh Anh', roles: [0] },
 ];
 
 /** Bảng ánh xạ bí danh (alias) giúp đăng nhập linh hoạt bằng username ngắn hoặc mã cũ */
@@ -42,6 +42,8 @@ const ALIASES: Record<string, string> = {
 
   // Giảng viên
   'giangvien': 'giangvien@tms.vn',
+  'vuduclong': 'giangvien@tms.vn',
+  'vuduclong@tms.vn': 'giangvien@tms.vn',
   'ist25200212045@tms.vn': 'giangvien@tms.vn',
   'giangvien@edumanager.vn': 'giangvien@tms.vn',
   'instructor@example.com': 'giangvien@tms.vn',
@@ -69,6 +71,10 @@ const ALIASES: Record<string, string> = {
   's25200212101@tms.vn': 'hocvien@tms.vn',
   'hocvien@edumanager.vn': 'hocvien@tms.vn',
   'student@example.com': 'hocvien@tms.vn',
+  'hv260101': 'hocvien@tms.vn',
+  'minhanh.ng@gmail.com': 'hocvien@tms.vn',
+  'kiet.dt@gmail.com': 'hocvien@tms.vn',
+  'hv260142': 'hocvien@tms.vn',
 };
 
 /** Mã vai trò máy chủ trả về (LoginApiServlet.roleSlug) theo thứ tự ROLES. */
@@ -192,7 +198,7 @@ export async function login(email: string, password: string): Promise<Account | 
               email: st.login,
               name: st.name,
               roles: [0], // Học viên
-              mustChangePassword: st.status === 'Mới nhập học',
+              mustChangePassword: false,
             }),
           150
         )

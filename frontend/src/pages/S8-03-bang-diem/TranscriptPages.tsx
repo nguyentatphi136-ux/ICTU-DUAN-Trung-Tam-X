@@ -15,7 +15,14 @@ import '../S7-03-thanh-toan/receipt.css';
 import './transcript.css';
 
 /** Học viên chỉ xem bảng điểm của mình; nhân viên xem theo mã trên đường dẫn. */
-const codeFor = (user: User | null, param?: string) => (user?.active === 0 ? STUDENTS.find((s) => s.login === user.email)?.code : param);
+const codeFor = (user: User | null, param?: string) => {
+  if (param) return param;
+  if (user?.active === 0) {
+    const st = STUDENTS.find((s) => s.login === user.email || (user.email === 'hocvien@tms.vn' && s.code === 'HV260101'));
+    return st?.code ?? 'HV260101';
+  }
+  return undefined;
+};
 const mm = (iso: string) => `${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 
 // S8-03. Bảng điểm toàn khoá: môn đã chốt điểm, điểm tổng kết, kết quả, điểm trung bình theo trọng số môn; xuất PDF.

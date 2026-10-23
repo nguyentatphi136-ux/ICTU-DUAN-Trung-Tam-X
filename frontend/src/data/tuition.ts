@@ -79,6 +79,21 @@ if (kiet) {
   RAW.push({ student: kiet.code, no: 2, amount: 1000000, at: TODAY, time: '09:42', method: 'Tiền mặt', by: 'DO THI MAI', note: 'Đóng trước một phần' });
 }
 
+const minhanh = STUDENTS.find((s) => s.code === 'HV260101');
+if (minhanh) {
+  PLAN_SEED[minhanh.code] = {
+    student: minhanh.code,
+    discount: { kind: '%', value: 10, reason: 'Học bổng đầu vào' },
+    items: [
+      { no: 1, label: 'Khi nhập học', amount: 3420000, due: '2026-08-12' },
+      { no: 2, label: 'Trước buổi 20', amount: 2565000, due: '2026-10-15' },
+      { no: 3, label: 'Trước buổi 40', amount: 2565000, due: '2026-12-15' },
+    ],
+  };
+  RAW.push({ student: minhanh.code, no: 1, amount: 3420000, at: '2026-08-12', time: '09:30', method: 'Chuyển khoản', by: 'DO THI MAI', ref: 'VCB · FT2608129841' });
+  RAW.push({ student: minhanh.code, no: 2, amount: 1500000, at: '2026-10-14', time: '14:20', method: 'Chuyển khoản', by: 'DO THI MAI', ref: 'VCB · FT2610141203', note: 'Thanh toán một phần đợt 2' });
+}
+
 for (const s of STUDENTS) {
   if (!s.cls || PLAN_SEED[s.code]) continue;
   // Lớp WEB-K16 mới có hai học viên đã lập kế hoạch, để minh hoạ sinh hàng loạt (S7-02).

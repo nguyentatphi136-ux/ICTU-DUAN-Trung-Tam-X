@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ASSIGNMENTS, SUBMISSIONS } from '../../data/assignments';
 import { statOf } from '../../data/attendance';
-import { classesOf, isOpen, totalSessions } from '../../data/classes';
+import { classesOf, isOpen, isTeacherMatch, totalSessions } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
 import { approvedFor } from '../../data/leaves';
 import { addDays, longDate, mondayOf, SESSIONS, shortDate } from '../../data/schedule';
@@ -14,7 +14,7 @@ import './teacher.css';
 export function TeacherDashboard({ name }: { name: string }) {
   const classes = classesOf(name).filter(isOpen);
   const codes = new Set(classes.map((k) => k.code));
-  const mine = SESSIONS.filter((s) => codes.has(s.cls) && (!s.teacher || s.teacher === name)).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
+  const mine = SESSIONS.filter((s) => codes.has(s.cls) && (!s.teacher || isTeacherMatch(s.teacher, name))).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
   const nowHm = new Date().toTimeString().slice(0, 5);
   const next = mine.find((s) => !s.cancelled && (s.date > TODAY || (s.date === TODAY && s.end >= nowHm)));
   const todo = ASSIGNMENTS.filter((a) => codes.has(a.cls) && a.status === 'Đã giao')

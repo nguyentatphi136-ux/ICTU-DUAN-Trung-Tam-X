@@ -37,7 +37,7 @@ export function MatrixPage({ head }: Props) {
   const k = findClass(cls);
   if (!k) return <ErrorPage code="404" />;
   const role = user?.active ?? -1;
-  if (role !== 5 && role !== 6 && !classesOf(user!.name).includes(k)) return <ErrorPage code="403" />;
+  if (role !== 5 && role !== 6 && !classesOf(user!.name).some((c) => c.code === k.code)) return <ErrorPage code="403" />;
 
   const sessions = heldSessions(cls).filter((s) => sheetOf(s));
   const rows = classRows(cls).sort((a, b) => (asc ? a.stat.rate - b.stat.rate : a.s.name.localeCompare(b.s.name)));

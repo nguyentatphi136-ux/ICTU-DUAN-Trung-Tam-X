@@ -90,7 +90,7 @@ const SEED: Seed[] = [
   { name: 'VO THANH NHAN', phone: '0962 381 457', program: 'Phân tích dữ liệu', stage: 'Hẹn học thử', trial: '2026-10-11' },
   { name: 'HA GIA LINH', phone: '0917 064 228', program: 'Kiểm thử phần mềm', stage: 'Hẹn học thử', trial: '2026-10-15' },
   { name: 'VU THANH DAT', phone: '0919 530 276', email: 'dat.vt@gmail.com', program: 'Kiểm thử phần mềm', stage: 'Chốt', source: 'Facebook' },
-  { name: 'DO TUAN KIET', phone: '0971 846 320', program: 'Lập trình web Full-stack', stage: 'Chốt', student: 'HV260142' },
+  { name: 'DO TUAN KIET', phone: '0971 846 320', email: 'kiet.dt@gmail.com', program: 'Lập trình web Full-stack', stage: 'Chốt', student: 'HV260142' },
   { name: 'HOANG MAI LAN', phone: '0977 418 902', program: 'Phân tích dữ liệu', stage: 'Từ chối', reason: 'Học phí cao', owner: 'DANG BAO VY' },
   { name: 'KIEU VAN SON', phone: '0988 257 613', program: 'Lập trình Java Backend', stage: 'Từ chối', reason: 'Đã chọn trung tâm khác' },
   { name: 'LUONG THI HOA', phone: '0925 640 389', program: 'Thiết kế UI/UX', stage: 'Từ chối', reason: 'Không liên lạc được' },
@@ -108,6 +108,13 @@ export const LOGS: Record<number, CareLog[]> = persisted('funnel-logs', {
     { kind: 'Nhắn', at: '2026-09-26T09:05', by: 'TRAN THU HA', text: 'Gửi tin giới thiệu chương trình Java Backend qua Zalo.' },
     { kind: 'Đổi trạng thái', at: '2026-09-26T09:06', by: 'TRAN THU HA', text: 'Mới → Đã liên hệ' },
     { kind: 'Phân công', at: '2026-09-24T08:00', by: MANAGER, text: 'Giao cho TRAN THU HA' },
+  ],
+  24: [
+    { kind: 'Đổi trạng thái', at: '2026-10-05T10:15', by: 'TRAN THU HA', text: 'Đã tư vấn → Chốt (Chuyển thành học viên HV260142)' },
+    { kind: 'Gọi', at: '2026-10-04T15:20', by: 'TRAN THU HA', text: 'Học viên có nguyện vọng học lớp tối, tư vấn lộ trình Full-stack 6 tháng, hẹn nộp hồ sơ.' },
+    { kind: 'Nhắn', at: '2026-10-03T11:00', by: 'TRAN THU HA', text: 'Gửi bảng chi tiết môn học và học bổng 10% đầu vào.' },
+    { kind: 'Đổi trạng thái', at: '2026-10-03T09:10', by: 'TRAN THU HA', text: 'Mới → Đang tư vấn' },
+    { kind: 'Phân công', at: '2026-10-02T16:00', by: MANAGER, text: 'Giao cho TRAN THU HA' },
   ],
 }, true);
 

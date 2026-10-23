@@ -4,7 +4,7 @@ import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { Filter } from '../../components/ui';
 import { useAuth } from '../../data/auth';
-import { CLASSES, classesOf, isOpen, STAFF } from '../../data/classes';
+import { CLASSES, classesOf, isOpen, isTeacherMatch, STAFF } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
 import { ROOMS } from '../../data/rooms';
 import { addDays, clashes, dm, dow, findSession, longDate, mondayOf, SESSIONS, shiftOf, SHIFTS, WEEKDAYS, type ClassSession, type Shift } from '../../data/schedule';
@@ -39,7 +39,7 @@ export function CalendarPage() {
 
   // Giảng viên, trợ giảng chỉ thấy lớp mình dạy; học viên chỉ thấy lớp mình học.
   const mine = role === 1 || role === 2 ? new Set(classesOf(user!.name).map((k) => k.code)) : role === 0 ? new Set(STUDENTS.filter((s) => s.login === user!.email).map((s) => s.cls)) : null;
-  const pool = SESSIONS.filter((s) => (!mine || mine.has(s.cls)) && (!cls || s.cls === cls) && (!teacher || s.teacher === teacher) && (!room || s.room === room));
+  const pool = SESSIONS.filter((s) => (!mine || mine.has(s.cls)) && (!cls || s.cls === cls) && (!teacher || isTeacherMatch(s.teacher, teacher)) && (!room || s.room === room));
 
   const monday = mondayOf(anchor);
   const week = [...Array(7)].map((_, i) => addDays(monday, i));

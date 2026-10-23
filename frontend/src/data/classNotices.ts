@@ -39,6 +39,30 @@ export const CLASS_NOTICES: ClassNotice[] = persisted('class-notices', [
   { id: 2, title: 'Lịch thi thử cuối môn WEB-02', body: 'Thi thử cuối môn JavaScript vào buổi học tuần sau, làm bài trên máy cá nhân.', classes: ['WEB-K15'], inApp: true, email: true, by: 'LE HOANG NAM', at: addDays(TODAY, -3) + 'T09:00', status: 'Đã gửi', readBy: readers(['WEB-K15'], 92, 'b') },
   { id: 3, title: 'Đổi phòng học từ P.301 sang P.401', body: 'Từ tuần này lớp WEB-K15 học ở phòng P.401, tầng 4.', classes: ['WEB-K15'], inApp: true, email: false, by: 'LE HOANG NAM', at: addDays(TODAY, -7) + 'T17:45', status: 'Đã gửi', readBy: readers(['WEB-K15'], 100, 'c') },
   { id: 4, title: 'Khảo sát giữa khoá', body: 'Các bạn dành 5 phút trả lời khảo sát giữa khoá để trung tâm cải thiện lớp học.', classes: ['WEB-K15', 'DATA-K07', 'UIUX-K09', 'JAVA-K12'], inApp: true, email: true, by: 'LE HOANG NAM', at: addDays(TODAY, -11) + 'T10:10', status: 'Đã gửi', readBy: readers(['WEB-K15', 'DATA-K07', 'UIUX-K09', 'JAVA-K12'], 71, 'd') },
+  {
+    id: 5,
+    title: 'Tài liệu và lưu ý chuẩn bị thực hành Cơ sở dữ liệu (DB-01)',
+    body: 'Chào các bạn lớp WEB-K15,\nThầy đã đăng tải slide bài giảng, file script SQL mẫu và lược đồ ERD trong mục Học liệu. Các bạn tải về máy trước giờ học tối nay nhé.\n\nChúc các bạn học tốt!\nThầy Long.',
+    classes: ['WEB-K15'],
+    inApp: true,
+    email: true,
+    by: 'VU DUC LONG',
+    at: TODAY + 'T08:35',
+    status: 'Đã gửi',
+    readBy: readers(['WEB-K15'], 78, 'e'),
+  },
+  {
+    id: 6,
+    title: 'Nhắc nhở hạn nộp Bài tập 14 (Gọi API danh sách sản phẩm)',
+    body: 'Nhắc nhở các bạn học viên lớp WEB-K15 khẩn trương hoàn thiện và nộp Bài tập 14 trên hệ thống trước 23h59 hôm nay. Nếu gặp khó khăn phần gọi API hãy gửi tin nhắn trao đổi trên nhóm lớp.',
+    classes: ['WEB-K15'],
+    inApp: true,
+    email: false,
+    by: 'VU DUC LONG',
+    at: TODAY + 'T11:20',
+    status: 'Đã gửi',
+    readBy: readers(['WEB-K15'], 85, 'f'),
+  },
 ]);
 
 /** Học viên đang học các lớp nhận thông báo. */

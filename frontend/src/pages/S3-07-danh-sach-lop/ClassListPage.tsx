@@ -6,7 +6,7 @@ import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
 import { ROLE_CODES } from '../../data/s1api';
 import { loadClassScope } from '../../data/shared';
-import { CLASS_STATUSES, CLASSES, classesOf, classSize, classTone, isOpen, mainTeacher, missingTeachers, STAFF, totalSessions, type Klass } from '../../data/classes';
+import { CLASS_STATUSES, CLASSES, classesOf, classSize, classTone, isOpen, isTeacherMatch, mainTeacher, missingTeachers, STAFF, totalSessions, type Klass } from '../../data/classes';
 import { viDate } from '../../data/leads';
 import { PROGRAMS } from '../../data/training';
 import '../S3-04-ho-so-hoc-vien/student.css';
@@ -54,7 +54,7 @@ export function ClassListPage({ head, rowActions, onOpen, version }: Props) {
       (!k || c.code.toLowerCase().includes(k)) &&
         (!status || c.status === status) &&
         (!program || c.program === program) &&
-        (!teacher || c.subjects.some((s) => s.teacher === teacher)) &&
+        (!teacher || c.subjects.some((s) => isTeacherMatch(s.teacher, teacher))) &&
         (!from || c.start >= from) &&
         (!to || c.start <= to),
   );
