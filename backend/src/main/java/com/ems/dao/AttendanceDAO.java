@@ -183,6 +183,24 @@ public class AttendanceDAO {
         return get(user, sessionId);
     }
 
+    /** Giảng viên, trợ giảng xin Quản lý đào tạo sửa điểm danh buổi đã qua (sau ngày học chỉ quản lý sửa được). */
+    public void requestEdit(User user, long sessionId, String reason) throws SQLException {
+        ClassSessionResponse s = sessionFor(user, sessionId);
+        if (editable(user, s)) throw new ValidationException("Buổi này bạn đang sửa được, không cần gửi yêu cầu.");
+        if (!LocalDate.parse(s.getSessionDate()).isBefore(today.get())) throw new ValidationException("Chỉ gửi yêu cầu cho buổi đã qua.");
+        String why = reason == null || reason.isBlank() ? "" : " Lý do: " + reason.trim();
+        try (Connection conn = DBConnection.getConnection()) {
+            NotificationDAO.send(conn, NotificationDAO.managers(conn), user.getId(), "ABSENCE",
+                    "Yêu cầu sửa điểm danh " + s.getClassCode() + " buổi " + s.getSeq(),
+                    user.getFullName() + " đề nghị mở sửa điểm danh buổi ngày " + viDate(s.getSessionDate()) + "." + why,
+                    "/diem-danh/" + sessionId);
+        }
+    }
+
+    static String viDate(String iso) {
+        return iso.substring(8, 10) + "/" + iso.substring(5, 7) + "/" + iso.substring(0, 4);
+    }
+
     /** Buổi theo id; người không dạy lớp đó (và không phải quản lý) nhận 403. */
     ClassSessionResponse sessionFor(User user, long sessionId) throws SQLException {
         ClassSessionResponse s = sessions.findById(sessionId);

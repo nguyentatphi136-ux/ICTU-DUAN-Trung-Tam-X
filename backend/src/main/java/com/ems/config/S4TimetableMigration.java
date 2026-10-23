@@ -40,6 +40,17 @@ public class S4TimetableMigration implements ServletContextListener {
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """);
+            // DB dựng từ schema.sql bản cũ có student_status_logs theo enrollment_id, from_class_id: còn trống thì bỏ,
+            // có dữ liệu thì đổi tên thành student_status_logs_old để giữ lại rồi tạo bảng mới.
+            if (tableExists(conn, "student_status_logs") && !columnExists(conn, "student_status_logs", "student_code")) {
+                boolean empty;
+                try (ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM student_status_logs")) {
+                    empty = rs.next() && rs.getInt(1) == 0;
+                }
+                stmt.execute(empty ? "DROP TABLE student_status_logs"
+                        : "RENAME TABLE student_status_logs TO student_status_logs_old");
+                LOGGER.info("Đã thay bảng student_status_logs cấu trúc cũ" + (empty ? "." : ", dữ liệu cũ ở student_status_logs_old."));
+            }
             stmt.execute("""
                 CREATE TABLE IF NOT EXISTS student_status_logs (
                     id BIGINT AUTO_INCREMENT PRIMARY KEY,

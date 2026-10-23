@@ -4,6 +4,7 @@ import com.ems.config.DBConnection;
 import com.ems.dao.AttendanceDAO;
 import com.ems.dao.ClassSessionDAO;
 import com.ems.dao.LeaveRequestDAO;
+import com.ems.dao.NotificationDAO;
 import com.ems.dto.ClassSessionResponse;
 import com.ems.exception.ApiException;
 import com.ems.model.User;
@@ -126,17 +127,25 @@ class AttendanceLeaveTest {
         assertEquals(400, status(() -> leaves.create(student, 9203, "Ngắn", null)), "Lý do ít nhất 10 ký tự");
         assertEquals(400, status(() -> leaves.create(student, 9202, "Em bận việc gia đình đột xuất", null)), "Buổi đã qua");
         assertEquals(403, status(() -> leaves.create(student, 9204, "Em bận việc gia đình đột xuất", null)), "Không phải lớp mình");
-        assertEquals(400, status(() -> leaves.create(student, 9203, "Em bận việc gia đình đột xuất", "virus.exe")));
+        assertEquals(400, status(() -> leaves.create(student, 9203, "Em bận việc gia đình đột xuất", file("virus.exe", 10))));
+        assertEquals(400, status(() -> leaves.create(student, 9203, "Em bận việc gia đình đột xuất", file("to.pdf", LeaveRequestDAO.MAX_PROOF + 1))), "Quá 5 MB");
         assertEquals(403, status(() -> leaves.create(teacher, 9203, "Em bận việc gia đình đột xuất", null)), "Không phải học viên");
 
-        Map<String, Object> sent = leaves.create(student, 9203, "Em có lịch thi ở trường vào tối hôm đó", "lich-thi.pdf");
+        Map<String, Object> sent = leaves.create(student, 9203, "Em có lịch thi ở trường vào tối hôm đó", file("lich-thi.pdf", 2048));
         assertEquals("PENDING", sent.get("status"));
         assertEquals("lich-thi.pdf", sent.get("fileName"));
+        assertEquals(2048L, sent.get("fileSize"));
         assertEquals(9203L, ((ClassSessionResponse) sent.get("session")).getId());
         assertEquals(409, status(() -> leaves.create(student, 9203, "Em có lịch thi ở trường vào tối hôm đó", null)), "Trùng đơn");
         assertEquals(1, leaves.mine(student).size());
 
         long id = (Long) sent.get("id");
+        LeaveRequestDAO.Proof proof = leaves.proof(teacher, id);
+        assertEquals("application/pdf", proof.type(), "Kiểu tệp theo đuôi, không theo trình duyệt gửi lên");
+        assertEquals(2048, proof.data().length);
+        assertEquals(403, status(() -> leaves.proof(otherTeacher, id)));
+        assertEquals(List.of("NGUYEN MINH ANH xin phép vắng"), titles(9101), "Giảng viên lớp nhận thông báo đơn mới");
+        assertTrue(titles(9102).isEmpty());
         assertEquals(1, leaves.forReviewer(teacher).size());
         assertTrue(leaves.forReviewer(otherTeacher).isEmpty());
         assertEquals(1, leaves.forReviewer(manager).stream().filter(r -> r.get("id").equals(id)).count());
@@ -147,6 +156,10 @@ class AttendanceLeaveTest {
         assertEquals("APPROVED", approved.get("status"));
         assertEquals("LE HOANG NAM", approved.get("decidedBy"));
         assertEquals(409, status(() -> leaves.decide(teacher, id, false, "Đổi ý")), "Đơn đã xử lý");
+        assertEquals(List.of("Đơn xin phép đã được duyệt"), titles(9111), "Học viên nhận kết quả duyệt");
+        assertEquals(1, new NotificationDAO().inbox(9111).size());
+        new NotificationDAO().markRead(9111, List.of());
+        assertEquals(true, new NotificationDAO().inbox(9111).get(0).get("read"));
         assertEquals(List.of("S4T-HV1"), attendance.get(manager, 9203).get("approved"), "Chưa điểm danh: điền sẵn khi mở");
         assertNull(attendance.get(manager, 9203).get("sheet"), "Duyệt đơn không tạo bảng điểm danh dở dang");
     }
@@ -168,6 +181,23 @@ class AttendanceLeaveTest {
     }
 
     @Test
+    void teacherAsksManagerToEditPastSession() throws Exception {
+        assertEquals(400, status(() -> attendance.requestEdit(teacher, 9201, null)), "Buổi hôm nay tự sửa được");
+        assertEquals(400, status(() -> attendance.requestEdit(teacher, 9203, null)), "Buổi chưa diễn ra");
+        assertEquals(403, status(() -> attendance.requestEdit(otherTeacher, 9202, null)));
+        attendance.requestEdit(teacher, 9202, "Đánh nhầm học viên đi muộn");
+        assertEquals(List.of("Yêu cầu sửa điểm danh S4T-K15 buổi 1"), titles(9103));
+    }
+
+    private static LeaveRequestDAO.Proof file(String name, int size) {
+        return new LeaveRequestDAO.Proof(name, "text/html", new byte[size]);
+    }
+
+    private static List<String> titles(long userId) throws Exception {
+        return new NotificationDAO().inbox(userId).stream().map(n -> (String) n.get("title")).toList();
+    }
+
+    @Test
     void permissionRulesOfNewApis() {
         assertEquals("SCHEDULE_READ", PermissionPolicy.requiredPermission("GET", "/api/me/schedule"));
         assertEquals("ATTENDANCE_MANAGE", PermissionPolicy.requiredPermission("GET", "/api/attendance/sessions"));
@@ -178,6 +208,10 @@ class AttendanceLeaveTest {
         assertEquals("STUDENT_READ", PermissionPolicy.requiredPermission("GET", "/api/student-status/HV260101"));
         assertEquals("CLASS_MANAGE", PermissionPolicy.requiredPermission("POST", "/api/student-status/HV260101"));
         assertEquals("SCHEDULE_READ", PermissionPolicy.requiredPermission("GET", "/api/schedules/range"));
+        assertEquals("ATTENDANCE_MANAGE", PermissionPolicy.requiredPermission("POST", "/api/sessions/9201/attendance/edit-request"));
+        assertEquals("ABSENCE_REQUEST|ATTENDANCE_MANAGE", PermissionPolicy.requiredPermission("GET", "/api/leave-requests/5/proof"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/me/notifications"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("POST", "/api/me/notifications/read"));
         assertNull(PermissionPolicy.requiredPermission("DELETE", "/api/sessions/9201"));
     }
 }

@@ -106,10 +106,16 @@ public final class PermissionPolicy {
         if ("GET".equals(method) && "/api/me/schedule".equals(path)) {
             return "SCHEDULE_READ";
         }
-        if ("/api/attendance/sessions".equals(path) || path.matches("^/api/sessions/\\d+/attendance$")) {
+        // S6-09, S6-10: ai đăng nhập cũng đọc thông báo của chính mình.
+        if ("GET".equals(method) && "/api/me/notifications".equals(path)
+                || "POST".equals(method) && "/api/me/notifications/read".equals(path)) {
+            return "@authenticated";
+        }
+        if ("/api/attendance/sessions".equals(path) || path.matches("^/api/sessions/\\d+/attendance(/edit-request)?$")) {
             return "ATTENDANCE_MANAGE";
         }
-        if ("/api/leave-requests".equals(path) || path.matches("^/api/leave-requests/\\d+$")) {
+        // Tệp minh chứng: servlet kiểm tra thêm người xem là chủ đơn hoặc người dạy lớp.
+        if ("/api/leave-requests".equals(path) || path.matches("^/api/leave-requests/\\d+(/proof)?$")) {
             if ("GET".equals(method)) return "ABSENCE_REQUEST|ATTENDANCE_MANAGE";
             return "POST".equals(method) ? "ABSENCE_REQUEST" : "ATTENDANCE_MANAGE";
         }

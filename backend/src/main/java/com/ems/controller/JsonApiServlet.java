@@ -41,7 +41,17 @@ public abstract class JsonApiServlet extends HttpServlet {
             handle(request.getMethod().toUpperCase(java.util.Locale.ROOT), path, request, response);
         } catch (ApiException e) {
             ApiResponse.error(response, e.getStatusCode(), e.getErrorCode(), e.getMessage());
-        } catch (JsonParseException | IllegalStateException | ClassCastException | NumberFormatException
+        } catch (IllegalStateException e) {
+            // Các DAO bọc SQLException trong IllegalStateException: đó là lỗi CSDL, không phải JSON sai.
+            if (e.getCause() instanceof SQLException) {
+                log("Lỗi CSDL ở " + request.getMethod() + " " + request.getRequestURI(), e);
+                ApiResponse.error(response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "DATABASE_ERROR",
+                        "Lỗi cơ sở dữ liệu. Vui lòng thử lại sau.");
+            } else {
+                ApiResponse.error(response, HttpServletResponse.SC_BAD_REQUEST, "VALIDATION_ERROR",
+                        "Dữ liệu gửi lên không đúng định dạng JSON hoặc sai kiểu.");
+            }
+        } catch (JsonParseException | ClassCastException | NumberFormatException
                  | ArithmeticException | UnsupportedOperationException e) {
             ApiResponse.error(response, HttpServletResponse.SC_BAD_REQUEST, "VALIDATION_ERROR",
                     "Dữ liệu gửi lên không đúng định dạng JSON hoặc sai kiểu.");

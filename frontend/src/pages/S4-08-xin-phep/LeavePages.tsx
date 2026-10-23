@@ -51,7 +51,7 @@ function MyLeaves() {
   const upcoming = me?.cls ? sessionsOf(me.cls).filter((s) => !s.cancelled && s.date >= TODAY) : [];
   const [session, setSession] = useState(upcoming[0]?.id ?? '');
   const [reason, setReason] = useState('');
-  const [file, setFile] = useState<{ name: string; size: number } | null>(null);
+  const [file, setFile] = useState<{ name: string; size: number; raw: File } | null>(null);
   const [error, setError] = useState('');
   const [, setTick] = useState(0);
   if (user && user.active !== 0) return <Navigate to="/duyet-phep" replace />;
@@ -65,13 +65,13 @@ function MyLeaves() {
     if (apiEnabled) {
       // Máy chủ kiểm buổi thuộc lớp mình, chưa qua, chưa có đơn; giảng viên của lớp thấy đơn ở trang duyệt.
       setBusy(true);
-      sendLeave(session, reason.trim(), file?.name).then(
+      sendLeave(session, reason.trim(), file?.raw).then(
         () => (setReason(''), setFile(null), setError(''), setBusy(false), toast('Đã gửi đơn xin phép', 'Bạn sẽ nhận thông báo khi giảng viên duyệt.')),
         (e: Error) => (setBusy(false), setError(e.message)),
       );
       return;
     }
-    LEAVES.unshift({ id: Math.max(0, ...LEAVES.map((l) => l.id)) + 1, student: me!.code, session, reason: reason.trim(), file: file ?? undefined, sentAt: stamp(), status: 'Chờ duyệt' });
+    LEAVES.unshift({ id: Math.max(0, ...LEAVES.map((l) => l.id)) + 1, student: me!.code, session, reason: reason.trim(), file: file ? { name: file.name, size: file.size } : undefined, sentAt: stamp(), status: 'Chờ duyệt' });
     const s = findSession(session);
     notify({ at: stamp(), kind: 'Điểm danh', title: `${me!.name} xin phép vắng`, body: `${sessionLabel(session)}. Lý do: ${reason.trim()}`, link: '/duyet-phep', to: { users: s?.teacher ? [s.teacher] : [] } });
     saveAll();
@@ -131,7 +131,7 @@ function MyLeaves() {
                 if (!f) return;
                 if (f.size > 5 * 1048576) return setError('Tệp vượt quá 5MB');
                 if (!/\.(jpe?g|png|pdf)$/i.test(f.name)) return setError('Chỉ nhận JPG, PNG hoặc PDF');
-                setFile({ name: f.name, size: f.size });
+                setFile({ name: f.name, size: f.size, raw: f });
                 setError('');
               }}
             />
@@ -167,7 +167,18 @@ function MyLeaves() {
                 </div>
                 <small>
                   Gửi {vdt(l.sentAt)}
-                  {l.file ? ' · có 1 tệp đính kèm' : ''}
+                  {l.file?.url ? (
+                    <>
+                      {' · '}
+                      <a href={l.file.url} target="_blank" rel="noreferrer">
+                        {l.file.name}
+                      </a>
+                    </>
+                  ) : l.file ? (
+                    ' · có 1 tệp đính kèm'
+                  ) : (
+                    ''
+                  )}
                 </small>
                 <p>{l.reason}</p>
                 {l.status !== 'Chờ duyệt' && (
@@ -347,7 +358,13 @@ export function ApproveLeavesPage() {
             {open.file && (
               <div className="lv-file">
                 <Icon name="file" size={16} />
-                <span>{open.file.name}</span>
+                {open.file.url ? (
+                  <a href={open.file.url} target="_blank" rel="noreferrer">
+                    {open.file.name}
+                  </a>
+                ) : (
+                  <span>{open.file.name}</span>
+                )}
                 <small>{kb(open.file.size)}</small>
               </div>
             )}

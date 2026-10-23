@@ -262,6 +262,9 @@ public class DatabaseMigration {
         ensureColumn(conn, "leads", "callback_date", "DATE NULL");
         ensureColumn(conn, "students", "program_id", "INT NULL");
         ensureColumn(conn, "students", "lead_id", "BIGINT NULL");
+        // S4-08: tệp minh chứng của đơn xin phép lưu trong CSDL (tối đa 5 MB), proof_file_url giữ tên tệp gốc.
+        ensureColumn(conn, "absence_requests", "proof_file", "MEDIUMBLOB NULL");
+        ensureColumn(conn, "absence_requests", "proof_file_type", "VARCHAR(100) NULL");
         ensureColumn(conn, "students", "contact_email", "VARCHAR(150) NULL");
         ensureColumn(conn, "students", "enrolled_at", "DATE NULL");
         ensureColumn(conn, "classrooms", "location", "VARCHAR(255) NULL");

@@ -391,16 +391,16 @@ CREATE TABLE IF NOT EXISTS `enrollments` (
 -- 4.6 Bảng Lịch sử chuyển lớp, bảo lưu, thôi học (Student Status Logs)
 CREATE TABLE IF NOT EXISTS `student_status_logs` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
-    `enrollment_id` BIGINT NOT NULL,
-    `action_type` ENUM('SUSPEND', 'RESUME', 'TRANSFER', 'DROP_OUT') NOT NULL,
-    `from_class_id` BIGINT NULL,
-    `to_class_id` BIGINT NULL,
+    `student_code` VARCHAR(50) NOT NULL,
+    `action_type` VARCHAR(20) NOT NULL COMMENT 'SUSPEND, RESUME, TRANSFER, DROP_OUT',
+    `from_class` VARCHAR(50) NULL COMMENT 'Mã lớp',
+    `to_class` VARCHAR(50) NULL COMMENT 'Mã lớp',
     `effective_date` DATE NOT NULL,
     `reason` VARCHAR(255) NOT NULL,
-    `created_by` BIGINT NOT NULL,
-    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT `fk_ssl_enrollment` FOREIGN KEY (`enrollment_id`) REFERENCES `enrollments` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_ssl_user` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE RESTRICT
+    `notes` TEXT NULL,
+    `actor_name` VARCHAR(100) NOT NULL,
+    `actor_id` BIGINT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB COMMENT='Lịch sử biến động học vụ của học viên';
 
 

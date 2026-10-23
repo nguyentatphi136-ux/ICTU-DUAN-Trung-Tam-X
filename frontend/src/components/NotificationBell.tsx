@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../data/auth';
-import { ago, inboxOf, isRead, markRead } from '../data/inbox';
+import { ago, inboxOf, isRead, markRead, syncInbox } from '../data/inbox';
 import { onNotice, type Notice } from '../data/notifications';
 import { runFeeReminders } from '../data/feeReminders';
 import { runReminders } from '../data/prefs';
@@ -15,6 +15,14 @@ export function useInbox() {
   const { user } = useAuth();
   const [, setTick] = useState(0);
   useEffect(() => onNotice(() => setTick((t) => t + 1)), []);
+  // Có backend: tải thông báo khi mở trang và mỗi phút một lần.
+  useEffect(() => {
+    if (!user) return;
+    void syncInbox(user);
+    const timer = setInterval(() => void syncInbox(user), 60_000);
+    return () => clearInterval(timer);
+    // Chỉ tải lại khi đổi người đăng nhập, không theo từng lần đối tượng user được tạo lại.
+  }, [user?.email, user?.name]);
   const list = user ? inboxOf(user) : [];
   return { user, list, unread: user ? list.filter((n) => !isRead(n, user)) : [], refresh: () => setTick((t) => t + 1) };
 }

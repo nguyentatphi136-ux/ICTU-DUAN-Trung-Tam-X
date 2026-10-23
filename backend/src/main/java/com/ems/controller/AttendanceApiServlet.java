@@ -23,12 +23,14 @@ import java.util.regex.Pattern;
  * GET /api/attendance/sessions?from=&to=     buổi mình dạy (quản lý: mọi buổi) kèm bảng đã lưu: [{ session, sheet }]
  * GET /api/sessions/{id}/attendance          { session, roster, sheet, logs, approved, canEdit }
  * PUT /api/sessions/{id}/attendance          { marks: { mã: trạng thái }, notes: { mã: ghi chú }, reason }
+ * POST /api/sessions/{id}/attendance/edit-request   { reason } giảng viên xin Quản lý đào tạo sửa buổi đã qua
  * </pre>
  */
 @WebServlet(name = "AttendanceApiServlet", urlPatterns = {"/api/attendance/sessions", "/api/sessions/*"})
 public class AttendanceApiServlet extends JsonApiServlet {
     private static final long serialVersionUID = 1L;
     private static final Pattern SHEET = Pattern.compile("^/(\\d+)/attendance$");
+    private static final Pattern EDIT_REQUEST = Pattern.compile("^/(\\d+)/attendance/edit-request$");
 
     private final transient AttendanceDAO dao = new AttendanceDAO();
 
@@ -43,6 +45,12 @@ public class AttendanceApiServlet extends JsonApiServlet {
             LocalDate from = date(req, "from", to.minusDays(14));
             if (from.isAfter(to) || from.plusDays(120).isBefore(to)) throw new ValidationException("Khoảng ngày không hợp lệ (tối đa 120 ngày).");
             ApiResponse.success(resp, "ATTENDANCE_SESSIONS", "Buổi cần điểm danh.", dao.visibleSessions(MyScheduleApiServlet.currentUser(req), from, to));
+            return;
+        }
+        Matcher r = EDIT_REQUEST.matcher(path);
+        if ("POST".equals(method) && r.matches()) {
+            dao.requestEdit(MyScheduleApiServlet.currentUser(req), Long.parseLong(r.group(1)), str(body(req), "reason"));
+            ApiResponse.success(resp, "ATTENDANCE_EDIT_REQUESTED", "Đã gửi yêu cầu tới Quản lý đào tạo.", null);
             return;
         }
         Matcher m = SHEET.matcher(path);

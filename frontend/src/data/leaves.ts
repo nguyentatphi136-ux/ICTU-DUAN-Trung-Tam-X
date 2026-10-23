@@ -11,7 +11,8 @@ export type Leave = {
   student: string;
   session: string;
   reason: string;
-  file?: { name: string; size: number };
+  /** url: có backend thì mở được tệp đã tải lên. */
+  file?: { name: string; size: number; url?: string };
   sentAt: string;
   status: LeaveStatus;
   decidedBy?: string;

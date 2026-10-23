@@ -13,6 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +22,7 @@ import java.util.Map;
  * S4-05 Lịch học của tôi, quyền SCHEDULE_READ.
  *
  * <pre>
- * GET /api/me/schedule   học viên: { cls, className, program, sessions } của lớp đang học (ghi danh ENROLLED mới nhất);
+ * GET /api/me/schedule   học viên: { cls, className, program, sessions } của lớp đang học (kể cả lớp sắp rời, chỉ các buổi trước ngày rời);
  *                        giảng viên, trợ giảng: { sessions } các buổi của lớp mình dạy
  * </pre>
  */
@@ -39,19 +40,39 @@ public class MyScheduleApiServlet extends JsonApiServlet {
         }
         User user = currentUser(req);
         Map<String, Object> out = new LinkedHashMap<>();
+        // Cùng quy tắc với StudentStatusDAO.getRosterOnDate: bảo lưu, chuyển lớp, thôi học có hiệu lực từ ngày ghi trong
+        // student_status_logs, trước ngày đó học viên vẫn học lớp cũ. Ưu tiên lớp đang học hôm nay, sau đó lớp sắp vào học.
+        LocalDate today = LocalDate.now();
         try (Connection conn = DBConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT c.id, c.class_code, c.class_name, p.program_name "
-                     + "FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'ENROLLED' "
+             PreparedStatement ps = conn.prepareStatement("SELECT c.id, c.class_code, c.class_name, p.program_name, e.status, "
+                     + "e.enrollment_date, (SELECT MAX(l.effective_date) FROM student_status_logs l "
+                     + " WHERE l.student_code = s.student_code AND l.from_class = c.class_code) AS left_date "
+                     + "FROM students s JOIN enrollments e ON e.student_id = s.id "
                      + "JOIN classes c ON c.id = e.class_id LEFT JOIN programs p ON p.id = c.program_id "
-                     + "WHERE s.user_id = ? ORDER BY e.enrollment_date DESC, e.id DESC LIMIT 1")) {
+                     + "WHERE s.user_id = ? ORDER BY e.enrollment_date DESC, e.id DESC")) {
             ps.setLong(1, user.getId());
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    out.put("cls", rs.getString("class_code"));
-                    out.put("className", rs.getString("class_name"));
-                    out.put("program", rs.getString("program_name"));
-                    out.put("sessions", sessions.findWhere("WHERE cs.class_id = ?", List.of(rs.getLong("id"))));
+                Map<String, Object> upcoming = null;
+                while (rs.next()) {
+                    java.sql.Date leftAt = rs.getDate("left_date");
+                    LocalDate left = leftAt == null ? null : leftAt.toLocalDate();
+                    boolean enrolled = "ENROLLED".equals(rs.getString("status"));
+                    if (!enrolled && (left == null || !today.isBefore(left))) continue;
+                    Map<String, Object> row = new LinkedHashMap<>();
+                    row.put("cls", rs.getString("class_code"));
+                    row.put("className", rs.getString("class_name"));
+                    row.put("program", rs.getString("program_name"));
+                    row.put("sessions", enrolled
+                            ? sessions.findWhere("WHERE cs.class_id = ?", List.of(rs.getLong("id")))
+                            : sessions.findWhere("WHERE cs.class_id = ? AND cs.session_date < ?", List.of(rs.getLong("id"), java.sql.Date.valueOf(left))));
+                    if (rs.getDate("enrollment_date").toLocalDate().isAfter(today)) {
+                        if (upcoming == null) upcoming = row;
+                    } else {
+                        out.putAll(row);
+                        break;
+                    }
                 }
+                if (out.isEmpty() && upcoming != null) out.putAll(upcoming);
             }
         }
         if (!out.containsKey("sessions")) {

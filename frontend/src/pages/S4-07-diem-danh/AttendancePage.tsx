@@ -15,7 +15,7 @@ import { TODAY } from '../../data/funnel';
 import { notify } from '../../data/notifications';
 import { ROLES } from '../../data/permissions';
 import { addDays, dm, findSession, longDate, SESSIONS, type ClassSession } from '../../data/schedule';
-import { APPROVED, ATT_SESSIONS, CAN_EDIT, loadAttendance, loadAttendanceSessions, loadLeaves, ROSTERS, saveAttendance } from '../../data/s4api';
+import { APPROVED, ATT_SESSIONS, CAN_EDIT, loadAttendance, loadAttendanceSessions, loadLeaves, requestAttendanceEdit, ROSTERS, saveAttendance } from '../../data/s4api';
 import { saveAll } from '../../data/store';
 import { rosterOn } from '../../data/students';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
@@ -211,6 +211,14 @@ function TakeAttendance({ id }: { id: string }) {
   }
 
   function requestEdit() {
+    if (apiEnabled) {
+      setBusy(true);
+      requestAttendanceEdit(s!.id).then(
+        () => (setBusy(false), toast('Đã gửi yêu cầu tới Quản lý đào tạo')),
+        (e: Error) => (setBusy(false), toast('Chưa gửi được yêu cầu', e.message)),
+      );
+      return;
+    }
     notify({ at: stamp(), kind: 'Điểm danh', title: `Yêu cầu sửa điểm danh ${s!.cls} buổi ${s!.no}`, body: `${user!.name} đề nghị mở sửa điểm danh buổi ${longDate(s!.date).toLowerCase()}.`, link: '/diem-danh/' + s!.id, to: { users: ['LE HOANG NAM'] } });
     saveAll();
     toast('Đã gửi yêu cầu tới Quản lý đào tạo');
@@ -246,7 +254,7 @@ function TakeAttendance({ id }: { id: string }) {
             <b>Buổi này đã qua, bạn chỉ xem được</b>
             Giảng viên chỉ điểm danh được buổi của ngày hôm nay. Sửa buổi quá khứ cần quyền Quản lý đào tạo.
           </div>
-          <button type="button" className="btn" onClick={requestEdit}>
+          <button type="button" className="btn" disabled={busy} onClick={requestEdit}>
             Gửi yêu cầu sửa điểm danh
           </button>
         </div>

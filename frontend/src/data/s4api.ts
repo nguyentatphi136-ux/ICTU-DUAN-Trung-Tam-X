@@ -196,11 +196,14 @@ export async function saveAttendance(id: string, marks: Record<string, Mark>, no
   applySheetPage(await api<ApiSheetPage>(`/api/sessions/${enc(id)}/attendance`, json('PUT', body)));
 }
 
+/** Buổi đã qua chỉ Quản lý đào tạo sửa được: giảng viên gửi yêu cầu, máy chủ báo tới các quản lý. */
+export const requestAttendanceEdit = (id: string) => api(`/api/sessions/${enc(id)}/attendance/edit-request`, json('POST', {}));
+
 // ===== S4-08 đơn xin phép =====
 
 const LEAVE_STATUS: Record<string, LeaveStatus> = { PENDING: 'Chờ duyệt', APPROVED: 'Đã duyệt', REJECTED: 'Từ chối' };
 type ApiLeave = {
-  id: number; session: ApiSession; studentCode: string; studentName: string; reason: string; fileName?: string; sentAt: string;
+  id: number; session: ApiSession; studentCode: string; studentName: string; reason: string; fileName?: string; fileSize: number; sentAt: string;
   status: string; decidedBy?: string; decidedAt?: string; note?: string; excused: number; unexcused: number;
 };
 
@@ -219,7 +222,7 @@ function toLeave(l: ApiLeave): Leave {
     student: l.studentCode,
     session: s.id,
     reason: l.reason,
-    file: l.fileName ? { name: l.fileName, size: 0 } : undefined,
+    file: l.fileName ? { name: l.fileName, size: l.fileSize, url: `/api/leave-requests/${l.id}/proof` } : undefined,
     sentAt: l.sentAt,
     status: LEAVE_STATUS[l.status] ?? 'Chờ duyệt',
     decidedBy: l.decidedBy,
@@ -234,8 +237,14 @@ export async function loadLeaves(mine: boolean) {
   LEAVES.splice(0, LEAVES.length, ...list.map(toLeave));
 }
 
-export const sendLeave = (session: string, reason: string, fileName?: string) =>
-  api<ApiLeave>('/api/leave-requests', json('POST', { sessionId: session, reason, fileName })).then((l) => LEAVES.unshift(toLeave(l)));
+/** Gửi kèm tệp minh chứng (máy chủ nhận JPG, PNG, PDF tối đa 5 MB). */
+export function sendLeave(session: string, reason: string, file?: File) {
+  const form = new FormData();
+  form.append('sessionId', session);
+  form.append('reason', reason);
+  if (file) form.append('file', file);
+  return api<ApiLeave>('/api/leave-requests', { method: 'POST', body: form }).then((l) => LEAVES.unshift(toLeave(l)));
+}
 
 export async function decideLeave(id: number, ok: boolean, note: string) {
   const l = await api<ApiLeave>(`/api/leave-requests/${id}`, json('PATCH', { decision: ok ? 'APPROVED' : 'REJECTED', note }));

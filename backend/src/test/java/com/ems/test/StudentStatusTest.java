@@ -45,6 +45,19 @@ public class StudentStatusTest {
     }
 
     @Test
+    @DisplayName("S4-06: CSDL dựng từ schema.sql cũ (student_status_logs theo enrollment_id) được đổi sang cấu trúc mới")
+    void oldStatusLogTableIsReplaced() throws Exception {
+        try (Connection conn = DBConnection.getConnection(); java.sql.Statement st = conn.createStatement()) {
+            st.execute("DROP TABLE student_status_logs");
+            st.execute("CREATE TABLE student_status_logs (id BIGINT AUTO_INCREMENT PRIMARY KEY, enrollment_id BIGINT NOT NULL, "
+                    + "action_type VARCHAR(20) NOT NULL, from_class_id BIGINT NULL, effective_date DATE NOT NULL)");
+            com.ems.config.S4TimetableMigration.run(conn);
+            st.executeQuery("SELECT student_code, from_class, actor_name FROM student_status_logs WHERE 1 = 0").close();
+        }
+        assertTrue(dao.getRosterOnDate("S4T-K15", "2026-10-23").size() > 0, "Đọc danh sách lớp không còn lỗi cột");
+    }
+
+    @Test
     @DisplayName("S4-06 AC1: Bảo lưu có lý do và ngày hiệu lực riêng, lưu vào lịch sử hồ sơ")
     void testSuspend() throws Exception {
         Student student = dao.getStudentByCode("S4T-HV1");

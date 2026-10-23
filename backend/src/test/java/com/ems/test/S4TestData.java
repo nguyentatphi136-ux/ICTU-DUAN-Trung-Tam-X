@@ -27,6 +27,8 @@ final class S4TestData {
                     "DELETE FROM attendance WHERE session_id BETWEEN 9201 AND 9299",
                     "DELETE FROM absence_requests WHERE session_id BETWEEN 9201 AND 9299",
                     "DELETE FROM audit_logs WHERE entity_type = 'ATTENDANCE' AND entity_id LIKE '92__'",
+                    "DELETE FROM notifications WHERE recipient_id BETWEEN 9101 AND 9199",
+                    "DELETE FROM user_roles WHERE user_id BETWEEN 9101 AND 9199",
                     "DELETE FROM class_sessions WHERE class_id BETWEEN 9101 AND 9199",
                     "DELETE FROM enrollments WHERE class_id BETWEEN 9101 AND 9199",
                     "DELETE FROM class_subject_assistants WHERE class_subject_id BETWEEN 9101 AND 9199",
@@ -55,6 +57,9 @@ final class S4TestData {
                     + "(9111, 'S4T-HV1', 's4t.hv1@test.vn', 'x', 'NGUYEN MINH ANH', '0912345678'), "
                     + "(9112, 'S4T-HV2', 's4t.hv2@test.vn', 'x', 'HOANG YEN NHI', '0934118205'), "
                     + "(9113, 'S4T-HV3', 's4t.hv3@test.vn', 'x', 'TRAN DUC HUY', '0904612775')");
+            // PHAM GIA HUY là Quản lý đào tạo: nhận yêu cầu sửa điểm danh (S4-07).
+            st.execute("MERGE INTO roles (role_code, role_name) KEY (role_code) VALUES ('TRAINING_MANAGER', 'Quản lý đào tạo')");
+            st.execute("INSERT INTO user_roles (user_id, role_id) SELECT 9103, id FROM roles WHERE role_code = 'TRAINING_MANAGER'");
             st.execute("INSERT INTO subjects (id, subject_code, subject_name, total_sessions) VALUES "
                     + "(9101, 'S4T-GIT', 'Git và làm việc nhóm', 4), (9102, 'S4T-WEB1', 'HTML & CSS nền tảng', 12), "
                     + "(9103, 'S4T-WEB2', 'JavaScript cơ bản', 14)");
@@ -105,10 +110,28 @@ final class S4TestData {
                 session_id BIGINT NOT NULL,
                 reason TEXT NOT NULL,
                 proof_file_url VARCHAR(255) NULL,
+                proof_file MEDIUMBLOB NULL,
+                proof_file_type VARCHAR(100) NULL,
                 status VARCHAR(20) DEFAULT 'PENDING',
                 reviewed_by BIGINT NULL,
                 review_note VARCHAR(255) NULL,
                 reviewed_at TIMESTAMP NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """);
+        // Bảng có thể đã do test khác tạo theo cấu trúc cũ.
+        st.execute("ALTER TABLE absence_requests ADD COLUMN IF NOT EXISTS proof_file MEDIUMBLOB NULL");
+        st.execute("ALTER TABLE absence_requests ADD COLUMN IF NOT EXISTS proof_file_type VARCHAR(100) NULL");
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS notifications (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                recipient_id BIGINT NOT NULL,
+                sender_id BIGINT NULL,
+                title VARCHAR(255) NOT NULL,
+                content TEXT NOT NULL,
+                notification_type VARCHAR(20) DEFAULT 'SYSTEM',
+                link_url VARCHAR(255) NULL,
+                is_read BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """);

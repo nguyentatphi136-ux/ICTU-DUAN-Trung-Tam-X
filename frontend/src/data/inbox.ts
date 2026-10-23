@@ -1,9 +1,10 @@
 // Hộp thông báo của người đang đăng nhập (S6-09, S6-10): lọc thông báo gửi tới mình, đánh dấu đã đọc.
+import { api, apiEnabled, json } from './api';
 import type { User } from './auth';
 import { CLASS_NOTICES } from './classNotices';
 import { classesOf } from './classes';
 import { TODAY } from './funnel';
-import { NOTICES, type Notice } from './notifications';
+import { NOTICES, setServerNotices, type Notice } from './notifications';
 import { saveAll } from './store';
 import { STUDENTS } from './students';
 
@@ -20,8 +21,23 @@ export function inboxOf(u: User): Notice[] {
 
 export const isRead = (n: Notice, u: User) => n.readBy.includes(u.name);
 
+const KIND: Record<string, Notice['kind']> = { SCHEDULE: 'Lịch học', ABSENCE: 'Điểm danh', ASSIGNMENT: 'Bài tập', GRADE: 'Điểm', TUITION: 'Học phí' };
+type ApiNotice = { id: number; title: string; body: string; type: string; link?: string; read: boolean; at: string };
+
+/** Có backend: tải thông báo máy chủ gửi cho mình (S4-03 đổi lịch, S4-07, S4-08...). Lỗi mạng thì giữ danh sách cũ. */
+export async function syncInbox(u: User) {
+  if (!apiEnabled) return;
+  const list = await api<ApiNotice[]>('/api/me/notifications').catch(() => null);
+  if (!list) return;
+  setServerNotices(
+    list.map((n) => ({ srv: n.id, at: n.at, kind: KIND[n.type] ?? 'Thông báo lớp', title: n.title, body: n.body, link: n.link ?? undefined, to: { users: [u.name] }, readBy: n.read ? [u.name] : [] })),
+  );
+}
+
 export function markRead(list: Notice[], u: User) {
   const st = STUDENTS.find((s) => s.login === u.email);
+  const srv = list.filter((n) => n.srv !== undefined && !n.readBy.includes(u.name)).map((n) => n.srv!);
+  if (srv.length) void api('/api/me/notifications/read', json('POST', { ids: srv })).catch(() => undefined);
   for (const n of list) {
     if (!n.readBy.includes(u.name)) n.readBy.push(u.name);
     // Thông báo lớp (S6-07): tính học viên đã đọc.

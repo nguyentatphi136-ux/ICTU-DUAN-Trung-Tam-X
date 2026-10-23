@@ -1,5 +1,7 @@
 // Thông báo trong ứng dụng. S4-03 trở đi gửi vào đây; S6-09, S6-10 hiển thị ở chuông và trang Thông báo.
-// Khi tích hợp: máy chủ sinh thông báo theo sự kiện, GET /notifications, PATCH /notifications/:id/read.
+// Có backend: máy chủ sinh thông báo theo sự kiện, inbox.ts tải GET /api/me/notifications (thông báo có srv);
+// nhắc lịch, nhắc học phí vẫn sinh ở trình duyệt và lưu cục bộ.
+import { apiEnabled } from './api';
 import { TODAY } from './funnel';
 import { persisted, saveAll } from './store';
 
@@ -23,6 +25,8 @@ export type Notice = {
   readBy: string[];
   /** Mã đối tượng gốc, ví dụ "cn3" là thông báo lớp số 3 (S6-07 đếm số đã đọc). */
   ref?: string;
+  /** Id trên máy chủ (bảng notifications), có khi chạy với backend. */
+  srv?: number;
 };
 
 const t = (h: number, m = 0) => {
@@ -33,7 +37,8 @@ const t = (h: number, m = 0) => {
 const ME = { users: ['NGUYEN MINH ANH'] };
 
 // Vài thông báo mẫu của học viên NGUYEN MINH ANH để chuông và trang Thông báo có nội dung ngay (S6-09, S6-10).
-export const NOTICES: Notice[] = persisted('notices', [
+// Có backend: khoá lưu riêng, không đọc lại thông báo mẫu đã lưu từ lúc chạy dữ liệu mẫu.
+export const NOTICES: Notice[] = persisted(apiEnabled ? 'notices-api' : 'notices', apiEnabled ? [] : [
   { id: 6, at: t(14, 55), kind: 'Bài tập', title: 'Bài tập mới: Bài 15 Xử lý lỗi và trạng thái tải', body: 'WEB-02 · hạn nộp sau 3 ngày.', link: '/bai-tap-cua-toi/8', to: { cls: 'WEB-K15' }, readBy: [] },
   { id: 5, at: t(9, 0), kind: 'Điểm', title: 'Đã có điểm Bài 11: Hàm và phạm vi biến', body: 'Giảng viên VU DUC LONG vừa công bố điểm và nhận xét.', link: '/bai-tap-cua-toi/4', to: ME, readBy: [] },
   { id: 4, at: t(-2, 30), kind: 'Điểm danh', title: 'Đơn xin phép vắng đã được duyệt', body: 'Buổi này được ghi Vắng có phép.', link: '/xin-phep', to: ME, readBy: [] },
@@ -47,6 +52,14 @@ const listeners = new Set<() => void>();
 export function onNotice(f: () => void) {
   listeners.add(f);
   return () => void listeners.delete(f);
+}
+
+/** Thay các thông báo lấy từ máy chủ bằng danh sách mới tải (thông báo sinh ở trình duyệt giữ nguyên). */
+export function setServerNotices(list: Omit<Notice, 'id'>[]) {
+  const local = NOTICES.filter((n) => n.srv === undefined);
+  const base = Math.max(0, ...local.map((x) => x.id)) + 1;
+  NOTICES.splice(0, NOTICES.length, ...list.map((n, i) => ({ ...n, id: base + i })), ...local);
+  listeners.forEach((f) => f());
 }
 
 /** Sinh thông báo bất đồng bộ (S6-09) để không làm chậm thao tác gốc; khi tích hợp là hàng đợi ở máy chủ. */
