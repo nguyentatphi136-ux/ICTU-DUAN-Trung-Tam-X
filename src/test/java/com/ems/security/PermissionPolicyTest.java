@@ -57,4 +57,14 @@ class PermissionPolicyTest {
         assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/transcripts/student/HV260101"));
         assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/transcripts/student/HV260101/pdf"));
     }
+
+    @Test
+    void paymentRoutesOfS7HaveRules() {
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/payments/student/HV260142"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("POST", "/api/payments"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/payments/receipt/BL-2026-000001"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/payments/receipt/BL-2026-000001/pdf"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("POST", "/api/payments/BL-2026-000001/adjustments"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/receipts/BL-2026-000001"));
+    }
 }

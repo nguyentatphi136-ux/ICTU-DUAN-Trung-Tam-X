@@ -28,6 +28,7 @@ public class DatabaseMigration {
     public static void runMigration(Connection conn) throws SQLException {
         ensureSchema(conn);
         S4AttendanceMigration.run(conn);
+        S7PaymentMigration.run(conn);
     }
 
     /**

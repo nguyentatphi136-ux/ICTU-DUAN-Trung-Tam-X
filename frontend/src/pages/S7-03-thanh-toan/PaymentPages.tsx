@@ -17,6 +17,7 @@ import { canEditFees, MODULE, MoneyInput } from '../S7-01-bieu-phi/FeeTablePage'
 import '../S7-01-bieu-phi/fees.css';
 import { studentLine } from '../S7-02-ke-hoach-thanh-toan/PlanPages';
 import './receipt.css';
+import { apiEnabled, createAdjustmentApi, getReceiptPdfUrl, recordPaymentApi } from '../../data/paymentApi';
 
 const pad = (n: number) => String(n).padStart(6, '0');
 const nextId = (prefix: string, ids: string[]) => {
@@ -223,11 +224,33 @@ function PayDialog({ s, no: first, onClose, onDone }: { s: Student; no: number; 
   const over = n > it.owed ? n - it.owed : 0;
   const [error, setError] = useState('');
 
-  function save() {
+  async function save() {
     if (!(n > 0)) return setError('Nhập số tiền thu');
     if (!at || at > TODAY) return setError('Ngày thu không được sau hôm nay');
     if (method === 'Chuyển khoản' && !ref.trim()) return setError('Nhập mã giao dịch ngân hàng');
-    const p: Payment = { id: nextId('BL', PAYMENTS.map((x) => x.id)), student: s.code, no: it.no, amount: n, at, time: clock(), method, by: user!.name, ref: method === 'Chuyển khoản' ? ref.trim() : undefined, note: note.trim() || undefined };
+
+    let receiptId = nextId('BL', PAYMENTS.map((x) => x.id));
+
+    if (apiEnabled) {
+      try {
+        const resp = await recordPaymentApi({
+          studentCode: s.code,
+          installmentNo: it.no,
+          amount: n,
+          method,
+          paymentDate: at,
+          referenceCode: method === 'Chuyển khoản' ? ref.trim() : undefined,
+          notes: note.trim() || undefined,
+        });
+        if (resp && resp.receiptCode) {
+          receiptId = resp.receiptCode;
+        }
+      } catch (err: any) {
+        return setError(err?.message || 'Lỗi khi ghi nhận thanh toán qua API máy chủ');
+      }
+    }
+
+    const p: Payment = { id: receiptId, student: s.code, no: it.no, amount: n, at, time: clock(), method, by: user!.name, ref: method === 'Chuyển khoản' ? ref.trim() : undefined, note: note.trim() || undefined };
     PAYMENTS.push(p);
     audit({ at: TODAY + 'T' + p.time, by: user!.name, role: ROLES[user!.active], entity: 'Học phí', action: 'Ghi nhận thanh toán', target: `${s.code} · Đợt ${it.no}`, changes: [{ field: 'Đã thu', before: vnd(it.paid), after: vnd(it.paid + n) }], note: p.id });
     saveAll();
@@ -341,17 +364,36 @@ function AdjustDialog({ s, pays, onClose, onDone }: { s: Student; pays: Payment[
   const after = kind === 'Tăng khoản thu' ? net + n : net - n;
   const code = nextId('ĐC', ADJUSTMENTS.map((a) => a.id));
 
-  function save() {
+  async function save() {
     if (!(n > 0)) return setError('Nhập số tiền điều chỉnh');
     if (kind === 'Giảm khoản thu' && n > net) return setError(`Không vượt số tiền gốc ${vnd(net)}`);
     if (kind === 'Tăng khoản thu' && n > room) return setError(`Đợt ${p.no} chỉ còn nợ ${vnd(room)}`);
     if (!reason.trim()) return setError('Nhập lý do điều chỉnh');
+
+    let adjCode = code;
+
+    if (apiEnabled) {
+      try {
+        const resp = await createAdjustmentApi({
+          paymentId: p.id,
+          kind,
+          amount: kind === 'Huỷ toàn bộ' ? undefined : n,
+          reason: reason.trim(),
+        });
+        if (resp && resp.adjustments && resp.adjustments.length > 0) {
+          adjCode = resp.adjustments[resp.adjustments.length - 1].id;
+        }
+      } catch (err: any) {
+        return setError(err?.message || 'Lỗi khi lập bút toán điều chỉnh qua API máy chủ');
+      }
+    }
+
     const delta = kind === 'Tăng khoản thu' ? n : -n;
     const at = TODAY + 'T' + clock();
-    ADJUSTMENTS.push({ id: code, payment: p.id, kind, delta, reason: reason.trim(), by: user!.name, at });
-    audit({ at, by: user!.name, role: ROLES[user!.active], entity: 'Học phí', action: 'Bút toán điều chỉnh', target: `${s.code} · ${p.id}`, changes: [{ field: 'Khoản thu', before: vnd(net), after: vnd(after) }], note: `${code}: ${reason.trim()}` });
+    ADJUSTMENTS.push({ id: adjCode, payment: p.id, kind, delta, reason: reason.trim(), by: user!.name, at });
+    audit({ at, by: user!.name, role: ROLES[user!.active], entity: 'Học phí', action: 'Bút toán điều chỉnh', target: `${s.code} · ${p.id}`, changes: [{ field: 'Khoản thu', before: vnd(net), after: vnd(after) }], note: `${adjCode}: ${reason.trim()}` });
     saveAll();
-    toast(`Đã lập bút toán ${code}`, `${p.id}: ${vnd(net)} thành ${vnd(after)}`);
+    toast(`Đã lập bút toán ${adjCode}`, `${p.id}: ${vnd(net)} thành ${vnd(after)}`);
     onDone();
   }
 
@@ -441,6 +483,12 @@ export function ReceiptPage() {
           <Icon name="dl" size={16} />
           In hoặc lưu PDF
         </button>
+        {apiEnabled && (
+          <a href={getReceiptPdfUrl(p.id)} target="_blank" rel="noreferrer" className="btn" style={{ marginLeft: 8 }}>
+            <Icon name="file" size={16} />
+            Mẫu in máy chủ (PDF)
+          </a>
+        )}
       </div>
       <article className="rc">
         <header>

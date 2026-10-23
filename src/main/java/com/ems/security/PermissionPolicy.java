@@ -86,6 +86,10 @@ public final class PermissionPolicy {
         if (path.matches("^/api/transcripts?(/.*)?$")) {
             return "@authenticated";
         }
+        // S7-03: Ghi nhận thanh toán và in biên lai (Kế toán, Admin)
+        if (path.matches("^/api/(payments|receipts)(/.*)?$")) {
+            return "@authenticated";
+        }
         return null;
     }
 
