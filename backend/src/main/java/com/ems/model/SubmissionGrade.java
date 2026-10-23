@@ -42,7 +42,9 @@ public class SubmissionGrade implements Serializable {
 
     public String getFormattedScore() {
         if (score == null) return "–";
+        // Hiển thị kiểu Việt Nam "8,5" như AssignmentGradingDAO.formatScoreVN; JS trang chấm điểm so sánh theo dạng này.
         DecimalFormatSymbols symbols = new DecimalFormatSymbols(Locale.US);
+        symbols.setDecimalSeparator(',');
         DecimalFormat df = new DecimalFormat("0.#", symbols);
         return df.format(score);
     }
