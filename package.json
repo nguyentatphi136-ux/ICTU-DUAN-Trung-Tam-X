@@ -6,8 +6,9 @@
     "dev": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
     "frontend": "npm --prefix frontend run dev",
+    "backend": "npm --prefix backend run start:dev",
     "mock-api": "npm --prefix legacy_or_mock/mock-node-api run dev",
-    "test": "echo \"Chạy kiểm thử Java Backend bằng lệnh: mvn test\""
+    "test": "echo \"Chạy kiểm thử Java Backend bằng lệnh: cd backend && mvn test\""
   },
   "repository": {
     "type": "git",

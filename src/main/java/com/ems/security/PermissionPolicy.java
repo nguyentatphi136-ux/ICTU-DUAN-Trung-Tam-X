@@ -13,7 +13,13 @@ public final class PermissionPolicy {
             Map.entry("GET /api/admin/menus", "ROLE_PERMISSION_READ"),
             Map.entry("GET /api/leads", "LEAD_VIEW"),
             Map.entry("POST /api/leads", "LEAD_CREATE"),
-            Map.entry("GET /api/leads/check-phone", "LEAD_VIEW")
+            Map.entry("GET /api/leads/check-phone", "LEAD_VIEW"),
+            Map.entry("POST /api/classes", "CLASS_MANAGE"),
+            Map.entry("GET /api/classes", "CLASS_MANAGE"),
+            Map.entry("GET /api/programs", "PROGRAM_MANAGE"),
+            Map.entry("POST /api/programs", "PROGRAM_MANAGE"),
+            Map.entry("GET /api/rooms", "ROOM_VIEW"),
+            Map.entry("POST /api/rooms", "ROOM_MANAGE")
     );
 
     private PermissionPolicy() {}
@@ -21,6 +27,27 @@ public final class PermissionPolicy {
     public static String requiredPermission(String method, String path) {
         String exact = API_PERMISSIONS.get(method + " " + path);
         if (exact != null) return exact;
+        if (path.matches("^/api/classes(/\\d+)?$")) {
+            if ("POST".equals(method) || "GET".equals(method)) return "CLASS_MANAGE";
+        }
+        if (path.matches("^/api/programs(/.*)?$")) {
+            return "PROGRAM_MANAGE";
+        }
+        if ("GET".equals(method) && path.matches("^/api/rooms/\\d+$")) {
+            return "ROOM_VIEW";
+        }
+        if ("GET".equals(method) && path.matches("^/api/rooms/\\d+/validate-capacity$")) {
+            return "ROOM_VIEW";
+        }
+        if ("POST".equals(method) && path.matches("^/api/rooms/\\d+/validate-capacity$")) {
+            return "ROOM_VIEW";
+        }
+        if ("PUT".equals(method) && path.matches("^/api/rooms/\\d+$")) {
+            return "ROOM_MANAGE";
+        }
+        if ("DELETE".equals(method) && path.matches("^/api/rooms/\\d+$")) {
+            return "ROOM_MANAGE";
+        }
         if ("PUT".equals(method) && path.matches("^/api/admin/roles/[A-Z_]+/permissions$")) {
             return "ROLE_PERMISSION_UPDATE";
         }
@@ -51,11 +78,29 @@ public final class PermissionPolicy {
         if ("POST".equals(method) && ("/api/auth/logout".equals(path) || "/api/auth/change-password".equals(path))) {
             return "@authenticated";
         }
+        // S4-07: Điểm danh học viên buổi học (Giảng viên, Quản lý đào tạo, Admin)
+        if (path.matches("^/api/(attendance|sessions/\\d+/attendance)(/.*)?$")) {
+            return "@authenticated";
+        }
+        // S8-03: Xem và xuất bảng điểm toàn khoá (Học viên, Quản lý đào tạo, Giảng viên, Admin)
+        if (path.matches("^/api/transcripts?(/.*)?$")) {
+            return "@authenticated";
+        }
+        // S7-03: Ghi nhận thanh toán và in biên lai (Kế toán, Admin)
+        if (path.matches("^/api/(payments|receipts)(/.*)?$")) {
+            return "@authenticated";
+        }
         return null;
     }
 
     public static boolean allows(Collection<String> permissions, String required) {
-        return permissions != null && required != null && permissions.contains(required);
+        if (permissions == null || required == null) return false;
+        if (permissions.contains(required)) return true;
+        if (("ROOM_VIEW".equals(required) || "ROOM_MANAGE".equals(required))
+                && (permissions.contains("CLASS_MANAGE") || permissions.contains("ADMIN"))) {
+            return true;
+        }
+        return false;
     }
 
     public static boolean mayReplaceRoles(

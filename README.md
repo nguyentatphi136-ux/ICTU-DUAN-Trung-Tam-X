@@ -54,7 +54,7 @@ Hệ thống Quản lý Đào tạo Trung tâm là nền tảng quản trị s�
 | 1 | Nguyễn Tất Phi | [Mã SV] | Team Leader / Dev | Quản trị dự án, thiết kế kiến trúc hệ thống, BE Core Auth (Sprint 1) |
 | 2 | Nguyễn Minh Ngọc | [Mã SV] | Scrum Master | Điều phối Daily Scrum, Planning, gỡ blocker, hỗ trợ kiểm thử |
 | 3 | Nông Hùng Nguyên | [Mã SV] | Backend Dev | Thiết kế CSDL, API quản lý tài khoản, mã hóa mật khẩu |
-| 4 | Nguyễn Trung Kiên | DTC245200736 | Backend Dev | Xây dựng bộ lọc Authorization Filter, gán và thu hồi Role (Jira: IDTTX-24) |
+| 4 | Nguyễn Trung Kiên | [Mã SV] | Backend Dev | Xây dựng bộ lọc Authorization Filter, gán và thu hồi Role |
 | 5 | Nguyễn Văn Kỳ | [Mã SV] | Backend Dev | Xử lý Session, Forgot Password qua Email, API hồ sơ người dùng |
 | 6 | Vũ Trọng Nghĩa  | [Mã SV] | Frontend Dev | Thiết kế Layout Master, Dynamic Sidebar Menu theo Role |
 | 7 | Nguyễn Thanh Ngọc | [Mã SV] | Frontend Dev | Xây dựng giao diện Login, Forgot Password, Reset Password |
@@ -80,84 +80,93 @@ Hệ thống Quản lý Đào tạo Trung tâm là nền tảng quản trị s�
 
 ---
 
-## 6. Cấu trúc thư mục dự án sau khi sắp xếp chuẩn mực
+## 6. Hướng dẫn cài đặt môi trường cho nhà phát triển
 
-```text
-ICTU-DUAN-Trung-Tam-X/
-├── pom.xml                                     # Cấu hình Maven (Java 17, Servlet 4.0, JSP, JSTL, MySQL)
-├── package.json                                # Quản lý script npm (Proxy 'npm run dev' vào frontend)
-├── README.md                                   # Tài liệu hướng dẫn toàn diện dự án
-├── src/                                        # BỘ NGUỒN CHÍNH THỨC: JAVA SERVLET & JSP (MVC)
-│   ├── main/
-│   │   ├── java/com/ems/
-│   │   │   ├── config/                         # DBConnection, SessionBlacklist, Migration
-│   │   │   ├── constant/                       # RoleConstant (8 vai trò), PermissionConstant (Ma trận quyền)
-│   │   │   ├── controller/                     # Servlets điều hướng: Login, Logout, UserRole, Grade, Tuition, Program
-│   │   │   ├── dao/                            # Data Access Objects (UserDAO, AdminDAO, PermissionDAO, TrainingProgramDAO)
-│   │   │   ├── dto/                            # Data Transfer Objects
-│   │   │   ├── filter/                         # AuthorizationFilter (RBAC), SessionAuthFilter (Sliding session)
-│   │   │   ├── model/                          # Entities: User, Grade, TuitionFee, TrainingProgram
-│   │   │   ├── security/                       # ApiResponse, Password policies
-│   │   │   └── service/                        # EmailService, TrainingProgramService, UserStore (In-memory store & fallback)
-│   │   └── webapp/                             # Giao diện JSP, JSTL và cấu hình Web Descriptor
-│   │       ├── index.jsp                       # Điều hướng trang chủ
-│   │       ├── login.jsp                       # Giao diện đăng nhập (có nút chọn nhanh tài khoản test)
-│   │       ├── dashboard.jsp                   # Bảng điều khiển phân hệ nghiệp vụ theo vai trò
-│   │       ├── admin.jsp                       # Quản lý tài khoản người dùng
-│   │       ├── change-password.jsp             # Đổi mật khẩu
-│   │       ├── forgot-password.jsp             # Quên mật khẩu qua email
-│   │       ├── reset-password.jsp              # Đặt lại mật khẩu từ liên kết bảo mật
-│   │       └── WEB-INF/
-│   │           ├── web.xml                     # Cấu hình Deployment Descriptor, session-timeout 8h, error pages
-│   │           └── views/
-│   │               ├── common/                 # 403.jsp, 404.jsp, 500.jsp (Thông báo tiếng Việt thân thiện)
-│   │               ├── admin/                  # user-roles.jsp (Gán & thu hồi vai trò Jira IDTTX-24)
-│   │               ├── grades/                 # list-grade.jsp, edit-grade.jsp (Giảng viên sửa điểm, Kế toán chỉ xem)
-│   │               ├── tuition/                # list-tuition.jsp, edit-tuition.jsp (Kế toán sửa học phí, Giảng viên chỉ xem)
-│   │               └── programs/               # list-programs.jsp (Danh mục chương trình đào tạo S2-04)
-│   └── test/java/com/ems/                      # Bộ kiểm thử tự động JUnit 5 cho RBAC, IDTTX-24, Session, Auth
-├── database/                                   # CSDL MySQL (schema.sql, DESIGN_DATABASE.md)
-├── frontend/                                   # Giao diện web client (Vite, HTML5, CSS3, JS)
-├── legacy_or_mock/                             # Lưu trữ prototype cũ Node.js & mock data để đối chiếu
-└── UI_UX/                                      # Bản vẽ thiết kế, wireframes và screenshots nghiệm thu
-```
+### 6.1. Yêu cầu hệ thống
+* JDK: Phiên bản 17 hoặc 21 LTS.
+* Apache Tomcat: Phiên bản 9.0 hoặc 10.1.
+* Hệ quản trị CSDL: MySQL 8.0+.
+* IDE khuyên dùng: IntelliJ IDEA Ultimate hoặc Eclipse EE.
 
----
-
-## 7. Danh sách tài khoản thử nghiệm (Demo Accounts)
-
-Hệ thống hỗ trợ cơ chế xác thực kép: tự động truy vấn MySQL `UserDAO` nếu CSDL đang chạy, hoặc chuyển sang `UserStore` in-memory fallback nếu chưa cấu hình CSDL, đảm bảo luôn đăng nhập được 100%:
-
-| STT | Vai trò nghiệp vụ | Email đăng nhập | Mật khẩu chuẩn | Mật khẩu phụ (chấp nhận) | Phân hệ được truy cập |
-|:---:|:---|:---|:---:|:---:|:---|
-| 1 | **Quản trị hệ thống (Admin)** | `admin@edumanager.vn` | `Admin@123` | `123456` | Toàn quyền, Phân quyền vai trò (`/admin/users/roles`), Quản lý tài khoản |
-| 2 | **Giảng viên (Instructor)** | `giangvien@edumanager.vn` | `Giangvien@123` | `123456` | Bảng điểm học viên, Sửa điểm (`/grade/list`) — *Bị chặn sửa học phí (403)* |
-| 3 | **Kế toán (Accountant)** | `ketoan@edumanager.vn` | `Ketoan@123` | `123456` | Bảng học phí, Sửa học phí (`/tuition/list`) — *Bị chặn sửa điểm (403)* |
-| 4 | **Quản lý đào tạo (Training Manager)** | `daotao@edumanager.vn` | `Daotao@123` | `123456` | Danh mục chương trình đào tạo (`/training-programs`), Bảng điểm |
-| 5 | **Học viên (Student)** | `hocvien@edumanager.vn` | `Hocvien@123` | `123456` | Xem bảng điểm cá nhân, xem học phí cá nhân |
-| 6 | **Tư vấn tuyển sinh (Admissions)** | `tuvan@edumanager.vn` | `Tuyensinh@123` | `123456` | Xem thông tin chương trình học, quản lý tuyển sinh |
-| 7 | **Trợ giảng (Teaching Assistant)** | `trogiang@edumanager.vn` | `Trogiang@123` | `123456` | Hỗ trợ lớp học, xem điểm |
-
----
-
-## 8. Hướng dẫn chạy dự án
-
-### Cách 1: Chạy toàn bộ ứng dụng Java Servlet / JSP trên Apache Tomcat (Khuyên dùng)
-1. Mở dự án trên **IntelliJ IDEA** hoặc **Eclipse**: Chọn thư mục gốc `ICTU-DUAN-Trung-Tam-X`.
-2. IntelliJ sẽ tự động nhận diện file `pom.xml` làm dự án Maven.
-3. Thêm cấu hình chạy **Tomcat Server (Local)**:
-   - Deployment: Thêm Artifact `education-management-system:war exploded` (hoặc thư mục `src/main/webapp`).
-   - Application context: `/` hoặc `/ems`.
-4. Nhấn **Run** (Shift + F10).
-5. Mở trình duyệt tại: `http://localhost:8080/` (hệ thống sẽ tự động chuyển hướng đến `login.jsp`).
-6. Bấm nút chọn nhanh tài khoản thử nghiệm trên giao diện để đăng nhập ngay!
-
-### Cách 2: Chạy giao diện Web Frontend độc lập (Vite)
-Nếu bạn muốn phát triển hoặc kiểm thử nhanh giao diện HTML/CSS/JS:
+### 6.2. Các bước khởi chạy dự án
 ```bash
-# Ở bất kỳ thư mục nào (thư mục gốc hoặc thư mục frontend/):
-npm run dev
+# 1. Clone mã nguồn dự án
+git clone [https://github.com/nguyentatphi136-ux/ICTU-DUAN-Trung-Tam-X.git](https://github.com/nguyentatphi136-ux/ICTU-DUAN-Trung-Tam-X.git)
 
-# Trình duyệt mở:
-http://localhost:5173/login.html
+# 2. Di chuyển vào thư mục dự án
+cd ICTU-DUAN-Trung-Tam-X
+
+# 3. Chuyển sang nhánh làm việc develop
+git checkout develop
+
+# 4. Cấu hình kết nối cơ sở dữ liệu:
+# Mở file backend/src/main/resources/database.properties và cập nhật DB_URL, DB_USER, DB_PASSWORD
+
+# 5. Build và chạy ứng dụng trên Tomcat server tại địa chỉ:
+# http://localhost:8080/
 ```
+
+---
+
+## 7. Sprint 3 — Chuyển Lead đã chốt thành Học viên (Story S3-03 / Subtask IDTTX-240)
+
+Áp dụng cho nhánh: **`feature/S3-03-chuyen-hoc-vien`**  
+**User Story (IDTTX-211):** Là Tư vấn tuyển sinh, tôi muốn chuyển một lead đã chốt thành hồ sơ học viên, để không phải nhập lại thông tin khách đã cung cấp ba lần trước đó.
+
+### Kết quả triển khai Backend (IDTTX-240):
+1. **Thiết kế CSDL & Migration:**
+   - File: [`database/migration_s3_03_convert_student.sql`](database/migration_s3_03_convert_student.sql)
+   - Thiết kế chuẩn hóa 3NF: các bảng `students`, `student_notes`, `student_class_history`, `student_activation_emails`.
+   - Mở rộng bảng `leads`: các trường khóa `is_converted`, `is_locked`, `student_code` để ngăn chặn chỉnh sửa, kéo thẻ phễu sau khi nhập học.
+2. **Kế thừa thông tin lead & Tự động sinh mã học viên:**
+   - Chuyển dữ liệu tự động không cần nhập lại: Họ tên, số điện thoại, email, chương trình đào tạo quan tâm, tư vấn viên phụ trách, nguồn tiếp cận, `leadId`.
+   - Tự động sinh mã học viên định dạng chuẩn `HV26xxxx` (tự tăng tuần tự từ mã cao nhất, ví dụ `HV260143`).
+   - Endpoint `GET /api/students/next-code` xem trước mã dự kiến.
+3. **Cấp tài khoản & Dispatch Email kích hoạt:**
+   - Tự động tạo tài khoản trong hệ thống `users` với vai trò `Student` (`Học viên`).
+   - Email đăng nhập chuẩn TMS: `S25200212{pad(n,3)}@tms.vn`.
+   - Ghi nhận lịch sử gửi email kích hoạt tới địa chỉ nhận tin (`sendTo`).
+4. **Khóa Lead & Ghi Audit Log:**
+   - Cập nhật lead sang trạng thái `Đã nhập học`, gắn liên kết mã học viên `student`.
+   - Khóa toàn bộ thao tác sửa lead, kéo stage hoặc thêm nhật ký mới (`LEAD_LOCKED` - HTTP 400).
+   - Tự động ghi nhận log chuyển đổi vào dòng thời gian `timeline` và `care_logs`.
+5. **Kiểm thử tự động:**
+   ```bash
+   cd backend/legacy_node_be
+   npm test
+   ```
+   Toàn bộ **58/58 test cases** (bao gồm 15 test cases chuyên sâu cho S3-03) đều **PASS 100%**.
+
+---
+
+## 8. Sprint 3 — Quản lý Hồ sơ học viên (Story S3-04 / Subtask IDTTX-241)
+
+Áp dụng cho nhánh: **`feature/S3-04-ho-so-hoc-vien`**  
+**User Story (IDTTX-212):** Là Quản lý đào tạo, tôi muốn quản lý hồ sơ học viên, để tra cứu được toàn bộ quá trình học của một người khi họ xin cấp lại bảng điểm.
+
+### Kết quả triển khai Backend (IDTTX-241):
+1. **Thiết kế CSDL & Migration:**
+   - File: [`database/migration_s3_04_student_profile.sql`](database/migration_s3_04_student_profile.sql)
+   - Thiết kế chuẩn hóa 3NF: các bảng `students`, `classes`, `class_subjects`, `student_notes`, `student_class_history`.
+   - Lưu trữ toàn diện thông tin cá nhân (SĐT, ngày sinh, email, địa chỉ), trình độ đầu vào (điểm thi, xếp loại, nền tảng), lớp đang học và lịch sử các lớp đã học.
+2. **Quản lý & Cập nhật Hồ sơ học viên:**
+   - Xem và sửa thông tin cá nhân, trình độ đầu vào qua `PUT /api/students/:code`.
+   - Hỗ trợ thêm ghi chú mới tự động kèm ngày hiện tại và người thực hiện (từ token đăng nhập).
+   - Kiểm tra validation chặt chẽ: số điện thoại di động Việt Nam (10 số, đầu 03/05/07/08/09), email hợp lệ.
+3. **Hiển thị lớp đang học & Lịch sử học tập:**
+   - Thông tin lớp đang học được gắn kèm chi tiết: ca học (`slot`), phòng học (`room`), tiến độ buổi học (`done`/`totalSessions`), sĩ số lớp (`classSize`/`max`).
+   - Lịch sử các lớp đã học kèm kết quả đánh giá (`result`, `period`).
+4. **Tìm kiếm, lọc & Phân trang đa tiêu chí:**
+   - Tìm kiếm theo mã học viên, họ tên, số điện thoại (hỗ trợ nhập số liền).
+   - Lọc theo trạng thái học tập (`status`) và chương trình đào tạo (`program`).
+   - Phân trang chuẩn (`page`, `limit`) kèm thống kê sĩ số đang học (`studyingCount`) và tổng số học viên (`totalAll`).
+5. **Phân quyền truy cập (RBAC):**
+   - `TrainingManager`, `Admin`, `Admissions`: Toàn quyền xem danh sách, xem chi tiết, sửa hồ sơ và thêm ghi chú.
+   - `Instructor`: Xem danh sách và chi tiết hồ sơ phục vụ giảng dạy, không được sửa hồ sơ.
+   - `Student`: **Chỉ được xem hồ sơ của chính mình** (`GET /api/students/:code` kiểm tra quyền sở hữu), bị chặn khỏi API danh sách toàn trường (`403 FORBIDDEN_STUDENT_LIST`), chặn xem hồ sơ người khác (`403 FORBIDDEN_STUDENT_PROFILE`) và chặn sửa hồ sơ (`403`).
+6. **Kiểm thử tự động:**
+   ```bash
+   cd backend/legacy_node_be
+   npm test
+   ```
+   Toàn bộ **76/76 test cases** (bao gồm 18 test cases chuyên sâu cho S3-04) đều **PASS 100%**.

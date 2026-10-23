@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Icon } from '../../components/Icon';
-import { Drawer } from '../../components/ui';
-import { LEAD_STATUSES, samePhone, SOURCES, type Lead, type LeadStatus } from '../../data/leads';
+import { ConfirmDialog, Drawer } from '../../components/ui';
+import { apiEnabled } from '../../data/api';
+import { samePhoneLeads } from '../../data/s2api';
+import { samePhone, SOURCES, type Lead, type LeadStatus } from '../../data/leads';
 import { PROGRAMS } from '../../data/training';
-import { PHONE_RE } from '../S1-08-tai-khoan/UserDrawer';
+import { isPhone, PHONE_MSG } from '../../data/validate';
 
 type Props = {
   lead: Lead | null;
@@ -14,10 +16,13 @@ type Props = {
   onClose: () => void;
   onSave: (l: Lead) => void;
   onDelete: (l: Lead) => void;
+  /** Tên chương trình cho ô "Chương trình quan tâm"; mặc định lấy từ dữ liệu mẫu. */
+  programs?: string[];
 };
 
 // S2-09. Thêm và sửa lead. Số điện thoại trùng lead đã có thì cảnh báo, vẫn cho lưu nếu người dùng muốn.
-export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, onSave, onDelete }: Props) {
+// Có backend: kiểm tra trùng bằng /api/leads/check-phone (tìm trong mọi lead, không chỉ trang đang xem).
+export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, onSave, onDelete, programs = PROGRAMS.map((p) => p.name) }: Props) {
   const [f, setF] = useState({
     name: lead?.name ?? '',
     phone: lead?.phone ?? '',
@@ -28,16 +33,29 @@ export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, 
     note: lead?.note ?? '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [confirming, setConfirming] = useState(false);
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => {
     setF((x) => ({ ...x, [k]: e.target.value }));
     setErrors((x) => ({ ...x, [k]: '' }));
   };
-  const dup = f.phone.replace(/\D/g, '').length >= 10 ? leads.find((l) => l.id !== lead?.id && samePhone(l.phone, f.phone)) : undefined;
+  const phoneDigits = f.phone.replace(/\D/g, '');
+  const [remoteDup, setRemoteDup] = useState<Lead>();
+  useEffect(() => {
+    setRemoteDup(undefined);
+    if (!apiEnabled || phoneDigits.length < 10) return;
+    let alive = true;
+    const t = setTimeout(() => samePhoneLeads(phoneDigits, lead?.id).then((l) => alive && setRemoteDup(l[0]), () => {}), 300);
+    return () => {
+      alive = false;
+      clearTimeout(t);
+    };
+  }, [phoneDigits, lead?.id]);
+  const dup = apiEnabled ? remoteDup : phoneDigits.length >= 10 ? leads.find((l) => l.id !== lead?.id && samePhone(l.phone, f.phone)) : undefined;
 
   function save() {
     const e: Record<string, string> = {};
     if (!f.name.trim()) e.name = 'Vui lòng nhập họ và tên';
-    if (!PHONE_RE.test(f.phone.replace(/\s/g, ''))) e.phone = 'Số điện thoại gồm 10 chữ số, bắt đầu bằng 0';
+    if (!isPhone(f.phone)) e.phone = PHONE_MSG;
     if (!f.program) e.program = 'Chọn chương trình quan tâm';
     setErrors(e);
     if (Object.keys(e).length) return;
@@ -71,15 +89,21 @@ export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, 
   );
 
   return (
+    <>
+    {confirming && lead && (
+      <ConfirmDialog title="Chuyển lead vào thùng rác?" onClose={() => setConfirming(false)} onConfirm={() => onDelete(lead)}>
+        Lead <b>{lead.name}</b> ({lead.phone}) sẽ ẩn khỏi danh sách và phễu.
+      </ConfirmDialog>
+    )}
     <Drawer
       title={lead ? (readOnly ? 'Thông tin lead' : 'Sửa lead') : 'Thêm lead'}
       onClose={onClose}
       footer={
         <>
           {lead && canDelete && (
-            <button type="button" className="btn outline-danger" style={{ marginRight: 'auto' }} onClick={() => window.confirm(`Xoá lead ${lead.name}?`) && onDelete(lead)}>
+            <button type="button" className="btn outline-danger" style={{ marginRight: 'auto' }} onClick={() => setConfirming(true)}>
               <Icon name="trash" size={16} />
-              Xoá lead
+              Chuyển vào thùng rác
             </button>
           )}
           <button type="button" className="btn" style={{ width: 100 }} onClick={onClose}>
@@ -130,9 +154,9 @@ export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, 
         </div>
         <div className="grid2">
           {select('source', 'Nguồn', SOURCES)}
-          {select('program', 'Chương trình quan tâm', PROGRAMS.map((p) => p.name))}
+          {select('program', 'Chương trình quan tâm', f.program && !programs.includes(f.program) ? [...programs, f.program] : programs)}
         </div>
-        {lead && select('status', 'Trạng thái', LEAD_STATUSES)}
+        {/* S2-09 chỉ sửa thông tin lead; trạng thái đổi ở Bảng phễu (S3-01) để ghi nhật ký và bắt lý do khi Từ chối. */}
         <div className="field">
           <label htmlFor="ld-note">Ghi chú</label>
           <div className="inp">
@@ -141,5 +165,6 @@ export function LeadDrawer({ lead, leads, readOnly, canDelete, onOpen, onClose, 
         </div>
       </fieldset>
     </Drawer>
+    </>
   );
 }

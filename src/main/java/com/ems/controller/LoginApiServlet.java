@@ -11,15 +11,20 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import com.ems.security.IpLoginAttemptService;
+import com.ems.security.LoginAttemptPolicy;
 
 @WebServlet(urlPatterns = {"/login", "/auth/login", "/api/auth/login"})
 public class LoginApiServlet extends HttpServlet {
     private static final long serialVersionUID = 1L;
     private static final Gson GSON = new Gson();
     private static final String INVALID_CREDENTIALS = "Email hoặc mật khẩu không đúng.";
+    /** Thuộc tính phiên: còn đặt thì SessionAuthFilter chỉ cho gọi đổi mật khẩu và đăng xuất. */
+    public static final String MUST_CHANGE_PASSWORD = "mustChangePassword";
     private final UserDAO userDAO = new UserDAO();
 
     @Override
@@ -56,33 +61,82 @@ public class LoginApiServlet extends HttpServlet {
             return;
         }
 
-        User user = null;
-        try {
-            user = userDAO.authenticate(email, password);
-        } catch (SQLException exception) {
-            getServletContext().log("Không thể kết nối MySQL, chuyển sang xác thực dự phòng.", exception);
-        }
+        String clientIp = IpLoginAttemptService.getClientIp(request);
 
-        // Dự phòng xác thực in-memory UserStore (IDTTX-20, IDTTX-24) khi DB chưa sẵn sàng
-        if (user == null) {
-            user = com.ems.service.UserStore.authenticate(email, password);
-        }
-
-        if (user == null) {
+        // 1. Kiểm tra xem ĐỊA CHỈ IP MÁY này có đang bị khóa 15 phút do nhập sai 5 lần hay không
+        if (IpLoginAttemptService.isIpLocked(clientIp)) {
+            long remainingSeconds = IpLoginAttemptService.getRemainingLockSeconds(clientIp);
+            long minutes = Math.max(1, (remainingSeconds + 59) / 60);
+            String lockMsg = "Địa chỉ IP máy của bạn đã bị tạm khóa 15 phút do nhập sai thông tin 5 lần liên tiếp. "
+                    + "Vui lòng thử lại sau " + minutes + " phút. "
+                    + "(Tài khoản vẫn có thể đăng nhập bình thường từ thiết bị khác).";
             if (apiRequest) {
-                sendApiError(response, 401, "AUTH_CREDENTIALS_INVALID", INVALID_CREDENTIALS);
+                response.setHeader("Retry-After", String.valueOf(remainingSeconds));
+                sendApiError(response, 429, "AUTH_IP_LOCKED", lockMsg);
             } else {
-                request.setAttribute("errorMessage", INVALID_CREDENTIALS);
+                request.setAttribute("errorMessage", lockMsg);
                 request.getRequestDispatcher("/login.jsp").forward(request, response);
             }
             return;
         }
+
+        User user = null;
+        boolean databaseDown = false;
+        try {
+            user = userDAO.authenticate(email, password);
+        } catch (SQLException exception) {
+            databaseDown = true;
+            getServletContext().log("Không thể kết nối MySQL, chuyển sang xác thực dự phòng.", exception);
+        }
+        // Còn dùng mật khẩu mặc định thì phải đổi trước khi làm việc. Tài khoản dự phòng không có CSDL để đổi nên bỏ qua.
+        // Mật khẩu mặc định, hoặc tài khoản mới còn dùng mật khẩu tạm (S1-08): phải đổi ở lần đăng nhập này.
+        boolean mustChangePassword = user != null && (UserDAO.DEFAULT_PASSWORD.equals(password) || user.isMustChangePassword());
+
+        // Dự phòng xác thực in-memory UserStore (IDTTX-20, IDTTX-24) chỉ khi DB chưa sẵn sàng. CSDL trả về "sai mật khẩu"
+        // thì không thử tiếp, nếu không mật khẩu mặc định công khai luôn đăng nhập được tài khoản quản trị id 1.
+        if (user == null && databaseDown) {
+            user = com.ems.service.UserStore.authenticate(email, password);
+        }
+
+        if (user == null) {
+            // Ghi nhận lần nhập sai cho ĐỊA CHỈ IP MÁY
+            LoginAttemptPolicy.State ipState = IpLoginAttemptService.recordFailure(clientIp);
+            if (LoginAttemptPolicy.isLocked(ipState, Instant.now())) {
+                long remainingSeconds = IpLoginAttemptService.getRemainingLockSeconds(clientIp);
+                String lockMsg = "Địa chỉ IP máy của bạn đã bị tạm khóa 15 phút do nhập sai thông tin 5 lần liên tiếp. "
+                        + "Vui lòng thử lại sau 15 phút. "
+                        + "(Tài khoản của bạn không bị khóa và vẫn có thể đăng nhập bình thường từ thiết bị khác).";
+                if (apiRequest) {
+                    response.setHeader("Retry-After", String.valueOf(remainingSeconds));
+                    sendApiError(response, 429, "AUTH_IP_LOCKED", lockMsg);
+                } else {
+                    request.setAttribute("errorMessage", lockMsg);
+                    request.getRequestDispatcher("/login.jsp").forward(request, response);
+                }
+                return;
+            }
+
+            int remainingAttempts = Math.max(0, LoginAttemptPolicy.MAX_FAILED_ATTEMPTS - ipState.failures());
+            String errorMsg = "Email hoặc mật khẩu không đúng. IP máy này còn " + remainingAttempts 
+                    + " lần thử trước khi bị tạm khóa 15 phút (khóa theo IP máy, không khóa tài khoản).";
+            if (apiRequest) {
+                sendApiError(response, 401, "AUTH_CREDENTIALS_INVALID", errorMsg);
+            } else {
+                request.setAttribute("errorMessage", errorMsg);
+                request.getRequestDispatcher("/login.jsp").forward(request, response);
+            }
+            return;
+        }
+
+        // Đăng nhập thành công -> Xóa bộ đếm lỗi cho IP máy này
+        IpLoginAttemptService.recordSuccess(clientIp);
 
         HttpSession previousSession = request.getSession(false);
         if (previousSession != null) previousSession.invalidate();
         HttpSession session = request.getSession(true);
         request.changeSessionId();
         session.setAttribute("currentUser", user);
+        if (mustChangePassword) session.setAttribute(MUST_CHANGE_PASSWORD, true);
         session.setMaxInactiveInterval(8 * 60 * 60);
         com.ems.config.SessionBlacklist.registerSession(user.getId(), session.getId());
 
@@ -90,7 +144,7 @@ public class LoginApiServlet extends HttpServlet {
         String redirectUrl = roleHome(role);
         if (!apiRequest) {
             // Chuyển hướng nội bộ theo JSP & Servlet
-            String jspRedirect = jspHome(role);
+            String jspRedirect = mustChangePassword ? "/auth/change-password" : jspHome(role);
             response.sendRedirect(request.getContextPath() + jspRedirect);
             return;
         }
@@ -101,6 +155,7 @@ public class LoginApiServlet extends HttpServlet {
         userData.put("fullName", user.getFullName());
         userData.put("role", role);
         userData.put("roles", user.getRoles().stream().map(LoginApiServlet::roleSlug).toList());
+        userData.put("mustChangePassword", mustChangePassword);
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType("application/json;charset=UTF-8");
         response.getWriter().write(GSON.toJson(Map.of(

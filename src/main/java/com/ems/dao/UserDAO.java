@@ -72,9 +72,9 @@ public class UserDAO {
                     }
                 }
 
-                Instant now = Instant.now();
-                LoginAttemptPolicy.State lockState = new LoginAttemptPolicy.State(failures, lockedUntil);
-                if (!"ACTIVE".equals(status) || LoginAttemptPolicy.isLocked(lockState, now)) {
+                // Không khóa theo tài khoản khi nhập sai mật khẩu (chống tấn công Account DoS).
+                // Việc khóa tạm 15 phút được kiểm soát theo địa chỉ IP máy tại LoginApiServlet.
+                if (!"ACTIVE".equals(status)) {
                     BCrypt.checkpw(password, DUMMY_PASSWORD_HASH);
                     connection.commit();
                     return null;
@@ -83,22 +83,16 @@ public class UserDAO {
                 boolean passwordMatches = isValidBcryptHash(passwordHash)
                         && BCrypt.checkpw(password, passwordHash);
                 if (!passwordMatches) {
-                    LoginAttemptPolicy.State next = LoginAttemptPolicy.recordFailure(lockState, now);
-                    try (PreparedStatement statement = connection.prepareStatement(
-                            "UPDATE users SET failed_login_attempts = ?, locked_until = ? WHERE id = ?")) {
-                        statement.setInt(1, next.failures());
-                        statement.setTimestamp(2, next.lockedUntil() == null ? null : Timestamp.from(next.lockedUntil()));
-                        statement.setLong(3, userId);
-                        statement.executeUpdate();
-                    }
                     connection.commit();
                     return null;
                 }
 
-                try (PreparedStatement statement = connection.prepareStatement(
-                        "UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?")) {
-                    statement.setLong(1, userId);
-                    statement.executeUpdate();
+                if (failures > 0 || lockedUntil != null) {
+                    try (PreparedStatement statement = connection.prepareStatement(
+                            "UPDATE users SET failed_login_attempts = 0, locked_until = NULL WHERE id = ?")) {
+                        statement.setLong(1, userId);
+                        statement.executeUpdate();
+                    }
                 }
 
                 List<String> roles = new ArrayList<>();
@@ -205,37 +199,6 @@ public class UserDAO {
         String sql = "SELECT id, user_code, email, full_name, phone, status FROM users WHERE id = ?";
         try (Connection connection = DBConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(sql)) {
-            statement.setLong(1, userId);
-            try (ResultSet result = statement.executeQuery()) {
-                if (!result.next()) return null;
-                User user = new User();
-                user.setId(result.getLong("id"));
-                user.setUserCode(result.getString("user_code"));
-                user.setEmail(result.getString("email"));
-                user.setFullName(result.getString("full_name"));
-                user.setPhone(result.getString("phone"));
-                user.setStatus(result.getString("status"));
-                List<String> roles = new ArrayList<>();
-                try (PreparedStatement roleStmt = connection.prepareStatement(
-                        "SELECT r.role_code FROM user_roles ur JOIN roles r ON r.id = ur.role_id "
-                                + "WHERE ur.user_id = ? ORDER BY CASE r.role_code WHEN 'ADMIN' THEN 0 ELSE 1 END, r.id")) {
-                    roleStmt.setLong(1, userId);
-                    try (ResultSet roleRs = roleStmt.executeQuery()) {
-                        while (roleRs.next()) roles.add(roleRs.getString("role_code"));
-                    }
-                }
-                user.setRoles(roles);
-                if (!roles.isEmpty()) user.setPrimaryRole(roles.get(0));
-                return user;
-            }
-        }
-    }
-
-    /** Đọc lại tài khoản và vai trò hiện tại, để thay đổi vai trò có hiệu lực ngay ở yêu cầu kế tiếp (IDTTX-24). */
-    public User findById(long userId) throws SQLException {
-        try (Connection connection = DBConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(
-                     "SELECT id, user_code, email, full_name, phone, status FROM users WHERE id = ?")) {
             statement.setLong(1, userId);
             try (ResultSet result = statement.executeQuery()) {
                 if (!result.next()) return null;

@@ -39,4 +39,34 @@ class PermissionPolicyTest {
         assertFalse(PermissionPolicy.mayReplaceRoles(4, 4, List.of("ADMIN"), List.of("STUDENT")));
         assertTrue(PermissionPolicy.mayReplaceRoles(4, 4, List.of("ADMIN"), List.of("ADMIN", "INSTRUCTOR")));
     }
+
+    @Test
+    void attendanceRoutesOfS4HaveRules() {
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/attendance/session/401"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("POST", "/api/attendance/session/401"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("POST", "/api/attendance/session/401/all"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/attendance/session/401/logs"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/sessions/401/attendance"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("POST", "/api/sessions/401/attendance"));
+    }
+
+    @Test
+    void transcriptRoutesOfS8HaveRules() {
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/transcript/mine"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/transcripts/mine"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/transcripts/student/HV260101"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/transcripts/student/HV260101/pdf"));
+    }
+
+    @Test
+    void paymentRoutesOfS7HaveRules() {
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/payments/mine"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/receipts/mine"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/payments/student/HV260142"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("POST", "/api/payments"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/payments/receipt/BL-2026-000001"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/payments/receipt/BL-2026-000001/pdf"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("POST", "/api/payments/BL-2026-000001/adjustments"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/receipts/BL-2026-000001"));
+    }
 }

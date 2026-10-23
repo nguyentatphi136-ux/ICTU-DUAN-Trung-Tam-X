@@ -281,10 +281,17 @@ CREATE TABLE IF NOT EXISTS `classrooms` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `room_code` VARCHAR(50) NOT NULL UNIQUE,
     `room_name` VARCHAR(100) NOT NULL,
-    `capacity` INT NOT NULL DEFAULT 30,
+    `capacity` INT NULL DEFAULT 30,
     `room_type` ENUM('PHYSICAL', 'ONLINE') DEFAULT 'PHYSICAL',
+    `location` VARCHAR(255) NULL COMMENT 'Vị trí phòng vật lý (tòa nhà, tầng...)',
     `meeting_url` VARCHAR(255) NULL COMMENT 'Google Meet / Zoom URL nếu là phòng online',
-    `status` ENUM('AVAILABLE', 'MAINTENANCE') DEFAULT 'AVAILABLE'
+    `description` TEXT NULL COMMENT 'Mô tả chi tiết phòng học',
+    `is_active` BOOLEAN NOT NULL DEFAULT TRUE COMMENT 'Trạng thái hoạt động',
+    `status` ENUM('AVAILABLE', 'MAINTENANCE') DEFAULT 'AVAILABLE',
+    `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX `idx_room_type` (`room_type`),
+    INDEX `idx_room_active` (`is_active`)
 ) ENGINE=InnoDB COMMENT='Bảng danh mục phòng học';
 
 -- 4.2 Bảng Lớp học (Classes)
@@ -310,12 +317,13 @@ CREATE TABLE IF NOT EXISTS `class_subjects` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `class_id` BIGINT NOT NULL,
     `subject_id` INT NOT NULL,
-    `primary_instructor_id` BIGINT NOT NULL COMMENT 'Giảng viên chính phụ trách môn',
+    `order_index` INT NOT NULL DEFAULT 1 COMMENT 'Thứ tự môn trong lộ trình học của lớp',
+    `primary_instructor_id` BIGINT NULL COMMENT 'Giảng viên chính phụ trách môn (NULL khi mới mở lớp)',
     `status` ENUM('NOT_STARTED', 'IN_PROGRESS', 'COMPLETED') DEFAULT 'NOT_STARTED',
     UNIQUE KEY `uk_class_subject` (`class_id`, `subject_id`),
     CONSTRAINT `fk_cs_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
     CONSTRAINT `fk_cs_subject` FOREIGN KEY (`subject_id`) REFERENCES `subjects` (`id`) ON DELETE RESTRICT,
-    CONSTRAINT `fk_cs_instructor` FOREIGN KEY (`primary_instructor_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT
+    CONSTRAINT `fk_cs_instructor` FOREIGN KEY (`primary_instructor_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB COMMENT='Bảng phân công giảng viên chính theo môn của lớp';
 
 -- 4.4 Bảng Trợ giảng hỗ trợ Môn của Lớp (Class Subject Teaching Assistants)
@@ -366,9 +374,9 @@ CREATE TABLE IF NOT EXISTS `student_status_logs` (
 CREATE TABLE IF NOT EXISTS `class_sessions` (
     `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
     `class_id` BIGINT NOT NULL,
-    `class_subject_id` BIGINT NOT NULL,
+    `class_subject_id` BIGINT NULL COMMENT 'Môn học tương ứng của lớp (tùy chọn)',
     `subject_lesson_id` INT NULL COMMENT 'Bài học giáo trình tương ứng',
-    `session_number` INT NOT NULL COMMENT 'Buổi số mấy của môn',
+    `session_number` INT NOT NULL DEFAULT 1 COMMENT 'Buổi số mấy của môn',
     `session_date` DATE NOT NULL,
     `start_time` TIME NOT NULL,
     `end_time` TIME NOT NULL,
@@ -379,7 +387,7 @@ CREATE TABLE IF NOT EXISTS `class_sessions` (
     `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
     `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT `fk_csess_class` FOREIGN KEY (`class_id`) REFERENCES `classes` (`id`) ON DELETE CASCADE,
-    CONSTRAINT `fk_csess_subject` FOREIGN KEY (`class_subject_id`) REFERENCES `class_subjects` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_csess_subject` FOREIGN KEY (`class_subject_id`) REFERENCES `class_subjects` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_csess_lesson` FOREIGN KEY (`subject_lesson_id`) REFERENCES `subject_lessons` (`id`) ON DELETE SET NULL,
     CONSTRAINT `fk_csess_room` FOREIGN KEY (`classroom_id`) REFERENCES `classrooms` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_csess_instructor` FOREIGN KEY (`instructor_id`) REFERENCES `users` (`id`) ON DELETE RESTRICT,
@@ -774,15 +782,15 @@ INSERT INTO `roles` (`id`, `role_code`, `role_name`, `description`) VALUES
 ON DUPLICATE KEY UPDATE `role_name` = VALUES(`role_name`);
 
 -- Seed Users mẫu (Mật khẩu mã hóa BCrypt của chuỗi '123456')
--- BCrypt hash của '123456': $2a$10$7EqJtq98hPqEX7fNZaFWoO... (hoặc tương đương)
+-- 1 Actor = 1 Tài khoản chuẩn duy nhất, mật khẩu chung: 123456
 INSERT INTO `users` (`id`, `user_code`, `email`, `password_hash`, `full_name`, `phone`, `status`) VALUES
-(1, 'NV-ADMIN-01', 'admin@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Quản trị viên', '0901234567', 'ACTIVE'),
-(2, 'NV-QLDT-01', 'quanlydaotao@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Phạm Thị Quản', '0912345678', 'ACTIVE'),
-(3, 'NV-GV-01', 'giangvien@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Trần Thị Giảng', '0923456789', 'ACTIVE'),
-(4, 'NV-TG-01', 'trogiang@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Lê Văn Trợ', '0934567890', 'ACTIVE'),
-(5, 'HV-2026-001', 'hocvien@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Nguyễn Văn Học', '0945678901', 'ACTIVE'),
-(6, 'NV-KT-01', 'ketoan@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Đỗ Thị Kế', '0956789012', 'ACTIVE'),
-(7, 'NV-TV-01', 'tuvan@edumanager.vn', '$2a$10$wI/zZf7ZkJw9p6Fh6n1o0e5Gq6tX3p8/uQ2Y.zQ8K9k7.R5k.dK2m', 'Hoàng Văn Tư', '0967890123', 'ACTIVE')
+(1, 'NV-ADMIN-01', 'admin@tms.vn', '$2a$10$cyIvmCRxKLhympqO.PoHu.KNRNvKM7FIMEwUDn3MZJflOqYO9.EfS', 'Quản trị viên', '0901234567', 'ACTIVE'),
+(2, 'NV-QLDT-01', 'daotao@tms.vn', '$2a$10$cyIvmCRxKLhympqO.PoHu.KNRNvKM7FIMEwUDn3MZJflOqYO9.EfS', 'Phạm Thị Quản', '0912345678', 'ACTIVE'),
+(3, 'NV-GV-01', 'giangvien@tms.vn', '$2a$10$cyIvmCRxKLhympqO.PoHu.KNRNvKM7FIMEwUDn3MZJflOqYO9.EfS', 'Trần Thị Giảng', '0923456789', 'ACTIVE'),
+(4, 'NV-TG-01', 'trogiang@tms.vn', '$2a$10$cyIvmCRxKLhympqO.PoHu.KNRNvKM7FIMEwUDn3MZJflOqYO9.EfS', 'Lê Văn Trợ', '0934567890', 'ACTIVE'),
+(5, 'HV-2026-001', 'hocvien@tms.vn', '$2a$10$cyIvmCRxKLhympqO.PoHu.KNRNvKM7FIMEwUDn3MZJflOqYO9.EfS', 'Nguyễn Văn Học', '0945678901', 'ACTIVE'),
+(6, 'NV-KT-01', 'ketoan@tms.vn', '$2a$10$cyIvmCRxKLhympqO.PoHu.KNRNvKM7FIMEwUDn3MZJflOqYO9.EfS', 'Đỗ Thị Kế', '0956789012', 'ACTIVE'),
+(7, 'NV-TV-01', 'tuvan@tms.vn', '$2a$10$cyIvmCRxKLhympqO.PoHu.KNRNvKM7FIMEwUDn3MZJflOqYO9.EfS', 'Hoàng Văn Tư', '0967890123', 'ACTIVE')
 ON DUPLICATE KEY UPDATE `full_name` = VALUES(`full_name`);
 
 -- Gán quyền tương ứng
@@ -808,6 +816,8 @@ INSERT INTO `permissions` (`permission_code`, `permission_name`, `module`, `desc
 ('ROLE_PERMISSION_UPDATE', 'Cập nhật phân quyền', 'AUTH', 'Gán hoặc thu hồi quyền cho vai trò'),
 ('PROGRAM_MANAGE', 'Quản lý chương trình', 'PROGRAM', 'Quản lý chương trình đào tạo'),
 ('CLASS_MANAGE', 'Quản lý lớp học', 'CLASS', 'Mở lớp và phân công'),
+('ROOM_VIEW', 'Xem phòng học', 'ROOM', 'Đọc danh sách và chi tiết phòng học'),
+('ROOM_MANAGE', 'Quản lý phòng học', 'ROOM', 'Thêm, sửa, xóa và kiểm tra sức chứa phòng học'),
 ('LEAD_MANAGE', 'Quản lý tuyển sinh', 'ADMISSIONS', 'Quản lý khách hàng tiềm năng'),
 ('ATTENDANCE_MANAGE', 'Quản lý điểm danh', 'ATTENDANCE', 'Điểm danh học viên'),
 ('ASSIGNMENT_MANAGE', 'Quản lý bài tập', 'ASSIGNMENT', 'Giao và quản lý bài tập'),
@@ -828,7 +838,7 @@ ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT r.id, p.id FROM `roles` r JOIN `permissions` p ON p.permission_code IN
-('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_MANAGE','CLASS_MANAGE','SCHEDULE_READ','REPORT_VIEW')
+('MENU_VIEW','DASHBOARD_VIEW','PROFILE_VIEW','PROGRAM_MANAGE','CLASS_MANAGE','ROOM_VIEW','ROOM_MANAGE','SCHEDULE_READ','REPORT_VIEW')
 WHERE r.role_code = 'TRAINING_MANAGER'
 ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
@@ -895,3 +905,4 @@ ON DUPLICATE KEY UPDATE `permission_id` = VALUES(`permission_id`);
 INSERT INTO `students` (`id`, `user_id`, `student_code`, `entry_level`, `enrollment_status`) VALUES
 (1, 5, 'HV2026-001', 'Cơ bản (Beginner)', 'STUDYING')
 ON DUPLICATE KEY UPDATE `student_code` = VALUES(`student_code`);
+

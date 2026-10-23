@@ -3,6 +3,7 @@ package com.ems.security;
 import com.google.gson.Gson;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class ApiResponse {
@@ -44,17 +45,34 @@ public final class ApiResponse {
             String actionLabel,
             String actionHref
     ) throws IOException {
+        errorWithDetails(response, status, code, message, null, actionLabel, actionHref);
+    }
+
+    public static void errorWithDetails(
+            HttpServletResponse response,
+            int status,
+            String code,
+            String message,
+            Object details,
+            String actionLabel,
+            String actionHref
+    ) throws IOException {
         response.setStatus(status);
         response.setContentType("application/json;charset=UTF-8");
-        response.getWriter().write(GSON.toJson(Map.of(
-                "success", false,
-                "error", Map.of(
-                        "code", code,
-                        "message", message,
-                        "action", Map.of("label", actionLabel != null ? actionLabel : "Quay lại",
-                                         "href", actionHref != null ? actionHref : "/index.html")
-                )
-        )));
+        Map<String, Object> errorBody = new LinkedHashMap<>();
+        errorBody.put("code", code);
+        errorBody.put("message", message);
+        if (details != null) {
+            errorBody.put("details", details);
+        }
+        String label = (actionLabel != null && !actionLabel.isBlank()) ? actionLabel : "Quay lại";
+        String href = (actionHref != null && !actionHref.isBlank()) ? actionHref : "/index.html";
+        errorBody.put("action", Map.of("label", label, "href", href));
+
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("success", false);
+        payload.put("error", errorBody);
+        response.getWriter().write(GSON.toJson(payload));
     }
 
     private record Success(boolean success, String code, String message, Object data) {}

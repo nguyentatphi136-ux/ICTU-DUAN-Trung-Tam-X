@@ -1,12 +1,14 @@
+import { useTitle } from '../../components/ui';
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../data/auth';
 import { ROLES } from '../../data/permissions';
+import { EMAIL_RE } from '../../data/validate';
 import { Icon } from '../../components/Icon';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { DEMO_ACCOUNTS, DEMO_PASSWORD, LOCK_SECONDS, MAX_ATTEMPTS, login } from './mockAuth';
 import './login.css';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const mmss = (s: number) => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
 
 const FEATURES = [
@@ -16,10 +18,12 @@ const FEATURES = [
 ] as const;
 
 // S1-01. Đăng nhập bằng email và mật khẩu: validate, báo sai thông tin, khoá tạm, chuyển trang theo vai trò.
-type LoginState = { from?: string; loggedOut?: boolean; expired?: boolean; email?: string } | null;
+/** draft: trang trước đó đã lưu nháp nội dung đang nhập dở (S1-02). */
+type LoginState = { from?: string; loggedOut?: boolean; expired?: boolean; draft?: boolean; email?: string } | null;
 
 export function LoginPage() {
-  const { signIn, signOut } = useAuth();
+  useTitle('Đăng nhập');
+  const { user, signIn, signOut } = useAuth();
   const navigate = useNavigate();
   const state = useLocation().state as LoginState;
   const [email, setEmail] = useState(state?.email ?? '');
@@ -28,6 +32,11 @@ export function LoginPage() {
   useEffect(() => {
     if (state?.loggedOut || state?.expired) signOut();
   }, [state, signOut]);
+
+  // Nếu người dùng đã có phiên đăng nhập hợp lệ, lập tức đưa vào hệ thống thay vì bắt đăng nhập lại
+  if (user && !state?.loggedOut && !state?.expired) {
+    return <Navigate to="/" replace />;
+  }
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
@@ -57,8 +66,8 @@ export function LoginPage() {
   function validate() {
     const next: typeof errors = {};
     const v = email.trim();
-    if (!v) next.email = 'Vui lòng nhập email';
-    else if (!EMAIL_RE.test(v)) next.email = 'Email không đúng định dạng';
+    if (!v) next.email = 'Vui lòng nhập email hoặc tên đăng nhập';
+    else if (!EMAIL_RE.test(v) && !/^[A-Za-z0-9_.-]+$/.test(v)) next.email = 'Email hoặc tên đăng nhập không hợp lệ';
     if (!password) next.password = 'Vui lòng nhập mật khẩu';
     setErrors(next);
     return !next.email && !next.password;
@@ -71,6 +80,11 @@ export function LoginPage() {
       setWrong(false);
       return;
     }
+    await attempt(email, password);
+  }
+
+  /** Đăng nhập bằng email, mật khẩu đã nhập hoặc bằng nút đăng nhập nhanh; sai thì cùng bộ đếm khoá tạm. */
+  async function attempt(email: string, password: string) {
     setLoading(true);
     const result = await login(email, password);
     setLoading(false);
@@ -78,8 +92,20 @@ export function LoginPage() {
       setFails(0);
       setWrong(false);
       signIn(result);
-      // S1-02: quay lại đúng trang đang làm dở trước khi phiên hết hạn, nếu không thì về trang chủ của vai trò.
-      navigate(state?.from ?? '/', { replace: true, state: state?.from ? { restored: true } : undefined });
+      // Còn mật khẩu mặc định: đổi mật khẩu trước, xong mới về trang định vào.
+      if (result.mustChangePassword) {
+        navigate('/doi-mat-khau', { replace: true, state: { from: state?.from } });
+        return;
+      }
+      // S1-02: quay lại đúng trang đang làm dở trước khi phiên hết hạn, tránh bị chuyển ngược về trang công khai
+      const target =
+        state?.from &&
+        state.from !== '/dang-ky-tu-van' &&
+        state.from !== '/dang-nhap' &&
+        state.from !== '/doi-mat-khau'
+          ? state.from
+          : '/';
+      navigate(target, { replace: true, state: state?.from ? { restored: true } : undefined });
       return;
     }
     const count = fails + 1;
@@ -97,6 +123,7 @@ export function LoginPage() {
   return (
     <div className="lg-page">
       <main className="lg-card">
+        <ThemeToggle className="theme-in" />
         <section className="lg-left">
           <div className="lg-logo">
             <span>
@@ -138,55 +165,37 @@ export function LoginPage() {
               {state?.expired && !locked && !wrong && (
                 <div className="lg-alert lg-info" role="status">
                   <strong>Phiên đăng nhập đã hết hạn</strong>
-                  Vui lòng đăng nhập lại. Nội dung bạn đang nhập dở đã được lưu nháp và sẽ được khôi phục sau khi đăng nhập.
+                  {state.draft
+                    ? 'Vui lòng đăng nhập lại. Nội dung bạn đang nhập dở đã được lưu nháp và sẽ được khôi phục sau khi đăng nhập.'
+                    : 'Vui lòng đăng nhập lại để quay về đúng trang bạn đang làm.'}
                 </div>
               )}
 
               {locked && (
                 <div className="lg-alert lg-lock" role="alert">
-                  <div>
-                    <strong>Tài khoản tạm khóa</strong>
-                    Bạn đã nhập sai {MAX_ATTEMPTS} lần. Vui lòng thử lại sau {mmss(lockLeft)}.
+                  <strong>Địa chỉ IP máy bị tạm khóa 15 phút</strong>
+                  Thiết bị này đã nhập sai mật khẩu {MAX_ATTEMPTS} lần liên tiếp. Vui lòng thử lại sau {mmss(lockLeft)}.
+                  <div style={{ marginTop: 6, fontSize: '0.85rem', opacity: 0.9, lineHeight: 1.35 }}>
+                    🔒 Khóa theo địa chỉ IP máy: Tài khoản của bạn không bị khóa và vẫn có thể đăng nhập bình thường từ thiết bị hoặc mạng khác.
                   </div>
-                  <button
-                    type="button"
-                    style={{
-                      marginTop: 8,
-                      background: '#fff',
-                      border: '1px solid #ef4444',
-                      borderRadius: 4,
-                      padding: '4px 10px',
-                      color: '#b91c1c',
-                      fontSize: 12,
-                      cursor: 'pointer',
-                      fontWeight: 600,
-                    }}
-                    onClick={() => {
-                      setLockedUntil(0);
-                      setFails(0);
-                      setWrong(false);
-                    }}
-                  >
-                    Bấm để mở khóa ngay
-                  </button>
                 </div>
               )}
               {!locked && wrong && (
                 <div className="lg-alert lg-error" role="alert">
                   <strong>Email hoặc mật khẩu không đúng</strong>
-                  Bạn còn {MAX_ATTEMPTS - fails} lần thử trước khi tài khoản bị khóa tạm.
+                  Địa chỉ IP máy này còn {MAX_ATTEMPTS - fails} lần thử trước khi bị tạm khóa 15 phút (khóa theo IP máy, không khóa tài khoản).
                 </div>
               )}
 
               <form onSubmit={onSubmit} noValidate>
                 <label className="lg-f" htmlFor="email">
-                  Email
+                  Email hoặc Tên đăng nhập / Mã SV
                 </label>
                 <div className={'lg-field' + (errors.email ? ' lg-invalid' : '')}>
                   <input
                     id="email"
-                    type="email"
-                    placeholder="S25200212123@tms.vn"
+                    type="text"
+                    placeholder="email@tms.vn hoặc HV26... / s2520..."
                     autoComplete="username"
                     value={email}
                     disabled={locked}
@@ -236,49 +245,23 @@ export function LoginPage() {
                   {loading ? 'Đang đăng nhập…' : 'Đăng nhập'}
                 </button>
 
-                <div style={{ marginTop: 14 }}>
-                  <div style={{ fontSize: 13, color: '#64748b', marginBottom: 6, fontWeight: 500 }}>
-                    Đăng nhập nhanh 1 chạm:
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {[
-                      { label: 'Admin (Quản trị)', email: 'admin@tms.vn' },
-                      { label: 'Quản lý ĐT', email: 'daotao@tms.vn' },
-                      { label: 'Giảng viên', email: 'giangvien@tms.vn' },
-                      { label: 'Tư vấn Lead', email: 'tuvan@tms.vn' },
-                      { label: 'Kế toán', email: 'ketoan@tms.vn' },
-                      { label: 'Học viên', email: 'hocvien@tms.vn' },
-                    ].map((btn) => (
+                <div className="lg-quick">
+                  <span>Đăng nhập nhanh bằng tài khoản mẫu</span>
+                  <div>
+                    {DEMO_ACCOUNTS.map((a) => (
                       <button
-                        key={btn.email}
+                        key={a.email}
                         type="button"
-                        style={{
-                          padding: '5px 10px',
-                          background: '#f8fafc',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: 6,
-                          fontSize: 12,
-                          cursor: 'pointer',
-                          color: '#0f172a',
-                          fontWeight: 500,
-                        }}
-                        onClick={async () => {
-                          setEmail(btn.email);
+                        disabled={locked || loading}
+                        title={a.email}
+                        onClick={() => {
+                          setEmail(a.email);
                           setPassword(DEMO_PASSWORD);
                           setErrors({});
-                          setWrong(false);
-                          setLockedUntil(0);
-                          setFails(0);
-                          setLoading(true);
-                          const res = await login(btn.email, DEMO_PASSWORD);
-                          setLoading(false);
-                          if (res) {
-                            signIn(res);
-                            navigate(state?.from ?? '/', { replace: true });
-                          }
+                          void attempt(a.email, DEMO_PASSWORD);
                         }}
                       >
-                        {btn.label}
+                        {ROLES[a.roles[0]]}
                       </button>
                     ))}
                   </div>
@@ -305,22 +288,28 @@ export function LoginPage() {
                 <a href="#">Trợ giúp &amp; hỗ trợ</a>
               </div>
 
-              <details className="lg-demo">
-                <summary>Tài khoản mẫu để thử</summary>
+              <details className="lg-demo" open>
+                <summary>Tài khoản mẫu để test (1 Actor = 1 Tài khoản)</summary>
                 <table>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'left', padding: '4px 8px' }}>Tài khoản</th>
+                      <th style={{ textAlign: 'left', padding: '4px 8px' }}>Vai trò</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {DEMO_ACCOUNTS.map((a) => (
                       <tr key={a.email}>
-                        <td>
+                        <td style={{ padding: '4px 8px' }}>
                           <code>{a.email}</code>
                         </td>
-                        <td>{a.roles.map((r) => ROLES[r]).join(", ")}</td>
+                        <td style={{ padding: '4px 8px' }}>{a.roles.map((r) => ROLES[r]).join(", ")}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
                 <p>
-                  Mật khẩu chung: <code>{DEMO_PASSWORD}</code>. Nhập sai {MAX_ATTEMPTS} lần liên tiếp sẽ bị khóa tạm 15 phút.
+                  Mật khẩu chung cho tất cả tài khoản: <code>{DEMO_PASSWORD}</code>
                 </p>
               </details>
           </div>

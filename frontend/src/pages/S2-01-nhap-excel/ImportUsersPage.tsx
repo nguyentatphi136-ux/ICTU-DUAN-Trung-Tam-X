@@ -1,19 +1,40 @@
-import { useRef, useState, type DragEvent } from 'react';
+import { useMemo, useRef, useState, type DragEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
-import { Box, Pill } from '../../components/ui';
-import { addUsers, type UserRow } from '../../data/users';
-import { downloadExcelTemplate, parseExcelFile, type ImportRow } from './mockImport';
+import { Box, Pager, paginate, Pill, Search, usePaging } from '../../components/ui';
+import { api, ApiError, apiEnabled, json } from '../../data/api';
+import { ROLES, USERS_MODULE } from '../../data/permissions';
+import { download as saveBlob, toXlsx } from '../../data/xlsx';
+import { COLUMNS, evaluate, importOk, MAX_ROWS, TEMPLATE_ROWS, toRaws, type ImportRow, type RowStatus } from './mockImport';
+import { readSheet } from './readSheet';
 import './import.css';
 
 const STEPS = ['Tải tệp lên', 'Xem trước và kiểm lỗi', 'Kết quả'];
-const COLUMNS = ['Họ tên', 'Email', 'Số điện thoại', 'Vai trò'];
-const SHOW = ['Tất cả dòng', 'Chỉ dòng lỗi', 'Chỉ dòng hợp lệ'];
+const SHOW: [string, RowStatus | ''][] = [
+  ['Tất cả dòng', ''],
+  ['Chỉ dòng hợp lệ', 'ok'],
+  ['Chỉ dòng trùng', 'duplicate'],
+  ['Chỉ dòng lỗi', 'error'],
+];
+const MAX_BYTES = 10 * 1024 * 1024;
 
-/** Tải một tệp văn bản do trình duyệt tạo ra (tệp mẫu, báo cáo lỗi). */
+/** Mã vai trò máy chủ -> tên hiển thị. */
+const ROLE_NAME: Record<string, string> = {
+  STUDENT: ROLES[0], TA: ROLES[1], INSTRUCTOR: ROLES[2], ADMISSIONS: ROLES[3], ACCOUNTANT: ROLES[4], TRAINING_MANAGER: ROLES[5],
+};
+
+type ApiRow = { rowIndex: number; fullName: string; email: string; phone: string; role: string; dateOfBirth: string; status: RowStatus; issues: { message: string }[] };
+type ApiSkipped = { rowIndex: number; fullName: string; email: string; phone: string; type: 'DUPLICATE' | 'INVALID'; reason: string };
+type Result = { total: number; created: number; skipped: ImportRow[] };
+
+const fromApi = (r: ApiRow): ImportRow => ({
+  line: r.rowIndex, name: r.fullName, email: r.email, phone: r.phone, role: ROLE_NAME[r.role] ?? r.role, birth: r.dateOfBirth, status: r.status, issues: r.issues.map((i) => i.message),
+});
+
+/** Tải một tệp CSV do trình duyệt tạo (tệp mẫu, báo cáo dòng bị bỏ qua). Có BOM để Excel mở đúng tiếng Việt. */
 function download(name: string, rows: string[][]) {
-  const csv = '﻿' + rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+  const csv = '﻿' + rows.map((r) => r.map((c) => `"${c.replace(/"/g, '""')}"`).join(',')).join('\r\n');
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
   a.download = name;
@@ -21,57 +42,74 @@ function download(name: string, rows: string[][]) {
   URL.revokeObjectURL(a.href);
 }
 
-// S2-01. Nhập nhiều tài khoản từ Excel qua 3 bước: tải tệp, xem trước kèm lỗi theo dòng, tổng kết.
-// Đọc trực tiếp tệp Excel (.xlsx, .xls) và CSV thực tế do người dùng tải lên, kiểm tra từng dòng và lưu vào hệ thống.
+const STATUS_LABEL: Record<RowStatus, string> = { ok: 'Hợp lệ', duplicate: 'Trùng', error: 'Lỗi' };
+
+// S2-01. Nhập nhiều tài khoản từ Excel qua 3 bước: tải tệp, xem trước, tổng kết.
+// Xem trước tách ba nhóm Hợp lệ / Trùng / Lỗi, tìm theo email hoặc họ tên, phân trang (tệp vài nghìn dòng).
+// Có backend: gửi tệp lên POST /api/admin/users/import/preview (máy chủ đọc .xlsx bằng Apache POI) rồi
+// POST /api/admin/users/import. Chưa có backend: đọc tệp ngay trong trình duyệt và kiểm cùng quy tắc với máy chủ.
 export function ImportUsersPage() {
   const [step, setStep] = useState(0);
   const [file, setFile] = useState('');
   const [rows, setRows] = useState<ImportRow[]>([]);
+  const [result, setResult] = useState<Result | null>(null);
   const [error, setError] = useState('');
-  const [show, setShow] = useState(SHOW[0]);
+  const [busy, setBusy] = useState('');
   const [drag, setDrag] = useState(false);
-  const [loading, setLoading] = useState(false);
   const input = useRef<HTMLInputElement>(null);
 
-  const bad = rows.filter((r) => r.error);
-  const good = rows.length - bad.length;
-  const visible = show === SHOW[1] ? bad : show === SHOW[2] ? rows.filter((r) => !r.error) : rows;
+  const count = (s: RowStatus) => rows.filter((r) => r.status === s).length;
+  const good = count('ok');
 
   async function pick(f?: File) {
-    if (!f) return;
-    if (!/\.(xlsx|xls|csv)$/i.test(f.name)) return setError('Chỉ nhận tệp .xlsx, .xls hoặc .csv theo đúng mẫu.');
+    if (!f || busy) return;
+    if (!/\.(xlsx|csv)$/i.test(f.name)) return setError('Chỉ nhận tệp .xlsx hoặc .csv theo đúng mẫu.');
+    if (f.size > MAX_BYTES) return setError('Tệp nặng hơn 10MB. Hãy chia thành nhiều tệp nhỏ hơn.');
     setError('');
-    setFile(f.name);
-    setLoading(true);
+    setBusy('Đang đọc và kiểm tra tệp…');
     try {
-      const parsed = await parseExcelFile(f);
-      setLoading(false);
-      if (parsed.length === 0) {
-        setError('Tệp không có dữ liệu hoặc không đọc được. Vui lòng kiểm tra lại cấu trúc tệp.');
-        return;
+      let list: ImportRow[];
+      if (apiEnabled) {
+        const form = new FormData();
+        form.append('file', f);
+        list = (await api<{ rows: ApiRow[] }>('/api/admin/users/import/preview', { method: 'POST', body: form })).rows.map(fromApi);
+      } else {
+        const raws = toRaws(await readSheet(f));
+        if (raws.length > MAX_ROWS) throw new Error(`Tệp có ${raws.length} dòng, vượt giới hạn ${MAX_ROWS} dòng mỗi lần nhập.`);
+        list = evaluate(raws);
       }
-      setRows(parsed);
-      setShow(SHOW[0]);
+      if (!list.length) throw new Error('Tệp không có dòng dữ liệu nào.');
+      setFile(f.name);
+      setRows(list);
       setStep(1);
-    } catch (err: any) {
-      setLoading(false);
-      console.error(err);
-      setError('Lỗi khi đọc tệp: ' + (err?.message || 'Định dạng không hợp lệ'));
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy('');
+      if (input.current) input.current.value = '';
     }
   }
 
-  function handleImport() {
-    const validRows = rows.filter((r) => !r.error);
-    if (!validRows.length) return;
-    const usersToCreate: Omit<UserRow, 'id'>[] = validRows.map((r) => ({
-      name: r.name.toUpperCase(),
-      email: r.email,
-      phone: r.phone,
-      roles: [r.roleIndex ?? 0],
-      status: 'Chờ kích hoạt',
-    }));
-    addUsers(usersToCreate);
-    setStep(2);
+  async function runImport() {
+    setBusy('Đang tạo tài khoản…');
+    setError('');
+    try {
+      if (apiEnabled) {
+        const s = await api<{ successRows: number; errors: ApiSkipped[] }>('/api/admin/users/import', json('POST', { fileName: file }));
+        setResult({
+          total: rows.length,
+          created: s.successRows,
+          skipped: s.errors.map((e) => ({ line: e.rowIndex, name: e.fullName, email: e.email, phone: e.phone, role: '', birth: '', status: e.type === 'DUPLICATE' ? 'duplicate' : 'error', issues: [e.reason] })),
+        });
+      } else {
+        setResult({ total: rows.length, created: importOk(rows), skipped: rows.filter((r) => r.status !== 'ok') });
+      }
+      setStep(2);
+    } catch (e) {
+      setError((e as ApiError).message);
+    } finally {
+      setBusy('');
+    }
   }
 
   const onDrop = (e: DragEvent) => {
@@ -80,40 +118,12 @@ export function ImportUsersPage() {
     pick(e.dataTransfer.files[0]);
   };
 
-  const table = (list: ImportRow[], last: string) => (
-    <div className="panel scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Dòng</th>
-            {COLUMNS.map((c) => (
-              <th key={c}>{c}</th>
-            ))}
-            <th>{last}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {list.map((r) => (
-            <tr key={r.line} className={r.error && step === 1 ? 'bad' : undefined}>
-              <td>{r.line}</td>
-              <td className="strong">{r.name || '(trống)'}</td>
-              <td>{r.email}</td>
-              <td>{r.phone}</td>
-              <td>{r.role}</td>
-              <td>{r.error ? <p className="err">{r.error}</p> : <Pill tone="ok">Hợp lệ</Pill>}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-
   return (
-    <AppLayout crumb={['Người dùng & nhật ký', 'Tài khoản', 'Nhập từ Excel']} module="Người dùng & nhật ký">
+    <AppLayout crumb={[USERS_MODULE, 'Tài khoản', 'Nhập từ Excel']} module={USERS_MODULE}>
       <div className="h">
         <div>
           <h2>Nhập người dùng từ Excel</h2>
-          <p>Tạo nhiều tài khoản cùng lúc từ một tệp .xlsx.</p>
+          <p>Tạo nhiều tài khoản cùng lúc từ một tệp .xlsx (tối đa {MAX_ROWS.toLocaleString('vi-VN')} dòng, 10MB).</p>
         </div>
       </div>
       <ol className="steps">
@@ -128,25 +138,26 @@ export function ImportUsersPage() {
       {step === 0 && (
         <>
           <div
-            className={'drop' + (drag ? ' over' : '')}
+            className={'drop' + (drag ? ' over' : '') + (busy ? ' busy' : '')}
+            aria-busy={!!busy}
             onDragOver={(e) => {
               e.preventDefault();
               setDrag(true);
             }}
             onDragLeave={() => setDrag(false)}
             onDrop={onDrop}
-            onClick={() => input.current?.click()}
+            onClick={() => !busy && input.current?.click()}
           >
             <span className="drop-ic">
-              <Icon name="upload" size={28} />
+              <Icon name={busy ? 'clock' : 'upload'} size={28} />
             </span>
-            <b>Kéo tệp .xlsx hoặc .csv vào đây</b>
-            <p>hoặc bấm để chọn tệp từ máy. Hỗ trợ tệp .xlsx, .xls và .csv theo đúng mẫu.</p>
-            <button type="button" className="btn" style={{ width: 140 }}>
-              {loading ? 'Đang đọc tệp…' : 'Chọn tệp'}
+            <b>{busy || 'Kéo tệp .xlsx vào đây'}</b>
+            <p>{busy ? 'Tệp lớn có thể mất vài giây.' : 'hoặc bấm để chọn tệp từ máy. Nhận tệp .xlsx hoặc .csv theo đúng mẫu.'}</p>
+            <button type="button" className="btn" style={{ width: 140 }} disabled={!!busy}>
+              Chọn tệp
             </button>
             {error && <p className="err">{error}</p>}
-            <input ref={input} type="file" accept=".xlsx,.xls,.csv" hidden onChange={(e) => pick(e.target.files?.[0])} />
+            <input ref={input} type="file" accept=".xlsx,.csv" hidden onChange={(e) => pick(e.target.files?.[0])} />
           </div>
           <div className="panel tpl">
             <span className="tpl-ic">
@@ -154,18 +165,16 @@ export function ImportUsersPage() {
             </span>
             <div>
               <b>Tệp mẫu mau-nhap-nguoi-dung.xlsx</b>
-              <p>Cột bắt buộc: Họ tên, Email, Số điện thoại, Vai trò. Mỗi dòng là một tài khoản.</p>
+              <p>Cột bắt buộc: Họ và tên, Email. Vai trò ghi bằng tiếng Việt, ví dụ Học viên, Giảng viên.</p>
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" className="btn" style={{ width: 180 }} onClick={downloadExcelTemplate}>
-                <Icon name="dl" size={16} />
-                Tải mẫu Excel (.xlsx)
-              </button>
-              <button type="button" className="btn" style={{ width: 130 }} onClick={() => download('mau-nhap-nguoi-dung.csv', [COLUMNS])}>
-                <Icon name="dl" size={16} />
-                Tải .csv
-              </button>
-            </div>
+            <button type="button" className="btn" style={{ width: 180 }} onClick={() => saveBlob(toXlsx([COLUMNS, ...TEMPLATE_ROWS], 'Danh sách người dùng'), 'mau-nhap-nguoi-dung.xlsx')}>
+              <Icon name="dl" size={16} />
+              Tải mẫu Excel (.xlsx)
+            </button>
+            <button type="button" className="btn" style={{ width: 120 }} onClick={() => download('mau-nhap-nguoi-dung.csv', [COLUMNS, ...TEMPLATE_ROWS])}>
+              <Icon name="dl" size={16} />
+              Tải .csv
+            </button>
           </div>
         </>
       )}
@@ -175,68 +184,70 @@ export function ImportUsersPage() {
           <div className="imp-bar">
             <Icon name="file" size={20} />
             <b>
-              {file} · {rows.length} dòng
+              {file} · {rows.length.toLocaleString('vi-VN')} dòng
             </b>
-            <Pill tone="ok">{good} dòng hợp lệ</Pill>
-            <Pill tone="off">{bad.length} dòng lỗi</Pill>
-            <label className="filter" style={{ marginLeft: 'auto', width: 220 }}>
-              <span>Hiện: {show}</span>
-              <Icon name="down" />
-              <select value={show} onChange={(e) => setShow(e.target.value)} aria-label="Hiện">
-                {SHOW.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </label>
+            <Pill tone="ok">{good} hợp lệ</Pill>
+            <Pill tone="wait">{count('duplicate')} trùng</Pill>
+            <Pill tone="off">{count('error')} lỗi</Pill>
           </div>
-          {table(visible, 'Kết quả kiểm tra')}
+          <RowsTable rows={rows} resultCol="Kết quả kiểm tra" filters />
+          {error && <Box icon="alert" tone="bad" title={error} />}
           <div className="actions">
-            <span className="note">Dòng lỗi sẽ bị bỏ qua, dòng hợp lệ vẫn được nhập.</span>
-            <button type="button" className="btn" style={{ width: 150 }} onClick={() => setStep(0)}>
+            <span className="note">Dòng trùng và dòng lỗi sẽ bị bỏ qua, dòng hợp lệ vẫn được nhập.</span>
+            <button type="button" className="btn" style={{ width: 150 }} disabled={!!busy} onClick={() => setStep(0)}>
               Chọn tệp khác
             </button>
-            <button type="button" className="btn primary" style={{ width: 220 }} disabled={!good} onClick={handleImport}>
-              Nhập {good} dòng hợp lệ
+            <button type="button" className="btn primary" style={{ width: 220 }} disabled={!good || !!busy} onClick={runImport}>
+              {busy || `Nhập ${good} dòng hợp lệ`}
             </button>
           </div>
         </>
       )}
 
-      {step === 2 && (
+      {step === 2 && result && (
         <>
-          <Box icon="check" tone="ok" title={`Đã tạo ${good} tài khoản`}>
-            Email kích hoạt kèm mật khẩu tạm đã được gửi tới từng người.
+          <Box icon="check" tone="ok" title={`Đã tạo ${result.created} tài khoản`}>
+            Email kích hoạt kèm mật khẩu tạm được gửi tới từng người.
           </Box>
-          <div className="stats">
+          <div className="stats imp-stats">
             <div className="stat">
-              <b>{rows.length}</b>
+              <b>{result.total}</b>
               <span>dòng trong tệp</span>
             </div>
             <div className="stat">
-              <b style={{ color: 'var(--green)' }}>{good}</b>
+              <b style={{ color: 'var(--green)' }}>{result.created}</b>
               <span>tài khoản đã tạo</span>
             </div>
             <div className="stat">
-              <b style={{ color: 'var(--red)' }}>{bad.length}</b>
-              <span>dòng bị bỏ qua</span>
+              <b style={{ color: 'var(--warn)' }}>{result.skipped.filter((r) => r.status === 'duplicate').length}</b>
+              <span>dòng trùng bị bỏ qua</span>
+            </div>
+            <div className="stat">
+              <b style={{ color: 'var(--red)' }}>{result.skipped.filter((r) => r.status === 'error').length}</b>
+              <span>dòng lỗi bị bỏ qua</span>
             </div>
           </div>
-          {bad.length > 0 && (
+          {result.skipped.length > 0 && (
             <>
               <div className="section-t">Các dòng bị bỏ qua</div>
-              {table(bad, 'Lý do')}
+              <RowsTable rows={result.skipped} resultCol="Lý do" filters />
             </>
           )}
           <div className="actions">
-            {bad.length > 0 && (
+            {result.skipped.length > 0 && (
               <button
                 type="button"
                 className="btn"
                 style={{ width: 220 }}
-                onClick={() => download('bao-cao-loi-nhap.csv', [['Dòng', ...COLUMNS, 'Lý do'], ...bad.map((r) => [String(r.line), r.name, r.email, r.phone, r.role, r.error!])])}
+                onClick={() =>
+                  download('bao-cao-dong-bo-qua.csv', [
+                    ['Dòng', 'Họ và tên', 'Email', 'Số điện thoại', 'Nhóm', 'Lý do'],
+                    ...result.skipped.map((r) => [String(r.line), r.name, r.email, r.phone, STATUS_LABEL[r.status], r.issues.join('; ')]),
+                  ])
+                }
               >
                 <Icon name="dl" size={16} />
-                Tải báo cáo lỗi (.csv)
+                Tải báo cáo (.csv)
               </button>
             )}
             <Link to="/quan-tri/tai-khoan" className="btn primary" style={{ width: 230 }}>
@@ -246,5 +257,86 @@ export function ImportUsersPage() {
         </>
       )}
     </AppLayout>
+  );
+}
+
+/** Bảng dòng nhập: tìm theo email hoặc họ tên, lọc nhóm, phân trang. */
+function RowsTable({ rows, resultCol, filters }: { rows: ImportRow[]; resultCol: string; filters?: boolean }) {
+  const [q, setQ] = useState('');
+  const [show, setShow] = useState<RowStatus | ''>('');
+  const { page, setPage, size, setSize } = usePaging();
+  const visible = useMemo(() => {
+    const k = q.trim().toLowerCase();
+    return rows.filter((r) => (!show || r.status === show) && (!k || r.email.toLowerCase().includes(k) || r.name.toLowerCase().includes(k)));
+  }, [rows, q, show]);
+  const view = paginate(visible, page, size);
+  const options = SHOW.filter(([, s]) => !s || rows.some((r) => r.status === s));
+
+  return (
+    <div className="panel">
+      {filters && (
+        <div className="imp-filters">
+          <Search placeholder="Tìm theo email hoặc họ tên" value={q} onChange={(v) => (setQ(v), setPage(1))} width={360} />
+          {options.length > 2 && (
+            <label className="filter" style={{ width: 220 }}>
+              <span>Hiện: {SHOW.find(([, s]) => s === show)?.[0]}</span>
+              <Icon name="down" />
+              <select value={show} onChange={(e) => (setShow(e.target.value as RowStatus | ''), setPage(1))} aria-label="Hiện">
+                {options.map(([label, s]) => (
+                  <option key={label} value={s}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+      )}
+      <div className="scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Dòng</th>
+              <th>Họ và tên</th>
+              <th>Email</th>
+              <th>Số điện thoại</th>
+              <th>Vai trò</th>
+              <th>{resultCol}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {view.items.map((r) => (
+              <tr key={r.line} className={r.status === 'error' ? 'bad' : r.status === 'duplicate' ? 'dup' : undefined}>
+                <td>{r.line}</td>
+                <td className="strong">{r.name || '(trống)'}</td>
+                <td>{r.email}</td>
+                <td>{r.phone}</td>
+                <td>{r.role}</td>
+                <td>
+                  {r.status === 'ok' ? (
+                    <Pill tone="ok">Hợp lệ</Pill>
+                  ) : (
+                    <span className="imp-issue">
+                      <Pill tone={r.status === 'duplicate' ? 'wait' : 'off'}>{STATUS_LABEL[r.status]}</Pill>
+                      <span>{r.issues.join('; ')}</span>
+                    </span>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {!view.items.length && (
+              <tr>
+                <td colSpan={6} style={{ textAlign: 'center', padding: 32 }}>
+                  Không có dòng nào khớp.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+      <Pager page={view.page} pages={view.pages} onPage={setPage} size={size} onSize={setSize}>
+        Hiển thị {view.from}–{view.to} trong {visible.length.toLocaleString('vi-VN')} dòng
+      </Pager>
+    </div>
   );
 }

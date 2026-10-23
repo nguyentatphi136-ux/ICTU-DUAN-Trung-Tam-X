@@ -76,7 +76,6 @@ public class AuthorizationFilter implements Filter {
                 session.setAttribute("currentUser", freshUser);
             }
         } catch (Exception ignored) {
-            // Lỗi CSDL thì dùng tạm dữ liệu trong phiên, bước kiểm tra quyền phía dưới vẫn chạy
         }
 
         // Kiểm tra trạng thái tài khoản

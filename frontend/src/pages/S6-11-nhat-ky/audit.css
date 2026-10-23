@@ -1,0 +1,6 @@
+/* S6-11. Nhật ký thao tác: cột trước, sau và ngăn chi tiết. */
+.au-diff del,.au-changes del{color:var(--bad);text-decoration:line-through}
+.au-diff ins,.au-changes ins{color:var(--green);text-decoration:none;font-weight:500}
+.au-diff small{color:var(--muted)}
+.au-facts{margin-bottom:12px}
+.au-changes{width:100%}

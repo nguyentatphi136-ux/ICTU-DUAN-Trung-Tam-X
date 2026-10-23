@@ -1,0 +1,32 @@
+/* S3-04. Danh sách và hồ sơ học viên. Các lớp .rows, .code, .empty, .back dùng lại ở các trang S3 trở đi. */
+table.rows tbody tr{cursor:pointer}
+table.rows tbody tr:hover td{background:var(--hover)}
+table.rows tbody tr:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
+td.code{color:var(--blue);font-weight:600;white-space:nowrap}
+td.empty{text-align:center;padding:32px 16px;color:var(--muted)}
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-weight:400;font-size:14px;margin-bottom:12px}
+.back:hover{color:var(--blue)}
+.sp-head{align-items:center}.sp-head>div{flex:1}
+.sp-head h2{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.sp-ava{width:56px;height:56px;border-radius:50%;background:var(--grad);color:#fff;display:grid;place-items:center;font-weight:700;font-size:20px;flex:none}
+.sp-grid{display:grid;grid-template-columns:440px 1fr;gap:16px;align-items:start}
+.sp-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.sp-card{padding:20px 24px}
+.sp-card h3{font-size:16px;font-weight:600;margin-bottom:14px}
+.sp-card .sp-sub{border-top:1px solid var(--line);margin:20px -24px 12px;padding:20px 24px 0}
+.sp-facts{display:grid;grid-template-columns:1fr 1fr;gap:14px 16px}
+.sp-facts .wide{grid-column:1/-1}
+.sp-facts dt{font-size:12px;color:var(--muted)}.sp-facts dd{font-size:15px}
+.sp-notes{list-style:none;display:flex;flex-direction:column;gap:16px}
+.sp-notes small{color:var(--muted);font-size:12px}
+.sp-class{display:block;border:1px solid var(--line);border-radius:var(--r);padding:14px 20px;color:var(--ink);font-weight:400}
+a.sp-class:hover{border-color:var(--blue)}
+.sp-class>div:first-child{display:flex;justify-content:space-between;align-items:center}
+.sp-class>div:first-child b{color:var(--blue);font-size:16px}
+.sp-class>span{display:block;color:var(--muted);margin:4px 0 12px}
+.sp-progress{display:grid;grid-template-columns:1fr auto;gap:6px;font-size:13px}
+.sp-progress span{color:var(--muted)}
+.sp-progress i{grid-column:1/-1;height:6px;border-radius:3px;background:linear-gradient(90deg,var(--blue) var(--p),var(--chip) var(--p))}
+.sp-hist-t{margin:8px 0 0}
+@media(max-width:1100px){.sp-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.sp-facts{grid-template-columns:1fr}}

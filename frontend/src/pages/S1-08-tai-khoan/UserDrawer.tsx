@@ -3,10 +3,10 @@ import { Icon } from '../../components/Icon';
 import { Box, Drawer, initial, Pill } from '../../components/ui';
 import { useAuth } from '../../data/auth';
 import { ADMIN_ROLE, ROLES } from '../../data/permissions';
+import { phoneOwner } from '../../data/users';
+import { EMAIL_RE, isPhone, PHONE_MSG, userName } from '../../data/validate';
 import { statusTone, type UserRow } from '../../data/users';
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-export const PHONE_RE = /^0\d{9}$/;
 
 type Props = {
   /** null: tạo mới. */
@@ -21,12 +21,19 @@ type Props = {
 // Khi tích hợp: POST /admin/users (máy chủ gửi email kích hoạt kèm mật khẩu tạm), PUT /admin/users/:id, PUT /admin/users/:id/roles.
 export function UserDrawer({ user, users, onClose, onSave, onLock }: Props) {
   const { user: me } = useAuth();
-  const [name, setName] = useState(user?.name ?? '');
+  // Họ tên nhập như bình thường (có dấu); danh sách hiện bản IN HOA không dấu.
+  const [name, setName] = useState(user?.displayName ?? user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
+  const [birth, setBirth] = useState(user?.birth ?? '');
+  const [hometown, setHometown] = useState(user?.hometown ?? '');
+  const [address, setAddress] = useState(user?.address ?? '');
   const [roles, setRoles] = useState<number[]>(user?.roles ?? []);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const isNew = !user;
+  const today = new Date().toISOString().slice(0, 10);
+  // Xem trước mật khẩu tạm, cùng luật với AdminDAO.tempPasswordFor: A25200212070@tms.vn sinh 17/06/2005 thành A25200212070@170605.
+  const tempPassword = `${email.trim().split('@')[0] || '<tên đăng nhập>'}@${birth ? birth.slice(8, 10) + birth.slice(5, 7) + birth.slice(2, 4) : '<ngày sinh>'}`;
   // Không tự thu hồi vai trò quản trị của chính mình.
   const isSelf = !!user && !!me && user.email.toLowerCase() === me.email.toLowerCase();
 
@@ -37,20 +44,40 @@ export function UserDrawer({ user, users, onClose, onSave, onLock }: Props) {
     if (!name.trim()) e.name = 'Vui lòng nhập họ và tên';
     if (isNew && !EMAIL_RE.test(email.trim())) e.email = 'Email không đúng định dạng';
     if (duplicate) e.email = `Email này đã được dùng cho tài khoản ${duplicate.name}`;
-    if (!PHONE_RE.test(phone.replace(/\s/g, ''))) e.phone = 'Số điện thoại Việt Nam gồm 10 chữ số, bắt đầu bằng 0';
+    const owner = phoneOwner(phone, user?.id);
+    if (!isPhone(phone)) e.phone = PHONE_MSG;
+    else if (owner) e.phone = `Số điện thoại đã được dùng cho tài khoản ${owner.name}`;
     if (!roles.length) e.roles = 'Chọn ít nhất một vai trò';
+    // Mật khẩu tạm của tài khoản mới tạo từ ngày sinh nên bắt buộc khi tạo.
+    if (isNew && !birth) e.birth = 'Vui lòng nhập ngày sinh';
+    else if (birth && birth > today) e.birth = 'Ngày sinh không được ở tương lai';
     setErrors(e);
     if (Object.keys(e).length) return;
-    onSave({ id: user?.id ?? 0, status: 'Chờ kích hoạt', ...user, name: name.trim().toUpperCase(), email: email.trim(), phone: phone.trim(), roles });
+    onSave({
+      id: user?.id ?? 0,
+      status: 'Chờ kích hoạt',
+      ...user,
+      name: userName(name),
+      displayName: name.trim().replace(/\s+/g, ' '),
+      email: email.trim(),
+      phone: phone.trim(),
+      birth: birth || undefined,
+      hometown: hometown.trim() || undefined,
+      address: address.trim() || undefined,
+      roles,
+      tempPassword: isNew ? tempPassword : user?.tempPassword,
+    });
   }
 
-  const field = (id: string, label: string, value: string, set: (v: string) => void, opts: { icon?: 'mail'; disabled?: boolean; hint?: string } = {}) => (
+  const field = (id: string, label: string, value: string, set: (v: string) => void, opts: { icon?: 'mail'; disabled?: boolean; hint?: string; type?: string } = {}) => (
     <div className="field">
       <label htmlFor={'ud-' + id}>{label}</label>
       <div className={'inp' + (opts.icon ? ' lead' : '') + (errors[id] ? ' bad' : '')}>
         {opts.icon && <Icon name={opts.icon} />}
         <input
           id={'ud-' + id}
+          type={opts.type}
+          max={opts.type === 'date' ? today : undefined}
           value={value}
           disabled={opts.disabled}
           onChange={(e) => {
@@ -92,6 +119,9 @@ export function UserDrawer({ user, users, onClose, onSave, onLock }: Props) {
       {field('name', 'Họ và tên', name, setName)}
       {field('email', 'Email', email, setEmail, { icon: 'mail', disabled: !isNew, hint: isNew ? undefined : 'Email là tên đăng nhập, không đổi được ở đây.' })}
       {field('phone', 'Số điện thoại', phone, setPhone)}
+      {field('birth', 'Ngày sinh', birth, setBirth, { type: 'date' })}
+      {field('hometown', 'Quê quán', hometown, setHometown)}
+      {field('address', 'Địa chỉ hiện tại', address, setAddress)}
 
       {isNew ? (
         <div className="field">
@@ -139,7 +169,8 @@ export function UserDrawer({ user, users, onClose, onSave, onLock }: Props) {
 
       {isNew && (
         <Box icon="mail" title="Email kích hoạt sẽ được gửi ngay">
-          Kèm mật khẩu tạm, người dùng đổi lại ở lần đăng nhập đầu.
+          Kèm mật khẩu tạm <b>{tempPassword}</b> (tên đăng nhập @ ngày sinh dạng ngày tháng năm 6 số). Người dùng phải đổi mật khẩu ở lần
+          đăng nhập đầu.
         </Box>
       )}
     </Drawer>

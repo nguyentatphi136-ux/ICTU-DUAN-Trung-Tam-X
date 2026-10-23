@@ -3,10 +3,20 @@ import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Filter, initial, Pager, paginate, Pill, RowMenu, Search } from '../../components/ui';
-import { ROLES } from '../../data/permissions';
-import { statusTone, loadUsers, saveUsers, type Status, type UserRow } from '../../data/users';
+import { ConfirmDialog, Filter, initial, LoadState, Pager, paginate, Pill, RowMenu, Search, usePaging } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
+import { audit } from '../../data/audit';
+import { useAuth } from '../../data/auth';
+import { TODAY } from '../../data/funnel';
+import { moveToTrash, restore } from '../../data/trash';
+import { ADMIN_ROLE, ROLES, USERS_MODULE } from '../../data/permissions';
+import { createUser, loadUserDetail, loadUsers, saveUser, setLocked, trashUser } from '../../data/s1api';
+import { restoreItem } from '../../data/s2api';
+import { saveAll } from '../../data/store';
+import { dispatchActivationEmail } from '../../data/email';
+import { statusTone, USERS, type Status, type UserRow } from '../../data/users';
 import { LockDialog } from './LockDialog';
+import { UserDetail } from './UserDetail';
 import { UserDrawer } from './UserDrawer';
 
 const STATUSES: Status[] = ['Hoạt động', 'Chờ kích hoạt', 'Đã khoá'];
@@ -15,13 +25,33 @@ const STATUSES: Status[] = ['Hoạt động', 'Chờ kích hoạt', 'Đã khoá'
 // S1-09 (gán vai trò) nằm trong ngăn Sửa, S1-10 (khoá, mở khoá) là hộp thoại mở từ menu ba chấm.
 export function UserListPage() {
   const toast = useToast();
-  const [users, setUsers] = useState<UserRow[]>(loadUsers);
+  const [users, setUsers] = useState(USERS);
   const [q, setQ] = useState('');
   const [role, setRole] = useState('');
   const [status, setStatus] = useState('');
-  const [page, setPage] = useState(1);
+  const { page, setPage, size, setSize } = usePaging();
   const [editing, setEditing] = useState<UserRow | 'new' | null>(null);
   const [locking, setLocking] = useState<UserRow | null>(null);
+  const [deleting, setDeleting] = useState<UserRow | null>(null);
+  const [viewing, setViewing] = useState<UserRow | null>(null);
+  const { user: me } = useAuth();
+  // Sheet 2: Quản lý đào tạo chỉ xem (R) "Người dùng & nhật ký"; tạo, sửa, khoá là việc của Quản trị (S1-08, S1-09, S1-10).
+  const canWrite = me?.active === ADMIN_ROLE;
+  // Có backend: tải tài khoản từ máy chủ; mọi thay đổi gửi lên máy chủ rồi tải lại.
+  const load = useLoad(async () => {
+    await loadUsers();
+    setUsers([...USERS]);
+  });
+
+  // Có backend: danh sách chỉ có thông tin gọn, mở xem hoặc sửa thì tải thông tin chi tiết của tài khoản đó.
+  const withDetail = async (u: UserRow, open: (d: UserRow) => void) => {
+    if (!apiEnabled) return open(u);
+    try {
+      open(await loadUserDetail(u.id));
+    } catch (e) {
+      toast('Chưa tải được thông tin tài khoản', (e as Error).message);
+    }
+  };
 
   const filtered = useMemo(() => {
     const k = q.trim().toLowerCase().replace(/\s/g, '');
@@ -32,13 +62,34 @@ export function UserListPage() {
         (!status || u.status === status),
     );
   }, [users, q, role, status]);
-  const view = paginate(filtered, page);
+  const view = paginate(filtered, page, size);
 
   const update = (u: UserRow) => {
-    setUsers((list) => {
-      const next = list.map((x) => (x.id === u.id ? u : x));
-      saveUsers(next);
-      return next;
+    const idx = USERS.findIndex((x) => x.id === u.id);
+    if (idx >= 0) USERS[idx] = u;
+    saveAll();
+    setUsers((list) => list.map((x) => (x.id === u.id ? u : x)));
+  };
+  const trash = async (u: UserRow) => {
+    if (apiEnabled) {
+      try {
+        await trashUser(u.id);
+      } catch (e) {
+        return toast('Chưa chuyển được vào thùng rác', (e as Error).message);
+      }
+      setDeleting(null);
+      load.reload();
+      return toast('Đã chuyển vào thùng rác', u.name, { label: 'Hoàn tác', onClick: () => void restoreItem('user', u.id).then(load.reload) });
+    }
+    const id = moveToTrash({ kind: 'user', item: u }, `${u.name} · ${u.email}`, me?.name ?? '');
+    setUsers([...USERS]);
+    setDeleting(null);
+    toast('Đã chuyển vào thùng rác', u.name, {
+      label: 'Hoàn tác',
+      onClick: () => {
+        restore(id);
+        setUsers([...USERS]);
+      },
     });
   };
   const resetPage = <T,>(f: (v: T) => void) => (v: T) => {
@@ -47,7 +98,7 @@ export function UserListPage() {
   };
 
   return (
-    <AppLayout crumb={['Người dùng & nhật ký', 'Tài khoản']} module="Người dùng & nhật ký">
+    <AppLayout crumb={[USERS_MODULE, 'Tài khoản']} module={USERS_MODULE}>
       <div className="h">
         <div>
           <h2>Tài khoản người dùng</h2>
@@ -57,15 +108,29 @@ export function UserListPage() {
           <Icon name="shield" size={16} />
           Ma trận phân quyền
         </Link>
-        <Link to="/quan-tri/nhap-excel" className="btn">
-          <Icon name="upload" size={16} />
-          Nhập từ Excel
+        {/* S6-11 */}
+        <Link to="/quan-tri/nhat-ky" className="btn">
+          <Icon name="file" size={16} />
+          Nhật ký thao tác
         </Link>
-        <button type="button" className="btn primary" onClick={() => setEditing('new')}>
-          <Icon name="plus" size={16} />
-          Thêm tài khoản
-        </button>
+        {canWrite && (
+          <>
+            <Link to="/quan-tri/thung-rac" className="btn">
+              <Icon name="trash" size={16} />
+              Thùng rác
+            </Link>
+            <Link to="/quan-tri/nhap-excel" className="btn">
+              <Icon name="upload" size={16} />
+              Nhập từ Excel
+            </Link>
+            <button type="button" className="btn primary" onClick={() => setEditing('new')}>
+              <Icon name="plus" size={16} />
+              Thêm tài khoản
+            </button>
+          </>
+        )}
       </div>
+      <LoadState {...load} />
       <div className="bar">
         <Search placeholder="Tìm theo tên, email, số điện thoại" value={q} onChange={resetPage(setQ)} width={460} />
         <Filter label="Vai trò" value={role} options={[...ROLES]} onChange={resetPage(setRole)} />
@@ -88,10 +153,16 @@ export function UserListPage() {
               {view.items.map((u) => (
                 <tr key={u.id}>
                   <td>
-                    <span className="person">
+                    <button
+                      type="button"
+                      className="person"
+                      title="Xem thông tin chi tiết"
+                      style={{ background: 'none', border: 0, padding: 0, color: 'inherit', font: 'inherit', cursor: 'pointer', textAlign: 'left' }}
+                      onClick={() => void withDetail(u, setViewing)}
+                    >
                       <span className="initial">{initial(u.name)}</span>
                       {u.name}
-                    </span>
+                    </button>
                   </td>
                   <td>{u.email}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{u.phone}</td>
@@ -108,8 +179,15 @@ export function UserListPage() {
                   <td style={{ width: 56 }}>
                     <RowMenu
                       actions={[
-                        { label: 'Sửa', onClick: () => setEditing(u) },
-                        u.status === 'Đã khoá' ? { label: 'Mở khoá', onClick: () => setLocking(u) } : { label: 'Khoá', danger: true, onClick: () => setLocking(u) },
+                        { label: 'Xem chi tiết', onClick: () => void withDetail(u, setViewing) },
+                        ...(canWrite
+                          ? [
+                              { label: 'Sửa', onClick: () => void withDetail(u, setEditing) },
+                              u.status === 'Đã khoá' ? { label: 'Mở khoá', onClick: () => setLocking(u) } : { label: 'Khoá', danger: true, onClick: () => setLocking(u) },
+                              // Không tự chuyển tài khoản của mình vào thùng rác (máy chủ cũng chặn).
+                              ...(u.email === me?.email ? [] : [{ label: 'Chuyển vào thùng rác', danger: true, onClick: () => setDeleting(u) }]),
+                            ]
+                          : []),
                       ]}
                     />
                   </td>
@@ -125,7 +203,7 @@ export function UserListPage() {
             </tbody>
           </table>
         </div>
-        <Pager page={view.page} pages={view.pages} onPage={setPage}>
+        <Pager page={view.page} pages={view.pages} onPage={setPage} size={size} onSize={setSize}>
           Hiển thị {view.from}–{view.to} trong {filtered.length} tài khoản
         </Pager>
       </div>
@@ -139,14 +217,53 @@ export function UserListPage() {
             setEditing(null);
             setLocking(u);
           }}
-          onSave={(u) => {
+          onSave={async (u) => {
+            if (apiEnabled) {
+              try {
+                if (editing === 'new') {
+                  const created = await createUser(u);
+                  toast('Đã tạo tài khoản', `Mật khẩu tạm ${created?.tempPassword ?? ''}, đã gửi kèm email kích hoạt tới ${u.email}. Người dùng phải đổi ở lần đăng nhập đầu.`);
+                } else {
+                  await saveUser(editing, u);
+                  toast('Đã lưu thay đổi', u.name);
+                }
+              } catch (e) {
+                // Ví dụ 409 EMAIL_ALREADY_EXISTS hoặc số điện thoại trùng: giữ ngăn mở để sửa lại.
+                return toast('Chưa lưu được', (e as Error).message);
+              }
+              setEditing(null);
+              return load.reload();
+            }
             if (editing === 'new') {
-              const nextId = Math.max(0, ...users.map((x) => x.id)) + 1;
-              const next = [{ ...u, id: nextId }, ...users];
-              setUsers(next);
-              saveUsers(next);
-              toast('Đã tạo tài khoản', `Email kích hoạt đã gửi tới ${u.email}.`);
+              const pass = u.tempPassword || 'Tms@2026';
+              const newId = Math.max(0, ...USERS.map((x) => x.id)) + 1;
+              const newUser: UserRow = {
+                ...u,
+                id: newId,
+                status: 'Chờ kích hoạt',
+                tempPassword: pass,
+              };
+              USERS.unshift(newUser);
+              saveAll();
+              setUsers([...USERS]);
+              void dispatchActivationEmail({
+                toEmail: u.email,
+                fullName: u.displayName || u.name,
+                loginEmail: u.email,
+                tempPassword: pass,
+                roleName: ROLES[u.roles[0]] || 'Học viên',
+              }).then((r) => {
+                if (r.success) {
+                  toast('Email kích hoạt đã gửi', `Thông tin đăng nhập đã gửi tới hộp thư ${u.email}`);
+                }
+              });
+              toast('Đã tạo tài khoản', `Tài khoản: ${u.email} · Mật khẩu tạm: ${pass}. Email kích hoạt đang gửi tới ${u.email}.`);
             } else {
+              // S6-11: đổi vai trò được ghi nhật ký thao tác.
+              const before = editing.roles.map((r) => ROLES[r]).join(', ');
+              const after = u.roles.map((r) => ROLES[r]).join(', ');
+              if (before !== after)
+                audit({ at: TODAY + 'T' + new Date().toTimeString().slice(0, 5), by: me?.name ?? '', role: me ? ROLES[me.active] : '', entity: 'Vai trò', action: u.roles.length > editing.roles.length ? 'Thêm vai trò' : u.roles.length < editing.roles.length ? 'Gỡ vai trò' : 'Đổi vai trò', target: `${u.email.split('@')[0]} · ${u.name}`, changes: [{ field: 'Vai trò', before: before || '(không có)', after: after || '(không còn vai trò)' }] });
               update(u);
               toast('Đã lưu thay đổi', u.name);
             }
@@ -154,17 +271,49 @@ export function UserListPage() {
           }}
         />
       )}
+      {viewing && (
+        <UserDetail
+          user={viewing}
+          onClose={() => setViewing(null)}
+          onEdit={
+            canWrite
+              ? () => {
+                  setEditing(viewing);
+                  setViewing(null);
+                }
+              : undefined
+          }
+        />
+      )}
       {locking && (
         <LockDialog
           user={locking}
           onClose={() => setLocking(null)}
-          onConfirm={(reason) => {
+          onConfirm={async (reason) => {
             const locked = locking.status !== 'Đã khoá';
+            if (apiEnabled) {
+              let res;
+              try {
+                res = await setLocked(locking.id, locked, reason);
+              } catch (e) {
+                return toast(locked ? 'Chưa khoá được' : 'Chưa mở khoá được', (e as Error).message);
+              }
+              // S1-10: lớp người đó đang phụ trách cần bàn giao (máy chủ trả về sau khi khoá).
+              const classes = res?.assignedClasses ?? [];
+              toast(locked ? 'Đã khoá tài khoản' : 'Đã mở khoá tài khoản', classes.length ? `${locking.name}. Cần bàn giao ${classes.length} lớp: ${classes.map((c) => c.classCode).join(', ')}.` : locking.name);
+              setLocking(null);
+              return load.reload();
+            }
             update({ ...locking, status: locked ? 'Đã khoá' : 'Hoạt động', lockReason: locked ? reason : undefined });
             toast(locked ? 'Đã khoá tài khoản' : 'Đã mở khoá tài khoản', locking.name);
             setLocking(null);
           }}
         />
+      )}
+      {deleting && (
+        <ConfirmDialog title="Chuyển tài khoản vào thùng rác?" onClose={() => setDeleting(null)} onConfirm={() => trash(deleting)}>
+          Tài khoản <b>{deleting.name}</b> ({deleting.email}) sẽ không đăng nhập được và ẩn khỏi danh sách.
+        </ConfirmDialog>
       )}
     </AppLayout>
   );

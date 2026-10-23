@@ -1,0 +1,13 @@
+/* S8-08. Dashboard Giảng viên. */
+.tdb-top{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px}
+.tdb-next{display:flex;flex-direction:column;gap:6px;background:var(--grad);color:#fff;border-radius:var(--r);padding:20px 24px}
+.tdb-next small{font-weight:700;letter-spacing:.04em;font-size:12px}.tdb-next b{font-size:18px;margin-top:8px}
+.tdb-acts{display:flex;gap:10px;margin-top:10px}.tdb-acts .btn{background:#fff;color:var(--blue);border:0}.tdb-acts .ghost{background:rgba(255,255,255,.15);color:#fff}
+.tdb-grade{display:flex;flex-direction:column;gap:6px;align-items:flex-start}.tdb-grade h3{font-size:15px}.tdb-grade b{font-size:32px}
+.tdb-abs{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}.tdb-abs small{display:block}
+.tdb-h{font-size:15px;margin-bottom:10px}
+.tdb-week{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.tdb-day{display:flex;flex-direction:column;gap:4px;padding:12px 14px;color:inherit;text-decoration:none}
+.tdb-day.today{border-color:var(--blue)}.tdb-day.off{opacity:.6}.tdb-day em{font-style:normal;font-size:12px;font-weight:600}.today-t{color:var(--blue)}
+@media(max-width:1000px){.tdb-top{grid-template-columns:1fr}}
+.db-grid td.hint,.db-grid td.warn-t{white-space:nowrap}
