@@ -1,0 +1,16 @@
+/* S6-09. Chuông thông báo trên thanh trên và danh sách thả xuống. */
+.bell{position:relative}
+.bell-btn{position:relative;width:36px;height:36px;border:0;background:none;color:var(--muted);display:grid;place-items:center;border-radius:50%}
+.bell-btn:hover{background:var(--chip);color:var(--ink)}.bell-btn svg{width:20px;height:20px}
+.bell-n{position:absolute;top:2px;right:0;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;font-weight:700;line-height:18px;text-align:center}
+.bell-menu{position:absolute;right:-60px;top:48px;width:380px;max-width:calc(100vw - 24px);background:var(--raised);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 12px 30px rgba(5,36,77,.16);z-index:30;overflow:hidden}
+.bell-menu header{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.bell-menu header .link{margin-left:auto;font-size:13px}
+.bell-menu ul{list-style:none;max-height:360px;overflow:auto}
+.bell-menu li button{display:flex;gap:10px;width:100%;text-align:left;border:0;background:none;padding:10px 14px;font:inherit;color:var(--ink);border-bottom:1px solid var(--line)}
+.bell-menu li button:hover{background:var(--hover)}
+.bell-menu li button.new{background:var(--info-bg)}.bell-menu li button.new b{font-weight:700}
+.bell-menu b{display:block;font-size:13px;font-weight:500}.bell-menu small{color:var(--muted);font-size:12px}
+.bell-ic{width:30px;height:30px;border-radius:50%;background:var(--soft);color:var(--blue);display:grid;place-items:center;flex:none}
+.bell-empty{padding:20px 14px;color:var(--muted);text-align:center}
+.bell-all{display:block;text-align:center;padding:10px;font-size:13px}

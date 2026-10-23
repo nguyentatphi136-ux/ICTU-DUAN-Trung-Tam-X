@@ -1,8 +1,12 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
-import type { Account } from '../pages/S1-01-dang-nhap/mockAuth';
+import { api, apiEnabled } from './api';
 
 // Người đang đăng nhập và vai trò đang dùng (S1-01, S1-02, S1-06).
 // Lưu trong sessionStorage để tải lại trang không mất phiên. Khi có backend: thay bằng token và GET /auth/me.
+/** roles là chỉ số trong ROLES (src/data/permissions.ts), xếp theo quyền giảm dần: phần tử đầu là vai trò khi vừa đăng nhập. */
+/** mustChangePassword: đăng nhập bằng mật khẩu mặc định, phải đổi mật khẩu trước khi vào hệ thống. */
+/** perms: mã quyền máy chủ theo mã vai trò (GET /api/me/permissions), dùng để dựng menu; chỉ có khi chạy với backend. */
+export type Account = { email: string; name: string; roles: number[]; mustChangePassword?: boolean; perms?: Record<string, string[]> };
 export type User = Account & { active: number };
 
 type Auth = {
@@ -10,6 +14,8 @@ type Auth = {
   signIn: (a: Account) => void;
   signOut: () => void;
   switchRole: (role: number) => void;
+  /** Cập nhật tên hiển thị sau khi lưu hồ sơ (S2-02). */
+  updateUser: (patch: Partial<Pick<User, 'name' | 'mustChangePassword' | 'perms'>>) => void;
 };
 
 const KEY = 'tms.user';
@@ -37,8 +43,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         signIn: (a) => save({ ...a, active: a.roles[0] }),
-        signOut: () => save(null),
+        signOut: () => {
+          // Báo máy chủ huỷ phiên; lỗi mạng không chặn việc đăng xuất ở trình duyệt.
+          if (apiEnabled && user) api('/api/auth/logout', { method: 'POST' }).catch(() => {});
+          save(null);
+        },
         switchRole: (role) => user && save({ ...user, active: role }),
+        updateUser: (patch) => user && save({ ...user, ...patch }),
       }}
     >
       {children}

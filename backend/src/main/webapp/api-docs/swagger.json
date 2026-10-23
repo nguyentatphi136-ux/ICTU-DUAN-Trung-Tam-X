@@ -1,0 +1,430 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Education Management System - Training Program API",
+    "description": "API RESTful quản lý danh mục chương trình đào tạo (User Story S2-04 / EP-02). Hỗ trợ CRUD, kiểm soát trùng mã, ràng buộc lớp học đang chạy, phân quyền theo vai trò (TrainingManager, Admin).",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8080/ems",
+      "description": "Local Tomcat Server"
+    },
+    {
+      "url": "http://localhost:8080",
+      "description": "Root Context Server"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Training Programs",
+      "description": "Quản lý danh mục chương trình đào tạo (S2-04)"
+    }
+  ],
+  "paths": {
+    "/api/training-programs": {
+      "get": {
+        "tags": ["Training Programs"],
+        "summary": "Lấy danh sách chương trình đào tạo",
+        "description": "Trả về danh sách chương trình đào tạo có hỗ trợ phân trang, tìm kiếm theo mã hoặc tên, và lọc theo trạng thái.",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "description": "Từ khóa tìm kiếm theo mã (code) hoặc tên (name)",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Lọc theo trạng thái (ACTIVE, INACTIVE, ALL)",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["ACTIVE", "INACTIVE", "ALL"],
+              "default": "ALL"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "description": "Số trang (bắt đầu từ 1)",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "description": "Số bản ghi trên mỗi trang",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lấy danh sách thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingProgramPageResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Chưa đăng nhập / Phiên hết hạn"
+          },
+          "403": {
+            "description": "Không có quyền truy cập (Yêu cầu vai trò TrainingManager hoặc Admin)"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Training Programs"],
+        "summary": "Tạo mới chương trình đào tạo",
+        "description": "Tạo mới một chương trình đào tạo. Mã chương trình phải là duy nhất.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrainingProgramCreateRequest"
+              },
+              "example": {
+                "code": "JAVA-WEB",
+                "name": "Java Web Chuyên nghiệp",
+                "description": "Chương trình đào tạo Java Web Backend",
+                "duration": 240,
+                "standardTuition": 15000000,
+                "status": "ACTIVE"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Tạo thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingProgramSuccessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ (Code rỗng, duration <= 0, standardTuition < 0, ...)"
+          },
+          "409": {
+            "description": "Mã chương trình đào tạo đã tồn tại (Conflict)"
+          },
+          "403": {
+            "description": "Không có quyền thực hiện chức năng"
+          }
+        }
+      }
+    },
+    "/api/training-programs/{id}": {
+      "get": {
+        "tags": ["Training Programs"],
+        "summary": "Lấy thông tin chi tiết chương trình đào tạo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID chương trình đào tạo",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lấy chi tiết thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingProgramSuccessResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy chương trình đào tạo"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Training Programs"],
+        "summary": "Cập nhật chương trình đào tạo",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID chương trình đào tạo cần cập nhật",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrainingProgramCreateRequest"
+              },
+              "example": {
+                "code": "JAVA-WEB-PRO",
+                "name": "Java Web Nâng Cao",
+                "description": "Chương trình chuyên sâu Spring Boot và Microservices",
+                "duration": 300,
+                "standardTuition": 18000000,
+                "status": "ACTIVE"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cập nhật thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingProgramSuccessResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Dữ liệu không hợp lệ"
+          },
+          "404": {
+            "description": "Không tìm thấy chương trình đào tạo"
+          },
+          "409": {
+            "description": "Mã chương trình đào tạo bị trùng với chương trình khác"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Training Programs"],
+        "summary": "Xoá chương trình đào tạo",
+        "description": "Chỉ cho phép xoá nếu chương trình KHÔNG CÓ lớp học đang chạy (IN_PROGRESS, RUNNING, ACTIVE). Nếu có lớp đang chạy, hệ thống trả về HTTP 409 Conflict.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID chương trình đào tạo",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Xoá thành công"
+          },
+          "404": {
+            "description": "Không tìm thấy chương trình đào tạo"
+          },
+          "409": {
+            "description": "Không thể xoá vì đang có lớp học đang chạy (RULE 6)"
+          }
+        }
+      }
+    },
+    "/api/training-programs/{id}/deactivate": {
+      "patch": {
+        "tags": ["Training Programs"],
+        "summary": "Ngừng áp dụng chương trình đào tạo",
+        "description": "Chuyển trạng thái chương trình sang INACTIVE. Không xoá dữ liệu khỏi database.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID chương trình đào tạo",
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ngừng áp dụng thành công",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrainingProgramSuccessResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Không tìm thấy chương trình đào tạo"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "TrainingProgramCreateRequest": {
+        "type": "object",
+        "required": ["code", "name", "duration", "standardTuition"],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Mã chương trình (duy nhất, không rỗng, tối đa 50 ký tự)",
+            "example": "JAVA-WEB"
+          },
+          "name": {
+            "type": "string",
+            "description": "Tên chương trình đào tạo (tối đa 150 ký tự)",
+            "example": "Lập trình Java Web"
+          },
+          "description": {
+            "type": "string",
+            "description": "Mô tả chương trình đào tạo",
+            "example": "Khóa học đào tạo kỹ sư Java Backend"
+          },
+          "duration": {
+            "type": "integer",
+            "description": "Tổng thời lượng (> 0)",
+            "example": 240
+          },
+          "standardTuition": {
+            "type": "number",
+            "format": "double",
+            "description": "Học phí chuẩn (>= 0)",
+            "example": 15000000
+          },
+          "status": {
+            "type": "string",
+            "enum": ["ACTIVE", "INACTIVE"],
+            "default": "ACTIVE",
+            "description": "Trạng thái áp dụng"
+          }
+        }
+      },
+      "TrainingProgramResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "code": {
+            "type": "string",
+            "example": "JAVA-WEB"
+          },
+          "name": {
+            "type": "string",
+            "example": "Lập trình Java Web"
+          },
+          "description": {
+            "type": "string",
+            "example": "Khóa học đào tạo kỹ sư Java Backend"
+          },
+          "duration": {
+            "type": "integer",
+            "example": 240
+          },
+          "standardTuition": {
+            "type": "number",
+            "example": 15000000
+          },
+          "status": {
+            "type": "string",
+            "example": "ACTIVE"
+          },
+          "createdAt": {
+            "type": "string",
+            "example": "2026-10-04T14:00:00"
+          },
+          "updatedAt": {
+            "type": "string",
+            "example": "2026-10-04T14:00:00"
+          }
+        }
+      },
+      "TrainingProgramSuccessResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "code": {
+            "type": "string",
+            "example": "PROGRAM_CREATED"
+          },
+          "message": {
+            "type": "string",
+            "example": "Tạo mới chương trình đào tạo thành công."
+          },
+          "data": {
+            "$ref": "#/components/schemas/TrainingProgramResponse"
+          }
+        }
+      },
+      "TrainingProgramPageResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "code": {
+            "type": "string",
+            "example": "PROGRAM_LIST_SUCCESS"
+          },
+          "message": {
+            "type": "string",
+            "example": "Lấy danh sách chương trình đào tạo thành công."
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/TrainingProgramResponse"
+                }
+              },
+              "total": {
+                "type": "integer",
+                "example": 25
+              },
+              "page": {
+                "type": "integer",
+                "example": 1
+              },
+              "pageSize": {
+                "type": "integer",
+                "example": 10
+              },
+              "totalPages": {
+                "type": "integer",
+                "example": 3
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

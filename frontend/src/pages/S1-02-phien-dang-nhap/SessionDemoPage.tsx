@@ -1,6 +1,8 @@
+import { useTitle } from '../../components/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
+import { ThemeToggle } from '../../components/ThemeToggle';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../data/auth';
 import { ROLES } from '../../data/permissions';
@@ -27,6 +29,7 @@ const hhmm = (t: number) => new Date(t).toTimeString().slice(0, 5);
 // hết hạn thì lưu nháp và về trang đăng nhập, đăng nhập lại thì mở đúng form và điền lại nội dung.
 // ?canh-bao=1 mở ngay hộp thoại cảnh báo để kiểm thử.
 export function SessionDemoPage() {
+  useTitle('Phiên đăng nhập');
   const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -43,7 +46,7 @@ export function SessionDemoPage() {
     (expired: boolean) => {
       const email = user?.email;
       if (expired) sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ ...formRef.current, savedAt: Date.now() }));
-      navigate('/dang-nhap', { replace: true, state: expired ? { expired: true, email, from: location.pathname } : { loggedOut: true } });
+      navigate('/dang-nhap', { replace: true, state: expired ? { expired: true, draft: true, email, from: location.pathname } : { loggedOut: true } });
     },
     [user, navigate, location.pathname],
   );
@@ -100,6 +103,7 @@ export function SessionDemoPage() {
           <a href="#">Lớp học</a>
           <a href="#">Báo cáo</a>
         </nav>
+        <ThemeToggle />
         <div className="um">
           <button type="button" className="um-btn" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
             <span className="who">

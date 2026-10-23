@@ -1,0 +1,370 @@
+openapi: 3.0.3
+info:
+  title: API Thời khóa biểu, Kiểm tra xung đột & Quản lý buổi học (EMS S4-02 & S4-03)
+  description: >
+    API quản lý thời khóa biểu trung tâm đào tạo:
+    - Tự động phát hiện và chặn xung đột giảng viên và phòng học (S4-02).
+    - Cho phép Quản lý đào tạo ghi đè có lưu vết kiểm toán (Audit Trail).
+    - Sửa, dời hoặc hủy buổi học đơn lẻ (S4-03).
+    - Hỗ trợ cập nhật một phần (PATCH), chặn sửa/hủy buổi học đã điểm danh, bắt buộc lý do hủy và tự động gửi thông báo cho học viên của lớp.
+  version: 1.1.0
+servers:
+  - url: http://localhost:8080
+    description: Máy chủ cục bộ (Tomcat)
+
+paths:
+  /api/schedules/check-conflicts:
+    post:
+      summary: Kiểm tra xung đột lịch học (Không lưu)
+      description: Kiểm tra xem thời gian đề xuất có bị trùng giảng viên hoặc phòng học hay không.
+      tags:
+        - Thời khóa biểu
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleRequest'
+            example:
+              classId: 1
+              instructorId: 3
+              roomId: 1
+              startDateTime: "2026-11-01T09:00:00"
+              endDateTime: "2026-11-01T11:00:00"
+      responses:
+        '200':
+          description: Kết quả kiểm tra xung đột
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConflictCheckResponse'
+        '400':
+          description: Dữ liệu gửi lên không hợp lệ (ví dụ endTime <= startTime)
+        '401':
+          description: Chưa đăng nhập
+        '403':
+          description: Không có quyền truy cập
+
+  /api/schedules:
+    post:
+      summary: Tạo lịch học mới
+      description: Tạo buổi học mới. Tự động kiểm tra xung đột. Nếu có xung đột, từ chối lưu (409) trừ khi Quản lý đào tạo xác nhận ghi đè kèm lý do.
+      tags:
+        - Thời khóa biểu
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleCreateRequest'
+      responses:
+        '201':
+          description: Tạo lịch học thành công
+        '400':
+          description: Dữ liệu không hợp lệ hoặc thiếu lý do ghi đè
+        '403':
+          description: Không có quyền ghi đè (không phải Training Manager hoặc Admin)
+        '409':
+          description: Phát hiện xung đột lịch học (Trùng giảng viên hoặc phòng)
+
+    get:
+      summary: Tra cứu danh sách thời khóa biểu
+      tags:
+        - Thời khóa biểu
+      parameters:
+        - name: classId
+          in: query
+          schema:
+            type: integer
+        - name: instructorId
+          in: query
+          schema:
+            type: integer
+        - name: roomId
+          in: query
+          schema:
+            type: integer
+        - name: fromDate
+          in: query
+          schema:
+            type: string
+            format: date
+            example: "2026-11-01"
+        - name: toDate
+          in: query
+          schema:
+            type: string
+            format: date
+            example: "2026-11-30"
+      responses:
+        '200':
+          description: Danh sách thời khóa biểu
+
+  /api/schedules/{id}:
+    get:
+      summary: Chi tiết một buổi học
+      tags:
+        - Quản lý buổi học (S4-03)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Chi tiết buổi học
+        '404':
+          description: Không tìm thấy buổi học
+
+    put:
+      summary: Cập nhật toàn bộ hoặc dời buổi học
+      tags:
+        - Quản lý buổi học (S4-03)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleUpdateRequest'
+      responses:
+        '200':
+          description: Cập nhật thành công
+        '400':
+          description: Buổi học đã điểm danh hoặc dữ liệu không hợp lệ
+        '403':
+          description: Không có quyền sửa lịch (Chỉ Quản lý đào tạo hoặc Admin)
+        '404':
+          description: Không tìm thấy buổi học
+        '409':
+          description: Xung đột lịch với buổi học khác
+
+    patch:
+      summary: Sửa một phần hoặc dời buổi học (Partial Update)
+      description: Cho phép chỉ thay đổi ngày, giờ, phòng hoặc giảng viên. Các trường không gửi lên được giữ nguyên. Chặn sửa nếu buổi học đã được điểm danh.
+      tags:
+        - Quản lý buổi học (S4-03)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScheduleUpdateRequest'
+            example:
+              roomId: 2
+      responses:
+        '200':
+          description: Cập nhật một phần thành công
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RescheduleResponse'
+        '400':
+          description: Buổi học đã điểm danh hoặc dữ liệu không hợp lệ
+        '403':
+          description: Không đủ quyền
+        '404':
+          description: Không tìm thấy buổi học
+        '409':
+          description: Xung đột thời khóa biểu
+
+    delete:
+      summary: Hủy buổi học (soft cancel)
+      description: Hủy buổi học và chuyển trạng thái sang CANCELLED. Bắt buộc có lý do hủy. Chặn hủy nếu buổi học đã điểm danh.
+      tags:
+        - Quản lý buổi học (S4-03)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: reason
+          in: query
+          schema:
+            type: string
+          example: "Giảng viên bận công tác đột xuất"
+      responses:
+        '200':
+          description: Hủy buổi học thành công
+        '400':
+          description: Thiếu lý do hủy hoặc buổi học đã được điểm danh
+        '403':
+          description: Không có quyền hủy
+
+  /api/schedules/{id}/cancel:
+    post:
+      summary: Hủy buổi học với lý do bắt buộc (POST cancel endpoint)
+      description: Hủy một buổi học cụ thể. Bắt buộc cung cấp lý do hủy qua body JSON. Tự động gửi thông báo đến toàn bộ học viên ghi danh trong lớp.
+      tags:
+        - Quản lý buổi học (S4-03)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+                  example: "Giảng viên báo bận đột xuất"
+      responses:
+        '200':
+          description: Hủy buổi học thành công, đã gửi thông báo đến học viên
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RescheduleResponse'
+        '400':
+          description: Thiếu lý do hủy hoặc buổi học đã điểm danh
+        '403':
+          description: Không có quyền (yêu cầu TRAINING_MANAGER hoặc ADMIN)
+        '404':
+          description: Không tìm thấy buổi học
+
+components:
+  schemas:
+    ScheduleRequest:
+      type: object
+      required:
+        - classId
+        - instructorId
+        - roomId
+        - startDateTime
+        - endDateTime
+      properties:
+        classId:
+          type: integer
+          example: 1
+        instructorId:
+          type: integer
+          example: 3
+        roomId:
+          type: integer
+          example: 1
+        startDateTime:
+          type: string
+          format: date-time
+          example: "2026-11-01T08:00:00"
+        endDateTime:
+          type: string
+          format: date-time
+          example: "2026-11-01T10:00:00"
+
+    ScheduleCreateRequest:
+      allOf:
+        - $ref: '#/components/schemas/ScheduleRequest'
+        - type: object
+          properties:
+            overrideConflict:
+              type: boolean
+              default: false
+            overrideReason:
+              type: string
+
+    ScheduleUpdateRequest:
+      type: object
+      properties:
+        classId:
+          type: integer
+        instructorId:
+          type: integer
+        roomId:
+          type: integer
+        sessionDate:
+          type: string
+          format: date
+          example: "2026-11-05"
+        startTime:
+          type: string
+          example: "09:00:00"
+        endTime:
+          type: string
+          example: "11:00:00"
+        startDateTime:
+          type: string
+        endDateTime:
+          type: string
+        reason:
+          type: string
+        overrideConflict:
+          type: boolean
+        overrideReason:
+          type: string
+
+    ConflictCheckResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        hasConflict:
+          type: boolean
+          example: false
+        conflicts:
+          type: array
+          items:
+            type: object
+        message:
+          type: string
+
+    RescheduleResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        action:
+          type: string
+          example: "RESCHEDULE"
+        message:
+          type: string
+          example: "Dời buổi học thành công."
+        notificationSent:
+          type: boolean
+          example: true
+        recipientCount:
+          type: integer
+          example: 25
+        session:
+          type: object
+          properties:
+            id:
+              type: integer
+            classId:
+              type: integer
+            sessionDate:
+              type: string
+            startTime:
+              type: string
+            endTime:
+              type: string
+            classroomId:
+              type: integer
+            instructorId:
+              type: integer
+            status:
+              type: string
+              example: "RESCHEDULED"
+            cancelReason:
+              type: string

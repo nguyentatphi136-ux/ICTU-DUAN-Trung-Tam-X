@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
+import { Link } from 'react-router-dom';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { MODULES, ROLES, type Permission } from '../../data/permissions';
+import { LoadState } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
+import { adminPerm, MODULES, ROLES, USERS_MODULE, type Permission } from '../../data/permissions';
+import { ADMIN_CORE, loadPermissions, loadRoles, saveRolePermissions, type ServerPermission, type ServerRole } from '../../data/s1api';
 import './matrix.css';
 
 const OPTIONS: Permission[] = ['F', 'W', 'W*', 'R', 'R*', '–'];
@@ -16,9 +19,13 @@ const LEGEND: [Permission, string][] = [
 const tone = (p: Permission) => ({ F: 'mx-f', W: 'mx-w', R: 'mx-r', '–': 'mx-n' })[p[0] as 'F' | 'W' | 'R' | '–'];
 const initial = () => MODULES.map((m) => [...m.perms]);
 
-// S1-05. Ma trận module × vai trò. Mỗi ô là danh sách chọn; cột Quản trị hệ thống bị khoá ở toàn quyền.
-// Khi tích hợp: GET/PUT /admin/permissions. Máy chủ kiểm quyền mọi API, mặc định là từ chối.
+// S1-05. Có backend: ma trận vai trò × mã quyền lưu trên máy chủ (ServerMatrix). Không có backend: ma trận module × vai trò
+// theo sheet 2 (F/W/R), lưu trong trình duyệt. Máy chủ kiểm quyền mọi API, mặc định là từ chối.
 export function PermissionMatrixPage() {
+  return apiEnabled ? <ServerMatrix /> : <LocalMatrix />;
+}
+
+function LocalMatrix() {
   const toast = useToast();
   const [saved, setSaved] = useState(initial);
   const [perms, setPerms] = useState(initial);
@@ -27,12 +34,12 @@ export function PermissionMatrixPage() {
   const set = (m: number, r: number, v: Permission) => setPerms((p) => p.map((row, i) => (i === m ? row.map((x, j) => (j === r ? v : x)) : row)));
 
   return (
-    <AppLayout crumb={['Người dùng & nhật ký', 'Phân quyền']} module="Người dùng & nhật ký">
+    <AppLayout crumb={[USERS_MODULE, 'Phân quyền']} module={USERS_MODULE}>
       <div className="h">
         <div>
           <h2>Ma trận phân quyền</h2>
         </div>
-        <Link to="/quan-tri/tai-khoan" className="btn" style={{ width: 170 }}>
+        <Link to="/quan-tri/tai-khoan" className="btn">
           <Icon name="users" size={16} />
           Danh sách tài khoản
         </Link>
@@ -94,8 +101,8 @@ export function PermissionMatrixPage() {
                   </td>
                 ))}
                 <td>
-                  <span className="mx-cell mx-f locked" title="Quản trị hệ thống luôn toàn quyền">
-                    F
+                  <span className={'mx-cell locked ' + tone(adminPerm(m.name))} title="Quản trị hệ thống chỉ quản lý tài khoản (cố định)">
+                    {adminPerm(m.name)}
                     <Icon name="lock" />
                   </span>
                 </td>
@@ -105,7 +112,131 @@ export function PermissionMatrixPage() {
         </table>
       </div>
       <p className="hint mx-foot">
-        * Chỉ trên dữ liệu của chính mình hoặc của lớp mình phụ trách. Mọi chức năng đều kiểm quyền ở tầng server, mặc định là từ chối. Cột Quản trị hệ thống bị khoá ở toàn quyền.
+        * Chỉ trên dữ liệu của chính mình hoặc của lớp mình phụ trách. Mọi chức năng đều kiểm quyền ở tầng server, mặc định là từ chối. Cột Quản trị hệ thống cố định: chỉ quản lý tài khoản, vai trò và nhật ký; riêng xoá vĩnh viễn trong thùng rác vẫn do Quản trị làm.
+      </p>
+    </AppLayout>
+  );
+}
+
+const MODULE_LABEL: Record<string, string> = {
+  AUTH: 'Đăng nhập & phân quyền',
+  DASHBOARD: 'Tổng quan',
+  PROFILE: 'Hồ sơ cá nhân',
+  USER: 'Người dùng',
+  PROGRAM: 'Chương trình & môn học',
+  CLASS: 'Lớp học & hồ sơ học viên',
+  SCHEDULE: 'Thời khoá biểu',
+  ADMISSIONS: 'Tuyển sinh & lead',
+  ATTENDANCE: 'Điểm danh',
+  ASSIGNMENT: 'Bài tập',
+  GRADE: 'Điểm',
+  FINANCE: 'Học phí & công nợ',
+  REPORT: 'Báo cáo',
+  PUBLIC: 'Trang công khai',
+  SYSTEM: 'Hệ thống',
+};
+const sameSet = (a: string[], b: string[]) => [...a].sort().join() === [...b].sort().join();
+
+/** S1-05 khi có backend: mỗi vai trò một bộ mã quyền (GET /api/admin/roles, PUT /api/admin/roles/{mã}/permissions). */
+function ServerMatrix() {
+  const toast = useToast();
+  const [roles, setRoles] = useState<ServerRole[]>([]);
+  const [perms, setPerms] = useState<ServerPermission[]>([]);
+  const [grants, setGrants] = useState<Record<string, string[]>>({});
+  const [saving, setSaving] = useState(false);
+  const load = useLoad(async () => {
+    const [r, p] = await Promise.all([loadRoles(), loadPermissions()]);
+    setRoles(r);
+    setPerms(p);
+    setGrants(Object.fromEntries(r.map((x) => [x.roleCode, x.permissionCodes])));
+  });
+  const changed = roles.filter((r) => !sameSet(grants[r.roleCode] ?? [], r.permissionCodes));
+  const modules = [...new Set(perms.map((p) => p.module))];
+  const toggle = (role: string, code: string) =>
+    setGrants((g) => ({ ...g, [role]: g[role]?.includes(code) ? g[role].filter((c) => c !== code) : [...(g[role] ?? []), code] }));
+
+  async function save() {
+    setSaving(true);
+    try {
+      for (const r of changed) await saveRolePermissions(r.roleCode, grants[r.roleCode] ?? []);
+      toast('Đã lưu phân quyền', 'Có hiệu lực ngay ở thao tác kế tiếp, người dùng không cần đăng nhập lại.');
+    } catch (e) {
+      toast('Chưa lưu được phân quyền', (e as Error).message);
+    }
+    setSaving(false);
+    load.reload();
+  }
+
+  return (
+    <AppLayout crumb={[USERS_MODULE, 'Phân quyền']} module={USERS_MODULE}>
+      <div className="h">
+        <div>
+          <h2>Ma trận phân quyền</h2>
+          <p>{changed.length ? `${changed.length} vai trò có thay đổi chưa lưu` : 'Quyền đang áp dụng trên máy chủ'}</p>
+        </div>
+        <Link to="/quan-tri/tai-khoan" className="btn">
+          <Icon name="users" size={16} />
+          Danh sách tài khoản
+        </Link>
+        <button type="button" className="btn" disabled={!changed.length || saving} onClick={() => setGrants(Object.fromEntries(roles.map((x) => [x.roleCode, x.permissionCodes])))} style={{ width: 150 }}>
+          Huỷ thay đổi
+        </button>
+        <button type="button" className="btn primary" disabled={!changed.length || saving} style={{ width: 170 }} onClick={() => void save()}>
+          {saving ? 'Đang lưu…' : 'Lưu phân quyền'}
+        </button>
+      </div>
+      <LoadState {...load} />
+      <div className="panel scroll">
+        <table className="mx">
+          <thead>
+            <tr>
+              <th>Quyền</th>
+              {roles.map((r) => (
+                <th key={r.roleCode} className={r.roleCode === 'ADMIN' ? 'admin' : undefined}>
+                  {r.roleName}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {modules.map((m) => [
+              <tr key={m}>
+                <td className="mx-mod" colSpan={roles.length + 1} style={{ fontWeight: 600, background: 'var(--surface)' }}>
+                  {MODULE_LABEL[m] ?? m}
+                </td>
+              </tr>,
+              ...perms
+                .filter((p) => p.module === m)
+                .map((p) => (
+                  <tr key={p.permissionCode}>
+                    <td className="mx-mod" title={p.description}>
+                      {p.permissionName}
+                      <small style={{ display: 'block', color: 'var(--muted)', fontWeight: 400 }}>{p.permissionCode}</small>
+                    </td>
+                    {roles.map((r) => {
+                      const locked = r.roleCode === 'ADMIN' && ADMIN_CORE.includes(p.permissionCode);
+                      return (
+                        <td key={r.roleCode}>
+                          <input
+                            type="checkbox"
+                            checked={grants[r.roleCode]?.includes(p.permissionCode) ?? false}
+                            disabled={locked || saving}
+                            title={locked ? 'Quyền quản trị cốt lõi, không thu hồi được' : undefined}
+                            aria-label={`${p.permissionName} – ${r.roleName}`}
+                            onChange={() => toggle(r.roleCode, p.permissionCode)}
+                          />
+                        </td>
+                      );
+                    })}
+                  </tr>
+                )),
+            ])}
+          </tbody>
+        </table>
+      </div>
+      <p className="hint mx-foot">
+        Máy chủ kiểm quyền mọi API theo bảng này, mặc định là từ chối. Ô khoá là quyền quản trị cốt lõi. Menu bên trái vẫn theo ma trận
+        module của sheet 2.
       </p>
     </AppLayout>
   );

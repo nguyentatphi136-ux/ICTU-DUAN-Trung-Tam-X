@@ -1,4 +1,6 @@
 // Tài khoản mẫu cho S1-08, S1-09, S1-10, S2-01. Khi tích hợp: GET /admin/users?search=&role=&status=&page=.
+import { persisted } from './store';
+import { digits } from './validate';
 export type Status = 'Hoạt động' | 'Chờ kích hoạt' | 'Đã khoá';
 export type UserRow = {
   id: number;
@@ -11,6 +13,14 @@ export type UserRow = {
   /** Lớp đang phụ trách, cần bàn giao khi khoá. */
   classes?: string[];
   lockReason?: string;
+  /** Thông tin chi tiết (S1-08): họ tên viết như người nhập, ngày sinh yyyy-mm-dd, quê quán, địa chỉ hiện tại. */
+  displayName?: string;
+  birth?: string;
+  hometown?: string;
+  address?: string;
+  code?: string;
+  gender?: string;
+  createdAt?: string;
 };
 
 const SEED: Omit<UserRow, 'id'>[] = [
@@ -37,7 +47,7 @@ const FIRST = ['NGUYEN', 'TRAN', 'LE', 'PHAM', 'HOANG', 'VU', 'DANG', 'BUI', 'DO
 const MID = ['VAN', 'THI', 'MINH', 'THANH', 'HUU', 'NGOC'];
 
 // Phần còn lại sinh tự động cho đủ 300 tài khoản như trong thiết kế (đa số là học viên, 4 tài khoản bị khoá).
-export const USERS: UserRow[] = [...Array(300)].map((_, i) => {
+export const USERS: UserRow[] = persisted('users', [...Array(300)].map((_, i): UserRow => {
   if (i < SEED.length) return { id: i + 1, ...SEED[i] };
   const n = 104 + i;
   return {
@@ -48,41 +58,13 @@ export const USERS: UserRow[] = [...Array(300)].map((_, i) => {
     roles: [0],
     status: i % 97 === 0 ? 'Đã khoá' : i % 41 === 0 ? 'Chờ kích hoạt' : 'Hoạt động',
   };
-});
+}), true);
+
+/** Tài khoản khác (không phải exceptId) đang dùng số điện thoại này. Máy chủ kiểm lại khi lưu (409 PHONE_DUPLICATE). */
+export const phoneOwner = (phone: string, exceptId?: number) =>
+  digits(phone) ? USERS.find((u) => u.id !== exceptId && digits(u.phone) === digits(phone)) : undefined;
+
+/** Thông tin hồ sơ ngoài danh sách tài khoản (S2-02), theo email. Họ tên và số điện thoại nằm trong USERS. */
+export const PROFILES: Record<string, { birth: string; address: string }> = persisted('profiles', {});
 
 export const statusTone = (s: Status): 'ok' | 'off' | 'wait' => (s === 'Hoạt động' ? 'ok' : s === 'Đã khoá' ? 'off' : 'wait');
-
-const STORAGE_KEY = 'tms.users';
-
-export function loadUsers(): UserRow[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-    }
-  } catch {
-    // fallback
-  }
-  return USERS;
-}
-
-export function saveUsers(list: UserRow[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  } catch {
-    // ignore
-  }
-}
-
-export function addUsers(newRows: Omit<UserRow, 'id'>[]): UserRow[] {
-  const current = loadUsers();
-  let maxId = current.reduce((m, u) => Math.max(m, u.id), 0);
-  const toAdd: UserRow[] = newRows.map((r) => {
-    maxId++;
-    return { ...r, id: maxId };
-  });
-  const updated = [...toAdd, ...current];
-  saveUsers(updated);
-  return updated;
-}

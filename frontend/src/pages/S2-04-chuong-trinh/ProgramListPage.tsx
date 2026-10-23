@@ -1,62 +1,88 @@
 import { useMemo, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Drawer, Filter, Pager, paginate, Pill, RowMenu, Search } from '../../components/ui';
+import { MODULE, TrainingTabs, useCanEditTraining } from '../../components/TrainingTabs';
+import { Box, ConfirmDialog, Drawer, Filter, LoadState, Pager, paginate, Pill, RowMenu, Search, usePaging } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
-import { ADMIN_ROLE } from '../../data/permissions';
-import { money, loadPrograms, savePrograms, type Program } from '../../data/training';
+import { money, PROGRAMS, type Program } from '../../data/training';
+import { loadTraining, restoreItem, saveProgram, trashProgram } from '../../data/s2api';
+import { moveToTrash, restore } from '../../data/trash';
 
-export const MODULE = 'Chương trình & môn học';
 const STATUS = ['Đang áp dụng', 'Ngừng áp dụng'];
 
-/** Quản lý đào tạo (5) và Quản trị hệ thống (6) được thêm, sửa, xoá, kéo thả. Khi chưa đăng nhập (chế độ demo/test) mặc định cho phép. */
-export function useCanEditTraining() {
-  const { user } = useAuth();
-  return !user || user.active === 5 || user.active === ADMIN_ROLE;
-}
-
-export function TrainingTabs() {
-  return (
-    <nav className="tabs">
-      <NavLink to="/dao-tao/chuong-trinh" className={({ isActive }) => (isActive ? 'on' : undefined)} end>
-        Chương trình
-      </NavLink>
-      <NavLink to="/dao-tao/mon-hoc" className={({ isActive }) => (isActive ? 'on' : undefined)} end>
-        Môn học
-      </NavLink>
-    </nav>
-  );
-}
-
-// S2-04. Danh sách chương trình đào tạo. Chương trình đang có lớp chạy không được xoá, chỉ được ngừng áp dụng.
+// S2-04. Danh sách chương trình đào tạo. Chương trình đang có lớp chạy không có nút xoá, chỉ được ngừng áp dụng.
+// Xoá là chuyển vào thùng rác (khôi phục được), có nút Hoàn tác ngay trên thông báo.
+// Có backend: đọc và ghi qua /api/training-programs, lưu xong thì tải lại danh sách.
 export function ProgramListPage() {
   const toast = useToast();
   const navigate = useNavigate();
   const canEdit = useCanEditTraining();
-  const [items, setItems] = useState<Program[]>(loadPrograms);
+  const [items, setItems] = useState(PROGRAMS);
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
-  const [page, setPage] = useState(1);
+  const { page, setPage, size, setSize } = usePaging();
   const [editing, setEditing] = useState<Program | 'new' | null>(null);
+  const [deleting, setDeleting] = useState<Program | null>(null);
+  const { user } = useAuth();
+  const load = useLoad(async () => {
+    await loadTraining();
+    setItems([...PROGRAMS]);
+  });
 
   const filtered = useMemo(() => {
     const k = q.trim().toLowerCase();
     return items.filter((p) => (!k || p.code.toLowerCase().includes(k) || p.name.toLowerCase().includes(k)) && (!status || (status === STATUS[0]) === p.active));
   }, [items, q, status]);
-  const view = paginate(filtered, page);
+  const view = paginate(filtered, page, size);
 
   const commit = (list: Program[]) => {
-    savePrograms(list);
+    PROGRAMS.splice(0, PROGRAMS.length, ...list);
     setItems(list);
+  };
+  /** Có backend: gửi thay đổi rồi tải lại; trả false nếu máy chủ từ chối (đã báo lỗi). */
+  const sync = async (work: () => Promise<unknown>) => {
+    try {
+      await work();
+      await loadTraining();
+      setItems([...PROGRAMS]);
+      return true;
+    } catch (e) {
+      toast('Chưa lưu được', (e as Error).message);
+      return false;
+    }
+  };
+  const toggle = async (p: Program) => {
+    const next = { ...p, active: !p.active };
+    if (apiEnabled) await sync(() => saveProgram(next));
+    else commit(items.map((x) => (x.code === p.code ? next : x)));
+  };
+  const trash = async (p: Program) => {
+    if (apiEnabled) {
+      setDeleting(null);
+      if (await sync(() => trashProgram(p.id!)))
+        toast('Đã chuyển vào thùng rác', p.name, { label: 'Hoàn tác', onClick: () => void sync(() => restoreItem('program', p.id!)) });
+      return;
+    }
+    const id = moveToTrash({ kind: 'program', item: p }, p.name, user?.name ?? '');
+    setItems([...PROGRAMS]);
+    setDeleting(null);
+    toast('Đã chuyển vào thùng rác', p.name, {
+      label: 'Hoàn tác',
+      onClick: () => {
+        restore(id);
+        setItems([...PROGRAMS]);
+      },
+    });
   };
 
   return (
     <AppLayout crumb={[MODULE, 'Chương trình']} module={MODULE}>
       <div className="h">
         <div>
-          <h2>{MODULE}</h2>
+          <h2>Chương trình đào tạo</h2>
         </div>
         {canEdit && (
           <button type="button" className="btn primary" style={{ width: 200 }} onClick={() => setEditing('new')}>
@@ -66,6 +92,7 @@ export function ProgramListPage() {
         )}
       </div>
       <TrainingTabs />
+      <LoadState {...load} />
       <div className="bar">
         <Search placeholder="Tìm theo mã hoặc tên chương trình" value={q} onChange={(v) => (setQ(v), setPage(1))} />
         <Filter label="Trạng thái" value={status} options={STATUS} onChange={(v) => (setStatus(v), setPage(1))} width={220} />
@@ -102,18 +129,10 @@ export function ProgramListPage() {
                               { label: 'Sửa chương trình', onClick: () => setEditing(p) },
                               {
                                 label: p.active ? 'Ngừng áp dụng' : 'Áp dụng lại',
-                                onClick: () => commit(items.map((x) => (x.code === p.code ? { ...x, active: !x.active } : x))),
+                                onClick: () => void toggle(p),
                               },
-                              {
-                                label: 'Xoá',
-                                danger: true,
-                                disabled: p.runningClasses ? `Đang có ${p.runningClasses} lớp chạy nên không xoá được` : false,
-                                onClick: () => {
-                                  if (!window.confirm(`Xoá chương trình ${p.name}?`)) return;
-                                  commit(items.filter((x) => x.code !== p.code));
-                                  toast('Đã xoá chương trình', p.name);
-                                },
-                              },
+                              // Đang có lớp chạy thì không có mục xoá (nhận xét mentor); lý do vẫn ghi trong ngăn Sửa.
+                              ...(p.runningClasses ? [] : [{ label: 'Chuyển vào thùng rác', danger: true, onClick: () => setDeleting(p) }]),
                             ]
                           : []),
                       ]}
@@ -124,18 +143,25 @@ export function ProgramListPage() {
             </tbody>
           </table>
         </div>
-        <Pager page={view.page} pages={view.pages} onPage={setPage}>
+        <Pager page={view.page} pages={view.pages} onPage={setPage} size={size} onSize={setSize}>
           Hiển thị {view.from}–{view.to} trong {filtered.length} chương trình
         </Pager>
       </div>
 
+      {deleting && (
+        <ConfirmDialog title="Chuyển chương trình vào thùng rác?" onClose={() => setDeleting(null)} onConfirm={() => trash(deleting)}>
+          Chương trình <b>{deleting.name}</b> ({deleting.code}) và lộ trình môn của nó sẽ ẩn khỏi danh sách.
+        </ConfirmDialog>
+      )}
       {editing && (
         <ProgramDrawer
           program={editing === 'new' ? null : editing}
           items={items}
           onClose={() => setEditing(null)}
-          onSave={(p) => {
-            commit(editing === 'new' ? [...items, p] : items.map((x) => (x.code === editing.code ? p : x)));
+          onSave={async (p) => {
+            if (apiEnabled) {
+              if (!(await sync(() => saveProgram(p)))) return;
+            } else commit(editing === 'new' ? [...items, p] : items.map((x) => (x.code === editing.code ? p : x)));
             toast('Đã lưu chương trình', p.name);
             setEditing(null);
           }}
@@ -172,7 +198,7 @@ function ProgramDrawer({ program, items, onClose, onSave }: { program: Program |
     if (!num(f.hours)) e.hours = 'Nhập số giờ lớn hơn 0';
     setErrors(e);
     if (Object.keys(e).length) return;
-    onSave({ code, name: f.name.trim(), description: f.description.trim(), hours: num(f.hours), fee: num(f.fee), active: f.active, runningClasses: program?.runningClasses ?? 0 });
+    onSave({ id: program?.id, code, name: f.name.trim(), description: f.description.trim(), hours: num(f.hours), fee: num(f.fee), active: f.active, runningClasses: program?.runningClasses ?? 0 });
   }
 
   const input = (k: 'code' | 'name' | 'hours' | 'fee', label: string, mode?: 'numeric') => (
@@ -222,6 +248,11 @@ function ProgramDrawer({ program, items, onClose, onSave }: { program: Program |
           </select>
         </div>
       </div>
+      {!!program?.runningClasses && (
+        <Box icon="lock" tone="warn" title="Không xoá được chương trình này">
+          Đang có {program.runningClasses} lớp chạy. Bạn có thể chuyển sang Ngừng áp dụng.
+        </Box>
+      )}
     </Drawer>
   );
 }

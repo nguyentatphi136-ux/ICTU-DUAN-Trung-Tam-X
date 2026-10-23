@@ -1,0 +1,27 @@
+/* S8-05. Khảo sát: biểu mẫu trả lời của học viên và màn khai báo của Quản lý đào tạo. */
+.sv-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+.sv-form{display:flex;flex-direction:column;gap:12px;margin-top:16px}
+.sv-q{padding:16px 18px;display:flex;flex-direction:column;gap:12px}.sv-q.bad{border-color:var(--bad-line)}
+.sv-scale{display:flex;gap:10px}
+.sv-scale button{width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-weight:600;font-size:16px}
+.sv-scale .on{background:var(--blue);border-color:var(--blue);color:#fff}
+.sv-legend{display:flex;justify-content:space-between;max-width:290px;color:var(--muted);font-size:12px}
+.sv-foot{display:flex;justify-content:flex-end;align-items:center;gap:12px}.sv-foot .err{margin-right:auto}
+.sv-done{display:flex;align-items:center;gap:10px;margin-top:16px;color:var(--green)}
+.sv-mine h3{font-size:15px;margin-bottom:8px}
+.sv-mine>button{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;text-align:left;border:0;background:none;border-radius:var(--r);padding:10px;font:inherit;color:var(--ink)}
+.sv-mine>button.on{background:var(--soft)}.sv-mine small{display:block;color:var(--muted);font-size:12px}
+.sv-admin{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+.sv-qrow{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-top:1px solid var(--line)}
+.sv-qrow>div{flex:1;display:flex;flex-direction:column;gap:4px}
+.sv-qrow input{border:1px solid transparent;border-radius:var(--r);padding:4px 8px;margin-left:-8px;font:inherit;font-weight:600;background:none;color:var(--ink)}
+.sv-qrow input:hover,.sv-qrow input:focus{border-color:var(--line);background:var(--surface)}
+.sv-kind{align-self:flex-start;font-size:12px;color:var(--blue);background:var(--soft);border-radius:999px;padding:1px 10px}.sv-kind.text{color:var(--warn);background:var(--warn-bg)}
+.sv-adds{display:flex;gap:16px;padding:8px 16px}.sv-adds .link{margin:0}
+.sv-side{display:flex;flex-direction:column;gap:16px}.sv-side h3{font-size:15px}
+.sv-run{display:flex;justify-content:space-between;gap:12px;padding:12px 16px;border-top:1px solid var(--line);cursor:pointer}
+.sv-run.on{background:var(--soft)}.sv-run small{display:block;font-size:13px}.sv-run-r{display:flex;flex-direction:column;align-items:flex-end;gap:6px}.sv-run-r .link{margin:0}
+.sv-who{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.sv-note{display:flex;align-items:center;gap:6px;margin-top:12px}
+@media(max-width:1000px){.sv-grid,.sv-admin{grid-template-columns:1fr}.sv-mine{order:-1}}
+@media(max-width:480px){.sv-scale{justify-content:space-between}.sv-scale button{width:52px;height:52px}.sv-legend{max-width:none}.sv-foot{flex-wrap:wrap}.sv-foot .btn{flex:1}}

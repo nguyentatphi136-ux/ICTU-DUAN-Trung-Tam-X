@@ -1,0 +1,7 @@
+/* S3-03. Hộp thoại chuyển lead thành học viên và phần đầu ngăn lead đã khoá. */
+.cv-facts{display:grid;grid-template-columns:1fr 1fr;gap:10px 24px;background:var(--hover);border:1px solid var(--line);border-radius:var(--r);padding:12px 20px;margin-bottom:20px}
+.cv-facts dt{font-size:12px;color:var(--muted)}.cv-facts dd{font-size:15px;font-weight:500}
+.cv-cta{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:16px;padding:14px 16px;border:1px solid var(--ok-line);background:var(--ok-bg);border-radius:var(--r)}
+.cv-cta b{display:block;color:var(--green)}.cv-cta span{font-size:13px;color:var(--muted)}
+.cv-done{margin-top:16px}.cv-done>.btn{margin:-4px 0 18px 32px}
+@media(max-width:600px){.cv-facts{grid-template-columns:1fr}}

@@ -21,7 +21,7 @@ WORKSPACE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 def read_file(rel_path):
     full_path = os.path.join(WORKSPACE, rel_path)
     if not os.path.exists(full_path):
-        return ""
+        raise FileNotFoundError(f"File not found: {rel_path}")
     with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
         return f.read()
 
@@ -44,23 +44,23 @@ print("KIỂM THỬ TOÀN DIỆN SPRINT 1: TỪ S1-01 ĐẾN S1-10 (CHẤP NHẬ
 print("=" * 80)
 
 # Preload files
-login_servlet = read_file("src/main/java/com/ems/controller/LoginApiServlet.java")
-logout_servlet = read_file("src/main/java/com/ems/controller/LogoutServlet.java")
-forgot_servlet = read_file("src/main/java/com/ems/controller/ForgotPasswordServlet.java")
-reset_servlet = read_file("src/main/java/com/ems/controller/ResetPasswordServlet.java")
-change_pw_servlet = read_file("src/main/java/com/ems/controller/ChangePasswordServlet.java")
-admin_servlet = read_file("src/main/java/com/ems/controller/AdminApiServlet.java")
-menu_servlet = read_file("src/main/java/com/ems/controller/MenuApiServlet.java")
-user_dao = read_file("src/main/java/com/ems/dao/UserDAO.java")
-admin_dao = read_file("src/main/java/com/ems/dao/AdminDAO.java")
-permission_dao = read_file("src/main/java/com/ems/dao/PermissionDAO.java")
-token_dao = read_file("src/main/java/com/ems/dao/PasswordResetTokenDAO.java")
-email_service = read_file("src/main/java/com/ems/service/EmailService.java")
-permission_policy = read_file("src/main/java/com/ems/security/PermissionPolicy.java")
-session_blacklist = read_file("src/main/java/com/ems/config/SessionBlacklist.java")
-session_filter = read_file("src/main/java/com/ems/filter/SessionAuthFilter.java")
-auth_filter = read_file("src/main/java/com/ems/filter/AuthorizationFilter.java")
-jsp_403 = read_file("src/main/webapp/WEB-INF/views/common/403.jsp")
+login_servlet = read_file("backend/src/main/java/com/ems/controller/LoginApiServlet.java")
+logout_servlet = read_file("backend/src/main/java/com/ems/controller/LogoutServlet.java")
+forgot_servlet = read_file("backend/src/main/java/com/ems/controller/ForgotPasswordServlet.java")
+reset_servlet = read_file("backend/src/main/java/com/ems/controller/ResetPasswordServlet.java")
+change_pw_servlet = read_file("backend/src/main/java/com/ems/controller/ChangePasswordServlet.java")
+admin_servlet = read_file("backend/src/main/java/com/ems/controller/AdminApiServlet.java")
+menu_servlet = read_file("backend/src/main/java/com/ems/controller/MenuApiServlet.java")
+user_dao = read_file("backend/src/main/java/com/ems/dao/UserDAO.java")
+admin_dao = read_file("backend/src/main/java/com/ems/dao/AdminDAO.java")
+permission_dao = read_file("backend/src/main/java/com/ems/dao/PermissionDAO.java")
+token_dao = read_file("backend/src/main/java/com/ems/dao/PasswordResetTokenDAO.java")
+email_service = read_file("backend/src/main/java/com/ems/service/EmailService.java")
+permission_policy = read_file("backend/src/main/java/com/ems/security/PermissionPolicy.java")
+session_blacklist = read_file("backend/src/main/java/com/ems/config/SessionBlacklist.java")
+session_filter = read_file("backend/src/main/java/com/ems/filter/SessionAuthFilter.java")
+auth_filter = read_file("backend/src/main/java/com/ems/filter/AuthorizationFilter.java")
+jsp_403 = read_file("backend/src/main/webapp/WEB-INF/views/common/403.jsp")
 schema_sql = read_file("database/schema.sql")
 admin_html = read_file("frontend/admin.html")
 app_js = read_file("frontend/app.js")
@@ -68,16 +68,6 @@ style_css = read_file("frontend/style.css")
 mock_auth_routes = read_file("legacy_or_mock/mock-node-api/src/routes/auth.routes.js")
 mock_admin_routes = read_file("legacy_or_mock/mock-node-api/src/routes/admin.routes.js")
 mock_auth_mw = read_file("legacy_or_mock/mock-node-api/src/middleware/auth.js")
-
-# React Figma UI files
-react_user_list = read_file("frontend/src/pages/S1-08-tai-khoan/UserListPage.tsx")
-react_login = read_file("frontend/src/pages/S1-01-dang-nhap/LoginPage.tsx")
-react_session = read_file("frontend/src/pages/S1-02-phien-dang-nhap/SessionDemoPage.tsx")
-react_layout = read_file("frontend/src/components/AppLayout.tsx")
-react_app_css = read_file("frontend/src/styles/app.css")
-react_lock_dialog = read_file("frontend/src/pages/S1-08-tai-khoan/LockDialog.tsx")
-react_ui = read_file("frontend/src/components/ui.tsx")
-react_index_html = read_file("frontend/index.html")
 
 # ==============================================================================
 # S1-01: ĐĂNG NHẬP BẰNG EMAIL VÀ MẬT KHẨU
@@ -93,13 +83,13 @@ check("S1-01.AC1.1", "Hệ thống tự động điều hướng về trang ch�
 # AC2: Sai thông tin hiển thị 'Email hoặc mật khẩu không đúng', không tiết lộ email có tồn tại hay không
 generic_error_be = "Email hoặc mật khẩu không đúng" in login_servlet
 generic_error_mock = ("Email hoặc mật khẩu không đúng" in mock_auth_routes or "Email hoặc mật khẩu không chính xác" in mock_auth_routes)
-generic_error_fe = ("Email hoặc mật khẩu không chính xác" in app_js or "Email hoặc mật khẩu không đúng" in app_js or "Email hoặc mật khẩu không đúng" in react_login)
+generic_error_fe = ("Email hoặc mật khẩu không chính xác" in app_js or "Email hoặc mật khẩu không đúng" in app_js)
 check("S1-01.AC2.1", "Thông báo lỗi sai đăng nhập chuẩn 'Email hoặc mật khẩu không đúng', bảo mật thông tin", generic_error_be and generic_error_mock and generic_error_fe)
 
 # AC3: Khóa tạm 15 phút sau 5 lần sai liên tiếp
 has_lock_policy = "failed_login_attempts" in schema_sql and "locked_until" in schema_sql
 lock_logic_dao = "failed_login_attempts >= 5" in user_dao or "LoginAttemptPolicy" in user_dao or "recordFailure" in user_dao or "LOCK_DURATION_MINUTES" in user_dao or "DATE_ADD(NOW(), INTERVAL 15 MINUTE)" in user_dao
-lock_fe = ("LOCKOUT_MINUTES = 15" in app_js and "MAX_FAILED_ATTEMPTS = 5" in app_js) or ("MAX_ATTEMPTS" in react_login and "LOCK_SECONDS" in react_login)
+lock_fe = "LOCKOUT_MINUTES = 15" in app_js and "MAX_FAILED_ATTEMPTS = 5" in app_js
 check("S1-01.AC3.1", "Khóa tạm tài khoản 15 phút sau 5 lần đăng nhập thất bại liên tiếp (Database & Logic)", has_lock_policy and (lock_logic_dao or lock_fe))
 
 # ==============================================================================
@@ -119,7 +109,7 @@ mock_logout = "router.post('/logout'" in mock_auth_routes and "invalidated" in m
 check("S1-02.AC2.1", "Đăng xuất hủy ngay lập tức phiên làm việc phía máy chủ (SessionBlacklist & invalidate)", server_logout_blacklist)
 
 # AC3: Phiên hết hạn đưa về trang đăng nhập kèm thông báo rõ ràng, không mất dữ liệu đang nhập dở
-session_expired_handling = "logged_out" in logout_servlet or "session_expired" in app_js or "SESSION_EXPIRED" in app_js or "saveDraft" in app_js or "localStorage" in app_js or "draft" in react_session.lower() or "nháp" in react_session
+session_expired_handling = "logged_out" in logout_servlet or "session_expired" in app_js or "SESSION_EXPIRED" in app_js or "saveDraft" in app_js or "localStorage" in app_js
 check("S1-02.AC3.1", "Hết hạn phiên đưa về trang đăng nhập kèm thông báo, lưu trữ tạm form đang nhập dở", session_expired_handling)
 
 # ==============================================================================
@@ -197,12 +187,11 @@ menu_filtered = "menuForUser" in permission_dao and "api/me/menu" in menu_servle
 check("S1-06.AC1.1", "Mục menu được lọc động từ cơ sở dữ liệu dựa trên quyền hạn của người dùng", menu_filtered)
 
 # AC2: Hiển thị tên và vai trò người đang đăng nhập
-# AC2: Hiển thị tên và vai trò người đang đăng nhập
-profile_displayed = "user-display-name" in admin_html or "user-role-badge" in admin_html or "currentUser.fullName" in app_js or "user" in react_layout.lower()
+profile_displayed = "user-display-name" in admin_html or "user-role-badge" in admin_html or "currentUser.fullName" in app_js
 check("S1-06.AC2.1", "Giao diện hiển thị rõ họ tên và vai trò người đang đăng nhập trên thanh điều hướng", profile_displayed)
 
 # AC3: Dùng được thuận tiện trên màn hình 360px
-responsive_360 = ("@media (max-width: 767px)" in style_css and "viewport" in admin_html) or ("@media" in react_app_css and "viewport" in react_index_html)
+responsive_360 = "@media (max-width: 767px)" in style_css and "viewport" in admin_html
 check("S1-06.AC3.1", "Giao diện hỗ trợ chuẩn responsive linh hoạt, hoạt động thuận tiện trên màn hình nhỏ 360px", responsive_360)
 
 # ==============================================================================
@@ -229,7 +218,7 @@ print("-" * 70)
 
 # AC1: Tạo tài khoản gửi email kích hoạt kèm mật khẩu tạm
 create_user_be = "createUser" in admin_dao and "sendActivationEmail" in email_service and "generateTempPassword" in admin_dao
-create_user_modal = ("id=\"create-user-modal\"" in admin_html and "open-create-user-modal" in admin_html) or ("UserDrawer" in react_user_list or "Thêm tài khoản" in react_user_list)
+create_user_modal = "id=\"create-user-modal\"" in admin_html and "open-create-user-modal" in admin_html
 check("S1-08.AC1.1", "Tạo tài khoản tự động sinh mật khẩu tạm và gửi email kích hoạt kèm hướng dẫn", create_user_be and create_user_modal)
 
 # AC2: Email trùng bị từ chối kèm thông báo cụ thể
@@ -238,12 +227,12 @@ check("S1-08.AC2.1", "Chặn đứng trùng email khi tạo tài khoản với m
 
 # AC3: Tìm theo tên, email, số điện thoại; lọc theo vai trò và trạng thái
 search_and_filter = "searchUsers" in admin_dao and "keyword" in admin_dao and "roleCode" in admin_dao and "status" in admin_dao
-fe_search_ui = ("account-search-input" in admin_html and "account-role-filter" in admin_html and "account-status-filter" in admin_html) or ("Search" in react_user_list and "Filter" in react_user_list)
+fe_search_ui = "account-search-input" in admin_html and "account-role-filter" in admin_html and "account-status-filter" in admin_html
 check("S1-08.AC3.1", "Tìm kiếm theo tên, email, SĐT và lọc theo vai trò, trạng thái tài khoản (Backend + Frontend)", search_and_filter and fe_search_ui)
 
 # AC4: Danh sách phân trang, mặc định 20 dòng
 pagination_20 = ("pageSize = 20" in admin_dao or "pageSize < 1) pageSize = 20" in admin_dao) and "limit = 20" in mock_admin_routes
-pagination_ui = ("account-pagination" in admin_html and ("PAGE_SIZE = 20" in app_js or "itemsPerPage = 20" in app_js)) or ("paginate" in react_user_list and ("20" in react_user_list or "size = 20" in react_ui))
+pagination_ui = "account-pagination" in admin_html and ("PAGE_SIZE = 20" in app_js or "itemsPerPage = 20" in app_js)
 check("S1-08.AC4.1", "Danh sách tài khoản được phân trang với mặc định đúng 20 dòng/trang", pagination_20 and pagination_ui)
 
 # ==============================================================================
@@ -254,7 +243,7 @@ print("9. [S1-09] GÁN VÀ THU HỒI VAI TRÒ CHO MỘT NGƯỜI DÙNG (3 SP - M
 print("-" * 70)
 
 # AC1: Một người dùng có thể giữ nhiều vai trò cùng lúc
-multi_role_support = "PRIMARY KEY (`user_id`, `role_id`)" in schema_sql and "List<String> roles" in read_file("src/main/java/com/ems/model/User.java")
+multi_role_support = "PRIMARY KEY (`user_id`, `role_id`)" in schema_sql and "List<String> roles" in read_file("backend/src/main/java/com/ems/model/User.java")
 check("S1-09.AC1.1", "Hệ thống hỗ trợ một người dùng sở hữu đồng thời nhiều vai trò khác nhau", multi_role_support)
 
 # AC2: Thay đổi vai trò có hiệu lực ngay ở thao tác kế tiếp, không cần đăng nhập lại
@@ -281,7 +270,7 @@ mandatory_reason = "REASON_REQUIRED" in mock_admin_routes and "Bắt buộc ph�
 check("S1-10.AC2.1", "Bắt buộc nhập lý do khi khóa tài khoản và lưu vết lý do vào cơ sở dữ liệu", mandatory_reason)
 
 # AC3: Lớp học do người đó phụ trách được cảnh báo cần bàn giao
-handover_warning = "findAssignedClasses" in admin_dao and "requiresHandover" in admin_dao and ("lock-handover-alert" in admin_html or "bàn giao" in react_lock_dialog.lower())
+handover_warning = "findAssignedClasses" in admin_dao and "requiresHandover" in admin_dao and "lock-handover-alert" in admin_html
 check("S1-10.AC3.1", "Phát hiện và cảnh báo danh sách lớp học cần bàn giao khi khóa giảng viên/trợ giảng", handover_warning)
 
 # ==============================================================================

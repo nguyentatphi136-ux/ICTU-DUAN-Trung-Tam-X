@@ -1,0 +1,19 @@
+/* S6-01 trở đi. Màn hình chấm: xem trước bài nộp bên trái, ô chấm điểm bên phải. */
+.gr-nav{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:4px 8px}
+.gr-grid{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:16px;align-items:start}
+.gr-view{overflow:hidden}
+.gr-tabs{display:flex;gap:4px;flex-wrap:wrap;padding:8px;border-bottom:1px solid var(--line);background:var(--hover)}
+.gr-tabs button,.gr-repo{display:inline-flex;align-items:center;gap:6px;border:0;background:none;border-radius:4px;padding:6px 10px;font:inherit;font-size:13px;color:var(--ink)}
+.gr-tabs .on{background:var(--surface);color:var(--blue);font-weight:600;box-shadow:0 1px 2px rgba(5,36,77,.08)}
+.gr-repo{color:var(--blue);font-weight:500}
+.gr-doc{min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--muted);text-align:center;padding:24px}
+.gr-doc svg{color:var(--faint)}.gr-doc b{color:var(--ink)}
+.gr-link{display:block;padding:12px 16px;border-top:1px solid var(--line);word-break:break-all}
+.gr-note{padding:0 16px 14px}
+.gr-form .sb-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}.gr-form .sb-head h3{margin:0}
+.gr-score{display:flex;align-items:center;gap:10px}.gr-score .inp{width:120px}.gr-score span{color:var(--muted)}
+.gr-log{margin:4px 0 12px}.gr-log ul{list-style:none;display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.gr-log b{display:block;font-size:13px}.gr-log span{color:var(--muted);font-size:13px}
+.gr-acts{display:flex;flex-direction:column;gap:10px;margin-top:12px}.gr-acts .btn{width:100%}
+.bn-act .link+.link{margin-left:4px}
+@media(max-width:1100px){.gr-grid{grid-template-columns:1fr}}

@@ -1,0 +1,9 @@
+/* S5-10. Danh sách bài nộp: thanh tiến độ chấm, tab lọc, cột thao tác. */
+.bn-progress{display:grid;gap:8px;padding:16px 20px;margin-bottom:16px}
+.bn-progress>div{display:flex;justify-content:space-between;gap:12px}.bn-progress span{font-weight:600}
+.bn-progress i{height:8px;border-radius:4px;background:linear-gradient(90deg,var(--blue) var(--p),var(--chip) var(--p))}
+.bn-progress small{color:var(--muted)}
+.bn-bar{justify-content:space-between;align-items:center}
+.bn-tabs{flex-wrap:wrap;height:auto;min-height:44px}.bn-tabs button{border:0;background:none;font:inherit;padding:8px 12px}
+.bn-act{text-align:right;white-space:nowrap}
+.lv-sub{display:block;color:var(--muted);font-size:12px}.lv-sub.bad-t{color:var(--bad);font-weight:500}.lv-sub.ok-t{color:var(--green)}
