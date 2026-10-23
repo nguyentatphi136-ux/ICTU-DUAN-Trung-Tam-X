@@ -2,23 +2,27 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
-import { Pill } from '../../components/ui';
+import { Modal, Pill } from '../../components/ui';
 import { useAuth } from '../../data/auth';
 import { TODAY } from '../../data/funnel';
 import { viDate } from '../../data/leads';
-import { STUDENTS } from '../../data/students';
-import { daysBetween, debtOf, discountLabel, itemTone, netOf, PAYMENTS } from '../../data/tuition';
+import { STUDENTS, findStudentByAuth } from '../../data/students';
+import { daysBetween, debtOf, discountLabel, itemTone, netOf, PAYMENTS, type Payment } from '../../data/tuition';
 import { vnd } from '../../data/vnd';
 import { MODULE } from '../S7-01-bieu-phi/FeeTablePage';
 import '../S7-01-bieu-phi/fees.css';
+import '../S7-03-thanh-toan/receipt.css';
 import './myfees.css';
 import { apiEnabled, getMyPaymentsApi, getReceiptPdfUrl, type StudentPaymentInfoDTO } from '../../data/paymentApi';
+import { ReceiptView } from '../S7-03-thanh-toan/PaymentPages';
 
 // S7-07. Học phí của tôi: học viên xem các đợt kèm số tiền, hạn, trạng thái; xem và tải lại biên lai các khoản đã đóng.
 export function MyFeesPage() {
   const { user } = useAuth();
-  const s = STUDENTS.find((x) => x.login === user?.email);
+  const authStudent = findStudentByAuth(user);
+  const s = authStudent || (user?.active === 0 ? STUDENTS.find((x) => x.code === 'HV260101') : undefined);
   const [apiData, setApiData] = useState<StudentPaymentInfoDTO | null>(null);
+  const [previewPayment, setPreviewPayment] = useState<Payment | null>(null);
 
   useEffect(() => {
     if (apiEnabled) {
@@ -28,15 +32,15 @@ export function MyFeesPage() {
     }
   }, []);
 
-  if (!s && !apiData)
+  if (!s && !apiData && user?.active !== 0)
     return (
       <AppLayout crumb={[MODULE, 'Học phí của tôi']} module={MODULE}>
         <p className="empty">Trang này dành cho học viên. Kế toán xem học phí của từng học viên ở Bảng công nợ.</p>
       </AppLayout>
     );
 
-  const studentCode = apiData?.studentCode || s?.code || 'HV260142';
-  const studentName = apiData?.studentName || s?.name || user?.name || 'Học viên';
+  const studentCode = apiData?.studentCode || s?.code || 'HV260101';
+  const studentName = apiData?.studentName || s?.name || user?.name || 'Nguyễn Minh Anh';
   const studentProgram = apiData?.programName || s?.program || 'Lập trình web Full-stack';
   const studentClass = apiData?.classCode || s?.cls;
 
@@ -135,12 +139,17 @@ export function MyFeesPage() {
                     <td className="num">{vnd(netOf(p))}</td>
                     <td className="mf-hide">{p.method}</td>
                     <td className="fe-used" style={{ textAlign: 'right' }}>
-                      <Link className="link" to={`/hoc-phi/bien-lai/${p.id}`} target="_blank" style={{ marginRight: 12 }}>
+                      <button
+                        type="button"
+                        className="link"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginRight: 12, font: 'inherit' }}
+                        onClick={() => setPreviewPayment(p)}
+                      >
                         Xem
-                      </Link>
-                      <a className="link" href={getReceiptPdfUrl(p.id)} target="_blank" rel="noreferrer">
+                      </button>
+                      <Link className="link" to={`/hoc-phi/bien-lai/${p.id}?print=1`} target="_blank" title="In hoặc lưu PDF">
                         Tải PDF
-                      </a>
+                      </Link>
                     </td>
                   </tr>
                 ))}
@@ -170,6 +179,31 @@ export function MyFeesPage() {
           </dl>
         </aside>
       </div>
+
+      {previewPayment && s && (
+        <Modal onClose={() => setPreviewPayment(null)} label="Biên lai học phí" wide>
+          <div style={{ padding: '8px 12px 16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: 18 }}>Biên lai thu học phí: {previewPayment.id}</h3>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button type="button" className="btn primary" onClick={() => window.print()}>
+                  <Icon name="dl" size={16} />
+                  In / Lưu PDF
+                </button>
+                <Link to={`/hoc-phi/bien-lai/${previewPayment.id}`} target="_blank" className="btn">
+                  Mở tab riêng
+                </Link>
+                <button type="button" className="btn" onClick={() => setPreviewPayment(null)}>
+                  Đóng
+                </button>
+              </div>
+            </div>
+            <div style={{ maxHeight: '75vh', overflowY: 'auto' }}>
+              <ReceiptView p={previewPayment} s={s} />
+            </div>
+          </div>
+        </Modal>
+      )}
     </AppLayout>
   );
 }

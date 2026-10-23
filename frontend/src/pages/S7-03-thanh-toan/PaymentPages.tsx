@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
@@ -10,7 +10,7 @@ import { TODAY, viDateTime } from '../../data/funnel';
 import { viDate } from '../../data/leads';
 import { ROLES } from '../../data/permissions';
 import { saveAll } from '../../data/store';
-import { STUDENTS, type Student } from '../../data/students';
+import { STUDENTS, findStudentByAuth, type Student } from '../../data/students';
 import { ADJUSTMENTS, debtOf, discountLabel, itemTone, netOf, PAYMENTS, PLANS, type AdjustKind, type Method, type Payment } from '../../data/tuition';
 import { parseVnd, typingVnd, vnd, vndWords } from '../../data/vnd';
 import { canEditFees, MODULE, MoneyInput } from '../S7-01-bieu-phi/FeeTablePage';
@@ -468,10 +468,34 @@ function AdjustDialog({ s, pays, onClose, onDone }: { s: Student; pays: Payment[
 export function ReceiptPage() {
   const { id } = useParams();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get('print') === '1') {
+      const timer = setTimeout(() => {
+        window.print();
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams]);
+
   if (!user) return <Navigate to="/dang-nhap" replace />;
   const p = PAYMENTS.find((x) => x.id === id);
   const s = STUDENTS.find((x) => x.code === p?.student);
-  if (!p || !s || (user.active === 0 && s.login !== user.email)) return <p className="empty">Không tìm thấy biên lai {id}.</p>;
+
+  // Học viên chỉ được xem biên lai của chính mình; nhân viên/kế toán/quản trị được xem
+  const authStudent = findStudentByAuth(user);
+  const isOwner =
+    s &&
+    (s.login === user.email ||
+      s.email === user.email ||
+      s.code.toLowerCase() === (user.email || '').toLowerCase() ||
+      authStudent?.code === s.code);
+
+  if (!p || !s || (user.active === 0 && !isOwner)) {
+    return <p className="empty">Không tìm thấy biên lai {id}.</p>;
+  }
+
   const it = PLANS[s.code]?.items.find((x) => x.no === p.no);
   const net = netOf(p);
   const owed = debtOf(s.code).items.find((x) => x.no === p.no)?.owed ?? 0;
@@ -479,6 +503,12 @@ export function ReceiptPage() {
   return (
     <div className="rc-wrap">
       <div className="rc-tools">
+        {user.active === 0 && (
+          <Link to="/hoc-phi-cua-toi" className="btn" style={{ marginRight: 'auto' }}>
+            <Icon name="back" size={16} />
+            Học phí của tôi
+          </Link>
+        )}
         <button type="button" className="btn primary" onClick={() => window.print()}>
           <Icon name="dl" size={16} />
           In hoặc lưu PDF
@@ -490,87 +520,99 @@ export function ReceiptPage() {
           </a>
         )}
       </div>
-      <article className="rc">
-        <header>
-          <div>
-            <b>TRUNG TÂM ĐÀO TẠO TMS</b>
-            <span>Tầng 3, cơ sở Cầu Giấy, Hà Nội · 024 0000 0000</span>
-          </div>
-          <div className="rc-title">
-            <b>BIÊN LAI THU HỌC PHÍ</b>
-            <span>Số: {p.id}</span>
-          </div>
-        </header>
-        <dl>
-          <div><dt>Họ và tên học viên</dt><dd>{s.name}</dd></div>
-          <div><dt>Mã học viên</dt><dd>{s.code}</dd></div>
-          <div><dt>Ngày thu</dt><dd>{viDate(p.at)}</dd></div>
-          <div><dt>Chương trình</dt><dd>{s.program}</dd></div>
-          <div><dt>Lớp</dt><dd>{s.cls ?? 'Chưa xếp lớp'}</dd></div>
-          <div><dt>Hình thức</dt><dd>{p.method}{p.ref ? ` · ${p.ref}` : ''}</dd></div>
-        </dl>
-        <table>
-          <thead>
-            <tr>
-              <th>Nội dung</th>
-              <th className="num">Phải thu</th>
-              <th className="num">Thu lần này</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <b>Học phí đợt {p.no}</b>
-                {it && <div className="hint">Hạn thanh toán {viDate(it.due)}</div>}
-              </td>
-              <td className="num">{it ? vnd(it.amount) : '–'}</td>
-              <td className="num">{vnd(p.amount)}</td>
-            </tr>
-            {adjs.map((a) => (
-              <tr key={a.id}>
-                <td>
-                  Điều chỉnh {a.id}
-                  <div className="hint">{a.reason}</div>
-                </td>
-                <td />
-                <td className="num">
-                  {a.delta > 0 ? '+' : '−'}
-                  {vnd(Math.abs(a.delta))}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="rc-sum">
-          <div>
-            <span>Số tiền đã thu</span>
-            <b>{vnd(net)}</b>
-          </div>
-          <p>Bằng chữ: {vndWords(net)}</p>
-          <div>
-            <span>Đợt {p.no} còn nợ sau lần thu này</span>
-            <b className={owed ? 'bad-t' : undefined}>{vnd(owed)}</b>
-          </div>
-        </div>
-        {p.note && <p className="hint">Ghi chú: {p.note}.</p>}
-        <div className="rc-sign">
-          <div>
-            <b>Người nộp tiền</b>
-            <span>(Ký, ghi rõ họ tên)</span>
-          </div>
-          <div>
-            <b>Người thu tiền</b>
-            <span>(Ký, ghi rõ họ tên)</span>
-            <em>{p.by}</em>
-          </div>
-        </div>
-        <footer>
-          <b>Mã tra cứu: {p.id}</b>
-          <span>
-            Biên lai lập trên hệ thống TMS lúc {viDate(p.at)} {p.time}. Tra cứu trong mục Học phí của tôi.
-          </span>
-        </footer>
-      </article>
+      <ReceiptView p={p} s={s} />
     </div>
+  );
+}
+
+/** Khung hiển thị nội dung biên lai thu học phí chính thức theo chuẩn trung tâm */
+export function ReceiptView({ p, s }: { p: Payment; s: Student }) {
+  const it = PLANS[s.code]?.items.find((x) => x.no === p.no);
+  const net = netOf(p);
+  const owed = debtOf(s.code).items.find((x) => x.no === p.no)?.owed ?? 0;
+  const adjs = ADJUSTMENTS.filter((a) => a.payment === p.id);
+
+  return (
+    <article className="rc">
+      <header>
+        <div>
+          <b>TRUNG TÂM ĐÀO TẠO TMS</b>
+          <span>Tầng 3, cơ sở Cầu Giấy, Hà Nội · 024 0000 0000</span>
+        </div>
+        <div className="rc-title">
+          <b>BIÊN LAI THU HỌC PHÍ</b>
+          <span>Số: {p.id}</span>
+        </div>
+      </header>
+      <dl>
+        <div><dt>Họ và tên học viên</dt><dd>{s.name}</dd></div>
+        <div><dt>Mã học viên</dt><dd>{s.code}</dd></div>
+        <div><dt>Ngày thu</dt><dd>{viDate(p.at)}</dd></div>
+        <div><dt>Chương trình</dt><dd>{s.program}</dd></div>
+        <div><dt>Lớp</dt><dd>{s.cls ?? 'Chưa xếp lớp'}</dd></div>
+        <div><dt>Hình thức</dt><dd>{p.method}{p.ref ? ` · ${p.ref}` : ''}</dd></div>
+      </dl>
+      <table>
+        <thead>
+          <tr>
+            <th>Nội dung</th>
+            <th className="num">Phải thu</th>
+            <th className="num">Thu lần này</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <b>Học phí đợt {p.no}</b>
+              {it && <div className="hint">Hạn thanh toán {viDate(it.due)}</div>}
+            </td>
+            <td className="num">{it ? vnd(it.amount) : '–'}</td>
+            <td className="num">{vnd(p.amount)}</td>
+          </tr>
+          {adjs.map((a) => (
+            <tr key={a.id}>
+              <td>
+                Điều chỉnh {a.id}
+                <div className="hint">{a.reason}</div>
+              </td>
+              <td />
+              <td className="num">
+                {a.delta > 0 ? '+' : '−'}
+                {vnd(Math.abs(a.delta))}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="rc-sum">
+        <div>
+          <span>Số tiền đã thu</span>
+          <b>{vnd(net)}</b>
+        </div>
+        <p>Bằng chữ: {vndWords(net)}</p>
+        <div>
+          <span>Đợt {p.no} còn nợ sau lần thu này</span>
+          <b className={owed ? 'bad-t' : undefined}>{vnd(owed)}</b>
+        </div>
+      </div>
+      {p.note && <p className="hint">Ghi chú: {p.note}.</p>}
+      <div className="rc-sign">
+        <div>
+          <b>Người nộp tiền</b>
+          <span>(Ký, ghi rõ họ tên)</span>
+        </div>
+        <div>
+          <b>Người thu tiền</b>
+          <span>(Ký, ghi rõ họ tên)</span>
+          <em>{p.by}</em>
+        </div>
+      </div>
+      <footer>
+        <b>Mã tra cứu: {p.id}</b>
+        <span>
+          Biên lai lập trên hệ thống TMS lúc {viDate(p.at)} {p.time}. Tra cứu trong mục Học phí của tôi.
+        </span>
+      </footer>
+    </article>
   );
 }

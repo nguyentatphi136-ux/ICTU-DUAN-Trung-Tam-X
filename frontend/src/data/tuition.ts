@@ -120,6 +120,28 @@ export const PAYMENTS: Payment[] = persisted(
 );
 export const ADJUSTMENTS: Adjustment[] = persisted('adjustments.v2', []);
 
+// Đảm bảo plans của hai học viên demo chính luôn sẵn sàng
+if (!PLANS['HV260142'] && PLAN_SEED['HV260142']) {
+  PLANS['HV260142'] = PLAN_SEED['HV260142'];
+}
+if (!PLANS['HV260101'] && PLAN_SEED['HV260101']) {
+  PLANS['HV260101'] = PLAN_SEED['HV260101'];
+}
+
+// Đảm bảo biên lai thanh toán của học viên demo luôn có
+if (!PAYMENTS.some((p) => p.student === 'HV260101')) {
+  PAYMENTS.unshift(
+    { id: 'BL-2026-000101', student: 'HV260101', no: 1, amount: 3420000, at: '2026-08-12', time: '09:30', method: 'Chuyển khoản', by: 'DO THI MAI', ref: 'VCB · FT2608129841' },
+    { id: 'BL-2026-000102', student: 'HV260101', no: 2, amount: 1500000, at: '2026-10-14', time: '14:20', method: 'Chuyển khoản', by: 'DO THI MAI', ref: 'VCB · FT2610141203', note: 'Thanh toán một phần đợt 2' },
+  );
+}
+if (!PAYMENTS.some((p) => p.student === 'HV260142')) {
+  PAYMENTS.unshift(
+    { id: 'BL-2026-000142', student: 'HV260142', no: 1, amount: 3420000, at: '2026-10-05', time: '10:15', method: 'Chuyển khoản', by: 'DO THI MAI', ref: 'VCB · FT26278104452' },
+    { id: 'BL-2026-000143', student: 'HV260142', no: 2, amount: 1000000, at: TODAY, time: '09:42', method: 'Tiền mặt', by: 'DO THI MAI', note: 'Đóng trước một phần' },
+  );
+}
+
 // ---------- Tính toán ----------
 /** Số tiền thực của khoản thu sau các bút toán điều chỉnh. */
 export const netOf = (p: Payment) => p.amount + ADJUSTMENTS.filter((a) => a.payment === p.id).reduce((n, a) => n + a.delta, 0);

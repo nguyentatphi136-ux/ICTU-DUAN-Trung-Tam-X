@@ -23,7 +23,7 @@ const AuthContext = createContext<Auth>(null!);
 
 function read(): User | null {
   try {
-    return JSON.parse(sessionStorage.getItem(KEY) || 'null');
+    return JSON.parse(sessionStorage.getItem(KEY) || localStorage.getItem(KEY) || 'null');
   } catch {
     return null;
   }
@@ -33,8 +33,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(read);
 
   const save = (u: User | null) => {
-    if (u) sessionStorage.setItem(KEY, JSON.stringify(u));
-    else sessionStorage.removeItem(KEY);
+    if (u) {
+      sessionStorage.setItem(KEY, JSON.stringify(u));
+      localStorage.setItem(KEY, JSON.stringify(u));
+    } else {
+      sessionStorage.removeItem(KEY);
+      localStorage.removeItem(KEY);
+    }
     setUser(u);
   };
 

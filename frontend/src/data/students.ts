@@ -154,6 +154,51 @@ export const STUDENTS: Student[] = persisted(
   true,
 );
 
+// Đồng bộ tài khoản demo ngay cả khi localStorage đã lưu cache cũ
+for (const st of STUDENTS) {
+  if (st.code === 'HV260101') {
+    st.login = 'hocvien@tms.vn';
+    st.email = 'minhanh.ng@gmail.com';
+    st.name = 'NGUYEN MINH ANH';
+  }
+  if (st.code === 'HV260142') {
+    st.login = 'kiet.dt@gmail.com';
+    st.email = 'kiet.dt@gmail.com';
+    st.name = 'DO TUAN KIET';
+  }
+}
+
+/** Tìm đối tượng học viên tương ứng với người dùng đang đăng nhập */
+export function findStudentByAuth(user: { email?: string; name?: string; active?: number } | null | undefined): Student | undefined {
+  if (!user) return undefined;
+  const q = (user.email || '').toLowerCase().trim();
+
+  // 1. Khớp chính xác login, email hoặc mã số học viên
+  const direct = STUDENTS.find((x) =>
+    (x.login && x.login.toLowerCase() === q) ||
+    (x.email && x.email.toLowerCase() === q) ||
+    (x.code && x.code.toLowerCase() === q)
+  );
+  if (direct) return direct;
+
+  // 2. Demo aliases cho Nguyễn Minh Anh (HV260101)
+  if (q === 'hocvien@tms.vn' || q === 'hv260101' || q === 'minhanh.ng@gmail.com') {
+    return STUDENTS.find((x) => x.code === 'HV260101');
+  }
+
+  // 3. Demo aliases cho Đỗ Tuấn Kiệt (HV260142)
+  if (q === 'kiet.dt@gmail.com' || q === 'hv260142' || (user.name && user.name.toLowerCase().includes('tuan kiet'))) {
+    return STUDENTS.find((x) => x.code === 'HV260142');
+  }
+
+  // 4. Nếu là vai trò học viên (active === 0), trả về học viên mẫu mặc định
+  if (user.active === 0) {
+    return STUDENTS.find((x) => x.code === 'HV260101');
+  }
+
+  return undefined;
+}
+
 /** Mã học viên kế tiếp của năm 2026, ví dụ HV260143. */
 export function nextStudentCode() {
   const max = Math.max(0, ...STUDENTS.filter((s) => s.code.startsWith('HV26')).map((s) => seq(s.code)));
