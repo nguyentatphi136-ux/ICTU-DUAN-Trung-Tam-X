@@ -6,7 +6,7 @@ import { persisted } from './store';
 import { LESSONS } from './training';
 
 export type Shift = 'Sáng' | 'Chiều' | 'Tối';
-export const SHIFTS: Record<Shift, [string, string]> = { Sáng: ['07:00', '10:00'], Chiều: ['13:00', '16:00'], Tối: ['18:00', '20:30'] };
+export const SHIFTS: Record<Shift, [string, string]> = { Sáng: ['08:00', '11:00'], Chiều: ['13:30', '16:30'], Tối: ['18:30', '21:00'] };
 
 export type ClassSession = {
   /** Mã lớp và số buổi, ví dụ WEB-K15-31. */

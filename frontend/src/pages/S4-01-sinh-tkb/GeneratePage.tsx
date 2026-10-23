@@ -200,8 +200,9 @@ function PatternForm({ k, p, onChange, onPreview }: FormProps) {
           <Link to={'/lop-hoc/' + k.code} className="btn" style={{ width: 100 }}>
             Huỷ
           </Link>
-          <button type="button" className="btn primary" style={{ width: 140 }} onClick={go}>
-            Xem trước
+          <button type="button" className="btn primary" style={{ minWidth: 190 }} onClick={go}>
+            <Icon name="calendar" size={16} />
+            Xem trước & Sinh lịch
           </button>
         </div>
       </section>

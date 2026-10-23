@@ -76,6 +76,13 @@ export function ClassDetailPage() {
             {k.program} · Khai giảng {viDate(k.start)} · {classSize(k.code)}/{k.max} học viên
           </p>
         </div>
+        {manage && isOpen(k) && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <Link to={`/lop-hoc/${k.code}/sinh-lich`} className="btn primary">
+              <Icon name="calendar" size={16} /> Sinh thời khoá biểu
+            </Link>
+          </div>
+        )}
       </div>
       <nav className="tabs">
         {tabs.map((t) => (
@@ -95,7 +102,7 @@ function Overview({ k }: { k: Klass }) {
     ['Chương trình', k.program],
     ['Khai giảng', viDate(k.start)],
     ['Hình thức học', k.mode],
-    ['Lịch học', k.slot],
+    ['Lịch học', <span>{k.slot}{manage && isOpen(k) && <Link to={`/lop-hoc/${k.code}/sinh-lich`} style={{ marginLeft: 8, fontSize: 13, textDecoration: 'underline' }}>Sinh lịch ngay</Link>}</span>],
     ['Phòng học', k.room ?? 'Chưa xếp phòng'],
     ['Sĩ số', `${classSize(k.code)} / ${k.max}`],
     ['Số môn', `${k.subjects.length} môn · ${total} buổi`],
