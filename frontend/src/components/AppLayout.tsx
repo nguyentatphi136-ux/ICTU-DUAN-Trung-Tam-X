@@ -4,11 +4,12 @@ import { api, apiEnabled, SESSION_EXPIRED } from '../data/api';
 import { useAuth } from '../data/auth';
 import { canAccess, menuFor, ROLES } from '../data/permissions';
 import { ROLE_CODES } from '../data/s1api';
+import { ensureShared, sharedReady } from '../data/shared';
 import { ErrorPage } from '../pages/S1-07-trang-loi/ErrorPage';
 import { Icon } from './Icon';
 import { NotificationBell } from './NotificationBell';
 import { ThemeToggle } from './ThemeToggle';
-import { useTitle } from './ui';
+import { LoadState, useTitle } from './ui';
 
 type Props = {
   /** Đường dẫn trên thanh trên, phần tử cuối là trang hiện tại. */
@@ -31,6 +32,15 @@ export function AppLayout({ crumb, module, children }: Props) {
   const [menu, setMenu] = useState(false);
   useTitle(crumb[crumb.length - 1]);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [permsFailed, setPermsFailed] = useState(false);
+  // Chưa tải xong quyền máy chủ (hoặc không có backend) thì codes là undefined: dùng ma trận sheet 2.
+  const codes = apiEnabled && user ? user.perms?.[ROLE_CODES[user.active]] : undefined;
+  // Đổi người đăng nhập, vai trò hoặc quyền thì tải lại dữ liệu dùng chung trước khi hiện trang.
+  const sharedKey = user && codes ? `${user.email}|${user.active}|${codes.join()}` : '';
+  useEffect(() => {
+    if (sharedKey && !user?.mustChangePassword) ensureShared(sharedKey, codes!, user!.name);
+  }, [sharedKey]);
+  const ready = !apiEnabled || (sharedKey ? sharedReady(sharedKey) : permsFailed);
 
   useEffect(() => setOpen(false), [location.pathname]);
   // S1-02: phiên hết hạn phía máy chủ thì về trang đăng nhập kèm thông báo, đăng nhập lại thì quay về đúng trang này.
@@ -44,7 +54,7 @@ export function AppLayout({ crumb, module, children }: Props) {
     if (!apiEnabled || !user || user.mustChangePassword) return;
     api<Record<string, string[]>>('/api/me/permissions')
       .then((p) => JSON.stringify(p) !== JSON.stringify(user.perms) && updateUser({ perms: p }))
-      .catch(() => undefined);
+      .catch(() => setPermsFailed(true));
   }, [location.pathname]);
   useEffect(() => {
     if (!menu) return;
@@ -55,8 +65,6 @@ export function AppLayout({ crumb, module, children }: Props) {
 
   if (!user) return <Navigate to="/dang-nhap" replace state={{ from: location.pathname + location.search }} />;
   if (user.mustChangePassword) return <Navigate to="/doi-mat-khau" replace state={{ from: location.pathname + location.search }} />;
-  // Chưa tải xong quyền máy chủ (hoặc không có backend) thì codes là undefined: dùng ma trận sheet 2.
-  const codes = apiEnabled ? user.perms?.[ROLE_CODES[user.active]] : undefined;
   if (module && !canAccess(user.active, module, codes)) return <ErrorPage code="403" />;
 
   const multi = user.roles.length > 1;
@@ -183,7 +191,7 @@ export function AppLayout({ crumb, module, children }: Props) {
             )}
           </div>
         </header>
-        <main className="content">{children}</main>
+        <main className="content">{ready ? children : <LoadState loading error="" reload={() => undefined} />}</main>
       </div>
     </div>
   );

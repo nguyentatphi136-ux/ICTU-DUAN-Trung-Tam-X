@@ -96,7 +96,7 @@ const SEED: Seed[] = [
   { name: 'LUONG THI HOA', phone: '0925 640 389', program: 'Thiết kế UI/UX', stage: 'Từ chối', reason: 'Không liên lạc được' },
 ];
 
-export const FUNNEL: FunnelLead[] = persisted('funnel', SEED.map((s, i) => ({ id: i + 1, source: 'Biểu mẫu web', owner: 'TRAN THU HA', ...s })));
+export const FUNNEL: FunnelLead[] = persisted('funnel', SEED.map((s, i) => ({ id: i + 1, source: 'Biểu mẫu web', owner: 'TRAN THU HA', ...s })), true);
 
 const MANAGER = 'LE HOANG NAM';
 
@@ -109,7 +109,7 @@ export const LOGS: Record<number, CareLog[]> = persisted('funnel-logs', {
     { kind: 'Đổi trạng thái', at: '2026-09-26T09:06', by: 'TRAN THU HA', text: 'Mới → Đã liên hệ' },
     { kind: 'Phân công', at: '2026-09-24T08:00', by: MANAGER, text: 'Giao cho TRAN THU HA' },
   ],
-});
+}, true);
 
 export function logsOf(l: FunnelLead): CareLog[] {
   const list = LOGS[l.id] ?? (apiEnabled ? [] : [{ kind: 'Phân công', at: '2026-09-24T08:00', by: MANAGER, text: 'Giao cho ' + l.owner }]);

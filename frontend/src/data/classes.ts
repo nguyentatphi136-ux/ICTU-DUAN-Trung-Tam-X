@@ -89,7 +89,7 @@ export const CLASSES: Klass[] = persisted('classes', [
   { code: 'WEB-K12', program: 'Lập trình web Full-stack', start: '2026-02-03', max: 30, mode: 'Trực tiếp', status: 'Kết thúc', done: 64, slot: 'Tối 2-4-6', subjects: web('VU DUC LONG') },
   { code: 'GIT-K03', program: 'Git và làm việc nhóm', start: '2026-06-08', max: 40, mode: 'Trực tuyến', status: 'Kết thúc', done: 4, slot: 'Tối 7', subjects: [S('GIT-01', 'Git và làm việc nhóm', 4, 'DANG MINH SON')] },
   { code: 'JAVA-K10', program: 'Lập trình Java Backend', start: '2025-10-06', max: 30, mode: 'Trực tiếp', status: 'Kết thúc', done: 56, slot: 'Tối 2-4-6', subjects: java('DANG MINH SON') },
-]);
+], true);
 
 export const findClass = (code?: string) => CLASSES.find((c) => c.code === code);
 export const totalSessions = (k: Klass) => k.subjects.reduce((n, s) => n + s.sessions, 0);
@@ -105,4 +105,4 @@ export const classesOf = (name: string) => CLASSES.filter((k) => k.subjects.some
 
 /** Lần ghi danh (S3-06): ai, vào lớp nào, ngày nào, người thực hiện. Khi tích hợp: GET /classes/:code/enrollments. */
 export type Enrollment = { student: string; cls: string; at: string; by: string };
-export const ENROLLMENTS: Enrollment[] = persisted('enrollments', []);
+export const ENROLLMENTS: Enrollment[] = persisted('enrollments', [], true);

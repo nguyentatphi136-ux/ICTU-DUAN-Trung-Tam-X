@@ -63,7 +63,7 @@ export const LEADS: Lead[] = persisted('leads.v2', [...Array(128)].map((_, i): L
     owner: COUNSELORS[i % COUNSELORS.length],
     createdAt: `2026-${i % 2 ? '08' : '09'}-${String(day).padStart(2, '0')}`,
   };
-}));
+}), true);
 
 /**
  * Đồng bộ hai chiều giữa LEADS (Danh sách) và FUNNEL (Bảng phễu).
