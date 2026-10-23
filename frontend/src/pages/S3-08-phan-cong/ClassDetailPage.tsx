@@ -51,7 +51,7 @@ export function ClassDetailPage() {
   const manage = canManageClasses(role);
   const refresh = apiEnabled ? load.reload : () => setTick((t) => t + 1);
   const tabs: ClassTab[] = [
-    { path: '', label: 'Tổng quan', render: (c) => <Overview k={c} /> },
+    { path: '', label: 'Tổng quan', render: (c, m) => <Overview k={c} manage={m} /> },
     { path: 'hoc-vien', label: 'Học viên', render: (c, m) => <Roster k={c} manage={m} onEnroll={() => navigate(`/lop-hoc/${c.code}/ghi-danh`)} /> },
     { path: 'phan-cong', label: 'Phân công giảng dạy', render: (c, m, r) => <AssignTab k={c} manage={m} onChange={r} /> },
     { path: 'phong', label: 'Phòng học', render: (c, m, r) => <RoomTab k={c} manage={m} onChange={r} /> },
@@ -96,7 +96,7 @@ export function ClassDetailPage() {
   );
 }
 
-function Overview({ k }: { k: Klass }) {
+function Overview({ k, manage }: { k: Klass; manage: boolean }) {
   const total = totalSessions(k);
   const facts: [string, ReactNode][] = [
     ['Chương trình', k.program],
