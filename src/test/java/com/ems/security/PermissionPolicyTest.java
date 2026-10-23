@@ -60,6 +60,8 @@ class PermissionPolicyTest {
 
     @Test
     void paymentRoutesOfS7HaveRules() {
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/payments/mine"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/receipts/mine"));
         assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/payments/student/HV260142"));
         assertEquals("@authenticated", PermissionPolicy.requiredPermission("POST", "/api/payments"));
         assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/payments/receipt/BL-2026-000001"));

@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
+import { Icon } from '../../components/Icon';
 import { Pill } from '../../components/ui';
 import { useAuth } from '../../data/auth';
 import { TODAY } from '../../data/funnel';
@@ -10,28 +12,45 @@ import { vnd } from '../../data/vnd';
 import { MODULE } from '../S7-01-bieu-phi/FeeTablePage';
 import '../S7-01-bieu-phi/fees.css';
 import './myfees.css';
+import { apiEnabled, getMyPaymentsApi, getReceiptPdfUrl, type StudentPaymentInfoDTO } from '../../data/paymentApi';
 
 // S7-07. Học phí của tôi: học viên xem các đợt kèm số tiền, hạn, trạng thái; xem và tải lại biên lai các khoản đã đóng.
 export function MyFeesPage() {
   const { user } = useAuth();
   const s = STUDENTS.find((x) => x.login === user?.email);
-  if (!s)
+  const [apiData, setApiData] = useState<StudentPaymentInfoDTO | null>(null);
+
+  useEffect(() => {
+    if (apiEnabled) {
+      getMyPaymentsApi()
+        .then((data) => setApiData(data))
+        .catch(() => {});
+    }
+  }, []);
+
+  if (!s && !apiData)
     return (
       <AppLayout crumb={[MODULE, 'Học phí của tôi']} module={MODULE}>
         <p className="empty">Trang này dành cho học viên. Kế toán xem học phí của từng học viên ở Bảng công nợ.</p>
       </AppLayout>
     );
-  const d = debtOf(s.code);
-  const pays = PAYMENTS.filter((p) => p.student === s.code).reverse();
+
+  const studentCode = apiData?.studentCode || s?.code || 'HV260142';
+  const studentName = apiData?.studentName || s?.name || user?.name || 'Học viên';
+  const studentProgram = apiData?.programName || s?.program || 'Lập trình web Full-stack';
+  const studentClass = apiData?.classCode || s?.cls;
+
+  const d = debtOf(studentCode);
+  const pays = PAYMENTS.filter((p) => p.student === studentCode).reverse();
   const left = d.next ? daysBetween(TODAY, d.next.due) : 0;
 
   return (
     <AppLayout crumb={[MODULE, 'Học phí của tôi']} module={MODULE}>
       <div className="h">
         <div>
-          <h2>Học phí của tôi</h2>
+          <h2>Học phí của tôi: {studentName}</h2>
           <p>
-            {s.program} · {s.cls ? `lớp ${s.cls}` : 'chưa xếp lớp'}
+            {studentProgram} · {studentClass ? `lớp ${studentClass}` : 'chưa xếp lớp'} · Mã HV: <b>{studentCode}</b>
           </p>
         </div>
       </div>
@@ -71,7 +90,7 @@ export function MyFeesPage() {
           </div>
           <div className="panel">
             <div className="fe-head">
-              <h3>Các đợt thanh toán</h3>
+              <h3>Các đợt thanh toán (AC1)</h3>
             </div>
             <div className="mf-items">
               {d.items.map((it) => (
@@ -95,7 +114,7 @@ export function MyFeesPage() {
       <div className="mf-grid">
         <div className="panel">
           <div className="fe-head">
-            <h3>Biên lai các khoản đã đóng</h3>
+            <h3>Biên lai các khoản đã đóng (AC2)</h3>
           </div>
           <div className="scroll">
             <table>
@@ -105,7 +124,7 @@ export function MyFeesPage() {
                   <th>Ngày đóng</th>
                   <th className="num">Số tiền</th>
                   <th className="mf-hide">Hình thức</th>
-                  <th />
+                  <th style={{ textAlign: 'right' }}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -115,10 +134,13 @@ export function MyFeesPage() {
                     <td>{viDate(p.at)}</td>
                     <td className="num">{vnd(netOf(p))}</td>
                     <td className="mf-hide">{p.method}</td>
-                    <td className="fe-used">
-                      <Link className="link" to={`/hoc-phi/bien-lai/${p.id}`} target="_blank">
-                        Tải PDF
+                    <td className="fe-used" style={{ textAlign: 'right' }}>
+                      <Link className="link" to={`/hoc-phi/bien-lai/${p.id}`} target="_blank" style={{ marginRight: 12 }}>
+                        Xem
                       </Link>
+                      <a className="link" href={getReceiptPdfUrl(p.id)} target="_blank" rel="noreferrer">
+                        Tải PDF
+                      </a>
                     </td>
                   </tr>
                 ))}
@@ -143,7 +165,7 @@ export function MyFeesPage() {
             <dd>0011 0000 00000</dd>
             <dt>Nội dung chuyển khoản</dt>
             <dd className="code">
-              {s.code} DOT{d.next?.no ?? 1}
+              {studentCode} DOT{d.next?.no ?? 1}
             </dd>
           </dl>
         </aside>

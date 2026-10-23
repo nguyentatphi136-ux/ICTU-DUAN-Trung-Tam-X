@@ -119,4 +119,12 @@ export async function createAdjustmentApi(req: CreateAdjustmentRequestDTO): Prom
   });
 }
 
+/**
+ * Lấy tình trạng học phí và danh sách biên lai của chính học viên đang đăng nhập (S7-07 AC1, AC2)
+ */
+export async function getMyPaymentsApi(): Promise<StudentPaymentInfoDTO> {
+  return api<StudentPaymentInfoDTO>('/api/payments/mine');
+}
+
 export { apiEnabled };
+

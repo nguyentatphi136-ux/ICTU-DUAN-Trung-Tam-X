@@ -243,4 +243,73 @@ class PaymentValidationAndSecurityTest {
         assertEquals(0, inst3.paid, "Số tiền đã đóng của đợt quay về 0 đ");
         assertEquals("Chưa thanh toán", inst3.state);
     }
+
+    // =========================================================================
+    // S7-07: HỌC VIÊN XEM TÌNH TRẠNG HỌC PHÍ VÀ TẢI LẠI BIÊN LAI (AC1, AC2)
+    // =========================================================================
+
+    @Test
+    void testS7_07_StudentCanViewOwnInstallmentsAndReceipts() {
+        PaymentDAO.StudentPlanData plan = paymentDAO.getStudentPlan("HV260142");
+        assertNotNull(plan, "Kế hoạch học phí của học viên HV260142 không được null");
+        assertEquals("HV260142", plan.studentCode);
+        assertEquals("DO TUAN KIET", plan.studentName);
+
+        // AC1: Danh sách các đợt kèm số tiền, hạn, trạng thái
+        List<PaymentDAO.InstallmentData> items = plan.installments;
+        assertEquals(3, items.size(), "Học viên có 3 đợt thanh toán");
+
+        PaymentDAO.InstallmentData dot1 = items.get(0);
+        assertEquals(1, dot1.no);
+        assertEquals(3420000, dot1.amount);
+        assertEquals("Đã thanh toán", dot1.state);
+        assertEquals("2026-10-05", dot1.dueDate);
+        assertEquals(0, dot1.getOwed());
+
+        PaymentDAO.InstallmentData dot2 = items.get(1);
+        assertEquals(2, dot2.no);
+        assertEquals(2565000, dot2.amount);
+        assertEquals("Thanh toán một phần", dot2.state);
+        assertEquals(1565000, dot2.getOwed());
+
+        // AC2: Xem và tải lại biên lai của các khoản đã đóng
+        List<PaymentReceiptResponse> receipts = paymentDAO.getReceiptsForStudent("HV260142");
+        assertNotNull(receipts);
+        assertEquals(2, receipts.size(), "Học viên có 2 biên lai đã phát hành");
+
+        for (PaymentReceiptResponse r : receipts) {
+            assertEquals("HV260142", r.getStudentCode());
+            assertNotNull(r.getReceiptCode());
+            assertTrue(r.getAmountPaid() > 0);
+            assertNotNull(r.getAmountInWords());
+
+            // Tải lại biên lai / xuất bản in HTML
+            String html = paymentDAO.generateReceiptPrintableHtml(r);
+            assertNotNull(html);
+            assertTrue(html.contains(r.getReceiptCode()));
+            assertTrue(html.contains("DO TUAN KIET"));
+        }
+    }
+
+    @Test
+    void testS7_07_StudentAccessControlInvariants() {
+        com.ems.controller.PaymentApiServlet servlet = new com.ems.controller.PaymentApiServlet();
+
+        User studentKiet = new User(1001L, "DO TUAN KIET", "kiet.dt@gmail.com", "ACTIVE", List.of(RoleConstant.STUDENT));
+        studentKiet.setUserCode("HV260142");
+
+        User studentAnh = new User(1002L, "NGUYEN MINH ANH", "minhanh.ng@gmail.com", "ACTIVE", List.of(RoleConstant.STUDENT));
+        studentAnh.setUserCode("HV260101");
+
+        assertTrue(servlet.isStudentOnly(studentKiet));
+        assertFalse(servlet.isStudentOnly(accountant));
+
+        assertEquals("HV260142", servlet.resolveStudentCodeForUser(studentKiet));
+        assertEquals("HV260101", servlet.resolveStudentCodeForUser(studentAnh));
+
+        // Kiểm tra phân quyền: Học viên Kiệt không được xem thông tin học viên Ánh
+        String kietCode = servlet.resolveStudentCodeForUser(studentKiet);
+        String anhCode = servlet.resolveStudentCodeForUser(studentAnh);
+        assertNotEquals(kietCode, anhCode);
+    }
 }

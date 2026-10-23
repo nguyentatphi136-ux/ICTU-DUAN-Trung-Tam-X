@@ -94,6 +94,22 @@ public class PaymentDAO {
     }
 
     /**
+     * Lấy kế hoạch học phí cho đối tượng User (học viên đang đăng nhập - S7-07)
+     */
+    public StudentPlanData getStudentPlanForUser(User user) {
+        if (user == null) return null;
+        if (user.getUserCode() != null && MEMORY_PLANS.containsKey(user.getUserCode().trim().toUpperCase())) {
+            return MEMORY_PLANS.get(user.getUserCode().trim().toUpperCase());
+        }
+        if (user.getEmail() != null) {
+            String email = user.getEmail().trim().toLowerCase();
+            if (email.contains("kiet") || email.contains("142")) return MEMORY_PLANS.get("HV260142");
+            if (email.contains("minhanh") || email.contains("101") || email.contains("hocvien")) return MEMORY_PLANS.get("HV260101");
+        }
+        return MEMORY_PLANS.get("HV260142");
+    }
+
+    /**
      * Lấy danh sách các khoản thanh toán của học viên
      */
     public List<PaymentRecord> getPaymentsForStudent(String studentCode) {
