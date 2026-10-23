@@ -78,6 +78,10 @@ public final class PermissionPolicy {
         if ("POST".equals(method) && ("/api/auth/logout".equals(path) || "/api/auth/change-password".equals(path))) {
             return "@authenticated";
         }
+        // S4-07: Điểm danh học viên buổi học (Giảng viên, Quản lý đào tạo, Admin)
+        if (path.matches("^/api/(attendance|sessions/\\d+/attendance)(/.*)?$")) {
+            return "@authenticated";
+        }
         return null;
     }
 

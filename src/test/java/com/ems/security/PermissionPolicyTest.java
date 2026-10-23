@@ -39,4 +39,14 @@ class PermissionPolicyTest {
         assertFalse(PermissionPolicy.mayReplaceRoles(4, 4, List.of("ADMIN"), List.of("STUDENT")));
         assertTrue(PermissionPolicy.mayReplaceRoles(4, 4, List.of("ADMIN"), List.of("ADMIN", "INSTRUCTOR")));
     }
+
+    @Test
+    void attendanceRoutesOfS4HaveRules() {
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/attendance/session/401"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("POST", "/api/attendance/session/401"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("POST", "/api/attendance/session/401/all"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/attendance/session/401/logs"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/sessions/401/attendance"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("POST", "/api/sessions/401/attendance"));
+    }
 }

@@ -107,6 +107,10 @@ public final class PermissionPolicy {
         if (path.matches("^/api/(schedules|class-sessions|v1/classes|v1/holidays)(/.*)?$")) {
             return "GET".equals(method) ? "SCHEDULE_READ" : "CLASS_MANAGE";
         }
+        // S4-07: Điểm danh học viên buổi học (Giảng viên, Quản lý đào tạo, Admin)
+        if (path.matches("^/api/(attendance|sessions/\\d+/attendance)(/.*)?$")) {
+            return "@authenticated";
+        }
         return null;
     }
 
