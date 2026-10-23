@@ -1,20 +1,20 @@
 /* S5-01. Bảng chuyên cần: ma trận ô màu theo buổi, hai cột tổng dính bên phải. */
-.cc-bar{align-items:center}.cc-bar .check-box.on{color:var(--blue);border-color:var(--blue);background:var(--soft)}
-.cc-legend{margin-left:auto;display:flex;gap:16px;font-size:13px;color:var(--muted);flex-wrap:wrap}
-.cc-legend span::before{content:'';display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
-.cc-legend .ok,.cc-cell.ok{--c:var(--green)}.cc-legend .wait,.cc-cell.wait{--c:var(--warn)}.cc-legend .info,.cc-cell.info{--c:var(--blue)}.cc-legend .off,.cc-cell.off{--c:var(--red)}
-.cc-wrap{overflow-x:auto}
-.cc{border-collapse:separate;border-spacing:0}
-.cc th,.cc td{padding:8px 4px;text-align:center;font-size:12px}
-.cc th{background:var(--hover)}
-.cc .cc-name{position:sticky;left:0;z-index:1;background:var(--surface);text-align:left;padding:8px 16px;min-width:200px}
-.cc th.cc-name{background:var(--hover)}
-.cc-name b{display:block;font-size:13px;color:var(--ink);font-weight:600}.cc-name small{color:var(--muted)}
-.cc-cell{display:inline-block;width:20px;height:20px;border-radius:3px;background:var(--c,var(--chip))}
-.cc-cell.none{--c:transparent;border:1px dashed var(--line)}
-.cc .cc-sum{position:sticky;background:var(--surface);min-width:76px;color:var(--ink);font-size:13px;font-weight:500}
-.cc th.cc-sum{background:var(--hover)}.cc th.cc-sum.on{color:var(--blue)}
-.cc .cc-sum:nth-last-child(2){right:96px;box-shadow:-1px 0 0 var(--line)}.cc .cc-sum:last-child{right:0;min-width:96px}
-.cc .bad{color:var(--bad);font-weight:600}.cc .warn{color:var(--warn);font-weight:600}
-.cc-more{padding:12px 16px}
+.mx-bar{align-items:center}.mx-bar .check-box.on{color:var(--blue);border-color:var(--blue);background:var(--soft)}
+.mx-legend{margin-left:auto;display:flex;gap:16px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.mx-legend span::before{content:'';display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px;background:var(--c)}
+.mx-legend .ok,.mx-cell.ok{--c:#12b76a}.mx-legend .wait,.mx-cell.wait{--c:#f79009}.mx-legend .info,.mx-cell.info{--c:var(--blue)}.mx-legend .off,.mx-cell.off{--c:var(--red)}
+.mx-wrap{overflow-x:auto}
+.mx{border-collapse:separate;border-spacing:0}
+.mx th,.mx td{padding:8px 4px;text-align:center;font-size:12px}
+.mx th{background:var(--hover)}
+.mx .mx-name{position:sticky;left:0;z-index:1;background:var(--surface);text-align:left;padding:8px 16px;min-width:200px}
+.mx th.mx-name{background:var(--hover)}
+.mx-name b{display:block;font-size:13px;color:var(--ink);font-weight:600}.mx-name small{color:var(--muted)}
+.mx-cell{display:inline-block;width:20px;height:20px;border-radius:3px;background:var(--c,var(--chip))}
+.mx-cell.none{--c:transparent;border:1px dashed var(--line)}
+.mx .mx-sum{position:sticky;background:var(--surface);min-width:76px;color:var(--ink);font-size:13px;font-weight:500}
+.mx th.mx-sum{background:var(--hover)}.mx th.mx-sum.on{color:var(--blue)}
+.mx .mx-sum:nth-last-child(2){right:96px;box-shadow:-1px 0 0 var(--line)}.mx .mx-sum:last-child{right:0;min-width:96px}
+.mx .bad{color:var(--bad);font-weight:600}.mx .warn{color:var(--warn);font-weight:600}
+.mx-more{padding:12px 16px}
 .ex-list{margin:6px 0 16px 18px;color:var(--muted);display:flex;flex-direction:column;gap:4px}

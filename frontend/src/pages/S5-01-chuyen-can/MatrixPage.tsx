@@ -62,7 +62,7 @@ export function MatrixPage({ head }: Props) {
         </div>
         {head?.(rows, filtered)}
       </div>
-      <div className="bar cc-bar">
+      <div className="bar mx-bar">
         <button type="button" className={'check-box' + (asc ? ' on' : '')} aria-pressed={asc} onClick={() => setAsc(!asc)}>
           <Icon name="down" size={16} />
           {asc ? 'Tỷ lệ chuyên cần tăng dần' : 'Theo tên học viên'}
@@ -71,7 +71,7 @@ export function MatrixPage({ head }: Props) {
           <input type="checkbox" checked={onlyOver} onChange={(e) => setOnlyOver(e.target.checked)} />
           Chỉ học viên vượt ngưỡng ({over.length})
         </label>
-        <span className="cc-legend">
+        <span className="mx-legend">
           {MARKS.map((m) => (
             <span key={m} className={markTone(m)}>
               {m}
@@ -79,24 +79,24 @@ export function MatrixPage({ head }: Props) {
           ))}
         </span>
       </div>
-      <div className="panel cc-wrap">
-        <table className="cc">
+      <div className="panel mx-wrap">
+        <table className="mx">
           <thead>
             <tr>
-              <th className="cc-name">Học viên</th>
+              <th className="mx-name">Học viên</th>
               {sessions.map((s, i) => (
                 <th key={s.id} title={longDate(s.date)}>
                   {i + 1}
                 </th>
               ))}
-              <th className="cc-sum">Vắng</th>
-              <th className="cc-sum on">Chuyên cần</th>
+              <th className="mx-sum">Vắng</th>
+              <th className="mx-sum on">Chuyên cần</th>
             </tr>
           </thead>
           <tbody>
             {shown.map(({ s, stat }) => (
               <tr key={s.code}>
-                <td className="cc-name">
+                <td className="mx-name">
                   <b>{s.name}</b>
                   <small>{s.code}</small>
                 </td>
@@ -104,18 +104,18 @@ export function MatrixPage({ head }: Props) {
                   const m: Mark | undefined = sheetOf(x)?.marks[s.code];
                   return (
                     <td key={x.id}>
-                      <i className={'cc-cell ' + (markTone(m) ?? 'none')} title={`Buổi ${i + 1}, ${longDate(x.date)}: ${m ?? 'không có trong lớp'}`} />
+                      <i className={'mx-cell ' + (markTone(m) ?? 'none')} title={`Buổi ${i + 1}, ${longDate(x.date)}: ${m ?? 'không có trong lớp'}`} />
                     </td>
                   );
                 })}
-                <td className={'cc-sum' + (stat.over ? ' bad' : '')}>{stat.absent} buổi</td>
-                <td className={'cc-sum rate' + (stat.over ? ' bad' : stat.left <= 3 ? ' warn' : '')}>{stat.rate}%</td>
+                <td className={'mx-sum' + (stat.over ? ' bad' : '')}>{stat.absent} buổi</td>
+                <td className={'mx-sum rate' + (stat.over ? ' bad' : stat.left <= 3 ? ' warn' : '')}>{stat.rate}%</td>
               </tr>
             ))}
           </tbody>
         </table>
         {shown.length < filtered.length && (
-          <button type="button" className="link cc-more" onClick={() => setAll(true)}>
+          <button type="button" className="link mx-more" onClick={() => setAll(true)}>
             và {filtered.length - shown.length} học viên khác
           </button>
         )}
