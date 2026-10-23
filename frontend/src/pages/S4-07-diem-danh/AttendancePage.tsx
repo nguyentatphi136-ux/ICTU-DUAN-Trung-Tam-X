@@ -3,7 +3,8 @@ import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Box, Pill } from '../../components/ui';
+import { Box, LoadState, Pill } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { approvedFor } from '../../data/leaves';
 import { audit } from '../../data/audit';
 import { flagCheck } from '../../data/attendance';
@@ -14,6 +15,7 @@ import { TODAY } from '../../data/funnel';
 import { notify } from '../../data/notifications';
 import { ROLES } from '../../data/permissions';
 import { addDays, dm, findSession, longDate, SESSIONS, type ClassSession } from '../../data/schedule';
+import { APPROVED, ATT_SESSIONS, CAN_EDIT, loadAttendance, loadAttendanceSessions, loadLeaves, ROSTERS, saveAttendance } from '../../data/s4api';
 import { saveAll } from '../../data/store';
 import { rosterOn } from '../../data/students';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
@@ -27,6 +29,8 @@ const vdt = (at: string) => at.slice(8, 10) + '/' + at.slice(5, 7) + '/' + at.sl
 
 /** Buổi người này được xem điểm danh: lớp mình dạy (giảng viên, trợ giảng) hoặc tất cả (Quản lý đào tạo). */
 function visible(role: number, name: string) {
+  // Có backend: máy chủ đã lọc theo lớp người này dạy.
+  if (apiEnabled) return SESSIONS.filter((s) => ATT_SESSIONS.has(s.id));
   if (role === 5 || role === 6) return SESSIONS;
   const mine = new Set(classesOf(name).map((k) => k.code));
   return SESSIONS.filter((s) => mine.has(s.cls));
@@ -36,12 +40,15 @@ function visible(role: number, name: string) {
 export function AttendanceListPage() {
   const { user } = useAuth();
   const role = user?.active ?? -1;
+  // Có backend: buổi hai tuần gần đây kèm bảng điểm danh, và đơn xin phép chờ duyệt (S4-08).
+  const load = useLoad(() => Promise.all([loadAttendanceSessions(addDays(TODAY, -14), TODAY), loadLeaves(false)]));
   if (role === 0) return <Navigate to="/diem-danh-cua-toi" replace />;
   const list = visible(role, user!.name).filter((s) => !s.cancelled && s.date <= TODAY && s.date >= addDays(TODAY, -14));
   const today = list.filter(isToday).sort((a, b) => a.start.localeCompare(b.start));
   const recent = list.filter((s) => !isToday(s)).sort((a, b) => (b.date + b.start).localeCompare(a.date + a.start));
   return (
     <AppLayout crumb={[MODULE]} module={MODULE}>
+      {apiEnabled && (load.loading || load.error) && <LoadState {...load} />}
       <div className="h">
         <div>
           <h2>Điểm danh</h2>
@@ -131,26 +138,40 @@ function SessionCard({ s }: { s: ClassSession }) {
 // Giảng viên chỉ điểm danh được buổi của hôm nay; buổi khác cần quyền Quản lý đào tạo. Sửa điểm danh đã lưu được ghi nhật ký.
 export function TakeAttendancePage() {
   const { id = '' } = useParams();
+  // Có backend: buổi, danh sách học viên theo ngày, bảng đã lưu, nhật ký, đơn đã duyệt tải trước khi khởi tạo bảng sửa.
+  const load = useLoad(() => loadAttendance(id), [id]);
+  if (apiEnabled && (load.loading || load.error))
+    return (
+      <AppLayout crumb={[MODULE]} module={MODULE}>
+        <LoadState {...load} />
+      </AppLayout>
+    );
+  return <TakeAttendance key={id} id={id} />;
+}
+
+function TakeAttendance({ id }: { id: string }) {
   const { user } = useAuth();
   const toast = useToast();
   const navigate = useNavigate();
   const s = findSession(id);
   const saved = s && sheetOf(s);
   // S4-08: đơn xin phép đã duyệt tự đặt Vắng có phép khi mở điểm danh lần đầu.
-  const leave = saved || !s ? [] : approvedFor(s.id);
+  const leave = saved || !s ? [] : apiEnabled ? APPROVED[s.id] ?? [] : approvedFor(s.id);
   const [marks, setMarks] = useState<Record<string, Mark>>(() => ({ ...(saved?.marks ?? Object.fromEntries(leave.map((c) => [c, 'Vắng có phép' as Mark]))) }));
   const [notes, setNotes] = useState<Record<string, string>>(() => ({ ...(saved?.notes ?? Object.fromEntries(leave.map((c) => [c, 'Đơn xin phép đã duyệt']))) }));
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
   const [all, setAll] = useState(false);
+  const [busy, setBusy] = useState(false);
   if (!s) return <ErrorPage code="404" />;
   const role = user?.active ?? -1;
   const manager = role === 5 || role === 6;
-  if (!manager && !visible(role, user!.name).includes(s)) return <ErrorPage code="403" />;
+  // Có backend: máy chủ đã từ chối (403) người không dạy lớp này.
+  if (!apiEnabled && !manager && !visible(role, user!.name).includes(s)) return <ErrorPage code="403" />;
 
-  const roster = rosterOn(s.cls, s.date);
+  const roster: { code: string; name: string }[] = apiEnabled ? ROSTERS[s.id] ?? [] : rosterOn(s.cls, s.date);
   const future = s.date > TODAY;
-  const canEdit = !s.cancelled && !future && (manager || isToday(s));
+  const canEdit = apiEnabled ? !!CAN_EDIT[s.id] : !s.cancelled && !future && (manager || isToday(s));
   const c = countMarks({ savedAt: '', savedBy: '', marks, notes });
   const unmarked = roster.filter((st) => !marks[st.code]).length;
   const changes = saved ? roster.filter((st) => saved.marks[st.code] !== marks[st.code]) : [];
@@ -161,6 +182,15 @@ export function TakeAttendancePage() {
     if (unmarked) return setError(`Còn ${unmarked} học viên chưa điểm danh`);
     if (saved && !changes.length) return setError('Chưa có thay đổi nào');
     if (saved && !isToday(s!) && !reason.trim()) return setError('Nhập lý do sửa điểm danh của buổi đã qua');
+    if (apiEnabled) {
+      // Máy chủ kiểm lại quyền, đủ học viên, lý do sửa; ghi nhật ký sửa.
+      setBusy(true);
+      saveAttendance(s!.id, marks, notes, reason.trim()).then(
+        () => (toast(saved ? 'Đã lưu sửa điểm danh' : 'Đã lưu điểm danh', `${s!.cls} · Buổi ${s!.no}`), navigate('/diem-danh')),
+        (e: Error) => (setBusy(false), setError(e.message)),
+      );
+      return;
+    }
     const at = stamp();
     const by = user!.name;
     const roleName = ROLES[role];
@@ -321,7 +351,7 @@ export function TakeAttendancePage() {
             </span>
             {error && <em>{error}</em>}
           </div>
-          <button type="button" className="btn primary" onClick={save}>
+          <button type="button" className="btn primary" disabled={busy} onClick={save}>
             Lưu điểm danh
           </button>
         </div>

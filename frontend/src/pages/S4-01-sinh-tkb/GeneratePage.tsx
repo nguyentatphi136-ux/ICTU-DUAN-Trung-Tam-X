@@ -3,13 +3,16 @@ import { Link, useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Box, Pager, paginate, Pill, usePaging } from '../../components/ui';
+import { Box, LoadState, Pager, paginate, Pill, usePaging } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
 import { findClass, totalSessions, type Klass } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
 import { viDate } from '../../data/leads';
 import { capacityText, ROOMS } from '../../data/rooms';
 import { clashes, clashText, dm, dow, generate, HOLIDAYS, longDate, SESSIONS, shiftOf, shortDate, SHIFTS, WEEKDAYS, WEEKDAY_NAMES, type ClassSession, type Pattern, type Shift, type Skipped } from '../../data/schedule';
+import { loadClass, loadRooms } from '../../data/s3api';
+import { addHoliday, loadClassSessions, loadHolidays, loadSessions, previewSchedule, saveSchedule } from '../../data/s4api';
 import { saveAll } from '../../data/store';
 import { ErrorPage } from '../S1-07-trang-loi/ErrorPage';
 import '../S3-04-ho-so-hoc-vien/student.css';
@@ -24,9 +27,23 @@ type Step = 1 | 2 | 3;
 // S4-02. Khi xem trước, buổi trùng giảng viên hoặc trùng phòng với lớp khác bị đánh dấu và chặn lưu, trừ khi xác nhận ghi đè.
 export function GeneratePage() {
   const { code = '' } = useParams();
+  // Có backend: lớp (môn, giảng viên), ngày nghỉ lễ, phòng lấy từ máy chủ trước khi khởi tạo mẫu lặp theo lớp.
+  const load = useLoad(() => Promise.all([loadClass(code), loadHolidays(), loadRooms()]), [code]);
+  if (apiEnabled && (load.loading || load.error))
+    return (
+      <AppLayout crumb={[MODULE, code, 'Sinh thời khoá biểu']} module={MODULE}>
+        <LoadState {...load} />
+      </AppLayout>
+    );
+  return <Generate key={code} code={code} />;
+}
+
+function Generate({ code }: { code: string }) {
   const { user } = useAuth();
   const k = findClass(code);
   const [step, setStep] = useState<Step>(1);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
   const [pattern, setPattern] = useState<Pattern>(() => ({
     days: [1, 3, 5],
     start: SHIFTS['Tối'][0],
@@ -40,8 +57,22 @@ export function GeneratePage() {
   if (!canManageClasses(user?.active ?? -1)) return <ErrorPage code="403" />;
 
   const preview = () => {
-    setResult(generate(k, pattern));
-    setStep(2);
+    if (!apiEnabled) {
+      setResult(generate(k, pattern));
+      setStep(2);
+      return;
+    }
+    // Máy chủ sinh lịch từ giáo trình, phân công, ngày nghỉ lễ trong CSDL; tải lịch các lớp khác cùng khoảng để báo trùng.
+    setBusy(true);
+    setError('');
+    previewSchedule(k.code, pattern)
+      .then(async (r) => {
+        if (r.sessions.length) await loadSessions(r.sessions[0].date, r.sessions.at(-1)!.date);
+        setResult(r);
+        setStep(2);
+      })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setBusy(false));
   };
 
   return (
@@ -64,8 +95,13 @@ export function GeneratePage() {
           </li>
         ))}
       </ol>
-      {step === 1 && <PatternForm k={k} p={pattern} onChange={setPattern} onPreview={preview} />}
-      {step === 2 && result && <Preview k={k} result={result} onBack={() => setStep(1)} onSaved={() => setStep(3)} />}
+      {error && (
+        <Box icon="alert" tone="bad" title="Chưa sinh được lịch">
+          {error}
+        </Box>
+      )}
+      {step === 1 && <PatternForm k={k} p={pattern} onChange={setPattern} onPreview={busy ? () => undefined : preview} />}
+      {step === 2 && result && <Preview k={k} p={pattern} result={result} onBack={() => setStep(1)} onSaved={() => setStep(3)} />}
       {step === 3 && result && (
         <Box icon="check" tone="ok" title={`Đã lưu ${result.sessions.length} buổi cho lớp ${k.code}`}>
           Buổi đầu {longDate(result.sessions[0].date)}, buổi cuối {longDate(result.sessions.at(-1)!.date)}.{' '}
@@ -226,6 +262,12 @@ function PatternForm({ k, p, onChange, onPreview }: FormProps) {
               className="link"
               disabled={!holiday.from || !holiday.name.trim()}
               onClick={() => {
+                if (apiEnabled) {
+                  addHoliday({ from: holiday.from, name: holiday.name.trim() })
+                    .then(loadHolidays)
+                    .then(() => (setHoliday({ from: '', name: '' }), setTick((t) => t + 1)), (e: Error) => setError(e.message));
+                  return;
+                }
                 HOLIDAYS.push({ from: holiday.from, name: holiday.name.trim() });
                 HOLIDAYS.sort((a, b) => a.from.localeCompare(b.from));
                 saveAll();
@@ -270,12 +312,14 @@ function PatternForm({ k, p, onChange, onPreview }: FormProps) {
   );
 }
 
-type PreviewProps = { k: Klass; result: { sessions: ClassSession[]; skipped: Skipped[] }; onBack: () => void; onSaved: () => void };
+type PreviewProps = { k: Klass; p: Pattern; result: { sessions: ClassSession[]; skipped: Skipped[] }; onBack: () => void; onSaved: () => void };
 
 type Row = { s?: ClassSession; skip?: Skipped };
 
-function Preview({ k, result, onBack, onSaved }: PreviewProps) {
+function Preview({ k, p, result, onBack, onSaved }: PreviewProps) {
   const toast = useToast();
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const [tab, setTab] = useState<'all' | 'clash' | 'skip'>('all');
   const [override, setOverride] = useState(false);
   // Chỉ so với buổi của lớp khác còn giữ lại sau khi lưu (các buổi cũ từ hôm nay của lớp này sẽ bị thay).
@@ -288,6 +332,15 @@ function Preview({ k, result, onBack, onSaved }: PreviewProps) {
   const view = paginate(rows, page, size);
 
   function save() {
+    if (apiEnabled) {
+      // Máy chủ thay lịch cũ của lớp; lớp đã có buổi học xong, huỷ hoặc dời thì từ chối và báo lý do.
+      setSaving(true);
+      saveSchedule(k.code, p)
+        .then(() => loadClassSessions(k.code, TODAY))
+        .then(() => (toast(`Đã lưu thời khoá biểu lớp ${k.code}`, `${result.sessions.length} buổi`), onSaved()))
+        .catch((e: Error) => (setSaving(false), setSaveError(e.message)));
+      return;
+    }
     // Giữ các buổi đã qua của lớp, thay toàn bộ buổi từ hôm nay trở đi bằng lịch mới.
     const keep = SESSIONS.filter((s) => s.cls !== k.code || s.date < TODAY);
     const kept = keep.filter((s) => s.cls === k.code).length;
@@ -394,7 +447,8 @@ function Preview({ k, result, onBack, onSaved }: PreviewProps) {
         <button type="button" className="btn" onClick={onBack}>
           Sửa mẫu lặp
         </button>
-        <button type="button" className="btn primary" disabled={bad > 0 && !override} onClick={save}>
+        {saveError && <p className="err">{saveError}</p>}
+        <button type="button" className="btn primary" disabled={(bad > 0 && !override) || saving} onClick={save}>
           Lưu thời khoá biểu
         </button>
       </div>

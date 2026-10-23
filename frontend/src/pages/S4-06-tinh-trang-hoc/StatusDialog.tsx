@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { Box, Modal } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { CLASSES, classSize, ENROLLMENTS, findClass, isOpen } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
 import { viDate } from '../../data/leads';
 import { sessionsOf } from '../../data/schedule';
+import { loadClasses } from '../../data/s3api';
+import { changeStatus } from '../../data/s4api';
 import { saveAll } from '../../data/store';
 import type { Student, StatusChangeType } from '../../data/students';
 import './status.css';
@@ -22,6 +25,9 @@ type Props = { s: Student; me: string; onClose: () => void; onDone: (msg: string
 // điểm danh của lớp cũ. Chuyển lớp giữ nguyên lịch sử điểm và điểm danh ở lớp cũ. Thao tác được ghi vào lịch sử hồ sơ.
 export function StatusDialog({ s, me, onClose, onDone }: Props) {
   const k = findClass(s.cls);
+  // Có backend: tải các lớp để chọn lớp chuyển đến (máy chủ kiểm lại cùng chương trình, đang mở, còn chỗ).
+  useLoad(loadClasses);
+  const [busy, setBusy] = useState(false);
   const [type, setType] = useState<StatusChangeType>('Bảo lưu');
   const [at, setAt] = useState(TODAY);
   const [reason, setReason] = useState('');
@@ -36,6 +42,15 @@ export function StatusDialog({ s, me, onClose, onDone }: Props) {
     if (!reason) return setError('Chọn lý do');
     if (reason === 'Lý do khác' && !note.trim()) return setError('Ghi rõ lý do vào ô ghi chú');
     if (type === 'Chuyển lớp' && !to) return setError('Không có lớp phù hợp để chuyển đến');
+    const msg = type === 'Chuyển lớp' ? `Đã chuyển ${s.name} sang lớp ${to}` : `Đã ghi nhận ${type.toLowerCase()} cho ${s.name}`;
+    if (apiEnabled) {
+      setBusy(true);
+      changeStatus(s.code, { type, at, reason, note: note.trim(), to: type === 'Chuyển lớp' ? to : undefined }).then(
+        () => onDone(msg),
+        (e: Error) => (setBusy(false), setError(e.message)),
+      );
+      return;
+    }
     const why = reason === 'Lý do khác' ? note.trim() : reason + (note.trim() ? '. ' + note.trim() : '');
     s.changes = [{ type, at, reason: why, by: me, from: s.cls, to: type === 'Chuyển lớp' ? to : undefined, recorded: TODAY }, ...(s.changes ?? [])];
     if (k) s.history.unshift({ cls: k.code, program: k.program, period: `${month(k.start)} – ${month(at)}`, result: type === 'Chuyển lớp' ? 'Chuyển sang ' + to : type });
@@ -47,7 +62,7 @@ export function StatusDialog({ s, me, onClose, onDone }: Props) {
       s.cls = undefined;
     }
     saveAll();
-    onDone(type === 'Chuyển lớp' ? `Đã chuyển ${s.name} sang lớp ${to}` : `Đã ghi nhận ${type.toLowerCase()} cho ${s.name}`);
+    onDone(msg);
   }
 
   const effects: Record<StatusChangeType, string[]> = {
@@ -136,7 +151,7 @@ export function StatusDialog({ s, me, onClose, onDone }: Props) {
         <button type="button" className="btn" style={{ width: 100 }} onClick={onClose}>
           Huỷ
         </button>
-        <button type="button" className={'btn ' + (type === 'Thôi học' ? 'danger' : 'primary')} style={{ minWidth: 130 }} onClick={save}>
+        <button type="button" className={'btn ' + (type === 'Thôi học' ? 'danger' : 'primary')} style={{ minWidth: 130 }} disabled={busy} onClick={save}>
           {type}
         </button>
       </div>

@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
-import { Filter } from '../../components/ui';
+import { Filter, LoadState } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
 import { CLASSES, classesOf, isOpen, STAFF } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
 import { ROOMS } from '../../data/rooms';
+import { loadClasses } from '../../data/s3api';
+import { loadMySchedule, loadSessions, MY } from '../../data/s4api';
 import { addDays, clashes, dm, dow, findSession, longDate, mondayOf, SESSIONS, shiftOf, SHIFTS, WEEKDAYS, type ClassSession, type Shift } from '../../data/schedule';
 import { STUDENTS } from '../../data/students';
 import { canManageClasses, MODULE } from '../S3-07-danh-sach-lop/ClassListPage';
@@ -38,7 +41,9 @@ export function CalendarPage() {
   const openSession = open ? findSession(open) : undefined;
 
   // Giảng viên, trợ giảng chỉ thấy lớp mình dạy; học viên chỉ thấy lớp mình học.
-  const mine = role === 1 || role === 2 ? new Set(classesOf(user!.name).map((k) => k.code)) : role === 0 ? new Set(STUDENTS.filter((s) => s.login === user!.email).map((s) => s.cls)) : null;
+  // Có backend: ba vai trò này tải lịch của mình (/api/me/schedule), quản lý tải theo khoảng ngày đang xem.
+  const own = role >= 0 && role <= 2;
+  const mine = apiEnabled && own ? new Set(MY.classes) : role === 1 || role === 2 ? new Set(classesOf(user!.name).map((k) => k.code)) : role === 0 ? new Set(STUDENTS.filter((s) => s.login === user!.email).map((s) => s.cls)) : null;
   const pool = SESSIONS.filter((s) => (!mine || mine.has(s.cls)) && (!cls || s.cls === cls) && (!teacher || s.teacher === teacher) && (!room || s.room === room));
 
   const monday = mondayOf(anchor);
@@ -47,6 +52,8 @@ export function CalendarPage() {
   const gridStart = mondayOf(monthStart);
   const month = [...Array(42)].map((_, i) => addDays(gridStart, i));
   const range = mode === 'week' ? week : month.filter((x) => x.slice(0, 7) === anchor.slice(0, 7));
+  const [first, last] = mode === 'week' ? [week[0], week[6]] : [month[0], month[41]];
+  const load = useLoad(() => (own ? loadMySchedule() : Promise.all([loadSessions(first, last), loadClasses().catch(() => undefined)])), [own, own || first + last]);
   const inRange = pool.filter((s) => s.date >= range[0] && s.date <= range.at(-1)!);
   const clashOf = (s: ClassSession) => clashes(s);
   const nClash = inRange.filter((s) => clashOf(s).length).length;
@@ -65,6 +72,7 @@ export function CalendarPage() {
 
   return (
     <AppLayout crumb={[MODULE, 'Thời khoá biểu']} module={MODULE}>
+      {apiEnabled && (load.loading || load.error) && <LoadState {...load} />}
       <div className="h">
         <div>
           <h2>Thời khoá biểu</h2>

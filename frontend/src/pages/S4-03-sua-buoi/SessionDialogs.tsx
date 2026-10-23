@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { Icon } from '../../components/Icon';
 import { Box, Modal } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { classSize, findClass, STAFF } from '../../data/classes';
 import { notify } from '../../data/notifications';
 import { capacityText, ROOMS } from '../../data/rooms';
 import { addDays, clashes, clashText, dow, holidayOn, longDate, SESSIONS, sessionsOf, type ClassSession } from '../../data/schedule';
+import { TODAY } from '../../data/funnel';
+import { loadRooms, loadStaff } from '../../data/s3api';
+import { cancelSession, editSession, loadClassSessions } from '../../data/s4api';
 import { saveAll } from '../../data/store';
 import './session.css';
 
@@ -22,6 +26,9 @@ type EditProps = { s: ClassSession; onClose: () => void; onSaved: (msg: string) 
 // lưu xong thì học viên và giảng viên của lớp nhận thông báo thay đổi.
 export function EditSessionDialog({ s, onClose, onSaved, onCancel }: EditProps) {
   const [f, setF] = useState({ date: s.date, start: s.start, end: s.end, room: s.room ?? '', teacher: s.teacher ?? '', reason: '' });
+  // Có backend: danh sách phòng, giảng viên kèm id để gửi khi đổi.
+  useLoad(() => Promise.all([loadStaff(), loadRooms()]));
+  const [busy, setBusy] = useState(false);
   const [override, setOverride] = useState(false);
   const [error, setError] = useState('');
   const draft: ClassSession = { ...s, ...f, room: f.room || undefined, teacher: f.teacher || undefined };
@@ -38,6 +45,15 @@ export function EditSessionDialog({ s, onClose, onSaved, onCancel }: EditProps) 
     if (f.start >= f.end) return setError('Giờ kết thúc phải sau giờ bắt đầu');
     if (!f.reason.trim()) return setError('Nhập lý do thay đổi để học viên hiểu vì sao lịch đổi');
     if (found.length && !override) return setError('Buổi đang trùng lịch. Đổi khung giờ, phòng, giảng viên hoặc xác nhận ghi đè');
+    if (apiEnabled) {
+      // Máy chủ kiểm tra trùng lịch lần nữa (S4-02), ghi lịch sử và gửi thông báo cho lớp.
+      setBusy(true);
+      editSession(s, f, override).then(
+        () => onSaved(`Đã lưu buổi ${s.no} lớp ${s.cls}. Đã gửi thông báo tới ${who.students} học viên.`),
+        (e: Error) => (setBusy(false), setError(e.message)),
+      );
+      return;
+    }
     if (moved) s.movedFrom = s.movedFrom ?? `${s.date} ${s.start}`;
     Object.assign(s, { date: f.date, start: f.start, end: f.end, room: f.room || undefined, teacher: f.teacher || undefined });
     notify({ at: now(), kind: 'Lịch học', title: `Lớp ${s.cls} đổi lịch buổi ${s.no}`, body: msg, link: '/lich-hoc', to: { cls: s.cls } });
@@ -126,7 +142,7 @@ export function EditSessionDialog({ s, onClose, onSaved, onCancel }: EditProps) 
         <button type="button" className="btn" style={{ width: 90 }} onClick={onClose}>
           Đóng
         </button>
-        <button type="button" className="btn primary" style={{ width: 120 }} onClick={save}>
+        <button type="button" className="btn primary" style={{ width: 120 }} disabled={busy} onClick={save}>
           Lưu buổi
         </button>
       </div>
@@ -153,10 +169,22 @@ export function CancelSessionDialog({ s, onClose, onSaved }: CancelProps) {
   const [reason, setReason] = useState('');
   const [makeup, setMakeup] = useState(true);
   const [error, setError] = useState('');
+  // Có backend: cả lịch của lớp để tính ngày học bù sau buổi cuối.
+  useLoad(() => loadClassSessions(s.cls, TODAY), [s.cls]);
+  const [busy, setBusy] = useState(false);
   const who = audience(s.cls);
 
   function confirm() {
     if (!reason.trim()) return setError('Bắt buộc nhập lý do trước khi huỷ buổi');
+    if (apiEnabled) {
+      const date = makeup ? makeupDate(s.cls) : undefined;
+      setBusy(true);
+      cancelSession(s, reason.trim(), date).then(
+        () => onSaved(`Đã huỷ buổi ${s.no} lớp ${s.cls}.${date ? ` Học bù ${longDate(date).toLowerCase()} lúc ${s.start}.` : ''}`),
+        (e: Error) => (setBusy(false), setError(e.message)),
+      );
+      return;
+    }
     s.cancelled = reason.trim();
     let extra = '';
     if (makeup) {
@@ -212,7 +240,7 @@ export function CancelSessionDialog({ s, onClose, onSaved }: CancelProps) {
         <button type="button" className="btn" style={{ width: 90 }} onClick={onClose}>
           Đóng
         </button>
-        <button type="button" className="btn danger" style={{ width: 120 }} onClick={confirm}>
+        <button type="button" className="btn danger" style={{ width: 120 }} disabled={busy} onClick={confirm}>
           <Icon name="x" size={16} />
           Huỷ buổi
         </button>

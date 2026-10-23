@@ -1,5 +1,6 @@
 // Điểm danh cho S4-07 trở đi. Khi tích hợp: GET/PUT /sessions/:id/attendance, GET /sessions/:id/attendance/logs.
 // Buổi đã qua chưa có bản ghi thì sinh sẵn một bảng điểm danh mẫu cố định (giống dữ liệu đã lưu từ trước).
+import { apiEnabled } from './api';
 import { CLASSES, findClass, isOpen, totalSessions } from './classes';
 import { TODAY } from './funnel';
 import { notify } from './notifications';
@@ -17,8 +18,8 @@ export const markTone = (m?: Mark): 'ok' | 'wait' | 'info' | 'off' | undefined =
 export type Sheet = { savedAt: string; savedBy: string; marks: Record<string, Mark>; notes: Record<string, string> };
 export type AttLog = { session: string; at: string; by: string; role: string; text: string };
 
-export const SHEETS: Record<string, Sheet> = persisted('attendance', {});
-export const ATT_LOGS: AttLog[] = persisted('attendance-logs', []);
+export const SHEETS: Record<string, Sheet> = persisted('attendance', {}, true);
+export const ATT_LOGS: AttLog[] = persisted('attendance-logs', [], true);
 
 /** Băm cố định để dữ liệu mẫu không đổi giữa các lần tải trang. */
 const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
@@ -44,7 +45,8 @@ const cache = new Map<string, Sheet>();
 /** Bảng điểm danh của buổi, hoặc undefined nếu chưa điểm danh. */
 export function sheetOf(s: ClassSession): Sheet | undefined {
   if (SHEETS[s.id]) return SHEETS[s.id];
-  if (s.cancelled || !isPast(s)) return undefined;
+  // Có backend: buổi chưa có bảng trên máy chủ là chưa điểm danh, không sinh bảng mẫu.
+  if (apiEnabled || s.cancelled || !isPast(s)) return undefined;
   if (!cache.has(s.id)) cache.set(s.id, sample(s));
   return cache.get(s.id);
 }

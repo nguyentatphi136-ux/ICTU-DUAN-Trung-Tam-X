@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
-import { Box, Pill } from '../../components/ui';
+import { Box, LoadState, Pill } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
 import { findClass } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
 import { findRoom } from '../../data/rooms';
 import { addDays, dm, dow, longDate, mondayOf, sessionsOf, WEEKDAYS, WEEKDAY_NAMES, type ClassSession } from '../../data/schedule';
+import { loadMySchedule, MY } from '../../data/s4api';
 import { STUDENTS } from '../../data/students';
 import { MODULE } from '../S3-07-danh-sach-lop/ClassListPage';
 import './my.css';
@@ -42,9 +44,12 @@ export function MySchedulePage() {
   const { user } = useAuth();
   const me = useMe();
   const [week, setWeek] = useState(mondayOf(TODAY));
+  // Có backend: lớp đang học và các buổi của lớp đó lấy từ /api/me/schedule (học viên không có quyền xem danh sách học viên).
+  const load = useLoad(loadMySchedule);
   if (user && user.active !== 0) return <Navigate to="/thoi-khoa-bieu" replace />;
-  const k = findClass(me?.cls);
-  const all = me?.cls ? sessionsOf(me.cls) : [];
+  const cls = apiEnabled ? MY.cls : me?.cls;
+  const k = findClass(cls);
+  const all = cls ? sessionsOf(cls) : [];
   const next = all.find((s) => !s.cancelled && s.date >= TODAY);
   const days = [...Array(7)].map((_, i) => addDays(week, i));
   const list = all.filter((s) => s.date >= days[0] && s.date <= days[6]);
@@ -53,10 +58,11 @@ export function MySchedulePage() {
 
   return (
     <AppLayout crumb={[MODULE, 'Lịch học của tôi']} module={MODULE}>
+      {apiEnabled && (load.loading || load.error) && <LoadState {...load} />}
       <div className="h">
         <div>
           <h2>Lịch học của tôi</h2>
-          <p>{k ? `Lớp ${k.code} · ${k.program}` : 'Bạn chưa được xếp lớp'}</p>
+          <p>{cls ? `Lớp ${cls} · ${k?.program ?? MY.program ?? ''}` : 'Bạn chưa được xếp lớp'}</p>
         </div>
         {/* S4-08 */}
         {k && (

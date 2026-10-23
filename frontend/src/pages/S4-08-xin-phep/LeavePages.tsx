@@ -3,7 +3,8 @@ import { Link, Navigate } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { useToast } from '../../components/Toast';
-import { Box, Filter, Pill } from '../../components/ui';
+import { Box, Filter, LoadState, Pill } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { MARKS, SHEETS, sheetOf, type Mark } from '../../data/attendance';
 import { useAuth } from '../../data/auth';
 import { classesOf } from '../../data/classes';
@@ -11,6 +12,7 @@ import { TODAY } from '../../data/funnel';
 import { LEAVES, leaveTone, type Leave, type LeaveStatus } from '../../data/leaves';
 import { notify } from '../../data/notifications';
 import { dm, findSession, longDate, sessionsOf, WEEKDAY_NAMES, dow } from '../../data/schedule';
+import { decideLeave, LEAVE_COUNTS, loadLeaves, loadMySchedule, MY, sendLeave } from '../../data/s4api';
 import { saveAll } from '../../data/store';
 import { findStudent } from '../../data/students';
 import { useMe } from '../S4-05-lich-cua-toi/MySchedulePage';
@@ -28,9 +30,24 @@ const sessionLabel = (id: string) => {
 // S4-08. Học viên gửi đơn xin phép vắng: chọn buổi sắp tới của lớp mình, nhập lý do, đính kèm tệp minh chứng nếu có,
 // rồi theo dõi kết quả duyệt ở cột bên phải.
 export function MyLeavesPage() {
+  // Có backend: lịch lớp mình và đơn của mình tải trước khi chọn sẵn buổi sắp tới.
+  const load = useLoad(() => Promise.all([loadMySchedule(), loadLeaves(true)]));
+  if (apiEnabled && (load.loading || load.error))
+    return (
+      <AppLayout crumb={[MODULE, 'Đơn xin phép vắng']} module={MODULE}>
+        <LoadState {...load} />
+      </AppLayout>
+    );
+  return <MyLeaves />;
+}
+
+function MyLeaves() {
   const { user } = useAuth();
-  const me = useMe();
+  const local = useMe();
+  // Có backend: học viên không xem được danh sách học viên, mã và lớp lấy từ lịch của tôi và đơn đã tải.
+  const me = apiEnabled ? { code: LEAVES[0]?.student ?? '', name: user?.name ?? '', cls: MY.cls } : local;
   const toast = useToast();
+  const [busy, setBusy] = useState(false);
   const upcoming = me?.cls ? sessionsOf(me.cls).filter((s) => !s.cancelled && s.date >= TODAY) : [];
   const [session, setSession] = useState(upcoming[0]?.id ?? '');
   const [reason, setReason] = useState('');
@@ -38,13 +55,22 @@ export function MyLeavesPage() {
   const [error, setError] = useState('');
   const [, setTick] = useState(0);
   if (user && user.active !== 0) return <Navigate to="/duyet-phep" replace />;
-  const mine = LEAVES.filter((l) => l.student === me?.code).sort((a, b) => b.sentAt.localeCompare(a.sentAt));
+  const mine = (apiEnabled ? LEAVES : LEAVES.filter((l) => l.student === me?.code)).sort((a, b) => b.sentAt.localeCompare(a.sentAt));
   const taken = new Set(mine.filter((l) => l.status !== 'Từ chối').map((l) => l.session));
 
   function send() {
     if (!session) return setError('Chọn buổi học muốn xin vắng');
     if (taken.has(session)) return setError('Bạn đã gửi đơn cho buổi này');
     if (reason.trim().length < 10) return setError('Ghi rõ lý do, ít nhất 10 ký tự');
+    if (apiEnabled) {
+      // Máy chủ kiểm buổi thuộc lớp mình, chưa qua, chưa có đơn; giảng viên của lớp thấy đơn ở trang duyệt.
+      setBusy(true);
+      sendLeave(session, reason.trim(), file?.name).then(
+        () => (setReason(''), setFile(null), setError(''), setBusy(false), toast('Đã gửi đơn xin phép', 'Bạn sẽ nhận thông báo khi giảng viên duyệt.')),
+        (e: Error) => (setBusy(false), setError(e.message)),
+      );
+      return;
+    }
     LEAVES.unshift({ id: Math.max(0, ...LEAVES.map((l) => l.id)) + 1, student: me!.code, session, reason: reason.trim(), file: file ?? undefined, sentAt: stamp(), status: 'Chờ duyệt' });
     const s = findSession(session);
     notify({ at: stamp(), kind: 'Điểm danh', title: `${me!.name} xin phép vắng`, body: `${sessionLabel(session)}. Lý do: ${reason.trim()}`, link: '/duyet-phep', to: { users: s?.teacher ? [s.teacher] : [] } });
@@ -125,7 +151,7 @@ export function MyLeavesPage() {
           </Box>
           {error && <p className="err" style={{ marginBottom: 12 }}>{error}</p>}
           <div className="acts" style={{ marginTop: 0 }}>
-            <button type="button" className="btn primary" style={{ width: 140 }} onClick={send}>
+            <button type="button" className="btn primary" style={{ width: 140 }} disabled={busy} onClick={send}>
               Gửi đơn
             </button>
           </div>
@@ -174,8 +200,11 @@ export function ApproveLeavesPage() {
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [, setTick] = useState(0);
+  // Có backend: máy chủ chỉ trả đơn của các lớp người này dạy (quản lý: tất cả).
+  const load = useLoad(() => loadLeaves(false));
+  const [busy, setBusy] = useState(false);
   if (role === 0) return <Navigate to="/xin-phep" replace />;
-  const myClasses = role === 5 || role === 6 ? null : new Set(classesOf(user!.name).map((k) => k.code));
+  const myClasses = apiEnabled || role === 5 || role === 6 ? null : new Set(classesOf(user!.name).map((k) => k.code));
   const scope = LEAVES.filter((l) => {
     const st = findStudent(l.student);
     const s = findSession(l.session);
@@ -187,6 +216,16 @@ export function ApproveLeavesPage() {
 
   function decide(l: Leave, ok: boolean) {
     if (!ok && !note.trim()) return setError('Nhập lý do từ chối để học viên biết');
+    if (apiEnabled) {
+      // Máy chủ ghi kết quả, duyệt thì đặt Vắng có phép cho buổi đã điểm danh.
+      setBusy(true);
+      const name = findStudent(l.student)?.name ?? l.student;
+      decideLeave(l.id, ok, note.trim()).then(
+        () => (setNote(''), setError(''), setOpenId(null), setBusy(false), toast(ok ? 'Đã duyệt đơn' : 'Đã từ chối đơn', name)),
+        (e: Error) => (setBusy(false), setError(e.message)),
+      );
+      return;
+    }
     l.status = ok ? 'Đã duyệt' : 'Từ chối';
     l.decidedBy = user!.name;
     l.decidedAt = stamp();
@@ -213,6 +252,7 @@ export function ApproveLeavesPage() {
   const st = open && findStudent(open.student);
   const ses = open && findSession(open.session);
   const counts = (code: string) => {
+    if (apiEnabled && open) return LEAVE_COUNTS[open.id] ?? [0, 0];
     let ex = 0;
     let un = 0;
     if (st?.cls)
@@ -226,6 +266,7 @@ export function ApproveLeavesPage() {
 
   return (
     <AppLayout crumb={[MODULE, 'Duyệt đơn xin phép']} module={MODULE}>
+      {apiEnabled && (load.loading || load.error) && <LoadState {...load} />}
       <div className="h">
         <div>
           <h2>Duyệt đơn xin phép vắng</h2>
@@ -323,10 +364,10 @@ export function ApproveLeavesPage() {
                   Điểm danh buổi {ses ? dm(ses.date) : ''} của học viên tự đặt thành Vắng có phép. Học viên nhận thông báo kết quả.
                 </Box>
                 <div className="acts">
-                  <button type="button" className="btn danger" onClick={() => decide(open, false)}>
+                  <button type="button" className="btn danger" disabled={busy} onClick={() => decide(open, false)}>
                     Từ chối
                   </button>
-                  <button type="button" className="btn primary" onClick={() => decide(open, true)}>
+                  <button type="button" className="btn primary" disabled={busy} onClick={() => decide(open, true)}>
                     Duyệt đơn
                   </button>
                 </div>
@@ -345,7 +386,8 @@ export function ApproveLeavesPage() {
 }
 
 export const pendingFor = (name: string, role: number) => {
-  const mine = role === 5 || role === 6 ? null : new Set(classesOf(name).map((k) => k.code));
+  // Có backend: LEAVES đã chỉ gồm đơn của các lớp người này dạy.
+  const mine = apiEnabled || role === 5 || role === 6 ? null : new Set(classesOf(name).map((k) => k.code));
   return LEAVES.filter((l) => l.status === 'Chờ duyệt' && (!mine || mine.has(findSession(l.session)?.cls ?? ''))).length;
 };
 

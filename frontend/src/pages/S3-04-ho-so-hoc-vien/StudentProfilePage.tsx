@@ -7,6 +7,7 @@ import { Drawer, LoadState, Pill } from '../../components/ui';
 import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth } from '../../data/auth';
 import { loadClass, loadStudent, saveStudent } from '../../data/s3api';
+import { loadStatusChanges } from '../../data/s4api';
 import { classSize, findClass, totalSessions } from '../../data/classes';
 import { TODAY } from '../../data/funnel';
 import { viDate } from '../../data/leads';
@@ -47,6 +48,8 @@ export function StudentProfilePage({ actions }: Props) {
   // Có backend: tải hồ sơ đầy đủ và lớp đang học (để hiện sĩ số, tiến độ).
   const load = useLoad(async () => {
     const st = await loadStudent(code);
+    // S4-06: lịch sử bảo lưu, chuyển lớp, thôi học.
+    await loadStatusChanges(code).catch(() => undefined);
     // Kế toán không có quyền xem lớp (sheet 2): bỏ qua, trang vẫn hiện hồ sơ.
     if (st.cls) await loadClass(st.cls).catch(() => undefined);
   }, [code]);
@@ -224,6 +227,7 @@ export function StudentProfilePage({ actions }: Props) {
           onClose={() => setChanging(false)}
           onDone={(msg) => {
             setChanging(false);
+            if (apiEnabled) load.reload();
             refresh();
             toast(msg);
           }}

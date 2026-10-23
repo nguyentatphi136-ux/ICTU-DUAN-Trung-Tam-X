@@ -1,5 +1,6 @@
 // Thời khoá biểu cho S4-01 trở đi. Khi tích hợp: POST /classes/:code/schedule/preview (sinh và kiểm tra trùng),
 // POST /classes/:code/schedule (lưu), GET /sessions?from=&to=&class=&teacher=&room=, PATCH /sessions/:id.
+import { apiEnabled } from './api';
 import { CLASSES, isOpen, type Klass } from './classes';
 import { TODAY } from './funnel';
 import { persisted } from './store';
@@ -39,7 +40,7 @@ export const HOLIDAYS: Holiday[] = persisted('holidays', [
   { from: '2027-02-05', to: '2027-02-14', name: 'Nghỉ Tết Nguyên đán' },
   { from: '2027-04-26', name: 'Giỗ Tổ Hùng Vương' },
   { from: '2027-04-30', to: '2027-05-01', name: 'Giải phóng miền Nam, Quốc tế Lao động' },
-]);
+], true);
 
 /** Thứ trong tuần theo cách gọi Việt Nam; chỉ số theo Date.getDay() (0 là Chủ nhật). */
 export const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
@@ -127,7 +128,8 @@ function seed(): ClassSession[] {
   return out;
 }
 
-export const SESSIONS: ClassSession[] = persisted('sessions', seed());
+// Có backend: lịch do máy chủ quản lý, s4api nạp theo trang; không sinh lịch mẫu.
+export const SESSIONS: ClassSession[] = persisted('sessions', apiEnabled ? [] : seed(), true);
 
 export const sessionsOf = (cls: string) => SESSIONS.filter((s) => s.cls === cls).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start));
 export const findSession = (id: string) => SESSIONS.find((s) => s.id === id);
