@@ -1,0 +1,13 @@
+/* S2-09, S2-11. Danh sách lead, tìm kiếm, bộ lọc, ngăn thêm và sửa. */
+.ld-table tbody tr{cursor:pointer}
+.ld-table tbody tr:hover td{background:var(--hover)}
+.ld-none{color:var(--red);font-size:13px}
+.ld-fields{border:0;margin:0;padding:0;min-width:0}
+.inp.warn input{border-color:var(--warn)}
+.ld-dup{margin-top:-6px}
+.link{border:0;background:none;color:var(--blue);font-weight:500;padding:0;display:block;margin-top:6px}
+.ld-range{animation:ldFadeIn .18s ease-out}
+.ld-range input{width:125px}
+.ld-clear-date{border:0;background:none;color:var(--muted);cursor:pointer;padding:2px 6px;font-size:14px;border-radius:var(--r);line-height:1}
+.ld-clear-date:hover{color:var(--red,#ef4444);background:var(--soft)}
+@keyframes ldFadeIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:translateX(0)}}
