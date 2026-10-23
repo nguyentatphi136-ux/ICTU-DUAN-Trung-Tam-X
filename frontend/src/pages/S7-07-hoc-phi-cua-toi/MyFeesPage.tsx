@@ -190,9 +190,6 @@ export function MyFeesPage() {
                   <Icon name="dl" size={16} />
                   In / Lưu PDF
                 </button>
-                <Link to={`/hoc-phi/bien-lai/${previewPayment.id}`} target="_blank" className="btn">
-                  Mở tab riêng
-                </Link>
                 <button type="button" className="btn" onClick={() => setPreviewPayment(null)}>
                   Đóng
                 </button>
