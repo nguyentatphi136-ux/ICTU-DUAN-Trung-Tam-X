@@ -70,13 +70,15 @@ const permOf = (roleIndex: number, m: AppModule) => (roleIndex === ADMIN_ROLE ? 
 
 /**
  * Mã quyền máy chủ của các module đã có API: vai trò có một trong các mã thì module hiện ra, nên đổi quyền ở S1-05
- * thì menu đổi theo. Module chưa có API (điểm danh, bài tập, học phí...) vẫn theo ma trận sheet 2.
+ * thì menu đổi theo. Module chưa có API (bài tập, học phí...) vẫn theo ma trận sheet 2.
  */
 const MODULE_CODES: Record<string, string[]> = {
   'Chương trình & môn học': ['PROGRAM_READ', 'PROGRAM_MANAGE'],
   'Tuyển sinh & lead': ['LEAD_READ', 'LEAD_MANAGE', 'LEAD_ASSIGN'],
   'Hồ sơ học viên': ['STUDENT_READ', 'STUDENT_WRITE'],
   'Lớp học & thời khoá biểu': ['CLASS_READ', 'CLASS_MANAGE', 'SCHEDULE_READ'],
+  // S4-07 điểm danh, S4-08 học viên gửi đơn xin phép.
+  'Điểm danh': ['ATTENDANCE_MANAGE', 'ABSENCE_REQUEST'],
   [USERS_MODULE]: ['USER_READ'],
 };
 
