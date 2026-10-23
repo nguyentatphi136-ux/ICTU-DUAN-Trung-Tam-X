@@ -77,4 +77,12 @@ class PermissionPolicyTest {
         assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/sessions/401/attendance"));
         assertEquals("@authenticated", PermissionPolicy.requiredPermission("POST", "/api/sessions/401/attendance"));
     }
+
+    @Test
+    void transcriptRoutesOfS8HaveRules() {
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/transcript/mine"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/transcripts/mine"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/transcripts/student/HV260101"));
+        assertEquals("@authenticated", PermissionPolicy.requiredPermission("GET", "/api/transcripts/student/HV260101/pdf"));
+    }
 }

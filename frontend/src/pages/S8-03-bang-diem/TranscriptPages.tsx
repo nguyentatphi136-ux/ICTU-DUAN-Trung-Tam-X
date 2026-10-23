@@ -3,11 +3,13 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import { AppLayout } from '../../components/AppLayout';
 import { Icon } from '../../components/Icon';
 import { Box, Modal, Pill } from '../../components/ui';
+import { apiEnabled, useLoad } from '../../data/api';
 import { useAuth, type User } from '../../data/auth';
 import { TODAY } from '../../data/funnel';
 import { num, resultTone, transcriptNo, transcriptOf } from '../../data/grades';
 import { viDate } from '../../data/leads';
 import { STUDENTS } from '../../data/students';
+import { getMyTranscriptApi, getStudentTranscriptApi, type TranscriptResponseDTO } from '../../data/transcriptApi';
 import { Breakdown, MODULE } from '../S8-02-diem-tong-ket/FinalPages';
 import '../S7-03-thanh-toan/receipt.css';
 import './transcript.css';
@@ -21,7 +23,19 @@ export function TranscriptPage() {
   const { user } = useAuth();
   const { code: param } = useParams();
   const [open, setOpen] = useState<string | null>(null);
+  const [apiData, setApiData] = useState<TranscriptResponseDTO | null>(null);
   const code = codeFor(user, param);
+
+  useLoad(async () => {
+    if (!apiEnabled || !code) return;
+    try {
+      const data = user?.active === 0 ? await getMyTranscriptApi() : await getStudentTranscriptApi(code);
+      setApiData(data);
+    } catch {
+      // Giữ dữ liệu mẫu dự phòng
+    }
+  }, [code, user?.active]);
+
   if (!code && user?.active !== 0) return <Navigate to="/diem-tong-ket" replace />;
   const t = code ? transcriptOf(code) : null;
   if (!t)
@@ -33,6 +47,7 @@ export function TranscriptPage() {
   const failed = t.rows.filter((r) => r.f.result !== 'Đạt');
   const formula = t.rows.filter((r) => r.f.total != null);
   const pick = t.rows.find((r) => r.s.code === open);
+  const currentGpa = apiData?.gpa != null ? apiData.gpa : t.gpa;
 
   return (
     <AppLayout crumb={[MODULE, 'Bảng điểm toàn khoá']} module={MODULE}>
@@ -49,14 +64,22 @@ export function TranscriptPage() {
             {t.st.program} · lớp {t.k.code}
           </p>
         </div>
-        <Link className="btn" to={`/bang-diem/${t.st.code}/in`} target="_blank">
-          <Icon name="dl" size={16} />
-          Xuất PDF
-        </Link>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {apiEnabled && (
+            <a className="btn" href={`/api/transcripts/student/${t.st.code}/pdf`} target="_blank" rel="noreferrer" title="Tải mẫu bảng điểm chính thức từ máy chủ">
+              <Icon name="dl" size={16} />
+              Tải bản PDF máy chủ
+            </a>
+          )}
+          <Link className="btn primary" to={`/bang-diem/${t.st.code}/in`} target="_blank">
+            <Icon name="dl" size={16} />
+            Xuất PDF
+          </Link>
+        </div>
       </div>
       <div className="fe-stats">
         <div className="stat info">
-          <b>{t.gpa == null ? '–' : num(t.gpa)}</b>
+          <b>{currentGpa == null ? '–' : num(currentGpa)}</b>
           <span>Điểm trung bình toàn khoá</span>
         </div>
         <div className="stat">

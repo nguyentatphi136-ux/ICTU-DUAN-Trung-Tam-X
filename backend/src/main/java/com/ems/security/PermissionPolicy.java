@@ -111,6 +111,10 @@ public final class PermissionPolicy {
         if (path.matches("^/api/(attendance|sessions/\\d+/attendance)(/.*)?$")) {
             return "@authenticated";
         }
+        // S8-03: Xem và xuất bảng điểm toàn khoá (Học viên, Quản lý đào tạo, Giảng viên, Admin)
+        if (path.matches("^/api/transcripts?(/.*)?$")) {
+            return "@authenticated";
+        }
         return null;
     }
 
