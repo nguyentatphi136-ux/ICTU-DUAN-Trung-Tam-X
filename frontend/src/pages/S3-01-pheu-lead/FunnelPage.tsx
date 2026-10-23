@@ -57,7 +57,6 @@ export function FunnelPage() {
     syncAllLeadsAndFunnel();
     setLeads([...FUNNEL]);
     const handleUpdate = () => {
-      syncAllLeadsAndFunnel();
       setLeads([...FUNNEL]);
     };
     window.addEventListener('tms:lead-updated', handleUpdate);

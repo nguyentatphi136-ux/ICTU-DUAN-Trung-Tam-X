@@ -98,7 +98,6 @@ export function LeadListPage() {
     syncAllLeadsAndFunnel();
     setLeads([...LEADS]);
     const onUpdated = () => {
-      syncAllLeadsAndFunnel();
       setLeads([...LEADS]);
     };
     window.addEventListener('tms:lead-updated', onUpdated);

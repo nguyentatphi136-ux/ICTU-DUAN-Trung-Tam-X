@@ -70,104 +70,113 @@ export const LEADS: Lead[] = persisted('leads.v2', [...Array(128)].map((_, i): L
  * Bất cứ lead nào có ở một bên mà thiếu ở bên kia đều được tự động bổ sung.
  * Khớp chuẩn xác theo số điện thoại (samePhone) hoặc tên để tránh lệch ID.
  */
+let isSyncing = false;
+
 export function syncAllLeadsAndFunnel() {
-  let changed = false;
+  if (isSyncing) return;
+  isSyncing = true;
+  try {
+    let changed = false;
 
-  // 1. Đồng bộ và chuẩn hóa từ FUNNEL sang LEADS
-  for (const f of FUNNEL) {
-    let l = LEADS.find((x) => samePhone(x.phone, f.phone));
-    if (!l && f.name) {
-      l = LEADS.find((x) => x.name.trim().toLowerCase() === f.name.trim().toLowerCase());
-    }
-    if (!l) {
-      l = LEADS.find((x) => x.id === f.id);
-    }
+    // 1. Đồng bộ và chuẩn hóa từ FUNNEL sang LEADS
+    for (const f of FUNNEL) {
+      let l = LEADS.find((x) => samePhone(x.phone, f.phone));
+      if (!l && f.name) {
+        l = LEADS.find((x) => x.name.trim().toLowerCase() === f.name.trim().toLowerCase());
+      }
+      if (!l) {
+        l = LEADS.find((x) => x.id === f.id);
+      }
 
-    const targetStatus: LeadStatus = (f.student ? 'Đã nhập học' : f.stage) as LeadStatus;
+      const targetStatus: LeadStatus = (f.student ? 'Đã nhập học' : f.stage) as LeadStatus;
 
-    if (l) {
-      if (l.id !== f.id) {
-        const occupant = LEADS.find((x) => x.id === f.id && x !== l);
-        if (occupant) {
-          occupant.id = Math.max(...LEADS.map((x) => x.id), ...FUNNEL.map((x) => x.id)) + 1;
+      if (l) {
+        if (l.id !== f.id) {
+          const occupant = LEADS.find((x) => x.id === f.id && x !== l);
+          if (occupant) {
+            occupant.id = Math.max(...LEADS.map((x) => x.id), ...FUNNEL.map((x) => x.id)) + 1;
+          }
+          l.id = f.id;
+          changed = true;
         }
-        l.id = f.id;
+        if (l.status !== targetStatus) {
+          l.status = targetStatus;
+          changed = true;
+        }
+        if (l.name !== f.name) {
+          l.name = f.name;
+          changed = true;
+        }
+        if (f.owner && l.owner !== f.owner) {
+          l.owner = f.owner;
+          changed = true;
+        }
+        if (f.program && l.program !== f.program) {
+          l.program = f.program;
+          changed = true;
+        }
+      } else {
+        LEADS.push({
+          id: f.id,
+          name: f.name,
+          phone: f.phone,
+          email: f.email,
+          source: f.source || 'Biểu mẫu web',
+          program: f.program,
+          status: targetStatus,
+          owner: f.owner || 'TRAN THU HA',
+          createdAt: TODAY,
+        });
         changed = true;
       }
-      if (l.status !== targetStatus) {
-        l.status = targetStatus;
-        changed = true;
-      }
-      if (l.name !== f.name) {
-        l.name = f.name;
-        changed = true;
-      }
-      if (f.owner && l.owner !== f.owner) {
-        l.owner = f.owner;
-        changed = true;
-      }
-      if (f.program && l.program !== f.program) {
-        l.program = f.program;
-        changed = true;
-      }
-    } else {
-      LEADS.push({
-        id: f.id,
-        name: f.name,
-        phone: f.phone,
-        email: f.email,
-        source: f.source || 'Biểu mẫu web',
-        program: f.program,
-        status: targetStatus,
-        owner: f.owner || 'TRAN THU HA',
-        createdAt: TODAY,
-      });
-      changed = true;
-    }
-  }
-
-  // 2. Đồng bộ từ LEADS sang FUNNEL
-  // Duyệt từ cuối lên đầu để các lead mới nhất (ở đầu LEADS) được unshift lên đầu FUNNEL đúng thứ tự
-  for (let i = LEADS.length - 1; i >= 0; i--) {
-    const l = LEADS[i];
-    let f = FUNNEL.find((x) => samePhone(x.phone, l.phone));
-    if (!f && l.name) {
-      f = FUNNEL.find((x) => x.name.trim().toLowerCase() === l.name.trim().toLowerCase());
-    }
-    if (!f) {
-      f = FUNNEL.find((x) => x.id === l.id);
     }
 
-    if (f) {
-      if (f.id !== l.id) {
-        f.id = l.id;
-        changed = true;
+    // 2. Đồng bộ từ LEADS sang FUNNEL
+    for (let i = LEADS.length - 1; i >= 0; i--) {
+      const l = LEADS[i];
+      let f = FUNNEL.find((x) => samePhone(x.phone, l.phone));
+      if (!f && l.name) {
+        f = FUNNEL.find((x) => x.name.trim().toLowerCase() === l.name.trim().toLowerCase());
       }
-      if (l.owner && f.owner !== l.owner) {
-        f.owner = l.owner;
-        changed = true;
+      if (!f) {
+        f = FUNNEL.find((x) => x.id === l.id);
       }
-    } else {
-      FUNNEL.unshift({
-        id: l.id,
-        name: l.name,
-        phone: l.phone,
-        email: l.email,
-        program: l.program,
-        source: l.source || 'Biểu mẫu web',
-        owner: l.owner || '',
-        stage: (l.status === 'Đã nhập học' ? 'Chốt' : l.status) as Stage || 'Mới',
-        student: l.status === 'Đã nhập học' ? 'HV' + l.id : undefined,
-      });
-      changed = true;
-    }
-  }
 
-  if (changed) {
-    saveAll();
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('tms:lead-updated'));
+      if (f) {
+        if (f.id !== l.id) {
+          f.id = l.id;
+          changed = true;
+        }
+        if (l.owner && f.owner !== l.owner) {
+          f.owner = l.owner;
+          changed = true;
+        }
+      } else {
+        FUNNEL.unshift({
+          id: l.id,
+          name: l.name,
+          phone: l.phone,
+          email: l.email,
+          program: l.program,
+          source: l.source || 'Biểu mẫu web',
+          owner: l.owner || '',
+          stage: ((l.status === 'Đã nhập học' ? 'Chốt' : l.status) as Stage) || 'Mới',
+          student: l.status === 'Đã nhập học' ? 'HV' + l.id : undefined,
+        });
+        changed = true;
+      }
     }
+
+    if (changed) {
+      saveAll();
+      if (typeof window !== 'undefined') {
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('tms:lead-updated'));
+        }, 0);
+      }
+    }
+  } finally {
+    isSyncing = false;
   }
 }
 
