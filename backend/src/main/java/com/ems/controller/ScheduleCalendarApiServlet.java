@@ -27,13 +27,15 @@ import java.util.Map;
  *  GET /api/schedules/filters/classes
  *  GET /api/schedules/filters/instructors
  *  GET /api/schedules/filters/classrooms
+ *  GET /api/schedules/range?startDate=&endDate=[&classCode=]   mọi buổi kể cả buổi huỷ (giao diện React tải lịch theo khoảng)
  *
  * Danh sách theo khoảng ngày và chi tiết một buổi (GET /api/schedules, /api/schedules/{id}) thuộc
  * ScheduleApiServlet của S4-03. Đường dẫn khớp chính xác và tiền tố dài hơn được ưu tiên hơn /api/schedules/*,
  * nên hai servlet cùng chạy được.
  */
 @WebServlet(name = "ScheduleCalendarApiServlet", urlPatterns = {
-        "/api/schedules/week", "/api/schedules/month", "/api/schedules/conflicts", "/api/schedules/filters/*"
+        "/api/schedules/week", "/api/schedules/month", "/api/schedules/conflicts", "/api/schedules/filters/*",
+        "/api/schedules/range"
 })
 public class ScheduleCalendarApiServlet extends HttpServlet {
 
@@ -84,6 +86,24 @@ public class ScheduleCalendarApiServlet extends HttpServlet {
             // ----------------------------------------------------------------
             // GET /api/schedules/month
             // ----------------------------------------------------------------
+            if ("/range".equals(pathInfo)) {
+                java.time.LocalDate start = ClassSessionService.parseDate(req.getParameter("startDate"));
+                java.time.LocalDate end = ClassSessionService.parseDate(req.getParameter("endDate"));
+                if (end.isBefore(start) || start.plusMonths(13).isBefore(end)) {
+                    throw new com.ems.exception.ValidationException("Khoảng ngày không hợp lệ (tối đa 13 tháng).");
+                }
+                List<Object> params = new java.util.ArrayList<>(List.of(start.toString(), end.toString()));
+                String where = "WHERE cs.session_date BETWEEN ? AND ?";
+                String classCode = req.getParameter("classCode");
+                if (classCode != null && !classCode.isBlank()) {
+                    where += " AND c.class_code = ?";
+                    params.add(classCode.trim());
+                }
+                ApiResponse.success(resp, "SCHEDULE_RANGE_SUCCESS", "Lịch học theo khoảng ngày.",
+                        new com.ems.dao.ClassSessionDAO().findWhere(where, params));
+                return;
+            }
+
             if ("/month".equals(pathInfo)) {
                 String yearParam  = req.getParameter("year");
                 String monthParam = req.getParameter("month");

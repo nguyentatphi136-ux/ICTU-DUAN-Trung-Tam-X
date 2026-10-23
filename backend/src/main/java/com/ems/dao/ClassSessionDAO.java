@@ -19,6 +19,40 @@ public class ClassSessionDAO {
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
 
+    /**
+     * Cột chung của một buổi. LEFT JOIN để không mất buổi chưa gắn môn (S4-02 cho phép); seq là thứ tự buổi trong lớp
+     * (buổi huỷ vẫn giữ số), topic lấy từ giáo trình (subject_lessons).
+     */
+    private static final String BASE_SELECT = """
+            SELECT cs.id, cs.class_id, c.class_code, c.class_name, cs.class_subject_id,
+                   s.id AS subject_id, s.subject_code, s.subject_name,
+                   cs.instructor_id, u.full_name AS instructor_name,
+                   cs.classroom_id, cr.room_code, cr.room_name,
+                   cs.session_date, cs.start_time, cs.end_time, cs.status, cs.session_number, cs.cancel_reason,
+                   sl.topic,
+                   (SELECT COUNT(*) FROM class_sessions x WHERE x.class_id = cs.class_id
+                     AND (x.session_date < cs.session_date OR (x.session_date = cs.session_date
+                     AND (x.start_time < cs.start_time OR (x.start_time = cs.start_time AND x.id <= cs.id))))) AS seq
+            FROM class_sessions cs
+            JOIN classes c ON cs.class_id = c.id
+            LEFT JOIN class_subjects csub ON cs.class_subject_id = csub.id
+            LEFT JOIN subjects s ON csub.subject_id = s.id
+            LEFT JOIN subject_lessons sl ON sl.id = cs.subject_lesson_id
+            LEFT JOIN users u ON cs.instructor_id = u.id
+            LEFT JOIN classrooms cr ON cs.classroom_id = cr.id
+            """;
+
+    /** Buổi học theo điều kiện tuỳ ý trên bí danh cs, c (ví dụ "WHERE cs.class_id IN (...)"), sắp theo ngày giờ. */
+    public List<ClassSessionResponse> findWhere(String condition, List<Object> params) throws SQLException {
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(BASE_SELECT + condition + " ORDER BY cs.session_date, cs.start_time, cs.id")) {
+            for (int i = 0; i < params.size(); i++) stmt.setObject(i + 1, params.get(i));
+            try (ResultSet rs = stmt.executeQuery()) {
+                return mapRows(rs);
+            }
+        }
+    }
+
     // -------------------------------------------------------------------------
     // A. Tìm buổi học theo khoảng thời gian với bộ lọc tùy chọn
     // -------------------------------------------------------------------------
@@ -31,33 +65,7 @@ public class ClassSessionDAO {
             LocalDate startDate, LocalDate endDate,
             Long classId, Long lecturerId, Integer roomId) throws SQLException {
 
-        StringBuilder sql = new StringBuilder("""
-            SELECT cs.id,
-                   cs.class_id,
-                   c.class_code,
-                   c.class_name,
-                   cs.class_subject_id,
-                   s.id          AS subject_id,
-                   s.subject_code,
-                   s.subject_name,
-                   cs.instructor_id,
-                   u.full_name   AS instructor_name,
-                   cs.classroom_id,
-                   cr.room_code,
-                   cr.room_name,
-                   cs.session_date,
-                   cs.start_time,
-                   cs.end_time,
-                   cs.status,
-                   cs.session_number
-            FROM class_sessions cs
-            JOIN classes         c  ON cs.class_id        = c.id
-            JOIN class_subjects  csub ON cs.class_subject_id = csub.id
-            JOIN subjects        s  ON csub.subject_id    = s.id
-            JOIN users           u  ON cs.instructor_id   = u.id
-            JOIN classrooms      cr ON cs.classroom_id    = cr.id
-            WHERE cs.session_date BETWEEN ? AND ?
-            """);
+        StringBuilder sql = new StringBuilder(BASE_SELECT).append("WHERE cs.session_date BETWEEN ? AND ?\n");
 
         List<Object> params = new ArrayList<>();
         params.add(startDate.toString());
@@ -102,33 +110,7 @@ public class ClassSessionDAO {
      * Trả về chi tiết đầy đủ một buổi học, hoặc null nếu không tìm thấy.
      */
     public ClassSessionResponse findById(long id) throws SQLException {
-        String sql = """
-            SELECT cs.id,
-                   cs.class_id,
-                   c.class_code,
-                   c.class_name,
-                   cs.class_subject_id,
-                   s.id          AS subject_id,
-                   s.subject_code,
-                   s.subject_name,
-                   cs.instructor_id,
-                   u.full_name   AS instructor_name,
-                   cs.classroom_id,
-                   cr.room_code,
-                   cr.room_name,
-                   cs.session_date,
-                   cs.start_time,
-                   cs.end_time,
-                   cs.status,
-                   cs.session_number
-            FROM class_sessions cs
-            JOIN classes         c  ON cs.class_id        = c.id
-            JOIN class_subjects  csub ON cs.class_subject_id = csub.id
-            JOIN subjects        s  ON csub.subject_id    = s.id
-            JOIN users           u  ON cs.instructor_id   = u.id
-            JOIN classrooms      cr ON cs.classroom_id    = cr.id
-            WHERE cs.id = ?
-            """;
+        String sql = BASE_SELECT + "WHERE cs.id = ?";
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -305,6 +287,9 @@ public class ClassSessionDAO {
             r.setRoomName(rs.getString("room_name"));
             r.setStatus(rs.getString("status"));
             r.setSessionNumber(rs.getInt("session_number"));
+            r.setSeq(rs.getInt("seq"));
+            r.setTopic(rs.getString("topic"));
+            r.setCancelReason(rs.getString("cancel_reason"));
 
             Date sessionDate = rs.getDate("session_date");
             Time startTime   = rs.getTime("start_time");

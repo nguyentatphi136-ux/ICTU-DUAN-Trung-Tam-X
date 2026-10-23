@@ -224,6 +224,35 @@ public class DatabaseMigration {
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """);
+            // S4-07 điểm danh từng buổi, S4-08 đơn xin phép vắng (đã có trong schema.sql, CSDL cũ chưa có thì tạo).
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS attendance (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    session_id BIGINT NOT NULL,
+                    student_id BIGINT NOT NULL,
+                    status VARCHAR(20) DEFAULT 'PRESENT',
+                    notes VARCHAR(255) NULL,
+                    marked_by BIGINT NOT NULL,
+                    marked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_by BIGINT NULL,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT uk_session_student UNIQUE (session_id, student_id)
+                )
+            """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS absence_requests (
+                    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                    student_id BIGINT NOT NULL,
+                    session_id BIGINT NOT NULL,
+                    reason TEXT NOT NULL,
+                    proof_file_url VARCHAR(255) NULL,
+                    status VARCHAR(20) DEFAULT 'PENDING',
+                    reviewed_by BIGINT NULL,
+                    review_note VARCHAR(255) NULL,
+                    reviewed_at TIMESTAMP NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """);
 
             LOGGER.info("Đã kiểm tra và đảm bảo cấu trúc bảng programs và classes thành công.");
         }
@@ -311,7 +340,7 @@ public class DatabaseMigration {
                     "GRADE_MANAGE", "GRADE_READ", "REPORT_VIEW"),
             "TA", with("PROGRAM_READ", "STUDENT_READ", "CLASS_READ", "SCHEDULE_READ", "ATTENDANCE_MANAGE", "ASSIGNMENT_MANAGE", "GRADE_READ"),
             "ACCOUNTANT", with("LEAD_READ", "STUDENT_READ", "FINANCE_MANAGE", "FINANCE_READ", "REPORT_VIEW"),
-            "STUDENT", with("PROGRAM_READ", "SCHEDULE_READ", "ASSIGNMENT_READ", "GRADE_READ", "FINANCE_READ"),
+            "STUDENT", with("PROGRAM_READ", "SCHEDULE_READ", "ASSIGNMENT_READ", "GRADE_READ", "FINANCE_READ", "ABSENCE_REQUEST"),
             "GUEST", List.of("CONSULTATION_CREATE"));
 
     /** Quyền thêm sau schema.sql đầu tiên: CSDL cũ chưa có thì tạo. { mã, tên, module, mô tả } */
@@ -322,7 +351,8 @@ public class DatabaseMigration {
             {"STUDENT_READ", "Xem hồ sơ học viên", "CLASS", "Xem danh sách và hồ sơ học viên"},
             {"CLASS_READ", "Xem lớp học", "CLASS", "Xem lớp, ghi danh, người dạy và phòng học"},
             {"STUDENT_WRITE", "Sửa hồ sơ học viên", "CLASS", "Sửa thông tin cá nhân, trình độ đầu vào, ghi chú của học viên"},
-            {"TRASH_PURGE", "Xoá vĩnh viễn", "SYSTEM", "Xem thùng rác các module và xoá vĩnh viễn"}};
+            {"TRASH_PURGE", "Xoá vĩnh viễn", "SYSTEM", "Xem thùng rác các module và xoá vĩnh viễn"},
+            {"ABSENCE_REQUEST", "Gửi đơn xin phép vắng", "ATTENDANCE", "Học viên gửi và theo dõi đơn xin phép vắng của mình (S4-08)"}};
 
     private static List<String> with(String... extra) {
         List<String> all = new ArrayList<>(BASE);

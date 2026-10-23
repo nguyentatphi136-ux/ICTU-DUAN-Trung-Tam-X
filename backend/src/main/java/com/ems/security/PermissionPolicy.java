@@ -102,6 +102,21 @@ public final class PermissionPolicy {
         if ("POST".equals(method) && ("/api/auth/logout".equals(path) || "/api/auth/change-password".equals(path))) {
             return "@authenticated";
         }
+        // S4-05 lịch của tôi; S4-07 điểm danh; S4-08 học viên gửi đơn xin phép, giảng viên, trợ giảng, quản lý duyệt.
+        if ("GET".equals(method) && "/api/me/schedule".equals(path)) {
+            return "SCHEDULE_READ";
+        }
+        if ("/api/attendance/sessions".equals(path) || path.matches("^/api/sessions/\\d+/attendance$")) {
+            return "ATTENDANCE_MANAGE";
+        }
+        if ("/api/leave-requests".equals(path) || path.matches("^/api/leave-requests/\\d+$")) {
+            if ("GET".equals(method)) return "ABSENCE_REQUEST|ATTENDANCE_MANAGE";
+            return "POST".equals(method) ? "ABSENCE_REQUEST" : "ATTENDANCE_MANAGE";
+        }
+        // S4-06: xem lịch sử cần STUDENT_READ; bảo lưu, chuyển lớp, thôi học cần CLASS_MANAGE.
+        if (path.matches("^/api/student-status/[^/]+$")) {
+            return "GET".equals(method) ? "STUDENT_READ" : "CLASS_MANAGE";
+        }
         // S4-01 sinh lịch, S4-02 kiểm tra trùng, S4-03 sửa/dời/huỷ buổi, S4-04 lịch tuần/tháng:
         // mọi vai trò có SCHEDULE_READ xem lịch; ghi cần CLASS_MANAGE.
         if (path.matches("^/api/(schedules|class-sessions|v1/classes|v1/holidays)(/.*)?$")) {

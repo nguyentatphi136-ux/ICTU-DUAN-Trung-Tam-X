@@ -26,6 +26,9 @@ public class ClassSessionResponse {
     private String status;
     private Integer sessionNumber;
     private boolean hasConflict;
+    private int seq;              // Thứ tự buổi trong lớp (buổi 31), buổi huỷ vẫn giữ số
+    private String topic;         // Chủ đề bài theo giáo trình, null nếu chưa gắn bài
+    private String cancelReason;  // Lý do huỷ khi status = CANCELLED
 
     public ClassSessionResponse() {}
 
@@ -91,4 +94,13 @@ public class ClassSessionResponse {
 
     public boolean isHasConflict() { return hasConflict; }
     public void setHasConflict(boolean hasConflict) { this.hasConflict = hasConflict; }
+
+    public int getSeq() { return seq; }
+    public void setSeq(int seq) { this.seq = seq; }
+
+    public String getTopic() { return topic; }
+    public void setTopic(String topic) { this.topic = topic; }
+
+    public String getCancelReason() { return cancelReason; }
+    public void setCancelReason(String cancelReason) { this.cancelReason = cancelReason; }
 }

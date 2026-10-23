@@ -1,31 +1,41 @@
 package com.ems.controller;
 
-import com.ems.model.*;
+import com.ems.exception.ValidationException;
+import com.ems.model.Holiday;
+import com.ems.model.PlannedSession;
+import com.ems.model.ScheduleGenerationResult;
+import com.ems.model.SchedulePattern;
+import com.ems.model.SkippedDate;
+import com.ems.security.ApiResponse;
 import com.ems.service.HolidayStore;
 import com.ems.service.ScheduleService;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
-import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * RESTful API Servlet cho module Sinh thời khoá biểu tự động (Sprint 4: S4-01)
- * URL Patterns:
- *   - POST /api/v1/classes/{code}/schedule/preview : Sinh lịch và xem trước
- *   - POST /api/v1/classes/{code}/schedule         : Lưu lịch chính thức
- *   - GET  /api/v1/classes/{code}/schedule         : Lấy lịch học của lớp
- *   - GET  /api/v1/holidays                        : Lấy danh sách ngày nghỉ lễ
- *   - POST /api/v1/holidays                        : Thêm ngày nghỉ lễ mới
- * 
+ * RESTful API sinh thời khoá biểu tự động (Sprint 4: S4-01). Quyền do SessionAuthFilter kiểm theo PermissionPolicy:
+ * GET cần SCHEDULE_READ, POST cần CLASS_MANAGE.
+ *
+ * <pre>
+ * POST /api/v1/classes/{code}/schedule/preview   { days: [1,3,5], start, end, from, count, room } sinh lịch, xem trước
+ * POST /api/v1/classes/{code}/schedule           như trên, lưu vào class_sessions (thay lịch cũ)
+ * GET  /api/v1/classes/{code}/schedule           lịch đã lưu của lớp
+ * GET  /api/v1/holidays                          [{ id, name, from, to }]
+ * POST /api/v1/holidays                          { name, from, to }
+ * </pre>
+ * days theo Date.getDay() của trình duyệt: Chủ nhật 0, Thứ Hai 1 ... Thứ Bảy 6.
+ *
  * Người thực hiện: Nguyễn Trung Kiên (NK) - dtc245200736@ictu.edu.vn
  */
 // Servlet không cho phép dấu * ở giữa đường dẫn, nên bắt cả /api/v1/classes/* rồi tách mã lớp bằng regex bên dưới.
@@ -33,224 +43,90 @@ import java.util.regex.Pattern;
         "/api/v1/classes/*",
         "/api/v1/holidays"
 })
-public class ScheduleGenerateApiServlet extends HttpServlet {
+public class ScheduleGenerateApiServlet extends JsonApiServlet {
 
     private static final long serialVersionUID = 1L;
-    private final ScheduleService scheduleService = new ScheduleService();
+    private static final Pattern SCHEDULE = Pattern.compile("^/([A-Za-z0-9_-]+)/schedule(/preview)?$");
+
+    private final transient ScheduleService scheduleService = new ScheduleService();
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        resp.setContentType("application/json;charset=UTF-8");
+    protected void handle(String method, String path, HttpServletRequest req, HttpServletResponse resp) throws Exception {
         try {
-            handleGet(req, resp);
-        } catch (RuntimeException e) {
-            writeError(resp, e);
-        }
-    }
-
-    private void handleGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        String uri = req.getRequestURI();
-
-        if (uri.endsWith("/api/v1/holidays")) {
-            List<Holiday> holidays = HolidayStore.getAllHolidays();
-            StringBuilder json = new StringBuilder("[");
-            for (int i = 0; i < holidays.size(); i++) {
-                Holiday h = holidays.get(i);
-                if (i > 0) json.append(",");
-                json.append(String.format("{\"id\":%d,\"name\":\"%s\",\"from\":\"%s\",\"to\":\"%s\"}",
-                        h.getId(), escapeJson(h.getName()), h.getFromDate(), h.getToDate()));
+            if ("/api/v1/holidays".equals(req.getServletPath())) {
+                if ("GET".equals(method)) {
+                    List<Map<String, Object>> list = new ArrayList<>();
+                    for (Holiday h : HolidayStore.getAllHolidays()) {
+                        list.add(Map.of("id", h.getId(), "name", h.getName(), "from", h.getFromDate().toString(), "to", h.getToDate().toString()));
+                    }
+                    ApiResponse.success(resp, "HOLIDAY_LIST", "Danh sách ngày nghỉ lễ.", list);
+                } else if ("POST".equals(method)) {
+                    JsonObject b = body(req);
+                    HolidayStore.addHoliday(str(b, "name"), str(b, "from"), str(b, "to"));
+                    ApiResponse.created(resp, "HOLIDAY_CREATED", "Đã thêm ngày nghỉ lễ.", null);
+                } else {
+                    notFound(resp);
+                }
+                return;
             }
-            json.append("]");
-            resp.getWriter().write(json.toString());
-            return;
-        }
-
-        // GET /api/v1/classes/{code}/schedule
-        Pattern pattern = Pattern.compile(".*/api/v1/classes/([^/]+)/schedule$");
-        Matcher matcher = pattern.matcher(uri);
-        if (matcher.find()) {
-            String classCode = matcher.group(1);
-            List<PlannedSession> sessions = scheduleService.getSessionsByClass(classCode);
-            resp.getWriter().write(sessionsToJson(sessions));
-            return;
-        }
-
-        resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-        resp.getWriter().write("{\"error\":\"Endpoint không tồn tại\"}");
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-        req.setCharacterEncoding("UTF-8");
-        resp.setContentType("application/json;charset=UTF-8");
-        PrintWriter out = resp.getWriter();
-        String uri = req.getRequestURI();
-
-        // Quyền ghi (CLASS_MANAGE) do SessionAuthFilter kiểm tra theo PermissionPolicy trước khi tới đây.
-
-        // POST /api/v1/holidays
-        if (uri.endsWith("/api/v1/holidays")) {
-            String body = readBody(req);
-            String name = extractJsonField(body, "name");
-            String from = extractJsonField(body, "from");
-            String to = extractJsonField(body, "to");
-            try {
-                HolidayStore.addHoliday(name, from, to);
-                resp.setStatus(HttpServletResponse.SC_CREATED);
-                out.write("{\"success\":true,\"message\":\"Đã thêm ngày nghỉ lễ\"}");
-            } catch (RuntimeException e) {
-                writeError(resp, e);
+            Matcher m = SCHEDULE.matcher(path);
+            if (!m.matches()) {
+                notFound(resp);
+                return;
             }
-            return;
-        }
-
-        // POST /api/v1/classes/{code}/schedule/preview
-        Pattern previewPattern = Pattern.compile(".*/api/v1/classes/([^/]+)/schedule/preview$");
-        Matcher previewMatcher = previewPattern.matcher(uri);
-        if (previewMatcher.find()) {
-            String classCode = previewMatcher.group(1);
-            String body = readBody(req);
-            try {
-                SchedulePattern p = parsePatternJson(classCode, body);
+            String classCode = m.group(1);
+            boolean preview = m.group(2) != null;
+            if ("GET".equals(method) && !preview) {
+                ApiResponse.success(resp, "SCHEDULE_OF_CLASS", "Lịch học của lớp.", scheduleService.getSessionsByClass(classCode));
+            } else if ("POST".equals(method)) {
+                SchedulePattern p = pattern(classCode, body(req));
                 ScheduleGenerationResult result = scheduleService.generateSchedule(p);
-                out.write(resultToJson(result));
-            } catch (RuntimeException e) {
-                writeError(resp, e);
+                if (preview) {
+                    ApiResponse.success(resp, "SCHEDULE_PREVIEW", "Xem trước thời khoá biểu.", toMap(result));
+                } else {
+                    scheduleService.saveSchedule(classCode, result.getSessions(), p);
+                    ApiResponse.success(resp, "SCHEDULE_SAVED", "Đã lưu thời khoá biểu lớp " + classCode + ".",
+                            Map.of("sessionsCount", result.getSessions().size()));
+                }
+            } else {
+                notFound(resp);
             }
-            return;
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException(e.getMessage());
+        } catch (IllegalStateException e) {
+            // ClassStore, HolidayStore, ScheduleService báo lỗi CSDL bằng IllegalStateException.
+            throw new SQLException(e.getMessage(), e);
         }
-
-        // POST /api/v1/classes/{code}/schedule (Lưu)
-        Pattern savePattern = Pattern.compile(".*/api/v1/classes/([^/]+)/schedule$");
-        Matcher saveMatcher = savePattern.matcher(uri);
-        if (saveMatcher.find()) {
-            String classCode = saveMatcher.group(1);
-            String body = readBody(req);
-            try {
-                SchedulePattern p = parsePatternJson(classCode, body);
-                ScheduleGenerationResult result = scheduleService.generateSchedule(p);
-                scheduleService.saveSchedule(classCode, result.getSessions(), p);
-                out.write(String.format("{\"success\":true,\"message\":\"Đã lưu thời khoá biểu lớp %s\",\"sessionsCount\":%d}",
-                        escapeJson(classCode), result.getSessions().size()));
-            } catch (RuntimeException e) {
-                writeError(resp, e);
-            }
-            return;
-        }
-
-        resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-        out.write("{\"error\":\"Endpoint không tồn tại\"}");
     }
 
-    /** Dữ liệu gửi sai: 400 kèm lý do; lỗi CSDL: 500. */
-    private void writeError(HttpServletResponse resp, RuntimeException e) throws IOException {
-        boolean badInput = e instanceof IllegalArgumentException || e instanceof java.time.format.DateTimeParseException;
-        resp.setStatus(badInput ? HttpServletResponse.SC_BAD_REQUEST : HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        if (!badInput) log("Lỗi API sinh thời khoá biểu", e);
-        String message = badInput ? e.getMessage() : "Lỗi máy chủ khi xử lý thời khoá biểu. Vui lòng thử lại sau.";
-        resp.getWriter().write(String.format("{\"error\":\"%s\"}", escapeJson(message)));
-    }
-
-    private String readBody(HttpServletRequest req) throws IOException {
-        StringBuilder sb = new StringBuilder();
-        try (BufferedReader reader = req.getReader()) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                sb.append(line);
-            }
-        }
-        return sb.toString();
-    }
-
-    private SchedulePattern parsePatternJson(String classCode, String json) {
-        String start = extractJsonField(json, "start");
-        if (start.isBlank()) start = "18:00";
-        String end = extractJsonField(json, "end");
-        if (end.isBlank()) end = "20:30";
-        String from = extractJsonField(json, "from");
-        if (from.isBlank()) from = "2026-10-20";
-        String room = extractJsonField(json, "room");
-        String countStr = extractJsonField(json, "count");
-        int count = 60;
-        if (!countStr.isBlank()) {
-            try { count = Integer.parseInt(countStr); } catch (Exception ignored) {}
-        }
-
+    /** Mẫu lặp từ JSON; thiếu trường thì để ScheduleService báo lỗi, không tự điền giá trị mặc định. */
+    private static SchedulePattern pattern(String classCode, JsonObject b) {
         List<Integer> days = new ArrayList<>();
-        Pattern dayPattern = Pattern.compile("\"days\"\\s*:\\s*\\[([^\\]]+)\\]");
-        Matcher m = dayPattern.matcher(json);
-        if (m.find()) {
-            String[] nums = m.group(1).split(",");
-            for (String n : nums) {
-                try { days.add(Integer.parseInt(n.trim())); } catch (Exception ignored) {}
+        JsonElement el = b.get("days");
+        if (el != null && el.isJsonArray()) {
+            for (JsonElement d : el.getAsJsonArray()) {
+                int day = d.getAsInt();
+                if (day < 0 || day > 6) throw new ValidationException("Thứ trong tuần phải từ 0 (Chủ nhật) đến 6 (Thứ Bảy).");
+                days.add(day);
             }
         }
-        if (days.isEmpty()) {
-            days.addAll(List.of(1, 3, 5)); // T2, T4, T6
-        }
-
-        return new SchedulePattern(classCode, days, start, end, from, count, room);
+        int count = b.has("count") && !b.get("count").isJsonNull() ? b.get("count").getAsInt() : 0;
+        return new SchedulePattern(classCode, days, str(b, "start"), str(b, "end"), str(b, "from"), count, str(b, "room"));
     }
 
-    private String extractJsonField(String json, String field) {
-        Pattern p = Pattern.compile("\"" + field + "\"\\s*:\\s*\"?([^,\"}]+)\"?");
-        Matcher m = p.matcher(json);
-        return m.find() ? m.group(1).trim() : "";
-    }
-
-    private String resultToJson(ScheduleGenerationResult result) {
-        StringBuilder sb = new StringBuilder("{");
-        sb.append("\"firstDate\":\"").append(result.getFirstDate()).append("\",");
-        sb.append("\"lastDate\":\"").append(result.getLastDate()).append("\",");
-        sb.append("\"sessionsPerWeek\":").append(result.getSessionsPerWeek()).append(",");
-        sb.append("\"plainWeeks\":").append(result.getPlainWeeks()).append(",");
-        sb.append("\"actualWeeks\":").append(result.getActualWeeks()).append(",");
-        sb.append("\"weeksDelayed\":").append(result.getWeeksDelayed()).append(",");
-
-        // Sessions
-        sb.append("\"sessions\":[");
-        for (int i = 0; i < result.getSessions().size(); i++) {
-            PlannedSession s = result.getSessions().get(i);
-            if (i > 0) sb.append(",");
-            sb.append(String.format("{\"id\":\"%s\",\"cls\":\"%s\",\"no\":%d,\"date\":\"%s\",\"start\":\"%s\",\"end\":\"%s\",\"subject\":\"%s\",\"lesson\":%d,\"topic\":\"%s\",\"teacher\":%s,\"room\":%s}",
-                    s.getId(), s.getCls(), s.getNo(), s.getDate(), s.getStart(), s.getEnd(), s.getSubject(), s.getLesson(),
-                    escapeJson(s.getTopic()),
-                    s.getTeacher() != null ? "\"" + escapeJson(s.getTeacher()) + "\"" : "null",
-                    s.getRoom() != null ? "\"" + escapeJson(s.getRoom()) + "\"" : "null"));
-        }
-        sb.append("],");
-
-        // Skipped
-        sb.append("\"skipped\":[");
-        for (int i = 0; i < result.getSkipped().size(); i++) {
-            SkippedDate sk = result.getSkipped().get(i);
-            if (i > 0) sb.append(",");
-            sb.append(String.format("{\"date\":\"%s\",\"reason\":\"%s\",\"dayOfWeek\":\"%s\"}",
-                    sk.getDate(), escapeJson(sk.getReason()), sk.getDayOfWeek()));
-        }
-        sb.append("]");
-
-        sb.append("}");
-        return sb.toString();
-    }
-
-    private String sessionsToJson(List<PlannedSession> sessions) {
-        StringBuilder sb = new StringBuilder("[");
-        for (int i = 0; i < sessions.size(); i++) {
-            PlannedSession s = sessions.get(i);
-            if (i > 0) sb.append(",");
-            sb.append(String.format("{\"id\":\"%s\",\"cls\":\"%s\",\"no\":%d,\"date\":\"%s\",\"start\":\"%s\",\"end\":\"%s\",\"subject\":\"%s\",\"lesson\":%d,\"topic\":\"%s\",\"teacher\":%s,\"room\":%s}",
-                    s.getId(), s.getCls(), s.getNo(), s.getDate(), s.getStart(), s.getEnd(), s.getSubject(), s.getLesson(),
-                    escapeJson(s.getTopic()),
-                    s.getTeacher() != null ? "\"" + escapeJson(s.getTeacher()) + "\"" : "null",
-                    s.getRoom() != null ? "\"" + escapeJson(s.getRoom()) + "\"" : "null"));
-        }
-        sb.append("]");
-        return sb.toString();
-    }
-
-    private String escapeJson(String s) {
-        if (s == null) return "";
-        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n").replace("\r", "");
+    private static Map<String, Object> toMap(ScheduleGenerationResult r) {
+        Map<String, Object> out = new LinkedHashMap<>();
+        out.put("firstDate", r.getFirstDate());
+        out.put("lastDate", r.getLastDate());
+        out.put("sessionsPerWeek", r.getSessionsPerWeek());
+        out.put("plainWeeks", r.getPlainWeeks());
+        out.put("actualWeeks", r.getActualWeeks());
+        out.put("weeksDelayed", r.getWeeksDelayed());
+        List<PlannedSession> sessions = r.getSessions();
+        out.put("sessions", sessions);
+        List<Map<String, String>> skipped = new ArrayList<>();
+        for (SkippedDate s : r.getSkipped()) skipped.add(Map.of("date", s.getDate(), "reason", s.getReason()));
+        out.put("skipped", skipped);
+        return out;
     }
 }

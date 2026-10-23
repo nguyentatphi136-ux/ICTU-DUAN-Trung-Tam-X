@@ -24,6 +24,9 @@ final class S4TestData {
             createTables(st);
             S4TimetableMigration.run(conn);
             String[] cleanup = {
+                    "DELETE FROM attendance WHERE session_id BETWEEN 9201 AND 9299",
+                    "DELETE FROM absence_requests WHERE session_id BETWEEN 9201 AND 9299",
+                    "DELETE FROM audit_logs WHERE entity_type = 'ATTENDANCE' AND entity_id LIKE '92__'",
                     "DELETE FROM class_sessions WHERE class_id BETWEEN 9101 AND 9199",
                     "DELETE FROM enrollments WHERE class_id BETWEEN 9101 AND 9199",
                     "DELETE FROM class_subject_assistants WHERE class_subject_id BETWEEN 9101 AND 9199",
@@ -81,6 +84,34 @@ final class S4TestData {
     }
 
     private static void createTables(Statement st) throws Exception {
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS attendance (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                session_id BIGINT NOT NULL,
+                student_id BIGINT NOT NULL,
+                status VARCHAR(20) DEFAULT 'PRESENT',
+                notes VARCHAR(255) NULL,
+                marked_by BIGINT NOT NULL,
+                marked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_by BIGINT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT uk_session_student UNIQUE (session_id, student_id)
+            )
+        """);
+        st.execute("""
+            CREATE TABLE IF NOT EXISTS absence_requests (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                student_id BIGINT NOT NULL,
+                session_id BIGINT NOT NULL,
+                reason TEXT NOT NULL,
+                proof_file_url VARCHAR(255) NULL,
+                status VARCHAR(20) DEFAULT 'PENDING',
+                reviewed_by BIGINT NULL,
+                review_note VARCHAR(255) NULL,
+                reviewed_at TIMESTAMP NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """);
         st.execute("""
             CREATE TABLE IF NOT EXISTS subject_lessons (
                 id INT AUTO_INCREMENT PRIMARY KEY,
